@@ -1,0 +1,3 @@
+Hmi.c:57:14:readModel	8	static
+Hmi.c:77:6:HmiManager	48	static
+Hmi.c:222:6:setStatusBit	8	static

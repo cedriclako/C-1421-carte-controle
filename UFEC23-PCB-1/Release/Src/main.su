@@ -1,0 +1,8 @@
+main.c:634:6:StartDefaultTask	8	static
+main.c:646:6:TimerCallback	0	static
+main.c:265:6:HAL_ADC_ConvCpltCallback	8	static
+main.c:294:6:SystemClock_Config	120	static
+main.c:395:6:MX_I2C1_Init	4	static
+main.c:105:5:main	208	static,ignoring_inline_asm
+main.c:666:6:HAL_TIM_PeriodElapsedCallback	0	static
+main.c:683:6:Error_Handler	0	static
