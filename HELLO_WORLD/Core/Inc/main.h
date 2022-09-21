@@ -58,6 +58,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Step2_LowCurrent_Pin GPIO_PIN_13
+#define Step2_LowCurrent_GPIO_Port GPIOC
 #define Limit_switch1_Pin GPIO_PIN_0
 #define Limit_switch1_GPIO_Port GPIOC
 #define Limit_switch2_Pin GPIO_PIN_1
@@ -120,6 +122,10 @@ void Error_Handler(void);
 #define Step1_RESET_GPIO_Port GPIOB
 #define Step1_ENABLE_Pin GPIO_PIN_5
 #define Step1_ENABLE_GPIO_Port GPIOB
+#define I2C_SDA_Pin GPIO_PIN_6
+#define I2C_SDA_GPIO_Port GPIOB
+#define I2C_SCL_Pin GPIO_PIN_7
+#define I2C_SCL_GPIO_Port GPIOB
 #define Button_Input_Pin GPIO_PIN_8
 #define Button_Input_GPIO_Port GPIOB
 #define USB_Fault_Pin GPIO_PIN_9

@@ -67,7 +67,11 @@ osTimerId TimerHandle;
 osSemaphoreId I2CSemaphoreHandle;
 /* USER CODE BEGIN PV */
 uint32_t uCAdcData[2], buffer[2], temperature;
+#define MAJOR_VER 1
+#define MINOR_VER 0
+#define REVISION_VER 8
 
+RTC_TimeTypeDef sTime;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,11 +86,7 @@ void StartDefaultTask(void const * argument);
 void TemperatureManager(void const * argument);
 void Steppermanager(void const * argument);
 
-#define MAJOR_VER 1
-#define MINOR_VER 0
-#define REVISION_VER 8
 
-RTC_TimeTypeDef sTime;
 void TimerCallback(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -185,9 +185,7 @@ int main(void)
   osThreadDef(HmiManagerT, HmiManager, osPriorityNormal, 0, 128);
   HmiManagerTHandle = osThreadCreate(osThread(HmiManagerT), NULL);
 
-  /* USER CODE END RTOS_THREADS */
 
-  /* Start scheduler */
   printf("-------------------------------\n\r"); //TODO: if we remove this call, go to hardfault handler  or fail to execute
 
   switch (readModel())
@@ -246,7 +244,9 @@ int main(void)
 	  for(j=0;j<5000000;j++){asm("NOP");}
   }
 
-//#endif
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
 
   osKernelStart();
  
@@ -261,32 +261,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
-#define NB_SAMPLES 30
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-{
-	static uint32_t filteredVoltage[NB_SAMPLES][2];
-	static int j=0;
-	for (int i =0; i<2; i++)
-	{
-		filteredVoltage[j][i] = buffer[i];
-		//uCAdcData[i] = buffer[i];
-	}
-	j++;
-	if(j>NB_SAMPLES)
-	{
-		j=0;
-	}
-	uint32_t sum = 0;
-	for (int i =0; i<2; i++)
-	{
-		for (int k=0; k<NB_SAMPLES;k++)
-		{
-			sum += filteredVoltage[k][i];
-		}
-		uCAdcData[i] = sum/NB_SAMPLES;
-		sum=0;
-	}
-}
+
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -621,7 +596,32 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+#define NB_SAMPLES 30
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	static uint32_t filteredVoltage[NB_SAMPLES][2];
+	static int j=0;
+	for (int i =0; i<2; i++)
+	{
+		filteredVoltage[j][i] = buffer[i];
+		//uCAdcData[i] = buffer[i];
+	}
+	j++;
+	if(j>NB_SAMPLES)
+	{
+		j=0;
+	}
+	uint32_t sum = 0;
+	for (int i =0; i<2; i++)
+	{
+		for (int k=0; k<NB_SAMPLES;k++)
+		{
+			sum += filteredVoltage[k][i];
+		}
+		uCAdcData[i] = sum/NB_SAMPLES;
+		sum=0;
+	}
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
