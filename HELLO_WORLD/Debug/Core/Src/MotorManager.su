@@ -1,0 +1,16 @@
+MotorManager.c:102:6:Mot_InPosition	16	static
+MotorManager.c:114:6:Steppermanager	16	static
+MotorManager.c:150:6:vStepperPositioning	32	static
+MotorManager.c:227:6:vToggleOneStep	16	static
+MotorManager.c:247:6:vLimitSwitchActive	24	static
+MotorManager.c:271:6:vEnableStepper	16	static
+MotorManager.c:289:6:vStepperMaxTorque	16	static
+MotorManager.c:318:6:vDisableStepper	16	static
+MotorManager.c:334:6:vSetStepperMotorDirection	16	static
+MotorManager.c:365:6:mot_SetStepMotor	16	static
+MotorManager.c:370:17:pstGetMotor	16	static
+MotorManager.c:375:6:vSetSpeed	16	static
+MotorManager.c:406:14:Mot_getFanSpeed	4	static
+MotorManager.c:410:6:managePlenumSpeed	32	static
+MotorManager.c:465:6:StepperMotorProdTest	24	static
+MotorManager.c:521:6:AllMotorToZero	16	static

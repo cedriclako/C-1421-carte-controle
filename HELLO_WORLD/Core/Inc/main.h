@@ -47,7 +47,7 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+void MX_I2C1_Init(void);
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -104,8 +104,8 @@ void Error_Handler(void);
 #define Step2_DIR_GPIO_Port GPIOC
 #define Step1_LowCurrent_Pin GPIO_PIN_9
 #define Step1_LowCurrent_GPIO_Port GPIOC
-#define uc_Stepper_SleepA8_Pin GPIO_PIN_8
-#define uc_Stepper_SleepA8_GPIO_Port GPIOA
+#define Button_LED_Pin GPIO_PIN_8
+#define Button_LED_GPIO_Port GPIOA
 #define USB_ENABLE_Pin GPIO_PIN_15
 #define USB_ENABLE_GPIO_Port GPIOA
 #define Step2_STEP_Pin GPIO_PIN_10
@@ -131,7 +131,8 @@ void Error_Handler(void);
 #define USB_Fault_Pin GPIO_PIN_9
 #define USB_Fault_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+extern RTC_TimeTypeDef sTime;
+extern RTC_HandleTypeDef hrtc;
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

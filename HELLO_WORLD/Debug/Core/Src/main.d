@@ -43,7 +43,11 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h
+ ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
+ ../Core/Inc/MotorManager.h ../Core/Inc/air_input.h \
+ ../Core/Inc/TemperatureManager.h ../Core/Inc/DebugPort.h \
+ ../Core/Inc/TestManager.h ../Core/Inc/DebugManager.h ../Core/Inc/algo.h \
+ ../Core/Inc/Hmi.h
 
 ../Core/Inc/main.h:
 
@@ -136,3 +140,19 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h:
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
+
+../Core/Inc/MotorManager.h:
+
+../Core/Inc/air_input.h:
+
+../Core/Inc/TemperatureManager.h:
+
+../Core/Inc/DebugPort.h:
+
+../Core/Inc/TestManager.h:
+
+../Core/Inc/DebugManager.h:
+
+../Core/Inc/algo.h:
+
+../Core/Inc/Hmi.h:

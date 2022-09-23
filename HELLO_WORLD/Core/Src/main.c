@@ -23,7 +23,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "MotorManager.h"
+#include "TemperatureManager.h"
+#include "DebugPort.h"
+#include "TestManager.h"
+#include "DebugManager.h"
+#include "algo.h"
+#include "Hmi.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,6 +60,16 @@ osThreadId defaultTaskHandle;
 osTimerId TimerHandle;
 osSemaphoreId I2CSemaphoreHandle;
 /* USER CODE BEGIN PV */
+osThreadId TemperatureMeasHandle;
+osThreadId StepperManagerTHandle;
+osThreadId DebugManagerTHandle;
+osThreadId HmiManagerTHandle;
+
+#define MAJOR_VER 1
+#define MINOR_VER 0
+#define REVISION_VER 8
+
+RTC_TimeTypeDef sTime;
 
 /* USER CODE END PV */
 
@@ -62,12 +79,14 @@ static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
-static void MX_I2C1_Init(void);
+void MX_I2C1_Init(void);
 static void MX_RTC_Init(void);
 void StartDefaultTask(void const * argument);
 void TimerCallback(void const * argument);
 
 /* USER CODE BEGIN PFP */
+//void TemperatureManager(void const * argument);
+//void Steppermanager(void const * argument);
 
 /* USER CODE END PFP */
 
@@ -110,7 +129,6 @@ int main(void)
   MX_I2C1_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,RESET);
 
   /* USER CODE END 2 */
 
@@ -147,6 +165,76 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  osThreadDef(TemperatureMeas, TemperatureManager, osPriorityNormal, 0, 512); //TODO: Validate maximum stack needed adding printf end in Hard Fault handler
+  TemperatureMeasHandle = osThreadCreate(osThread(TemperatureMeas), NULL);
+
+  osThreadDef(StepperManagerT, Steppermanager, osPriorityNormal, 0, 128);
+  StepperManagerTHandle = osThreadCreate(osThread(StepperManagerT), NULL);
+
+  osThreadDef(DebugManagerT, DebugManager, osPriorityNormal, 0, 512);
+  DebugManagerTHandle = osThreadCreate(osThread(DebugManagerT), NULL);
+
+  osThreadDef(HmiManagerT, HmiManager, osPriorityNormal, 0, 128);
+  HmiManagerTHandle = osThreadCreate(osThread(HmiManagerT), NULL);
+
+  printf("-------------------------------\n\r"); //TODO: if we remove this call, go to hardfault handler  or fail to execute
+
+    switch (readModel())
+    {
+    	  case HEATMAX:
+  	   	  printf("HeatCom CaddyAdv");
+  	  break;
+    	  case CADDY_ADVANCED:
+    		  printf("Caddy Advanced");
+  	  break;
+    	  case HEATPACK:
+    		  printf("Heatpack");
+  	  break;
+    	  case MINI_CADDY:
+    		  printf("Mini Caddy");
+    	  break;
+    	  case HEATPRO:
+    		  printf("HeatPro");
+  	  break;
+    	  case MAX_CADDY:
+    		  printf("Max Caddy");
+  	  break;
+    	  default:
+    		  printf("Invalid Model");
+    		break;
+    }
+    uint32_t j=0; //for a dumbass delay
+    HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
+    HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET);
+    HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET);
+    for(j=0;j<10000000;j++){asm("NOP");}
+    printf(" Version %i.%i.%i\n\r",MAJOR_VER,MINOR_VER,REVISION_VER);
+
+
+    int i=0;
+
+    for(i=0;i<MAJOR_VER;i++)
+    {
+  	  HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
+  	  for(j=0;j<5000000;j++){asm("NOP");}
+  	  HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
+  	  for(j=0;j<5000000;j++){asm("NOP");}
+    }
+    for(i=0;i<MINOR_VER;i++)
+    {
+  	  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,RESET);
+  	  for(j=0;j<5000000;j++){asm("NOP");}
+  	  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET);
+  	  for(j=0;j<5000000;j++){asm("NOP");}
+    }
+    for(i=0;i<REVISION_VER;i++)
+    {
+  	  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,RESET);
+  	  for(j=0;j<5000000;j++){asm("NOP");}
+  	  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET);
+  	  for(j=0;j<5000000;j++){asm("NOP");}
+    }
+
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -220,7 +308,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_I2C1_Init(void)
+void MX_I2C1_Init(void)
 {
 
   /* USER CODE BEGIN I2C1_Init 0 */
@@ -429,11 +517,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, STATUS_LED0_Pin|STATUS_LED1_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Buzzer_ON_Pin|Step3_DIR_Pin|AFK_Var_Pin|uc_Stepper_SleepA8_Pin
-                          |USB_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, Buzzer_ON_Pin|Step3_DIR_Pin|AFK_Var_Pin|USB_ENABLE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port, STATUS_LED2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, STATUS_LED2_Pin|Button_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, Step3_STEP_Pin|Step3_LowCurrent_Pin|Stepper_HalfStep_Pin|Step1_STEP_Pin
@@ -460,9 +547,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Buzzer_ON_Pin STATUS_LED2_Pin Step3_DIR_Pin AFK_Var_Pin
-                           uc_Stepper_SleepA8_Pin USB_ENABLE_Pin */
+                           Button_LED_Pin USB_ENABLE_Pin */
   GPIO_InitStruct.Pin = Buzzer_ON_Pin|STATUS_LED2_Pin|Step3_DIR_Pin|AFK_Var_Pin
-                          |uc_Stepper_SleepA8_Pin|USB_ENABLE_Pin;
+                          |Button_LED_Pin|USB_ENABLE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -518,13 +605,6 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
     osDelay(1);
-    if(!HAL_GPIO_ReadPin(Limit_switch1_GPIO_Port,Limit_switch1_Pin) || !HAL_GPIO_ReadPin(Limit_switch2_GPIO_Port,Limit_switch2_Pin))
-    {
-    	HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
-    }else
-    {
-    	HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
-    }
   }
   /* USER CODE END 5 */
 }
@@ -533,7 +613,7 @@ void StartDefaultTask(void const * argument)
 void TimerCallback(void const * argument)
 {
   /* USER CODE BEGIN TimerCallback */
-
+	osTimerStop(TimerHandle);
   /* USER CODE END TimerCallback */
 }
 
@@ -565,6 +645,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+	printf("Error Handler called");
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
