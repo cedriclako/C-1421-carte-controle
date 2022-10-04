@@ -74,7 +74,6 @@ uint8_t dummy =0;
 void TemperatureManager(void const * argument)
 {
   /* USER CODE BEGIN TemperatureManager */
-	printf("\n Temperature Manager running");
 	osSemaphoreDef(I2CSemaphoreHandle);
     I2CSemaphoreHandle = osSemaphoreCreate(osSemaphore(I2CSemaphoreHandle), 1);
     osSemaphoreWait(I2CSemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
@@ -101,7 +100,7 @@ void TemperatureManager(void const * argument)
 
     	//coldjunction temperature
 		//temp1 = uCAdcData[1]*3.3/4096;  //Vout=TC x TA + VoC where TC = 10mV/C V0C->500mV
-		temp1 = 0.600;		///TODO: fetch this value from external ADC (I2C)
+		temp1 = 0.800;		///TODO: fetch this value from external ADC (I2C)
 		tColdJunction = (temp1-0.500)/.010;
 
 		for (i=FrontThermocouple;i<PlenumRtd;i++) //we don't need to read ADC input 3 and 4
@@ -112,6 +111,7 @@ void TemperatureManager(void const * argument)
 			if(osErrorOS == osSemaphoreWait(I2CSemaphoreHandle,1000)) //wait 500ms for an answer or retry
 			{
 				//clearly something is wrong Abort the transmission
+				//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
 				HAL_I2C_Master_Abort_IT(&hi2c1,ADC_ADDRESS_7BIT);
 				HAL_I2C_DeInit(&hi2c1);
 				osDelay(100);
@@ -121,6 +121,7 @@ void TemperatureManager(void const * argument)
 			else
 			{
 				//do something in the callback
+				HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,RESET);
 				do{
 					DataReady = false;
 					osDelay(300); //wait to give the chance to the ADC to complete the conversion 1/3.75 = 266ms
@@ -152,7 +153,7 @@ void TemperatureManager(void const * argument)
 		}
 
     	//temp1 = uCAdcData[0]*3.3/4096; //12bit internal ADC reference to 3.3V
-		temp1 = 1.8;
+		temp1 = 2.0;
 		if(temp1 < 1.65)
 		{
 			//polynome appoximation go nuts below that voltage range

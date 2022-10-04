@@ -179,6 +179,47 @@ const MotorOpeningsParam_t BoostMotorParam[NumberOfFurnaceModel] =
 	}
 };
 
+const MotorOpeningsParam_t SecondaryMotorParam[NumberOfFurnaceModel] =
+{//Added for current PCB model (parameters must be adjusted by user)
+	{
+		.MaxWaiting = 6,
+		.MinWaiting = 6,
+		.MaxReload = 97,
+		.MinReload = 58,
+		.MaxTempRise = 85,
+		.MinTempRise = 17,
+		.MaxCombHigh = 70,
+		.MinCombHigh = 14,
+		.MaxCombLow = 39,
+		.MinCombLow = 15,
+		.MaxCombSuperLow = 25,
+		.MinCombSuperLow = 5,
+		.MaxCoalHigh = 0,
+		.MinCoalHigh = 0,
+		.MaxCoalLow = 0,
+		.MinCoalLow = 0,
+	},
+	{
+		.MaxWaiting = 6,
+		.MinWaiting = 6,
+		.MaxReload = 97,
+		.MinReload = 50,
+		.MaxTempRise = 50,
+		.MinTempRise = 17,
+		.MaxCombHigh = 100,
+		.MinCombHigh = 14,
+		.MaxCombLow = 30,
+		.MinCombLow = 21,
+		.MaxCombSuperLow = 11,
+		.MinCombSuperLow = 11,
+		.MaxCoalHigh = 0,
+		.MinCoalHigh = 0,
+		.MaxCoalLow = 0,
+		.MinCoalLow = 0,
+	}
+};
+
+
 #else
 const MotorOpeningsParam_t PrimaryMotorParam[NumberOfFurnaceModel] =
 {
@@ -260,6 +301,47 @@ const MotorOpeningsParam_t BoostMotorParam[NumberOfFurnaceModel] =
 	}
 };
 
+const MotorOpeningsParam_t SecondaryMotorParam[NumberOfFurnaceModel] =
+{//Added for current PCB model (parameters must be adjusted by user)
+	{	//HeatCommander
+		.MaxWaiting = 13,
+		.MinWaiting = 13,
+		.MaxReload = 200,
+		.MinReload = 100,
+		.MaxTempRise = 100,
+		.MinTempRise = 35,
+		.MaxCombHigh = 200,
+		.MinCombHigh = 28,
+		.MaxCombLow = 61,
+		.MinCombLow = 43,
+		.MaxCombSuperLow = 22,
+		.MinCombSuperLow = 22,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 35,
+		.MaxCoalLow = 14,
+		.MinCoalLow = 14,
+	},
+	{    //HeatPro
+		.MaxWaiting = 13,
+		.MinWaiting = 13,
+		.MaxReload = 200,
+		.MinReload = 100,
+		.MaxTempRise = 100,
+		.MinTempRise = 35,
+		.MaxCombHigh = 200,
+		.MinCombHigh = 28,
+		.MaxCombLow = 61,
+		.MinCombLow = 43,
+		.MaxCombSuperLow = 22,
+		.MinCombSuperLow = 22,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 35,
+		.MaxCoalLow = 14,
+		.MinCoalLow = 14,
+	}
+};
+
+
 #endif
 
 //state machine variable and initial values
@@ -268,6 +350,7 @@ static bool reloadingEvent = false;
 bool fanPauseRequired = false;
 static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_SECONDARY_FULL_OPEN);
 static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
+
 Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
 Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
 

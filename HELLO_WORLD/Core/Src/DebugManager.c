@@ -22,6 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 #include "cmsis_os.h"
+#include "DebugManager.h"
+#include "DebugPort.h"
 #include "stm32f1xx_hal.h"
 #include "TemperatureManager.h"
 #include "MotorManager.h"
@@ -31,8 +33,6 @@
 #include "main.h" //@@@@for the LED toggle to be removed
 #include "algo.h"
 #include <stdio.h>
-#include "DebugPort.h"
-
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/

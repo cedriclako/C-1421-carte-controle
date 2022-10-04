@@ -130,12 +130,14 @@ void Steppermanager(void const * argument)
 //	vStepperPositioning(tman_getMoteur2Req(),&PrimarySecondaryPosition,PrimaryStepper);
 //#else
 	osDelay(50);
+
 	Algo_task(osKernelSysTick());
 	if(Algo_getState() != PRODUCTION_TEST)
 	{
 		vStepperPositioning(Algo_getGrill(),&stepperPosition[BoostStepper],BoostStepper);
 		vStepperPositioning(Algo_getPrimary(),&stepperPosition[PrimaryStepper],PrimaryStepper);
 	}
+
 //#endif
   }
   /* USER CODE END Steppermanager */

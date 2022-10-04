@@ -1,12 +1,10 @@
+#include "main.h"
 #include "DebugPort.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal.h"
 #include <sys/unistd.h>
 #include <sys/errno.h>
 
-UART_HandleTypeDef huart1;
-UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart3;
 
 //void stdio_setup(int no_init)
 //{
@@ -18,6 +16,10 @@ UART_HandleTypeDef huart3;
 #ifdef __cplusplus
  extern "C" {
 #endif
+
+//UART_HandleTypeDef huart3;
+//UART_HandleTypeDef huart2;
+//UART_HandleTypeDef huart1;
 
 int __io_putchar(int ch) {
   HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);

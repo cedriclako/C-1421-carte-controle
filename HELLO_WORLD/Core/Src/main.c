@@ -53,8 +53,6 @@ I2C_HandleTypeDef hi2c1;
 RTC_HandleTypeDef hrtc;
 
 UART_HandleTypeDef huart1;
-UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 osTimerId TimerHandle;
@@ -76,11 +74,8 @@ RTC_TimeTypeDef sTime;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART1_UART_Init(void);
-static void MX_USART2_UART_Init(void);
-static void MX_USART3_UART_Init(void);
-void MX_I2C1_Init(void);
 static void MX_RTC_Init(void);
+static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void const * argument);
 void TimerCallback(void const * argument);
 
@@ -123,11 +118,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
   MX_I2C1_Init();
   MX_RTC_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -165,6 +158,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+
   osThreadDef(TemperatureMeas, TemperatureManager, osPriorityNormal, 0, 512); //TODO: Validate maximum stack needed adding printf end in Hard Fault handler
   TemperatureMeasHandle = osThreadCreate(osThread(TemperatureMeas), NULL);
 
@@ -176,64 +170,6 @@ int main(void)
 
   osThreadDef(HmiManagerT, HmiManager, osPriorityNormal, 0, 128);
   HmiManagerTHandle = osThreadCreate(osThread(HmiManagerT), NULL);
-
-  printf("-------------------------------\n\r"); //TODO: if we remove this call, go to hardfault handler  or fail to execute
-
-    switch (readModel())
-    {
-    	  case HEATMAX:
-  	   	  printf("HeatCom CaddyAdv");
-  	  break;
-    	  case CADDY_ADVANCED:
-    		  printf("Caddy Advanced");
-  	  break;
-    	  case HEATPACK:
-    		  printf("Heatpack");
-  	  break;
-    	  case MINI_CADDY:
-    		  printf("Mini Caddy");
-    	  break;
-    	  case HEATPRO:
-    		  printf("HeatPro");
-  	  break;
-    	  case MAX_CADDY:
-    		  printf("Max Caddy");
-  	  break;
-    	  default:
-    		  printf("Invalid Model");
-    		break;
-    }
-    uint32_t j=0; //for a dumbass delay
-    HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
-    HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET);
-    HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET);
-    for(j=0;j<10000000;j++){asm("NOP");}
-    printf(" Version %i.%i.%i\n\r",MAJOR_VER,MINOR_VER,REVISION_VER);
-
-
-    int i=0;
-
-    for(i=0;i<MAJOR_VER;i++)
-    {
-  	  HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
-  	  for(j=0;j<5000000;j++){asm("NOP");}
-  	  HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
-  	  for(j=0;j<5000000;j++){asm("NOP");}
-    }
-    for(i=0;i<MINOR_VER;i++)
-    {
-  	  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,RESET);
-  	  for(j=0;j<5000000;j++){asm("NOP");}
-  	  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET);
-  	  for(j=0;j<5000000;j++){asm("NOP");}
-    }
-    for(i=0;i<REVISION_VER;i++)
-    {
-  	  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,RESET);
-  	  for(j=0;j<5000000;j++){asm("NOP");}
-  	  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET);
-  	  for(j=0;j<5000000;j++){asm("NOP");}
-    }
 
   /* USER CODE END RTOS_THREADS */
 
@@ -270,7 +206,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
-  RCC_OscInitStruct.Prediv1Source = RCC_PREDIV1_SOURCE_HSE;
+  RCC_OscInitStruct.Prediv1Source = RCC_PREDIV1_SOURCE_PLL2;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
@@ -428,72 +364,6 @@ static void MX_USART1_UART_Init(void)
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART3_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
-  huart3.Init.WordLength = UART_WORDLENGTH_8B;
-  huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -514,7 +384,7 @@ static void MX_GPIO_Init(void)
                           |Step2_RESET_Pin|Step2_ENABLE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, STATUS_LED0_Pin|STATUS_LED1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, Step3_RESET_Pin|STATUS_LED1_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, Buzzer_ON_Pin|Step3_DIR_Pin|AFK_Var_Pin|USB_ENABLE_Pin, GPIO_PIN_RESET);
@@ -529,10 +399,10 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(Step1_DIR_GPIO_Port, Step1_DIR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Step2_LowCurrent_Pin STATUS_LED0_Pin STATUS_LED1_Pin uc_Stepper_Sleep_Pin
+  /*Configure GPIO pins : Step2_LowCurrent_Pin Step3_RESET_Pin STATUS_LED1_Pin uc_Stepper_Sleep_Pin
                            Step3_ENABLE_Pin SPEED2_COIL_Pin SPEED3_COIL_Pin Step2_DIR_Pin
                            Step1_LowCurrent_Pin Step2_STEP_Pin Step2_RESET_Pin Step2_ENABLE_Pin */
-  GPIO_InitStruct.Pin = Step2_LowCurrent_Pin|STATUS_LED0_Pin|STATUS_LED1_Pin|uc_Stepper_Sleep_Pin
+  GPIO_InitStruct.Pin = Step2_LowCurrent_Pin|Step3_RESET_Pin|STATUS_LED1_Pin|uc_Stepper_Sleep_Pin
                           |Step3_ENABLE_Pin|SPEED2_COIL_Pin|SPEED3_COIL_Pin|Step2_DIR_Pin
                           |Step1_LowCurrent_Pin|Step2_STEP_Pin|Step2_RESET_Pin|Step2_ENABLE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -553,6 +423,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Limit_switch3_Pin */
@@ -578,6 +460,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PB10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pin : Step1_DIR_Pin */
   GPIO_InitStruct.Pin = Step1_DIR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -601,10 +495,68 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+	printf("-------------------------------\n\r"); //TODO: if we remove this call, go to hardfault handler  or fail to execute
+
+	    switch (readModel())
+	    {
+	    	  case HEATMAX:
+	  	   	  printf("HeatCom CaddyAdv");
+	  	  break;
+	    	  case CADDY_ADVANCED:
+	    		  printf("Caddy Advanced");
+	  	  break;
+	    	  case HEATPACK:
+	    		  printf("Heatpack");
+	  	  break;
+	    	  case MINI_CADDY:
+	    		  printf("Mini Caddy");
+	    	  break;
+	    	  case HEATPRO:
+	    		  printf("HeatPro");
+	  	  break;
+	    	  case MAX_CADDY:
+	    		  printf("Max Caddy");
+	  	  break;
+	    	  default:
+	    		  printf("Invalid Model");
+	    		break;
+	    }
+	    uint32_t j=0; //for a dumbass delay
+	    //HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
+	    HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET);
+	    HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET);
+	    for(j=0;j<10000000;j++){asm("NOP");}
+	    printf(" Version %i.%i.%i\n\r",MAJOR_VER,MINOR_VER,REVISION_VER);
+
+
+	    int i=0;
+
+	    for(i=0;i<MAJOR_VER;i++)
+	    {
+	  	  //HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
+	  	  //for(j=0;j<5000000;j++){asm("NOP");}
+	  	  //HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET);
+	  	  //for(j=0;j<5000000;j++){asm("NOP");}
+	    }
+	    for(i=0;i<MINOR_VER;i++)
+	    {
+	  	  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,RESET);
+	  	  for(j=0;j<5000000;j++){asm("NOP");}
+	  	  HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET);
+	  	  for(j=0;j<5000000;j++){asm("NOP");}
+	    }
+	    for(i=0;i<REVISION_VER;i++)
+	    {
+	  	  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,RESET);
+	  	  for(j=0;j<5000000;j++){asm("NOP");}
+	  	  HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET);
+	  	  for(j=0;j<5000000;j++){asm("NOP");}
+	    }
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
+
   }
   /* USER CODE END 5 */
 }

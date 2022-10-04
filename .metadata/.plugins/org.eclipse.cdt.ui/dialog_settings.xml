@@ -8,9 +8,14 @@
 		<item key="updateReferences" value="true"/>
 	</section>
 	<section name="org.eclipse.cdt.ui.text.hover.CMacroExpansionExploration.internal">
-		<item key="size.width" value="595"/>
+		<item key="size.width" value="714"/>
 		<item key="size.height" value="180"/>
 	</section>
 	<section name="PDOMSearchPage">
+		<item key="caseSensitive" value="false"/>
+		<item key="searchFlags" value="227191"/>
+		<list key="previousPatterns">
+			<item value="printf"/>
+		</list>
 	</section>
 </section>

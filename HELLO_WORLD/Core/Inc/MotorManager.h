@@ -16,6 +16,7 @@ typedef enum
 {
     PrimaryStepper =  0,
     BoostStepper,
+	//SecondaryStepper,
     NumberOfMotors
 
 }motor_t;

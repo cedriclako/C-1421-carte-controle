@@ -32,11 +32,11 @@
 #define SetButtonLed_ON() HAL_GPIO_WritePin(Button_LED_GPIO_Port,Button_LED_Pin,SET)
 #define SetButtonLed_OFF() HAL_GPIO_WritePin(Button_LED_GPIO_Port,Button_LED_Pin,RESET)
 
-#define Set_STATUS_BIT0_ON() HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET)
+//#define Set_STATUS_BIT0_ON() HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET)
 #define Set_STATUS_BIT1_ON() HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,RESET)
 #define Set_STATUS_BIT2_ON() HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,RESET)
 
-#define Set_STATUS_BIT0_OFF() HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET)
+//#define Set_STATUS_BIT0_OFF() HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,SET)
 #define Set_STATUS_BIT1_OFF() HAL_GPIO_WritePin(STATUS_LED1_GPIO_Port,STATUS_LED1_Pin,SET)
 #define Set_STATUS_BIT2_OFF() HAL_GPIO_WritePin(STATUS_LED2_GPIO_Port,STATUS_LED2_Pin,SET)
 
@@ -87,7 +87,6 @@ void HmiManager()
 	static uint8_t buttonblinkrequirecount = 0;
     bool tStatDemand;
     bool interlockActive;
-    printf("\n HMI manager running");
 
 	for(;;)
 	{
@@ -217,7 +216,7 @@ void HmiManager()
 				Set_STATUS_BIT2_OFF();
 				break;
 		}
-		tStatDemand?Set_STATUS_BIT0_ON():Set_STATUS_BIT0_OFF();
+		//tStatDemand?Set_STATUS_BIT0_ON():Set_STATUS_BIT0_OFF();
 		interlockActive?Set_STATUS_BIT1_ON():Set_STATUS_BIT1_OFF();
 	}
 }

@@ -42,12 +42,15 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+//extern UART_HandleTypeDef huart3;
+//extern UART_HandleTypeDef huart2;
+//extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart1;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-void MX_I2C1_Init(void);
+extern void MX_I2C1_Init(void);
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -64,8 +67,8 @@ void Error_Handler(void);
 #define Limit_switch1_GPIO_Port GPIOC
 #define Limit_switch2_Pin GPIO_PIN_1
 #define Limit_switch2_GPIO_Port GPIOC
-#define STATUS_LED0_Pin GPIO_PIN_2
-#define STATUS_LED0_GPIO_Port GPIOC
+#define Step3_RESET_Pin GPIO_PIN_2
+#define Step3_RESET_GPIO_Port GPIOC
 #define STATUS_LED1_Pin GPIO_PIN_3
 #define STATUS_LED1_GPIO_Port GPIOC
 #define Buzzer_ON_Pin GPIO_PIN_1
@@ -130,6 +133,7 @@ void Error_Handler(void);
 #define Button_Input_GPIO_Port GPIOB
 #define USB_Fault_Pin GPIO_PIN_9
 #define USB_Fault_GPIO_Port GPIOB
+void   MX_I2C1_Init(void);
 /* USER CODE BEGIN Private defines */
 extern RTC_TimeTypeDef sTime;
 extern RTC_HandleTypeDef hrtc;
