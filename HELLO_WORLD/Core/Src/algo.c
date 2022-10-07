@@ -348,8 +348,9 @@ const MotorOpeningsParam_t SecondaryMotorParam[NumberOfFurnaceModel] =
 static State currentState = ZEROING_STEPPER;
 static bool reloadingEvent = false;
 bool fanPauseRequired = false;
-static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_SECONDARY_FULL_OPEN);
+static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_FULL_OPEN);
 static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
+static AirInput secondary = AirInput_init(SECONDARY_MINIMUM_OPENING, SECONDARY_FULL_OPEN);
 
 Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
 Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
@@ -409,8 +410,9 @@ void Algo_init() {
   }
 
   reloadingEvent = false;
-  AirInput_forceAperture(&primary, PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
+  AirInput_forceAperture(&primary, PRIMARY_CLOSED);
   AirInput_forceAperture(&grill, GRILL_CLOSED);
+  AirInput_forceAperture(&secondary, SECONDARY_CLOSED);
   baffleTemperature = 0;
   rearTemperature = 0;
   thermostatRequest = false;
@@ -469,8 +471,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case ZEROING_STEPPER:
 		AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MinWaiting);
 		AirInput_forceAperture(&grill, BoostMotorParam[Model].MinWaiting);
+		AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MinWaiting);
 		AllMotorToZero(); //set all motors to zero
-		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary))
+		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
 		};
 		nextState = WAITING;
@@ -479,6 +482,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     	AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
     	AirInput_forceAperture(&grill, BoostMotorParam[Model].MaxWaiting);// GRILL_CLOSED);
+    	AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MaxWaiting);
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
 
@@ -501,6 +505,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 		AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
 		AirInput_forceAperture(&grill, BoostMotorParam[Model].MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
+		AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MaxReload);
 
 		if (((baffleTemperature > TemperatureParam[Model].IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
@@ -521,6 +526,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		if(historyState != currentState){
 		  AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxTempRise);
 		  AirInput_forceAperture(&grill, BoostMotorParam[Model].MaxTempRise);
+		  AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MaxTempRise);
 		  historyState = currentState;
 		}
 #if PID_CONTROL_ON
@@ -768,7 +774,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case OVERTEMP:
     case SAFETY:
       AirInput_forceAperture(&grill, GRILL_CLOSED);
-      AirInput_forceAperture(&primary, PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
+      AirInput_forceAperture(&primary, PRIMARY_CLOSED);
 
       if ((baffleTemperature < TemperatureParam[Model].OverheatBaffle)
     		  && (rearTemperature < TemperatureParam[Model].OverheatChamber)

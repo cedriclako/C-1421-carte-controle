@@ -202,14 +202,15 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
-  RCC_OscInitStruct.Prediv1Source = RCC_PREDIV1_SOURCE_PLL2;
+  RCC_OscInitStruct.Prediv1Source = RCC_PREDIV1_SOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
   RCC_OscInitStruct.PLL2.PLL2State = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -379,12 +380,12 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, Step2_LowCurrent_Pin|uc_Stepper_Sleep_Pin|Step3_ENABLE_Pin|SPEED2_COIL_Pin
-                          |SPEED3_COIL_Pin|Step2_DIR_Pin|Step1_LowCurrent_Pin|Step2_STEP_Pin
-                          |Step2_RESET_Pin|Step2_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, Step2_LowCurrent_Pin|uc_Stepper_Sleep_Pin|SPEED2_COIL_Pin|SPEED3_COIL_Pin
+                          |Step2_DIR_Pin|Step1_LowCurrent_Pin|Step2_STEP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, Step3_RESET_Pin|STATUS_LED1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, Step3_RESET_Pin|STATUS_LED1_Pin|Step3_ENABLE_Pin|Step2_RESET_Pin
+                          |Step2_ENABLE_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, Buzzer_ON_Pin|Step3_DIR_Pin|AFK_Var_Pin|USB_ENABLE_Pin, GPIO_PIN_RESET);
@@ -393,11 +394,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, STATUS_LED2_Pin|Button_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, Step3_STEP_Pin|Step3_LowCurrent_Pin|Stepper_HalfStep_Pin|Step1_STEP_Pin
-                          |Step1_RESET_Pin|Step1_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Step3_STEP_Pin|Step3_LowCurrent_Pin|Stepper_HalfStep_Pin|Step1_STEP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(Step1_DIR_GPIO_Port, Step1_DIR_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, Step1_RESET_Pin|Step1_ENABLE_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : Step2_LowCurrent_Pin Step3_RESET_Pin STATUS_LED1_Pin uc_Stepper_Sleep_Pin
                            Step3_ENABLE_Pin SPEED2_COIL_Pin SPEED3_COIL_Pin Step2_DIR_Pin
@@ -556,6 +559,7 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
     osDelay(1);
+
 
   }
   /* USER CODE END 5 */

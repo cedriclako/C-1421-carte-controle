@@ -224,14 +224,14 @@ void HmiManager()
 void setStatusBit(uint8_t status)
 {
 
-	if(status & 4)
-	{
-		Set_STATUS_BIT0_ON();
-	}
-	else
-	{
-		Set_STATUS_BIT0_OFF();
-	}
+	//if(status & 4)
+	//{
+		//Set_STATUS_BIT0_ON();
+	//}
+	//else
+	//{
+		//Set_STATUS_BIT0_OFF();
+	//}
 	if(status & 2)
 	{
 		Set_STATUS_BIT1_ON();

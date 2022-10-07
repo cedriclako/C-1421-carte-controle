@@ -16,7 +16,7 @@ typedef enum
 {
     PrimaryStepper =  0,
     BoostStepper,
-	//SecondaryStepper,
+	SecondaryStepper,
     NumberOfMotors
 
 }motor_t;
@@ -89,9 +89,12 @@ typedef struct FanSpeedKipKopParam{
 #define GRILL_MINIMUM_OPENING 				GRILL_CLOSED
 #define GRILL_FULL_OPEN                     100
 #define PRIMARY_MINIMUM_OPENING				13 //12degree/0.9 =13step
-#define PRIMARY_CLOSED_SECONDARY_FULL_OPEN   PRIMARY_MINIMUM_OPENING
-#define PRIMARY_SECONDARY_FULL_OPEN   200
-#define STEP_RANGE_PRIMARY   (PRIMARY_SECONDARY_FULL_OPEN - PRIMARY_MINIMUM_OPENING)
+#define PRIMARY_CLOSED  					PRIMARY_MINIMUM_OPENING
+#define PRIMARY_FULL_OPEN			   		200
+#define SECONDARY_MINIMUM_OPENING			13
+#define SECONDARY_CLOSED					SECONDARY_MINIMUM_OPENING
+#define SECONDARY_FULL_OPEN				200
+#define STEP_RANGE_PRIMARY   (PRIMARY_FULL_OPEN - PRIMARY_MINIMUM_OPENING)
 #define STEP_RANGE_GRILL   (GRILL_FULL_OPEN - GRILL_CLOSED)
 
 #endif
