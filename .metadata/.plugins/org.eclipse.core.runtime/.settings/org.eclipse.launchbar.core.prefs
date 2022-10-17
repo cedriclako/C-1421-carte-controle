@@ -1,9 +1,10 @@
 LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/arch=x86_64
 LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/name=Local
 LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/os=win32
-configDescList=org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 PCB REVC GRILL NORMAL,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 PCB REVC,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 Release,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 Test Ressort,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:HELLO_WORLD Debug
+configDescList=org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 PCB REVC GRILL NORMAL,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 PCB REVC,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 Release,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020 Test Ressort,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:HELLO_WORLD Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:UFEC23 Debug
 eclipse.preferences.version=1
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020\ Debug/activeLaunchMode=run
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Fournaise2020\ Debug/activeLaunchTarget=null\:---
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:HELLO_WORLD\ Debug/activeLaunchMode=run
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:HELLO_WORLD\ Debug/activeLaunchTarget=null\:---
+org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:UFEC23\ Debug/activeLaunchMode=run

@@ -1,0 +1,105 @@
+#ifndef ALGO_H
+#define ALGO_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#define SAMPLING_RATE  0.2  // Unit: [samples/s]
+
+#define SECONDS(x) (x*1000)
+#define MINUTES(x) (SECONDS(60)*x)
+#define CELSIUS_TO_FAHRENHEIT(TEMP) (TEMP*9/5+32)
+#define FAHRENHEIT_TO_CELSIUS(TEMP) ((TEMP-32)*5/9)
+
+typedef enum {
+  ZEROING_STEPPER,
+  WAITING,
+  RELOAD_IGNITION,
+  TEMPERATURE_RISE,
+  COMBUSTION_LOW,
+  COMBUSTION_LOW2,
+  COMBUSTION_HIGH,
+  COAL_LOW,
+  FLAME_LOSS,
+  COAL_HIGH,
+  OVERTEMP,
+  SAFETY,
+  PRODUCTION_TEST,
+#ifdef DEMO_MODE
+  COMBUSTION_HIGH_OPEN,
+  COMBUSTION_HIGH_CLOSE,
+  COMBUSTION_LOW_OPEN,
+  COMBUSTION_LOW_CLOSE,
+#endif
+  NB_OF_STATE
+} State;
+
+typedef enum {
+  ALGO_DEL_OFF,
+  ALGO_DEL_BLINKING,
+  ALGO_DEL_ON
+} Algo_DELState;
+
+
+extern float Algo_Simulator_slopeTempAvant;
+extern int16_t PIDTrapPosition;
+extern bool fanPauseRequired;
+extern uint32_t getStateTime();
+extern void Algo_setSimulatorMode(bool simulatorMode);
+extern void Algo_setState(State state);
+extern State Algo_getState();
+extern int Algo_getBaffleTemp();
+extern int Algo_getRearTemp();
+extern int Algo_getPlenumTemp();
+extern void managePlenumSpeed(int plenumTemp, bool thermostatRequest, uint32_t Time_ms);
+extern void manageButtonLed();
+
+/* Parameter temp in [tenth *C] */
+extern void Algo_setBaffleTemp(int temp);
+
+/* Parameter temp in [tenth *C] */
+extern void Algo_setRearTemp(int temp);
+
+/* Parameter temp in [tenth *C] */
+void Algo_setPlenumTemp(int temp);
+
+/* Returns a value in [degrees] */
+extern int Algo_getPrimary();
+extern int Algo_getSecondary();
+
+/* Returns a value in [degrees] */
+extern int Algo_getGrill();
+uint32_t Algo_getTimeOfReloadRequest();
+
+extern int Algo_getPrimary();
+
+
+extern float Algo_getBaffleTempSlope();
+
+bool Algo_getThermostatRequest();
+void Algo_setThermostatRequest(bool demande);
+
+Algo_DELState Algo_getStateFinChargemenent();
+Algo_DELState Algo_getStateFermeturePorte();
+
+void Algo_setInterlockRequest(bool demand);
+bool Algo_getInterlockRequest();
+
+void Algo_startChargement();
+bool Algo_IsFanPauseRequested();
+void Algo_clearReloadRequest();
+
+void Algo_init();
+
+/* currentTime_ms is in [ms] */
+void Algo_task(uint32_t currentTime_ms);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //ALGO_H

@@ -1,0 +1,83 @@
+/*
+Solutions Novika.
+Copyright 2021
+===========================================================================
+
+Filename :      ParticlesManager.c
+
+Author(s):      Charles Richard, CPI # 6045522
+
+Public prefix : ParticlesManager
+
+Project # : C-1421
+
+Product: UFEC23
+
+Creation date:  2022/10/12
+
+Description:    Communication channel with particles measurement board
+
+===========================================================================
+
+Modifications
+-------------
+
+By    |   Date     | Version | Description
+------+------------+---------+---------------------------------------------
+CR    | 2022/10/12 | -       | Creation
+===========================================================================
+*/
+
+#include "ParticlesManager.h"
+#include "main.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal.h"
+
+
+extern UART_HandleTypeDef huart3;
+osSemaphoreId MP_UART_SemaphoreHandle;
+
+
+void ParticlesManager(void const * argument) {
+
+	osSemaphoreDef(MP_UART_SemaphoreHandle);
+	MP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(MP_UART_SemaphoreHandle), 1);
+	osSemaphoreWait(MP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
+
+	for(;;) {
+
+
+	}
+
+}
+
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == USART3)
+	{
+		osSemaphoreRelease(MP_UART_SemaphoreHandle);
+	}
+
+
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == USART3)
+	{
+		osSemaphoreRelease(MP_UART_SemaphoreHandle);
+	}
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == USART3)
+	{
+		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC
+	}
+
+}

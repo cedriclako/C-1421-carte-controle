@@ -1,0 +1,933 @@
+#include "algo.h"
+#include "air_input.h"
+#include "slope.h"
+#include "cmsis_os.h"
+#include "main.h"
+#include "DebugPort.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include "Pid.h"
+#include "ProdTest.h"
+#include "MotorManager.h"
+#include "Hmi.h"
+
+
+typedef struct MotorOpeningsParam{
+	int16_t MaxWaiting; //max environ 32000 dixieme de f
+	int16_t MinWaiting;
+	int16_t MaxReload;
+	int16_t MinReload;
+	int16_t MaxTempRise;
+	int16_t MinTempRise;
+	int16_t MaxCombLow;
+	int16_t MinCombLow;
+	int16_t MaxCombSuperLow;
+	int16_t MinCombSuperLow;
+	int16_t MaxCombHigh;
+	int16_t MinCombHigh;
+	int16_t MaxCoalHigh;
+	int16_t MinCoalHigh;
+	int16_t MaxCoalLow;
+	int16_t MinCoalLow;
+}MotorOpeningsParam_t;
+
+typedef struct CombTempParam{
+	int16_t WaitingToIgnition; //max environ 32000dixieme de f
+	int16_t IgnitionToTrise;
+	int16_t TriseTargetLow;
+	int16_t TriseTargetHigh;
+	int16_t CombLowTarget;
+	int16_t CombHighTarget;
+	int16_t CombLowtoSuperLow;
+	int16_t FlameLoss;
+	int16_t FlameLossDelta;
+	int16_t CoalCrossOverRearLow;
+	int16_t CoalCrossOverRearHigh;
+	int16_t CoalDeltaTemp;
+	int16_t CoalStoveTemp;
+	int16_t OverheatPlenum;
+	int16_t OverheatPlenumExit;
+	int16_t OverheatBaffle;
+	int16_t OverheatChamber;
+}CombTempParam_t;
+
+
+
+const CombTempParam_t TemperatureParam =
+{
+	//UFEC23 - Test du 2022-09-07 ajustement pour gtf typical load type               //tenth of F
+	. WaitingToIgnition = 1000,
+	. IgnitionToTrise = 5250,        //était 450 avant les vacances GTF
+	. TriseTargetLow = 5750,         //était 600 2022-03-04 GTF
+	. TriseTargetHigh = 7000,        //était 575 avant les vacances gtf
+	. CombLowTarget = 6600,          //était 650 2022-3-04 GTF
+	. CombHighTarget = 7000,         //était 932 dans HC, tentative à 900 2021-11-23 GTF (on s'en sert au coal low...)
+	. CombLowtoSuperLow = 7000,      //était 500 2022-03-04 GTF
+	. FlameLoss = 7500,              //RETOUR A 750 SUR LE REAR TEMPERATUR
+	. FlameLossDelta = 1750,          //CHANGEMENT POUR 175 GTF 2022-08-30
+	. CoalCrossOverRearLow = 8000,   //était 750 dans HC, ramener à 750 2021-11-23 GTF
+	. CoalCrossOverRearHigh = 8500,  //était 850 dans HC, tentative à 750 2021-11-23 GTF
+	. CoalDeltaTemp = 2000,          //était 234 dans HC, tentative à -300 2021-11-23 GTF
+	. CoalStoveTemp = 900,           //
+	. OverheatPlenum = 2200,         //NA
+	. OverheatPlenumExit = 2100,     //NA
+	. OverheatBaffle = 15000,        //était 2000 dans HC, tentative à 15000 2021-11-19 GTF
+	. OverheatChamber = 13000,       //était 800 dans HC, tentative à 600 2021-11-19 GTF
+
+};
+
+#define ColdStoveTemp 900 //90F
+
+//Maximum Primary and grate opening by state
+//all values are express in step 0.9degrees.
+
+
+const MotorOpeningsParam_t PrimaryMotorParam[NumberOfFurnaceModel] =
+{
+	{	//HeatCommander
+		.MaxWaiting = 13,
+		.MinWaiting = 13,
+		.MaxReload = 200,
+		.MinReload = 100,
+		.MaxTempRise = 100,
+		.MinTempRise = 35,
+		.MaxCombHigh = 200,
+		.MinCombHigh = 28,
+		.MaxCombLow = 61,
+		.MinCombLow = 43,
+		.MaxCombSuperLow = 22,
+		.MinCombSuperLow = 22,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 35,
+		.MaxCoalLow = 14,
+		.MinCoalLow = 14,
+	},
+	{    //HeatPro
+		.MaxWaiting = 13,
+		.MinWaiting = 13,
+		.MaxReload = 200,
+		.MinReload = 100,
+		.MaxTempRise = 100,
+		.MinTempRise = 35,
+		.MaxCombHigh = 200,
+		.MinCombHigh = 28,
+		.MaxCombLow = 61,
+		.MinCombLow = 43,
+		.MaxCombSuperLow = 22,
+		.MinCombSuperLow = 22,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 35,
+		.MaxCoalLow = 14,
+		.MinCoalLow = 14,
+	}
+};
+
+const MotorOpeningsParam_t GrillMotorParam[NumberOfFurnaceModel] =
+{
+	{	//Heatmax
+		.MaxWaiting = 0,
+		.MinWaiting = 0,
+		.MaxReload = 39,
+		.MinReload = 0,
+		.MaxTempRise = 0,
+		.MinTempRise = 0,
+		.MaxCombHigh = 0,
+		.MinCombHigh = 0,
+		.MaxCombLow = 0,
+		.MinCombLow = 0,
+		.MaxCombSuperLow = 0,
+		.MinCombSuperLow = 0,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 0,
+		.MaxCoalLow = 0,
+		.MinCoalLow = 0,
+	},
+	{    //HeatPro
+		.MaxWaiting = 0,
+		.MinWaiting = 0,
+		.MaxReload = 39,
+		.MinReload = 0,
+		.MaxTempRise = 0,
+		.MinTempRise = 0,
+		.MaxCombHigh = 0,
+		.MinCombHigh = 0,
+		.MaxCombLow = 0,
+		.MinCombLow = 0,
+		.MaxCombSuperLow = 0,
+		.MinCombSuperLow = 0,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 0,
+		.MaxCoalLow = 0,
+		.MinCoalLow = 0,
+	}
+};
+
+const MotorOpeningsParam_t SecondaryMotorParam[NumberOfFurnaceModel] =
+{//Added for current PCB model (parameters must be adjusted by user)
+	{	//HeatCommander
+		.MaxWaiting = 13,
+		.MinWaiting = 13,
+		.MaxReload = 200,
+		.MinReload = 100,
+		.MaxTempRise = 100,
+		.MinTempRise = 35,
+		.MaxCombHigh = 200,
+		.MinCombHigh = 28,
+		.MaxCombLow = 61,
+		.MinCombLow = 43,
+		.MaxCombSuperLow = 22,
+		.MinCombSuperLow = 22,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 35,
+		.MaxCoalLow = 14,
+		.MinCoalLow = 14,
+	},
+	{    //HeatPro
+		.MaxWaiting = 13,
+		.MinWaiting = 13,
+		.MaxReload = 200,
+		.MinReload = 100,
+		.MaxTempRise = 100,
+		.MinTempRise = 35,
+		.MaxCombHigh = 200,
+		.MinCombHigh = 28,
+		.MaxCombLow = 61,
+		.MinCombLow = 43,
+		.MaxCombSuperLow = 22,
+		.MinCombSuperLow = 22,
+		.MaxCoalHigh = 200,
+		.MinCoalHigh = 35,
+		.MaxCoalLow = 14,
+		.MinCoalLow = 14,
+	}
+};
+
+
+//state machine variable and initial values
+static State currentState = ZEROING_STEPPER;
+static bool reloadingEvent = false;
+bool fanPauseRequired = false;
+static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_FULL_OPEN);
+static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
+static AirInput secondary = AirInput_init(SECONDARY_MINIMUM_OPENING, SECONDARY_FULL_OPEN);
+
+Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
+Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
+
+static int baffleTemperature = 0;   // [Tenth *F]
+static int rearTemperature = 0; // [Tenth *F]
+static int plenumTemp = 0;  // [Tenth *F]
+static bool thermostatRequest = false;
+static bool interlockRequest = false;
+
+//Data for derivative computation
+#define NB_DATA  300  // 5 minutes max si une mesure par sec
+static int frontTempDataStore[NB_DATA]; //Data for slope calculation
+
+static bool simulatorMode = false;
+static Slope slopeBaffleTemp;
+float Algo_Simulator_slopeBaffleTemp = 0.0;
+float Algo_slopeBaffleTemp = 0.0;
+static uint32_t timeSinceStateEntry;
+static uint32_t TimeOfReloadRequest;
+
+//Novika parameters Kc=0.500, Ti=0.200, Td = 0.002 (pas utilisé)
+//Kp = Kc
+//Kd = Kc*Td*det/dt
+//Ki = Kc/Ti
+#define Kc 0.080
+#define Ti 0.200
+#define Td 0.040
+#define Kp Kc
+#define Kd 0.020
+#define Ki 0.00
+#define PID_CONTROL_ON false
+#define PID_UPDATE_PERIOD_MS 5000
+static PIDtype TemperaturePID;
+int16_t PIDTrapPosition = 0;
+
+//private functions
+static inline bool inBetween( int var, int low, int high);
+static float computeSlopeBaffleTemp(unsigned int nbData);
+void Algo_init();
+static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS);
+void StateEntryControlAdjustment( AirInput* primaireSecondaire, const uint8_t MinPrimary, const uint8_t MaxPrimary,
+		AirInput* grill, const uint8_t MinGrill, const uint8_t MaxGrill);
+void AirAdjustment(int adjustement, const uint32_t secondPerStep,
+		AirInput* primaire, const uint8_t MinPrimary, const uint8_t MaxPrimary,
+		AirInput* grill, const uint8_t MinGrill, const uint8_t MaxGrill);
+
+void Algo_init() {
+
+  if(GPIO_PIN_SET==HAL_GPIO_ReadPin(Button_Input_GPIO_Port,Button_Input_Pin))
+  {
+	  currentState = PRODUCTION_TEST;
+  }
+  else
+  {
+	  currentState = ZEROING_STEPPER;
+  }
+
+  reloadingEvent = false;
+  AirInput_forceAperture(&primary, PRIMARY_CLOSED);
+  AirInput_forceAperture(&grill, GRILL_CLOSED);
+  AirInput_forceAperture(&secondary, SECONDARY_CLOSED);
+  baffleTemperature = 0;
+  rearTemperature = 0;
+  thermostatRequest = false;
+  delLoadingEnd = ALGO_DEL_OFF;
+  delFermeturePorte = ALGO_DEL_OFF;
+  Slope_init(&slopeBaffleTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
+}
+
+static void manageStateMachine(uint32_t currentTime_ms) {
+
+	  State nextState = currentState;
+	  float dTavant;
+	  int adjustement;
+	  FurnaceModel Model = readModel();
+	  Model = HEATMAX; //c'était une bonne idée les dip switch, mais on le fera pas :) pis HeatMax c'est la HeatCommander oh yeah!
+
+	  static State historyState = ZEROING_STEPPER;
+
+	  static uint32_t stateChangeTimeRef = 0;
+	  static uint32_t timeRefAutoMode = 0;
+	  static int targetTemperature = 0;
+	  static uint32_t Safetydebounce_ms = 0;
+	  //int i = 0;
+#if defined GRILL_CIRC
+	  //la nouvelle grille varie de 180 à 90 donc, on doit prendre 2 fois plus de temps entre les pas. (secondes)
+	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
+	  const uint32_t SEC_PER_STEP_COMB_LOW = 6;
+	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
+	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
+#else
+	  //pour palier au fait qu'on applique des 1/2 pas, nous divisons les valeurs de NOVIKA 2019-12-04
+	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
+	  const uint32_t SEC_PER_STEP_COMB_LOW = 3;
+	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
+	  const uint32_t SEC_PER_STEP_COAL_HIGH = 6;
+#endif
+
+	  //calculate time used in the state transition.
+	  timeSinceStateEntry = currentTime_ms - stateChangeTimeRef;
+	  uint32_t timeInTemperatureRise = 0;
+#if PID_CONTROL_ON
+	  static uint32_t Pidtimeref = 0;
+	  uint32_t TimeSinceLastPIDUpdate = currentTime_ms - Pidtimeref;
+#endif
+	  uint32_t TimeForStep = currentTime_ms - timeRefAutoMode;
+
+	  // TODO: la periode utilisée pour le calcule de la pente n'est pas définie
+  //       dans le document
+  dTavant = computeSlopeBaffleTemp(2); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
+  	  	  	  	  	  	  	  	  	  // la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
+  int deltaTemperature = 0;
+  /* Perform state's actions. */
+  switch (currentState) {
+
+    default:
+    case ZEROING_STEPPER:
+		AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MinWaiting);
+		AirInput_forceAperture(&grill, GrillMotorParam[Model].MinWaiting);
+		AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MinWaiting);
+		AllMotorToZero(); //set all motors to zero
+		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
+		{
+		};
+		nextState = WAITING;
+		break;
+    case WAITING:
+
+    	AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
+    	AirInput_forceAperture(&grill, GrillMotorParam[Model].MaxWaiting);// GRILL_CLOSED);
+    	AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MaxWaiting);
+    	delLoadingEnd = ALGO_DEL_OFF;
+    	delFermeturePorte = ALGO_DEL_OFF;
+
+
+
+		if(baffleTemperature > 8000 && rearTemperature > 7000 && (!Algo_getInterlockRequest()))
+		{
+		  nextState = TEMPERATURE_RISE; //the only way this can happen is if we lost power we don't want to go back in reload/temprise
+		  reloadingEvent = false;
+		}
+		else if ((baffleTemperature > TemperatureParam[Model].WaitingToIgnition || reloadingEvent) && (!Algo_getInterlockRequest()) ) { //at 95F, someone is starting a fire
+		  nextState = RELOAD_IGNITION;
+		  reloadingEvent = false;
+		  initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
+		}
+
+		break;
+
+    case RELOAD_IGNITION:
+
+		AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
+		AirInput_forceAperture(&grill, GrillMotorParam[Model].MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
+		AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MaxReload);
+
+		if (((baffleTemperature > TemperatureParam[Model].IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
+		nextState = TEMPERATURE_RISE;
+		reloadingEvent = false;
+		AirInput_forceAperture(&grill, GRILL_CLOSED);
+		}
+		if(timeSinceStateEntry >= MINUTES(20))
+		{
+		  //ignition fail or coal was hot enough to make us enter in Ignition we go back to WAITING
+		  nextState = ZEROING_STEPPER;
+		}
+      break;
+
+    case TEMPERATURE_RISE:
+
+		targetTemperature = thermostatRequest ? TemperatureParam[Model].TriseTargetHigh : TemperatureParam[Model].TriseTargetLow;
+
+		if(historyState != currentState){
+		  AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxTempRise);
+		  AirInput_forceAperture(&grill, GrillMotorParam[Model].MaxTempRise);
+		  AirInput_forceAperture(&secondary, SecondaryMotorParam[Model].MaxTempRise);
+		  historyState = currentState;
+		}
+#if PID_CONTROL_ON
+		if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
+		{
+			Pidtimeref = currentTime_ms;
+			PIDTrapPosition += UpdatePID(&TemperaturePID, baffleTemperature,targetTemperature);
+			PIDTrapPosition = PIDTrapPosition > PRIMARY_SECONDARY_FULL_OPEN?PRIMARY_SECONDARY_FULL_OPEN:PIDTrapPosition<0?0:PIDTrapPosition;
+
+		}
+		AirInput_forceAperture(&primary,PIDTrapPosition);
+#else
+		/* Since the control algo (i.e. computeAjustement) is limited
+		   to +/- 3 steps, it should take 3 * sec per step to complete
+		   the movement. Reevaluate the control at that maximum period. */
+//		if((timeSinceStateEntry >= MINUTES(3)) ||  (baffleTemperature > targetTemperature)) //3minutes // changemenet 2 min 2021-12-03
+		//asservie seulement si on est depuis 3 minutes dans Temperature Rise ou qu'on a atteint 650 ou 660
+
+			if (TimeForStep >= (1 * SEC_PER_STEP_TEMP_RISE * 1000)) { // changer de 3 a 2 2021-12-03
+			  timeRefAutoMode = currentTime_ms;
+
+			  adjustement = computeAjustement(targetTemperature, dTavant);
+			  AirAdjustment(adjustement, SEC_PER_STEP_TEMP_RISE,
+							  &primary, PrimaryMotorParam[Model].MinTempRise, PrimaryMotorParam[Model].MaxTempRise,
+							  &grill, GrillMotorParam[Model].MinTempRise,GrillMotorParam[Model].MaxTempRise);
+			}
+			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
+			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
+			{
+			  nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
+			}
+
+
+#endif
+		if(reloadingEvent || (baffleTemperature < 3000)) {// changé pour 300 au lieu de 460 2022-03-04
+			nextState = ZEROING_STEPPER;
+		}
+		else if(timeSinceStateEntry > MINUTES(30))
+
+		{
+			nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		}
+
+      break;
+
+	case COMBUSTION_HIGH:
+			if(historyState != currentState){
+
+				StateEntryControlAdjustment(&primary, PrimaryMotorParam[Model].MinCombHigh, PrimaryMotorParam[Model].MaxCombHigh,
+							  				&grill, GrillMotorParam[Model].MinCombHigh,GrillMotorParam[Model].MaxCombHigh);
+				historyState = currentState;
+			}
+#if PID_CONTROL_ON
+            if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
+            {
+            	Pidtimeref = currentTime_ms;
+            	PIDTrapPosition += UpdatePID(&TemperaturePID, baffleTemperature,targetTemperature);
+            	PIDTrapPosition = PIDTrapPosition > PRIMARY_SECONDARY_FULL_OPEN?PRIMARY_SECONDARY_FULL_OPEN:PIDTrapPosition<0?0:PIDTrapPosition;
+            }
+#else
+            /* Since the control algo (i.e. computeAjustement) is limited
+               to +/- 3 steps, it whould take 3 * sec per step to complete
+               the mouvement. Reevaluate the control at that maximum period. */
+            if (TimeForStep >= (3 * SEC_PER_STEP_COMB_HIGH * 1000)&& AirInput_InPosition(&grill) && AirInput_InPosition(&primary) ) {
+              timeRefAutoMode = currentTime_ms;
+              adjustement = computeAjustement(TemperatureParam[Model].CombHighTarget, dTavant);
+			  AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+											&primary, PrimaryMotorParam[Model].MinCombHigh, PrimaryMotorParam[Model].MaxCombHigh,
+							  				&grill, GrillMotorParam[Model].MinCombHigh,GrillMotorParam[Model].MaxCombHigh);
+
+            }
+#endif
+            if ( ((baffleTemperature) >= (rearTemperature-TemperatureParam[Model].CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
+            		&& (TemperatureParam[Model].CoalCrossOverRearHigh > rearTemperature) ) //détection de l'état coal/braise
+            {
+            	nextState = COAL_HIGH;
+            }
+            if (!thermostatRequest) {
+
+              nextState = COMBUSTION_LOW;
+            } else if (reloadingEvent) {
+              nextState = ZEROING_STEPPER;
+            }
+
+          break;
+
+    case COMBUSTION_LOW:
+    	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,RESET);//desactive le relai pour activer la carte 2 PLV 15/12/21
+		if(historyState != currentState){
+
+			StateEntryControlAdjustment(&primary, PrimaryMotorParam[Model].MinCombLow, PrimaryMotorParam[Model].MaxCombLow,
+							  			&grill, GrillMotorParam[Model].MinCombLow,GrillMotorParam[Model].MaxCombLow);
+		    historyState = currentState;
+		}
+#if PID_CONTROL_ON
+        if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
+        {
+        	Pidtimeref = currentTime_ms;
+        	PIDTrapPosition += UpdatePID(&TemperaturePID, baffleTemperature,targetTemperature);
+        	PIDTrapPosition = PIDTrapPosition > PRIMARY_SECONDARY_FULL_OPEN?PRIMARY_SECONDARY_FULL_OPEN:PIDTrapPosition<0?0:PIDTrapPosition;
+
+        }
+		AirInput_forceAperture(&primary,PIDTrapPosition);
+#else
+		deltaTemperature = abs(rearTemperature - baffleTemperature);
+
+		if (rearTemperature < TemperatureParam[Model].FlameLoss && ( deltaTemperature < TemperatureParam[Model].FlameLossDelta)) { //changement de reartemp pour le flameloss au lieu de baffletemp GTF 2022-08-30
+			nextState = FLAME_LOSS;
+			AirInput_forceAperture(&grill, GRILL_FULL_OPEN);
+		}
+		else{
+			//we loss the flamme but we are not in coal yet, we reopen the grill
+		  //AirInput_setSetPoint(&grill, GRILL_CLOSED, SEC_PER_STEP_COMB_LOW);
+		  if (TimeForStep >= (1 * SEC_PER_STEP_COMB_LOW * 1000)
+				  && AirInput_InPosition(&grill)
+				  && AirInput_InPosition(&primary)
+				  && (timeSinceStateEntry >=MINUTES(2)) ) {
+
+			timeRefAutoMode = currentTime_ms;
+
+			adjustement = computeAjustement(TemperatureParam[Model].CombLowTarget, dTavant);
+
+			if (timeSinceStateEntry > MINUTES(60) && (rearTemperature > TemperatureParam[Model].CombLowtoSuperLow)) //changé 35 min pour 60
+			{		
+				StateEntryControlAdjustment(&primary,PrimaryMotorParam[Model].MinCombSuperLow,PrimaryMotorParam[Model].MaxCombSuperLow,
+											&grill,GrillMotorParam[Model].MinCombSuperLow,GrillMotorParam[Model].MaxCombSuperLow);
+				adjustement = computeAjustement(TemperatureParam[Model].CombLowtoSuperLow, dTavant);
+			
+				AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+									&primary,PrimaryMotorParam[Model].MinCombSuperLow,PrimaryMotorParam[Model].MaxCombSuperLow,
+									&grill,GrillMotorParam[Model].MinCombSuperLow,GrillMotorParam[Model].MaxCombSuperLow);
+			
+			}
+			else
+			{
+				AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+							  &primary, PrimaryMotorParam[Model].MinCombLow, PrimaryMotorParam[Model].MaxCombLow,
+							  &grill,GrillMotorParam[Model].MinCombLow,GrillMotorParam[Model].MaxCombLow);
+			}
+  	  	  }
+		}
+
+#endif
+		if ( (baffleTemperature <= (rearTemperature-TemperatureParam[Model].CoalDeltaTemp)) //RETOUR À <= ET CHANGEMENENT POUR 200 POUR LE COALCROSSOVERLOW gtf 2022-08-30
+				&& (rearTemperature < TemperatureParam[Model].CoalCrossOverRearLow) )
+        {
+        	nextState = COAL_LOW;
+        }
+        if (thermostatRequest) {
+          nextState = COMBUSTION_HIGH;
+        } else if (reloadingEvent) {
+          nextState = ZEROING_STEPPER;
+        }
+      break;
+
+    case COAL_LOW: //remplacement de la logic du low pour la logic du high de la fournaise pour UFEC 23 2021-11-23
+
+    	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,SET);//active le relai pour activer la carte 2 PLV 15/12/21
+    	AirInput_forceAperture(&primary, PrimaryMotorParam[Model].MaxCoalLow);
+    	AirInput_forceAperture(&grill, GrillMotorParam[Model].MaxCoalLow);
+    	if (thermostatRequest) {
+    	          nextState = COAL_HIGH;
+    	}else if (reloadingEvent) {
+            nextState = ZEROING_STEPPER;
+        }
+    //	if(historyState != currentState){
+    	//				StateEntryControlAdjustment(&primary,PrimaryMotorParam[Model].MinCoalLow, PrimaryMotorParam[Model].MaxCoalLow,
+    	//											&grill,GRILL_CLOSED,GRILL_CLOSED);
+    		//	    historyState = currentState;
+    		//	}
+    	      //  /* Since the control algo (i.e. computeAjustement) is limited
+    	     //      to +/- 3 steps, it whould take 3 * sec per step to complete
+    	       //    the mouvement. Reevaluate the control at that maximum period. */
+    	      //  if (TimeForStep >= (3 * SEC_PER_STEP_COAL_HIGH * 1000)) {
+    	      //  	if(rearTemperature > 8000) // tentative à 800 2021-11-26
+    	      //  	{
+    	       // 		adjustement = -1; //Si T > 800, on ferme. Sinon on suit le tableau d'ajustement
+    	        //	}
+    	        //	else
+    	        //	{
+    	        //		adjustement = computeAjustement( TemperatureParam[Model].CombHighTarget, dTavant);
+    	        //	}
+    	        //    AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+    			//			  	  	  &primary, PrimaryMotorParam[Model].MinCoalLow, PrimaryMotorParam[Model].MaxCoalLow,
+    			//					  &grill, GrillMotorParam[Model].MinCoalLow, GrillMotorParam[Model].MaxCoalLow);
+    	        //}
+
+    	    	//if (thermostatRequest) {
+    	    	  //        nextState = COAL_HIGH;
+    	    	//}else if (reloadingEvent) {
+    	          //  nextState = ZEROING_STEPPER;
+    	        //}else if (baffleTemperature > TemperatureParam[Model].CombLowTarget){
+    	        	//nextState = COMBUSTION_LOW;
+    	        //}
+    	break;
+
+    case FLAME_LOSS:
+    	deltaTemperature = abs(rearTemperature - baffleTemperature);
+    	if( deltaTemperature > TemperatureParam[Model].FlameLossDelta && timeSinceStateEntry >= MINUTES(1))
+    	{
+    		nextState = historyState;
+    		AirInput_forceAperture(&grill, GRILL_CLOSED);
+    	}
+		if(reloadingEvent) {
+			nextState = ZEROING_STEPPER;
+		}
+		else if((rearTemperature < TemperatureParam[Model].CoalCrossOverRearLow) && timeSinceStateEntry >= MINUTES(5))
+		{
+			nextState = COAL_HIGH;
+		}
+    	break;
+
+    case COAL_HIGH:
+		if(historyState != currentState){
+			StateEntryControlAdjustment(&primary,PrimaryMotorParam[Model].MinCoalHigh, PrimaryMotorParam[Model].MaxCoalHigh,
+											&grill,GRILL_CLOSED,GRILL_CLOSED);
+		    historyState = currentState;
+		}
+        /* Since the control algo (i.e. computeAjustement) is limited
+           to +/- 3 steps, it whould take 3 * sec per step to complete
+           the mouvement. Reevaluate the control at that maximum period. */
+        if (TimeForStep >= (3 * SEC_PER_STEP_COAL_HIGH * 1000)) {
+        	if(rearTemperature > 9000) /// C'EST QUOI ÇA GTF 2022-03-11
+        	{
+        		adjustement = -1; //Si T > 900, on ferme. Sinon on suit le tableau d'ajustement
+        	}
+        	else
+        	{
+        		adjustement = computeAjustement( TemperatureParam[Model].CombHighTarget, dTavant);
+        	}
+            AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+					  	  	  &primary, PrimaryMotorParam[Model].MinCoalHigh, PrimaryMotorParam[Model].MaxCoalHigh,
+							  &grill, GrillMotorParam[Model].MinCoalHigh, GrillMotorParam[Model].MaxCoalHigh);
+        }
+
+    	if (!thermostatRequest) {
+    	          nextState = COAL_LOW;
+    	}else if (reloadingEvent) {
+            nextState = ZEROING_STEPPER;
+        }else if (baffleTemperature > TemperatureParam[Model].CombLowTarget){
+        	nextState = COMBUSTION_HIGH;
+        }
+    	break;
+
+    case OVERTEMP:
+    case SAFETY:
+      AirInput_forceAperture(&grill, GRILL_CLOSED);
+      AirInput_forceAperture(&primary, PRIMARY_CLOSED);
+
+      if ((baffleTemperature < TemperatureParam[Model].OverheatBaffle)
+    		  && (rearTemperature < TemperatureParam[Model].OverheatChamber)
+			  && (Algo_getPlenumTemp() < TemperatureParam[Model].OverheatPlenumExit)){
+    	  if(historyState == SAFETY || historyState == OVERTEMP)
+    	  {
+    		  nextState = ZEROING_STEPPER; //autre façon de fermer les trappes
+    	  }
+    	  else
+    	  {
+    		  nextState = historyState;
+    	  }
+      }
+      break;
+
+    case PRODUCTION_TEST:
+    	TestRunner();
+		nextState = currentState;  //assign the current state in the runner
+    	break;
+  }
+
+	if((GPIO_PIN_SET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
+	{
+		uint32_t kerneltime = osKernelSysTick();
+		if ((Safetydebounce_ms+100) < kerneltime)
+		{
+			nextState = SAFETY; //force the safety state
+		}
+	}
+	else
+	{
+		Safetydebounce_ms = osKernelSysTick();
+	}
+
+  /* Perform superstate action's */
+  switch (currentState) {
+
+    default:
+	if ((baffleTemperature > TemperatureParam[Model].OverheatBaffle) || (rearTemperature > TemperatureParam[Model].OverheatChamber) || (Algo_getPlenumTemp()>TemperatureParam[Model].OverheatPlenum)) {
+		nextState = OVERTEMP;
+	}
+	if(currentState != RELOAD_IGNITION)
+	{
+		if ((baffleTemperature < ColdStoveTemp) && (rearTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
+		nextState = WAITING;
+		}
+	}
+      break;
+
+    case WAITING:
+    //case RELOAD_IGNITION:
+    case OVERTEMP:
+    case SAFETY:
+    case PRODUCTION_TEST:
+      /* do nothing */
+      break;
+  }
+  if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST))
+  {
+  		nextState = WAITING;
+  }
+
+  if (nextState != currentState) {
+
+	if ((currentState == COMBUSTION_HIGH  && nextState == COMBUSTION_LOW) || (currentState == COMBUSTION_LOW && nextState == COMBUSTION_HIGH))
+	{
+		//do not update the state stateChangeTimeRef
+	}
+	else
+	{
+	    stateChangeTimeRef = currentTime_ms;
+	}
+	historyState = currentState;
+    currentState = nextState;
+  }
+}
+
+void Algo_task(uint32_t currentTime_ms) {
+
+  manageStateMachine(currentTime_ms);
+//  managePlenumSpeed(Algo_getPlenumTemp(),Algo_getThermostatRequest(),currentTime_ms);
+
+  if(Algo_getState()!= PRODUCTION_TEST)
+  {
+	  AirInput_task( &primary, currentTime_ms);
+	  AirInput_task( &grill, currentTime_ms);
+	  AirInput_task( &secondary, currentTime_ms);
+  }
+}
+
+static inline bool inBetween( int var, int low, int high) {
+  return ((var >= low) && (var <= high));
+}
+
+void Algo_setSimulatorMode( bool active) {
+  simulatorMode = active;
+}
+
+float Algo_getBaffleTempSlope() {
+  return Algo_slopeBaffleTemp;
+}
+
+/* Returns temperature slope in [*C / s] */
+static float computeSlopeBaffleTemp(unsigned int nbData) {
+  if (simulatorMode)
+  {
+    return Algo_Simulator_slopeBaffleTemp;
+  }
+  else
+  {
+	Algo_slopeBaffleTemp = Slope_compute(&slopeBaffleTemp, nbData) / 10.0;
+    return Algo_slopeBaffleTemp;
+  }
+}
+
+void Algo_setState(State state) {
+  //if (simulatorMode) {
+    currentState = state;
+  //}
+}
+
+State Algo_getState() {
+  return currentState;
+}
+uint32_t getStateTime(){
+  return timeSinceStateEntry;
+}
+
+void Algo_setBaffleTemp(int temp) {
+  baffleTemperature = temp;
+  Slope_addData(&slopeBaffleTemp, temp);
+}
+
+void Algo_setRearTemp(int temp) {
+  rearTemperature = temp;
+}
+int Algo_getRearTemp() {
+  return rearTemperature;
+}
+
+int Algo_getBaffleTemp() {
+  return baffleTemperature;
+}
+
+void Algo_setPlenumTemp(int temp) {
+  plenumTemp = temp;
+}
+int Algo_getPlenumTemp() {
+  return plenumTemp;
+}
+
+int Algo_getPrimary() {
+  return AirInput_getAperture(&primary);
+}
+
+int Algo_getGrill() {
+  return AirInput_getAperture(&grill);
+}
+
+int Algo_getSecondary() {
+	return AirInput_getAperture(&secondary);
+}
+
+Algo_DELState Algo_getStateFinChargemenent() {
+  return delLoadingEnd;
+}
+
+Algo_DELState Algo_getStateFermeturePorte() {
+  return delFermeturePorte;
+}
+
+void Algo_setThermostatRequest(bool demand) {
+  thermostatRequest = demand;
+}
+bool Algo_getThermostatRequest() {
+  return thermostatRequest;
+}
+void Algo_setInterlockRequest(bool demand) {
+	interlockRequest = demand;
+}
+bool Algo_getInterlockRequest() {
+  return interlockRequest;
+}
+
+void Algo_startChargement(uint32_t currentTime_ms) {
+  reloadingEvent = true;
+  fanPauseRequired = true;
+  TimeOfReloadRequest = currentTime_ms;
+}
+uint32_t Algo_getTimeOfReloadRequest() {
+  return TimeOfReloadRequest;
+}
+
+bool Algo_IsFanPauseRequested() {
+  return fanPauseRequired;
+}
+
+void Algo_clearReloadRequest() {
+  reloadingEvent = false;
+}
+
+static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
+
+  //                  [line][column]
+  const int adjustment[3][3] = {
+    { 0, -2, -3},
+    { +1, 0, -1},
+    { +3, +2, 0}
+  };
+
+  unsigned int line;
+  unsigned int column;
+
+  if (baffleTemperature > (tempTarget_tenthF + 50)) {
+    line = 0;
+  } else if (baffleTemperature >= (tempTarget_tenthF - 50)) {
+    line = 1;
+  } else {
+    line = 2;
+  }
+
+  if (dTempAvant_FperS < -6.0) {
+    column = 0;
+  } else if (dTempAvant_FperS <= 6.0) {
+    column = 1;
+  } else {
+    column = 2;
+  }
+
+  return adjustment[line][column];
+}
+
+void AirAdjustment(int adjustement, const uint32_t secondPerStep,
+		AirInput* primaire, const uint8_t MinPrimary, const uint8_t MaxPrimary,
+		AirInput* grill, const uint8_t MinGrill, const uint8_t MaxGrill)
+{
+	if (adjustement > 0)
+	{
+		if (AirInput_getAperture(primaire) >= MaxPrimary)
+		{
+			if (AirInput_getAperture(grill) < MaxGrill)
+			{
+				AirInput_setAjustement(grill, adjustement, secondPerStep);
+			}
+		}
+		else
+		{
+			AirInput_setAjustement(primaire, adjustement, secondPerStep);
+		}
+	}
+	else if (adjustement < 0)
+	{
+		if (AirInput_getAperture(grill) > MinGrill)
+		{
+			AirInput_setAjustement(grill, adjustement,secondPerStep);
+		}
+		else
+		{
+			if(AirInput_getAperture(primaire) > MinPrimary)
+			{
+				AirInput_setAjustement(primaire, adjustement,secondPerStep);
+			}
+		}
+	}
+	/*else{do nothing} air setting doesn't need further adjustment*/
+}
+
+
+void StateEntryControlAdjustment( AirInput* primaireSecondaire, const uint8_t MinPrimary, const uint8_t MaxPrimary,
+		AirInput* grill, const uint8_t MinGrill, const uint8_t MaxGrill)
+{
+	int aperture = AirInput_getAperture(primaireSecondaire);
+	int apertureAdjustment = 0;
+	if (aperture >= MaxPrimary)
+	{
+		apertureAdjustment = MaxPrimary - aperture;
+		AirAdjustment(apertureAdjustment,2,primaireSecondaire,MinPrimary,MaxPrimary,grill,MinGrill,MaxGrill);
+	}
+	else if (aperture <= MinPrimary)
+	{
+		apertureAdjustment = MinPrimary - aperture;
+		AirAdjustment(apertureAdjustment,2,primaireSecondaire,MinPrimary,MaxPrimary,grill,MinGrill,MaxGrill);
+	}
+
+	aperture = AirInput_getAperture(grill);
+	if (aperture >= MaxGrill)
+	{
+		apertureAdjustment = MaxGrill - aperture;
+		AirAdjustment(apertureAdjustment,1,primaireSecondaire,MinPrimary,MaxPrimary,grill,MinGrill,MaxGrill);
+	}
+	else if (aperture <= MinGrill)
+	{
+		apertureAdjustment = MinGrill - aperture;
+		AirAdjustment(apertureAdjustment,1,primaireSecondaire,MinPrimary,MaxPrimary,grill,MinGrill,MaxGrill);
+	}
+}
+
