@@ -1,4 +1,4 @@
-ParticlesManager.c:41:6:ParticlesManager	24	static
-ParticlesManager.c:55:6:HAL_UART_RxCpltCallback	16	static
-ParticlesManager.c:66:6:HAL_UART_TxCpltCallback	16	static
-ParticlesManager.c:75:6:HAL_UART_ErrorCallback	24	static
+ParticlesManager.c:48:6:ParticlesManager	24	static
+ParticlesManager.c:93:6:HAL_UART_RxCpltCallback	16	static
+ParticlesManager.c:104:6:HAL_UART_TxCpltCallback	16	static
+ParticlesManager.c:113:6:HAL_UART_ErrorCallback	24	static

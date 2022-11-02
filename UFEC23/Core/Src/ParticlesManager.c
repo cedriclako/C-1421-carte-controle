@@ -61,7 +61,7 @@ void ParticlesManager(void const * argument) {
 		{
 			//clearly something is wrong Abort the transmission
 			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
-			HAL_UART_Abort_IT(&huart3,ADC_ADDRESS_7BIT);
+			//HAL_UART_Abort_IT(&huart3,ADC_ADDRESS_7BIT);
 			HAL_UART_DeInit(&huart3);
 			osDelay(100);
 			MX_USART3_UART_Init();
