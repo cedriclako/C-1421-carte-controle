@@ -22,7 +22,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 #include "cmsis_os.h"
-#include "DebugManager.h"
 #include "DebugPort.h"
 #include "stm32f1xx_hal.h"
 #include "TemperatureManager.h"
@@ -33,6 +32,8 @@
 #include "main.h" //@@@@for the LED toggle to be removed
 #include "algo.h"
 #include <stdio.h>
+#include "ParticlesManager.h"
+#include "DebugManager.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -121,7 +122,17 @@ void DebugManager(void const * argument)
 		printf(" FanSpeed:%i ",Mot_getFanSpeed());
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
-		printf("PrimSec:%i",Algo_getPrimary()*9/10);
+		//printf("PrimSec:%i ",Algo_getPrimary()*9/10);
+		printf("Prim:%i ",Algo_getPrimary()*9/10);
+		printf("Sec:%i ",Algo_getSecondary()*9/10);
+		printf("PartCH0:%u ", Particle_getCH0());
+		printf("PartCH1:%u ", Particle_getCH1());
+		printf("PartVar:%u ",Particle_getVariance());
+		printf("PartSlope:%i ",Particle_getSlope());
+		printf("TPart:%u ",Particle_getTemperature());
+		printf("PartCurr:%u",Particle_getCurrent());
+
+		// TODO: Ajouter variance et pente
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

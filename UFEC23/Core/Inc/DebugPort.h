@@ -8,9 +8,6 @@ extern "C" {
 #include "stm32f1xx_hal.h"
 
 extern int _write(int file, char *ptr, int len);
-//extern UART_HandleTypeDef huart3;
-//extern UART_HandleTypeDef huart2;
-//extern UART_HandleTypeDef huart1;
 
 #ifdef __cplusplus
 }

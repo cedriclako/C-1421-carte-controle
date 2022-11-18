@@ -1,4 +1,11 @@
-ParticlesManager.c:48:6:ParticlesManager	24	static
-ParticlesManager.c:93:6:HAL_UART_RxCpltCallback	16	static
-ParticlesManager.c:104:6:HAL_UART_TxCpltCallback	16	static
-ParticlesManager.c:113:6:HAL_UART_ErrorCallback	24	static
+ParticlesManager.c:53:6:ParticlesManager	40	static
+ParticlesManager.c:170:10:Particle_getCH0	4	static
+ParticlesManager.c:175:10:Particle_getCH1	4	static
+ParticlesManager.c:180:10:Particle_getVariance	4	static
+ParticlesManager.c:185:5:Particle_getSlope	4	static
+ParticlesManager.c:190:10:Particle_getTemperature	4	static
+ParticlesManager.c:195:10:Particle_getCurrent	8	static
+ParticlesManager.c:200:6:validateRxChecksum	24	static
+ParticlesManager.c:214:6:HAL_UART_RxCpltCallback	16	static
+ParticlesManager.c:225:6:HAL_UART_TxCpltCallback	16	static
+ParticlesManager.c:234:6:HAL_UART_ErrorCallback	24	static

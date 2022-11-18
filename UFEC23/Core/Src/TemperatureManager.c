@@ -24,7 +24,6 @@
 /* Private includes ----------------------------------------------------------*/
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
-#include "TemperatureManager.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
@@ -33,7 +32,7 @@
 #include <stdio.h>
 #include "DebugPort.h"
 #include "MotorManager.h"
-
+#include "TemperatureManager.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -58,7 +57,7 @@ enum ADC_Channel
 	FrontThermocouple = 0,
 	RearThermocouple,
 	PlenumRtd,
-	UnusedChannel,
+	TempSense_board, // Used to determine cold junction temp
 	NUMBER_OF_ADC_CH
 };
 
@@ -69,14 +68,14 @@ void TemperatureManager(void const * argument)
     I2CSemaphoreHandle = osSemaphoreCreate(osSemaphore(I2CSemaphoreHandle), 1);
     osSemaphoreWait(I2CSemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
 
-    uint8_t ADCConfigByte[NUMBER_OF_ADC_CH] = {0x9F,0xBF,0xDC,0xFF}; // Channel 3 is for RTD,Gain=1 //channel 4 is for the pressure sensor, Gain =1
+    uint8_t ADCConfigByte[NUMBER_OF_ADC_CH] = {0x9F,0xBF,0xDC,0xFC}; // Channel 3 is for RTD,Gain=1 //channel 4 is for the pressure sensor, Gain =1
     int32_t i32tempReading=0;
     int i =0;
     uint8_t adcData[4];
 
     float AdcArray[NUMBER_OF_ADC_CH];
-    float TemperatureCelsius[NUMBER_OF_ADC_CH-1];
-    float TemperatureFarenheit[NUMBER_OF_ADC_CH-1];
+    float TemperatureCelsius[NUMBER_OF_ADC_CH];
+    float TemperatureFarenheit[NUMBER_OF_ADC_CH];
 	float tColdJunction;
 	float temp1;
     uint32_t PreviousWakeTime = osKernelSysTick(); //must be nitialized before first use
@@ -94,7 +93,7 @@ void TemperatureManager(void const * argument)
 		temp1 = 0.800;		///TODO: fetch this value from external ADC (I2C)
 		tColdJunction = (temp1-0.500)/.010;
 
-		for (i=FrontThermocouple;i<NUMBER_OF_ADC_CH;i++)
+		for (i=TempSense_board;i>=FrontThermocouple;i--)
 		{
 
 			HAL_I2C_Master_Transmit_IT(&hi2c1, ADC_ADDRESS_7BIT,&ADCConfigByte[i],1);
@@ -137,8 +136,26 @@ void TemperatureManager(void const * argument)
 			i32tempReading = (i32tempReading) >> 14;
 
 			//AdcArray[i] = ((float)(abs(i32tempReading))*15.625)/8; //15.625uV par bit  gain = 8
-			AdcArray[i] = ((float)(i32tempReading)*15.625)/8; //15.625uV par bit  gain = 8
-			TemperatureCelsius[i] = uVtoDegreeCTypeK(AdcArray[i], tColdJunction); //6.7//26.1 //board is self heating to 7.3 above ambient
+			switch(i)
+			{
+				case FrontThermocouple:
+				case RearThermocouple:
+					AdcArray[i] = ((float)(i32tempReading)*15.625)/8; //15.625uV par bit  gain = 8
+					TemperatureCelsius[i] = uVtoDegreeCTypeK(AdcArray[i], tColdJunction); //6.7//26.1 //board is self heating to 7.3 above ambient
+					break;
+				case PlenumRtd:
+					AdcArray[i] = (float)(i32tempReading*15.625e-6);
+					TemperatureCelsius[i] = VtoDegreeCRtd(AdcArray[i]);
+					break;
+				case TempSense_board:
+					AdcArray[i] = (float)(i32tempReading*15.625e-6);
+					TemperatureCelsius[i] = (AdcArray[i]-0.500)/.010;
+					tColdJunction = TemperatureCelsius[i];
+					break;
+				default:
+					break;
+			}
+
 			TemperatureFarenheit[i] = TemperatureCelsius[i]*9/5+32;
 
 		}

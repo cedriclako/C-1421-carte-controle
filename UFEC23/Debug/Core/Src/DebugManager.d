@@ -16,7 +16,7 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
- ../Core/Inc/DebugManager.h \
+ ../Core/Inc/DebugPort.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
  ../Core/Inc/stm32f1xx_hal_conf.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h \
@@ -45,9 +45,9 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
- ../Core/Inc/DebugPort.h ../Core/Inc/TemperatureManager.h \
- ../Core/Inc/MotorManager.h ../Core/Inc/air_input.h ../Core/Inc/main.h \
- ../Core/Inc/algo.h
+ ../Core/Inc/TemperatureManager.h ../Core/Inc/MotorManager.h \
+ ../Core/Inc/air_input.h ../Core/Inc/main.h ../Core/Inc/algo.h \
+ ../Core/Inc/ParticlesManager.h ../Core/Inc/DebugManager.h
 
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h:
 
@@ -83,7 +83,7 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
 
-../Core/Inc/DebugManager.h:
+../Core/Inc/DebugPort.h:
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 
@@ -141,8 +141,6 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h:
 
-../Core/Inc/DebugPort.h:
-
 ../Core/Inc/TemperatureManager.h:
 
 ../Core/Inc/MotorManager.h:
@@ -152,3 +150,7 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
 ../Core/Inc/main.h:
 
 ../Core/Inc/algo.h:
+
+../Core/Inc/ParticlesManager.h:
+
+../Core/Inc/DebugManager.h:

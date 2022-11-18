@@ -18,8 +18,24 @@ typedef struct MeasureParticles
 	uint16_t ch1_ON;
 	uint16_t ch1_OFF;
 	uint16_t particles;
-	uint16_t standardDev;
+	uint16_t variance;
+	uint16_t temperature;
+	int slope;
+	uint16_t LED_current_meas;
+
+	uint16_t time_window;
+
+	uint8_t TSL_gain;
+	uint8_t TSL_integration_time;
+
 }MeasureParticles_t;
+
+uint16_t Particle_getCH0(void);
+uint16_t Particle_getCH1(void);
+uint16_t Particle_getCurrent(void);
+uint16_t Particle_getTemperature(void);
+uint16_t Particle_getVariance(void);
+int Particle_getSlope(void);
 
 
 void ParticlesManager(void const * argument);
