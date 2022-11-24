@@ -44,7 +44,7 @@ Core/Src/ParticlesManager.o: ../Core/Src/ParticlesManager.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
- ../Core/Inc/ParticlesManager.h
+ ../Core/Src/EspBridge.h ../Core/Inc/ParticlesManager.h
 
 ../Core/Inc/main.h:
 
@@ -137,5 +137,7 @@ Core/Src/ParticlesManager.o: ../Core/Src/ParticlesManager.c \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h:
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
+
+../Core/Src/EspBridge.h:
 
 ../Core/Inc/ParticlesManager.h:

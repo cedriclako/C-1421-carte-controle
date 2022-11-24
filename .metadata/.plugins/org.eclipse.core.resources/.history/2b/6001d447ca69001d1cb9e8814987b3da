@@ -1,0 +1,74 @@
+/*
+Solutions Novika.
+Copyright 2021
+===========================================================================
+
+Filename :      EspManager.c
+
+Author(s):      Charles Richard, CPI # 6045522
+
+Public prefix : EspManager
+
+Project # : C-1421
+
+Product: UFEC23
+
+Creation date:  2022/11/21
+
+Description:    Communication channel with ESP32
+
+===========================================================================
+
+Modifications
+-------------
+
+By    |   Date     | Version | Description
+------+------------+---------+---------------------------------------------
+CR    | 2022/11/21 | -       | Creation
+===========================================================================
+*/
+
+#include "main.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal.h"
+#include "EspBridge.h"
+
+extern UART_HandleTypeDef huart2;
+osSemaphoreId ESP_UART_SemaphoreHandle;
+
+
+void ParticlesManager(void const * argument) {
+
+	osSemaphoreDef(ESP_UART_SemaphoreHandle);
+	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
+	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
+
+
+	static uint16_t tx_checksum, rx_checksum;
+	static uint8_t TX_BUFFER[2];
+
+	TX_BUFFER[0] = 0xAB;
+	TX_BUFFER[1] = 0xCD;
+
+
+	for(;;) {
+
+
+
+
+		HAL_UART_Transmit_IT(&huart2, TX_BUFFER, tx_size);
+
+		if(osErrorOS == osSemaphoreWait(ESP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
+		{
+			//clearly something is wrong Abort the transmission
+			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
+			HAL_UART_Abort_IT(&huart2);
+			HAL_UART_DeInit(&huart2);
+			osDelay(100);
+			MX_USART3_UART_Init();
+			osDelay(100);
+		}
+
+	}
+
+}

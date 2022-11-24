@@ -605,7 +605,7 @@ void AllMotorToZero()
 			vToggleOneStep(i);
 			osDelay(5);
 		}
-		vDisableStepper(i);
+		//vDisableStepper(i);
 	}
 }
 

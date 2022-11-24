@@ -31,6 +31,7 @@ CR    | 2022/10/12 | -       | Creation
 #include "main.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
+#include "EspBridge.h"
 #include "ParticlesManager.h"
 
 #define START_BYTE 0xCC
@@ -218,6 +219,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 
 		osSemaphoreRelease(MP_UART_SemaphoreHandle);
+	}else if(huart->Instance == USART2)
+	{
+		osSemaphoreRelease(ESP_UART_SemaphoreHandle);
 	}
 
 }
@@ -228,7 +232,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart->Instance == USART3)
 	{
 		osSemaphoreRelease(MP_UART_SemaphoreHandle);
+	}else if(huart->Instance == USART2)
+	{
+		osSemaphoreRelease(ESP_UART_SemaphoreHandle);
 	}
+
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
@@ -237,6 +245,10 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 	if(huart->Instance == USART3)
 	{
 		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
+	}else if(huart->Instance == USART2)
+	{
+		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
 	}
+
 
 }

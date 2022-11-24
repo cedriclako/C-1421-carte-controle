@@ -37,7 +37,8 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart3;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -135,6 +136,7 @@ void Error_Handler(void);
 #define USB_Fault_GPIO_Port GPIOB
 void   MX_I2C1_Init(void);
 void   MX_USART3_UART_Init(void);
+void   MX_USART2_UART_Init(void);
 /* USER CODE BEGIN Private defines */
 extern RTC_TimeTypeDef sTime;
 extern RTC_HandleTypeDef hrtc;

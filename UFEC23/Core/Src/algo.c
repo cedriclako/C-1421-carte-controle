@@ -51,6 +51,15 @@ typedef struct CombTempParam{
 	int16_t OverheatChamber;
 }CombTempParam_t;
 
+typedef struct ParticlesParam{
+	int16_t TempRiseMax;
+	int16_t CombLowMax;
+	int16_t CombSuperLowMax;
+	int16_t FlameLossMax;
+	int16_t CoalMax;
+
+}ParticlesParam_t;
+
 
 
 const CombTempParam_t TemperatureParam =
@@ -77,6 +86,11 @@ const CombTempParam_t TemperatureParam =
 };
 
 #define ColdStoveTemp 900 //90F
+
+//Flame loss parameters:
+#define  RFlameLossB  500 // 50F Loss of temperature per R time to go in flame loss
+#define  RFlameLossR	 1400 // 140F Loss of temperature per R time to go in flame loss
+#define TRFlameLoss	   1 // 3 minutes time in minutes of data acquisition for R calculation
 
 //Maximum Primary and grate opening by state
 //all values are express in step 0.9degrees.
@@ -171,6 +185,7 @@ float Algo_Simulator_slopeBaffleTemp = 0.0;
 float Algo_slopeBaffleTemp = 0.0;
 static uint32_t timeSinceStateEntry;
 static uint32_t TimeOfReloadRequest;
+static uint32_t TimeSinceEntryInCombLow = 0;
 
 //Novika parameters Kc=0.500, Ti=0.200, Td = 0.002 (pas utilisé)
 //Kp = Kc
@@ -236,11 +251,17 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int targetTemperature = 0;
 	  static uint32_t Safetydebounce_ms = 0;
 
-	  //pour palier au fait qu'on applique des 1/2 pas, nous divisons les valeurs de NOVIKA 2019-12-04
-	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
-	  const uint32_t SEC_PER_STEP_COMB_LOW = 3;
+	  //flameloss variable
+	  static uint32_t timer_flameloss = 0;
+	  static int TFlameLossArrayB[4] = {0};
+	  static int TFlameLossArrayR[4] = {0};
+	  static int R_flamelossB = 0;
+	  static int R_flamelossR = 0;
+
+	  const uint32_t SEC_PER_STEP_TEMP_RISE = 3;
+	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
-	  const uint32_t SEC_PER_STEP_COAL_HIGH = 6;
+	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
 
 
 	  //calculate time used in the state transition.

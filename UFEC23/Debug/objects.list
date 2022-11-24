@@ -1,5 +1,6 @@
 "Core/Src/DebugManager.o"
 "Core/Src/DebugPort.o"
+"Core/Src/EspBridge.o"
 "Core/Src/Hmi.o"
 "Core/Src/MotorManager.o"
 "Core/Src/ParticlesManager.o"
