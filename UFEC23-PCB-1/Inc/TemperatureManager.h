@@ -1,0 +1,15 @@
+#ifndef TEMPERATURE_MAN_H
+#define	TEMPERATURE_MAN_H
+
+#include "cmsis_os.h"
+#include "stm32f1xx_hal.h"
+
+//public handle
+extern I2C_HandleTypeDef hi2c1;
+extern osThreadId ReadTemperatureTaskHandle;
+extern osSemaphoreId I2CSemaphoreHandle;
+//public function
+void ReadTemperatureTask(void const * argument);
+void TemperatureManager(void const * argument);
+
+#endif	/* TEMPERATURE_MAN_H  */

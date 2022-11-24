@@ -1,0 +1,91 @@
+/*
+Solutions Novika.
+Copyright 2021
+===========================================================================
+
+Filename :      EspManager.c
+
+Author(s):      Charles Richard, CPI # 6045522
+
+Public prefix : EspManager
+
+Project # : C-1421
+
+Product: UFEC23
+
+Creation date:  2022/11/21
+
+Description:    Communication channel with ESP32
+
+===========================================================================
+
+Modifications
+-------------
+
+By    |   Date     | Version | Description
+------+------------+---------+---------------------------------------------
+CR    | 2022/11/21 | -       | Creation
+===========================================================================
+*/
+
+#include "main.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal.h"
+#include "EspBridge.h"
+
+extern UART_HandleTypeDef huart2;
+osSemaphoreId ESP_UART_SemaphoreHandle;
+
+
+void ParticlesManager(void const * argument) {
+
+	osSemaphoreDef(ESP_UART_SemaphoreHandle);
+	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
+	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
+
+
+	static bool Rx_complete = false;
+	static bool rx_success = true;
+	static bool config_mode = false;
+	static uint16_t tx_checksum, rx_checksum;
+	uint8_t rx_payload_size, tx_size;
+
+
+	for(;;) {
+
+		if(rx_success)
+		{
+			rx_success = false;
+			osDelay(5000);
+		}
+
+		if(!config_mode)
+		{
+			TX_BUFFER[0] = START_BYTE;
+			TX_BUFFER[1] = READ_CMD;
+			tx_checksum = READ_CMD;
+			TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
+			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
+			TX_BUFFER[4] = STOP_BYTE;
+			tx_size = 5;
+		}else
+		{
+			//TODO:implement config routine
+		}
+
+		HAL_UART_Transmit_IT(&huart2, TX_BUFFER, tx_size);
+
+		if(osErrorOS == osSemaphoreWait(ESP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
+		{
+			//clearly something is wrong Abort the transmission
+			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
+			HAL_UART_Abort_IT(&huart2);
+			HAL_UART_DeInit(&huart2);
+			osDelay(100);
+			MX_USART3_UART_Init();
+			osDelay(100);
+		}
+
+	}
+
+}

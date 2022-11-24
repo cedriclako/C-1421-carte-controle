@@ -1,0 +1,7 @@
+TemperatureManager.c:64:6:TemperatureManager	104	static
+TemperatureManager.c:170:6:HAL_I2C_MasterTxCpltCallback	16	static
+TemperatureManager.c:174:6:HAL_I2C_MasterRxCpltCallback	16	static
+TemperatureManager.c:178:6:HAL_I2C_ErrorCallback	24	static
+TemperatureManager.c:183:6:HAL_I2C_AbortCpltCallback	24	static
+TemperatureManager.c:226:7:uVtoDegreeCTypeK	64	static
+TemperatureManager.c:244:7:VtoDegreeCRtd	24	static

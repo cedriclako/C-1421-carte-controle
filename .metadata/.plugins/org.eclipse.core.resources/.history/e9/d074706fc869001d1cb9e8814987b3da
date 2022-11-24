@@ -1,0 +1,29 @@
+/*
+Solutions Novika.
+Copyright 2021
+===========================================================================
+
+Filename :      EspManager.c
+
+Author(s):      Charles Richard, CPI # 6045522
+
+Public prefix : EspManager
+
+Project # : C-1421
+
+Product: UFEC23
+
+Creation date:  2022/10/12
+
+Description:    Communication channel with particles measurement board
+
+===========================================================================
+
+Modifications
+-------------
+
+By    |   Date     | Version | Description
+------+------------+---------+---------------------------------------------
+CR    | 2022/10/12 | -       | Creation
+===========================================================================
+*/
