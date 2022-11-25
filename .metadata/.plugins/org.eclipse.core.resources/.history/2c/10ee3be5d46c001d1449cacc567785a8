@@ -1,0 +1,255 @@
+/*
+Solutions Novika.
+Copyright 2021
+===========================================================================
+
+Filename :      ParticlesManager.c
+
+Author(s):      Charles Richard, CPI # 6045522
+
+Public prefix : ParticlesManager
+
+Project # : C-1421
+
+Product: UFEC23
+
+Creation date:  2022/10/12
+
+Description:    Communication channel with particles measurement board
+
+===========================================================================
+
+Modifications
+-------------
+
+By    |   Date     | Version | Description
+------+------------+---------+---------------------------------------------
+CR    | 2022/10/12 | -       | Creation
+===========================================================================
+*/
+
+#include "main.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal.h"
+#include "EspBridge.h"
+#include "ParticlesManager.h"
+
+#define START_BYTE 0xCC
+#define READ_CMD 0x00
+#define WRITE_CMD 0xC0
+#define STOP_BYTE 0x99
+
+#define RX_BUFFER_LENGTH 30
+#define TX_BUFFER_LENGTH 10
+
+extern UART_HandleTypeDef huart3;
+osSemaphoreId MP_UART_SemaphoreHandle;
+
+static uint8_t RX_BUFFER[RX_BUFFER_LENGTH];
+static uint8_t TX_BUFFER[TX_BUFFER_LENGTH];
+static MeasureParticles_t ParticleDevice;
+
+bool validateRxChecksum(uint8_t buffer_index);
+
+void ParticlesManager(void const * argument) {
+
+	osSemaphoreDef(MP_UART_SemaphoreHandle);
+	MP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(MP_UART_SemaphoreHandle), 1);
+	osSemaphoreWait(MP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
+
+
+	static bool Rx_complete = false;
+	static bool rx_success = true;
+	static bool config_mode = false;
+	static uint16_t tx_checksum, rx_checksum;
+	uint8_t rx_payload_size, tx_size;
+
+
+	for(;;) {
+
+		if(rx_success)
+		{
+			rx_success = false;
+			osDelay(5000);
+		}
+
+		if(!config_mode)
+		{
+			TX_BUFFER[0] = START_BYTE;
+			TX_BUFFER[1] = READ_CMD;
+			tx_checksum = READ_CMD;
+			TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
+			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
+			TX_BUFFER[4] = STOP_BYTE;
+			tx_size = 5;
+		}else
+		{
+			//TODO:implement config routine
+		}
+
+		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
+
+		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
+		{
+			//clearly something is wrong Abort the transmission
+			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
+			HAL_UART_Abort_IT(&huart3);
+			HAL_UART_DeInit(&huart3);
+			osDelay(100);
+			MX_USART3_UART_Init();
+			osDelay(100);
+		}
+		else
+		{
+			RX_BUFFER[0] = 0;
+			HAL_UARTEx_ReceiveToIdle_IT(&huart3, RX_BUFFER,RX_BUFFER_LENGTH);
+			Rx_complete = false;
+			do{
+
+				if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,200))
+				{
+					if(RX_BUFFER[0] == START_BYTE)
+					{
+						rx_payload_size = RX_BUFFER[1] & 0x3F;
+
+						if(rx_payload_size != 0 && RX_BUFFER[rx_payload_size + 4] == STOP_BYTE)
+						{
+							Rx_complete = true;
+						}
+
+					}
+					break;
+
+				}
+
+			}while (!Rx_complete);
+
+		}
+
+		if(Rx_complete)
+		{
+			int sign = 1;
+			rx_checksum = RX_BUFFER[1];
+			for(uint8_t i = 2;i <= rx_payload_size+1;i++)
+			{
+				rx_checksum += RX_BUFFER[i];
+			}
+
+			if(rx_checksum == ((uint16_t)(RX_BUFFER[rx_payload_size+2] << 8) + (uint16_t)RX_BUFFER[rx_payload_size+3]))
+			{
+				rx_success = true;
+				if((RX_BUFFER[1] & 0xC0) == READ_CMD)
+				{
+					ParticleDevice.ch0_ON = (uint16_t)(RX_BUFFER[2] << 8) + (uint16_t)RX_BUFFER[3];
+					ParticleDevice.ch0_OFF = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
+					ParticleDevice.ch1_ON = (uint16_t)(RX_BUFFER[6] << 8) + (uint16_t)RX_BUFFER[7];
+					ParticleDevice.ch1_OFF = (uint16_t)(RX_BUFFER[8] << 8) + (uint16_t)RX_BUFFER[9];
+					ParticleDevice.variance = (uint16_t)(RX_BUFFER[10] << 8) + (uint16_t)RX_BUFFER[11];
+					ParticleDevice.temperature = (uint16_t)(RX_BUFFER[12] << 8) + (uint16_t)RX_BUFFER[13];
+					ParticleDevice.LED_current_meas = (uint16_t)(RX_BUFFER[14] << 8) + (uint16_t)RX_BUFFER[15];
+					ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[16] << 8) + (uint16_t)RX_BUFFER[17];
+
+					if(RX_BUFFER[16] & 0x80)
+					{
+						RX_BUFFER[16] &= 0x7F;
+						sign = -1;
+					}
+					ParticleDevice.slope = sign*((int)(RX_BUFFER[16] << 8) + (int)RX_BUFFER[17]);
+
+
+
+				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
+				{
+					//TODO: Implement config
+				}
+			}
+		}
+
+	}
+
+}
+
+uint16_t Particle_getCH0(void)
+{
+	return ParticleDevice.ch0_ON;
+}
+
+uint16_t Particle_getCH1(void)
+{
+	return ParticleDevice.ch1_ON;
+}
+
+uint16_t Particle_getVariance(void)
+{
+	return ParticleDevice.variance;
+}
+
+int Particle_getSlope(void)
+{
+	return ParticleDevice.slope;
+}
+
+uint16_t Particle_getTemperature(void)
+{
+	return ParticleDevice.temperature;
+}
+
+uint16_t Particle_getCurrent(void)
+{
+	return (uint16_t)(ParticleDevice.LED_current_meas*3.3/4.096);
+}
+
+bool validateRxChecksum(uint8_t buffer_index)
+{
+	uint16_t sum = 0;
+	uint8_t i;
+
+	for(i = 1;i < buffer_index - 3;i++)
+	{
+		sum += RX_BUFFER[i];
+	}
+
+	return (sum == (uint16_t)(RX_BUFFER[i] << 8) + (uint16_t)RX_BUFFER[i+1]);
+}
+
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == USART3)
+	{
+
+		osSemaphoreRelease(MP_UART_SemaphoreHandle);
+	}else if(huart->Instance == USART2)
+	{
+		osSemaphoreRelease(ESP_UART_SemaphoreHandle);
+	}
+
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == USART3)
+	{
+		osSemaphoreRelease(MP_UART_SemaphoreHandle);
+	}else if(huart->Instance == USART2)
+	{
+		osSemaphoreRelease(ESP_UART_SemaphoreHandle);
+	}
+
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == USART3)
+	{
+		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
+	}else if(huart->Instance == USART2)
+	{
+		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
+	}
+
+
+}

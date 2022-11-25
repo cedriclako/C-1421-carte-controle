@@ -39,7 +39,7 @@ CR    | 2022/10/12 | -       | Creation
 #define WRITE_CMD 0xC0
 #define STOP_BYTE 0x99
 
-#define RX_BUFFER_LENGTH 24
+#define RX_BUFFER_LENGTH 30
 #define TX_BUFFER_LENGTH 10
 
 extern UART_HandleTypeDef huart3;
@@ -154,6 +154,10 @@ void ParticlesManager(void const * argument) {
 						sign = -1;
 					}
 					ParticleDevice.slope = sign*((int)(RX_BUFFER[16] << 8) + (int)RX_BUFFER[17]);
+					ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
+					ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
+					ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
+
 
 
 
