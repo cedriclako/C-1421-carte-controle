@@ -202,6 +202,20 @@ uint16_t Particle_getCurrent(void)
 	return (uint16_t)(ParticleDevice.LED_current_meas*3.3/4.096);
 }
 
+uint16_t Particle_getLuxON(void)
+{
+	return ParticleDevice.Lux_ON;
+}
+uint16_t Particle_getLuxOFF(void)
+{
+	return ParticleDevice.Lux_OFF;
+}
+
+uint32_t Particle_getTime(void)
+{
+	return ParticleDevice.TimeSinceInit;
+}
+
 bool validateRxChecksum(uint8_t buffer_index)
 {
 	uint16_t sum = 0;

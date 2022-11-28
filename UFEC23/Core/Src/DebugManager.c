@@ -130,9 +130,10 @@ void DebugManager(void const * argument)
 		printf("PartVar:%u ",Particle_getVariance());
 		printf("PartSlope:%i ",Particle_getSlope());
 		printf("TPart:%u ",Particle_getTemperature());
-		printf("PartCurr:%u",Particle_getCurrent());
-
-		// TODO: Ajouter variance et pente
+		printf("PartCurr:%u ",Particle_getCurrent());
+		printf("PartLuxON:%u ", Particle_getLuxON());
+		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
+		printf("PartTime:%lu", Particle_getTime());
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

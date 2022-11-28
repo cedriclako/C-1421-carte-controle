@@ -38,6 +38,10 @@ uint16_t Particle_getCH1(void);
 uint16_t Particle_getCurrent(void);
 uint16_t Particle_getTemperature(void);
 uint16_t Particle_getVariance(void);
+uint16_t Particle_getLuxON(void);
+uint16_t Particle_getLuxOFF(void);
+uint32_t Particle_getTime(void);
+
 int Particle_getSlope(void);
 
 
