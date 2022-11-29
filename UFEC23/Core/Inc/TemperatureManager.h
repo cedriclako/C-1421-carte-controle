@@ -8,5 +8,6 @@
 //public function
 void ReadTemperatureTask(void const * argument);
 void TemperatureManager(void const * argument);
+int get_BoardTemp(void);
 
 #endif	/* TEMPERATURE_MAN_H  */

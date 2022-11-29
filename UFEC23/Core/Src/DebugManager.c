@@ -78,8 +78,8 @@ void DebugManager(void const * argument)
 			case COMBUSTION_LOW:
 				printf("COMB_LOW");
 				break;
-			case COMBUSTION_LOW2:
-				printf("COMB_LOW2");
+			case COMBUSTION_SUPERLOW:
+				printf("COMB_SUPERLOW");
 				break;
 			case COMBUSTION_HIGH:
 				printf("COMB_HIGH");
@@ -125,6 +125,7 @@ void DebugManager(void const * argument)
 		//printf("PrimSec:%i ",Algo_getPrimary()*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
 		printf("Sec:%i ",Algo_getSecondary()*9/10);
+		printf("Tboard:%i ",get_BoardTemp());
 		printf("PartCH0:%u ", Particle_getCH0());
 		printf("PartCH1:%u ", Particle_getCH1());
 		printf("PartVar:%u ",Particle_getVariance());

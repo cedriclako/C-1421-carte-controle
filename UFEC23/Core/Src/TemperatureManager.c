@@ -47,6 +47,7 @@
 /* Private variables ---------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
 osSemaphoreId I2CSemaphoreHandle;
+static int Tboard;
 
 /* Private function ---------------------------------------------------------*/
 float uVtoDegreeCTypeK(float uVdata,float Tref);
@@ -82,6 +83,9 @@ void TemperatureManager(void const * argument)
 
     bool DataReady;
 
+	temp1 = 0.800;		///TODO: fetch this value from external ADC (I2C)
+	tColdJunction = (temp1-0.500)/.010;
+
     /* Infinite loop */
     for(;;)
     {
@@ -90,8 +94,7 @@ void TemperatureManager(void const * argument)
 
     	//coldjunction temperature
 		//temp1 = uCAdcData[1]*3.3/4096;  //Vout=TC x TA + VoC where TC = 10mV/C V0C->500mV
-		temp1 = 0.800;		///TODO: fetch this value from external ADC (I2C)
-		tColdJunction = (temp1-0.500)/.010;
+
 
 		for (i=TempSense_board;i>=FrontThermocouple;i--)
 		{
@@ -160,6 +163,7 @@ void TemperatureManager(void const * argument)
 
 		}
 
+		Tboard = (int)(TemperatureFarenheit[TempSense_board]);
 		Algo_setBaffleTemp((int)(TemperatureFarenheit[FrontThermocouple]*10));
 		Algo_setRearTemp((int)(TemperatureFarenheit[RearThermocouple]*10));
 		Algo_setPlenumTemp((int)(TemperatureFarenheit[PlenumRtd]*10));
@@ -167,6 +171,12 @@ void TemperatureManager(void const * argument)
   	}
   /* USER CODE END TemperatureManager */
 }
+
+int get_BoardTemp(void)
+{
+	return Tboard;
+}
+
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
 	osSemaphoreRelease(I2CSemaphoreHandle);

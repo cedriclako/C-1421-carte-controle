@@ -158,9 +158,6 @@ void ParticlesManager(void const * argument) {
 					ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 					ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
 
-
-
-
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
 					//TODO: Implement config
