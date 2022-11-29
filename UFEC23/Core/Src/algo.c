@@ -64,7 +64,7 @@ typedef struct ParticlesParam{
 
 const CombTempParam_t TemperatureParam =
 {
-	//UFEC23 - Test du 2022-09-07 ajustement pour gtf typical load type               //tenth of F
+	//UFEC23 - Test du 2022-11-29 NOUVEAU PCB (une seule carte)               //tenth of F
 	. WaitingToIgnition = 1000,
 	. IgnitionToTrise = 5250,        //était 450 avant les vacances GTF
 	. TriseTargetLow = 5750,         //était 600 2022-03-04 GTF
