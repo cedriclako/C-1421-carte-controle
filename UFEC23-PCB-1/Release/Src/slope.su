@@ -1,3 +1,0 @@
-slope.c:9:6:Slope_init	4	static
-slope.c:23:6:Slope_addData	0	static
-slope.c:36:7:Slope_compute	72	static

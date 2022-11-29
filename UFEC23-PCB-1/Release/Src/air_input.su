@@ -1,6 +1,0 @@
-air_input.c:5:6:AirInput_forceAperture	0	static
-air_input.c:12:5:AirInput_getAperture	0	static
-air_input.c:15:6:AirInput_InPosition	0	static
-air_input.c:20:6:AirInput_setSetPoint	0	static
-air_input.c:27:6:AirInput_setAjustement	4	static
-air_input.c:34:6:AirInput_task	12	static
