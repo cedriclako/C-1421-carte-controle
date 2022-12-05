@@ -198,10 +198,10 @@ void HmiManager()
 					ButtonBlinkingrequired = true;
 					buttonblinkrequirecount = 6;
 				}
-			}
-			else
-			{
-				LastButtonPressedTime_ms = osKernelSysTick();
+				else
+				{
+					LastButtonPressedTime_ms = osKernelSysTick();
+				}
 			}
 		}
 

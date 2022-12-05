@@ -122,15 +122,24 @@ void DebugManager(void const * argument)
 		printf(" FanSpeed:%i ",Mot_getFanSpeed());
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
-		//printf("PrimSec:%i ",Algo_getPrimary()*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
 		printf("Sec:%i ",Algo_getSecondary()*9/10);
-		printf("Tboard:%i ",get_BoardTemp());
+		printf("Tboard:%iF ",get_BoardTemp());
+		printf("Door:");
+		if(IsDoorOpen())
+		{
+			printf("OPEN ");
+
+		}
+		else
+		{
+			printf("CLOSED");
+		}
 		printf("PartCH0:%u ", Particle_getCH0());
 		printf("PartCH1:%u ", Particle_getCH1());
 		printf("PartVar:%u ",Particle_getVariance());
 		printf("PartSlope:%i ",Particle_getSlope());
-		printf("TPart:%u ",Particle_getTemperature());
+		printf("TPart:%uF ",Particle_getTemperature());
 		printf("PartCurr:%u ",Particle_getCurrent());
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());

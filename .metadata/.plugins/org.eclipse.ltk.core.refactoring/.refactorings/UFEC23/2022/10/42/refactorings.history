@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename resource &apos;UFEC23/Core/Src/ParticlesManager&apos; to &apos;ParticlesManager.c&apos;" description="Rename resource &apos;ParticlesManager&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="Core/Src/ParticlesManager" name="ParticlesManager.c" stamp="1665603491142" updateReferences="true"/>
-</session>

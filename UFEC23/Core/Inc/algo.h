@@ -77,6 +77,8 @@ uint32_t Algo_getTimeOfReloadRequest();
 
 extern int Algo_getPrimary();
 
+bool IsDoorOpen(void);
+
 
 extern float Algo_getBaffleTempSlope();
 

@@ -65,23 +65,24 @@ typedef struct ParticlesParam{
 const CombTempParam_t TemperatureParam =
 {
 	//UFEC23 - Test du 2022-11-29 NOUVEAU PCB (une seule carte)               //tenth of F
-	. WaitingToIgnition = 1000,
-	. IgnitionToTrise = 5250,        //était 450 avant les vacances GTF
-	. TriseTargetLow = 5750,         //était 600 2022-03-04 GTF
-	. TriseTargetHigh = 7000,        //était 575 avant les vacances gtf
-	. CombLowTarget = 6600,          //était 650 2022-3-04 GTF
-	. CombHighTarget = 7000,         //était 932 dans HC, tentative à 900 2021-11-23 GTF (on s'en sert au coal low...)
-	. CombLowtoSuperLow = 7000,      //était 500 2022-03-04 GTF
-	. FlameLoss = 7500,              //RETOUR A 750 SUR LE REAR TEMPERATUR
-	. FlameLossDelta = 1750,          //CHANGEMENT POUR 175 GTF 2022-08-30
-	. CoalCrossOverRearLow = 8000,   //était 750 dans HC, ramener à 750 2021-11-23 GTF
-	. CoalCrossOverRearHigh = 8500,  //était 850 dans HC, tentative à 750 2021-11-23 GTF
-	. CoalDeltaTemp = 2000,          //était 234 dans HC, tentative à -300 2021-11-23 GTF
-	. CoalStoveTemp = 900,           //
-	. OverheatPlenum = 2200,         //NA
-	. OverheatPlenumExit = 2100,     //NA
-	. OverheatBaffle = 15000,        //était 2000 dans HC, tentative à 15000 2021-11-19 GTF
-	. OverheatChamber = 13000       //était 800 dans HC, tentative à 600 2021-11-19 GTF
+	.WaitingToIgnition = 1000,
+	.IgnitionToTrise = 5250,
+	.TriseTargetLow = 6500,
+	.TriseTargetHigh = 6900,
+	.CombLowTarget = 6600,
+	.CombHighTarget = 7000,
+	.CombLowtoSuperLow = 7000,
+	.FlameLoss = 7500,
+	.FlameLossDelta = 1750,
+	.CoalCrossOverRearLow = 8000,
+	.CoalCrossOverRearHigh = 7000,
+	.CoalDeltaTemp = 2500,
+	.CoalStoveTemp = 900,
+	.OverheatPlenum = 2200,
+	.OverheatPlenumExit = 2100,
+	.OverheatBaffle = 15000,
+	.OverheatChamber = 15000,
+
 
 };
 
@@ -98,31 +99,32 @@ const CombTempParam_t TemperatureParam =
 
 const MotorOpeningsParam_t PrimaryMotorParam =
 {
-	.MaxWaiting = 13,
-	.MinWaiting = 13,
-	.MaxReload = 200,
-	.MinReload = 100,
-	.MaxTempRise = 100,
-	.MinTempRise = 35,
-	.MaxCombHigh = 200,
-	.MinCombHigh = 28,
-	.MaxCombLow = 61,
-	.MinCombLow = 43,
-	.MaxCombSuperLow = 22,
-	.MinCombSuperLow = 22,
-	.MaxCoalHigh = 200,
-	.MinCoalHigh = 35,
-	.MaxCoalLow = 14,
-	.MinCoalLow = 14
+	.MaxWaiting = 6,
+	.MinWaiting = 6,
+	.MaxReload = 97,
+	.MinReload = 58,
+	.MaxTempRise = 85,
+	.MinTempRise = 17,
+	.MaxCombHigh = 70,
+	.MinCombHigh = 14,
+	.MaxCombLow = 39,
+	.MinCombLow = 0,
+	.MaxCombSuperLow = 25,
+	.MinCombSuperLow = 0,
+	.MaxCoalHigh = 0,
+	.MinCoalHigh = 0,
+	.MaxCoalLow = 0,
+	.MinCoalLow = 0,
+
 };
 
 const MotorOpeningsParam_t GrillMotorParam =
 {
 	.MaxWaiting = 0,
 	.MinWaiting = 0,
-	.MaxReload = 39,
+	.MaxReload = 97,
 	.MinReload = 0,
-	.MaxTempRise = 0,
+	.MaxTempRise = 30,
 	.MinTempRise = 0,
 	.MaxCombHigh = 0,
 	.MinCombHigh = 0,
@@ -130,31 +132,33 @@ const MotorOpeningsParam_t GrillMotorParam =
 	.MinCombLow = 0,
 	.MaxCombSuperLow = 0,
 	.MinCombSuperLow = 0,
-	.MaxCoalHigh = 200,
-	.MinCoalHigh = 0,
-	.MaxCoalLow = 0,
-	.MinCoalLow = 0
+	.MaxCoalHigh = 97,
+	.MinCoalHigh = 97,
+	.MaxCoalLow = 24,
+	.MinCoalLow = 24,
+
 
 };
 
 const MotorOpeningsParam_t SecondaryMotorParam =
 {//Added for current PCB model (parameters must be adjusted by user)
-	.MaxWaiting = 13,
-	.MinWaiting = 13,
-	.MaxReload = 200,
-	.MinReload = 100,
-	.MaxTempRise = 100,
-	.MinTempRise = 35,
-	.MaxCombHigh = 200,
-	.MinCombHigh = 28,
-	.MaxCombLow = 61,
-	.MinCombLow = 43,
-	.MaxCombSuperLow = 22,
-	.MinCombSuperLow = 22,
-	.MaxCoalHigh = 200,
-	.MinCoalHigh = 35,
-	.MaxCoalLow = 14,
-	.MinCoalLow = 14
+	.MaxWaiting = 6,
+	.MinWaiting = 6,
+	.MaxReload = 97,
+	.MinReload = 97,
+	.MaxTempRise = 58,
+	.MinTempRise = 58,
+	.MaxCombHigh = 97,
+	.MinCombHigh = 97,
+	.MaxCombLow = 97,
+	.MinCombLow = 97,
+	.MaxCombSuperLow = 50,
+	.MinCombSuperLow = 50,
+	.MaxCoalHigh = 50,
+	.MinCoalHigh = 50,
+	.MaxCoalLow = 10,
+	.MinCoalLow = 10,
+
 };
 
 
@@ -672,45 +676,45 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		{
 			nextState = SAFETY; //force the safety state
 		}
-	}
-	else
-	{
-		Safetydebounce_ms = osKernelSysTick();
-	}
 
+		else
+		{
+			Safetydebounce_ms = osKernelSysTick();
+		}
+	}
   /* Perform superstate action's */
   switch (currentState) {
 
     default:
-	if ((baffleTemperature > TemperatureParam.OverheatBaffle) || (rearTemperature > TemperatureParam.OverheatChamber) || (Algo_getPlenumTemp()>TemperatureParam.OverheatPlenum)) {
-		nextState = OVERTEMP;
-	}
-	if(currentState == TEMPERATURE_RISE || currentState == COMBUSTION_HIGH || currentState == COMBUSTION_LOW || currentState == COMBUSTION_SUPERLOW)
-	{
-		if ((baffleTemperature < ColdStoveTemp) && (rearTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
-		nextState = WAITING;
-		}
+    	if ((baffleTemperature > TemperatureParam.OverheatBaffle) || (rearTemperature > TemperatureParam.OverheatChamber) || (Algo_getPlenumTemp()>TemperatureParam.OverheatPlenum)) {
+    		nextState = OVERTEMP;
+    	}
+    	if(currentState == TEMPERATURE_RISE || currentState == COMBUSTION_HIGH || currentState == COMBUSTION_LOW || currentState == COMBUSTION_SUPERLOW)
+    	{
+    		if ((baffleTemperature < ColdStoveTemp) && (rearTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
+    			nextState = WAITING;
+    		}
 		//flameloss decision
 
-		if ((currentTime_ms - timer_flameloss) >= MINUTES(TRFlameLoss)){
-			for (int i = 0; i < 3; i++){
-				TFlameLossArrayB[i] = TFlameLossArrayB[i+1];
-				TFlameLossArrayR[i] = TFlameLossArrayR[i+1];
-			}
-			TFlameLossArrayB[3] = Algo_getBaffleTemp();
-			TFlameLossArrayR[3] = Algo_getRearTemp();
-			R_flamelossB = TFlameLossArrayB[0] - TFlameLossArrayB[3];
-			R_flamelossR = TFlameLossArrayR[0] - TFlameLossArrayR[3];
-			timer_flameloss = currentTime_ms;
-			if ((R_flamelossB > RFlameLossB) || (R_flamelossR > RFlameLossR)){
+    		if ((currentTime_ms - timer_flameloss) >= MINUTES(TRFlameLoss)){
+    			for (int i = 0; i < 3; i++){
+    				TFlameLossArrayB[i] = TFlameLossArrayB[i+1];
+    				TFlameLossArrayR[i] = TFlameLossArrayR[i+1];
+    			}
+    			TFlameLossArrayB[3] = Algo_getBaffleTemp();
+    			TFlameLossArrayR[3] = Algo_getRearTemp();
+    			R_flamelossB = TFlameLossArrayB[0] - TFlameLossArrayB[3];
+    			R_flamelossR = TFlameLossArrayR[0] - TFlameLossArrayR[3];
+    			timer_flameloss = currentTime_ms;
+    			if ((R_flamelossB > RFlameLossB) || (R_flamelossR > RFlameLossR)){
 					nextState = FLAME_LOSS;
-			}
-		}
-	}
-	if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
-		nextState = currentState;
-	}
-      break;
+    			}
+    		}
+    	}
+    	if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
+    		nextState = currentState;
+    	}
+    	break;
 
     case WAITING:
     //case RELOAD_IGNITION:
@@ -720,7 +724,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
       /* do nothing */
       break;
   }
-  if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST))
+  if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
   {
   		nextState = WAITING;
   }
@@ -968,5 +972,10 @@ void StateEntryControlAdjustment(const uint8_t MinPrimary, const uint8_t MaxPrim
 				MinGrill, MaxGrill,
 				MinSecondary, MaxSecondary);
 	}
+}
+
+bool IsDoorOpen(void)
+{
+	return GPIO_PIN_SET == HAL_GPIO_ReadPin(Limit_switch_Door_GPIO_Port,Limit_switch_Door_Pin);
 }
 

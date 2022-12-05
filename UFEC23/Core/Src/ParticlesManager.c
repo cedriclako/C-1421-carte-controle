@@ -40,7 +40,7 @@ CR    | 2022/10/12 | -       | Creation
 #define STOP_BYTE 0x99
 
 #define RX_BUFFER_LENGTH 30
-#define TX_BUFFER_LENGTH 10
+#define TX_BUFFER_LENGTH 12
 
 extern UART_HandleTypeDef huart3;
 osSemaphoreId MP_UART_SemaphoreHandle;
@@ -84,7 +84,23 @@ void ParticlesManager(void const * argument) {
 			tx_size = 5;
 		}else
 		{
-			//TODO:implement config routine
+			TX_BUFFER[0] = START_BYTE;
+			TX_BUFFER[1] = WRITE_CMD;
+			tx_checksum = WRITE_CMD;
+			TX_BUFFER[2] = 0x03;
+			TX_BUFFER[3] = 0x05;
+			TX_BUFFER[4] = 110;
+			TX_BUFFER[5] = 0x01;
+			for(uint8_t j = 2;j < 6;j++)
+			{
+				tx_checksum += TX_BUFFER[j];
+			}
+			TX_BUFFER[6] = (uint8_t)(tx_checksum >> 8);
+			TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
+			TX_BUFFER[8] = STOP_BYTE;
+			tx_size = 9;
+
+
 		}
 
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
