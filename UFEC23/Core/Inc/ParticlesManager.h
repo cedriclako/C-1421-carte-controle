@@ -35,6 +35,8 @@ typedef struct MeasureParticles
 
 uint16_t Particle_getCH0(void);
 uint16_t Particle_getCH1(void);
+uint16_t Particle_getCH0_OFF(void);
+uint16_t Particle_getCH1_OFF(void);
 uint16_t Particle_getCurrent(void);
 uint16_t Particle_getTemperature(void);
 uint16_t Particle_getVariance(void);

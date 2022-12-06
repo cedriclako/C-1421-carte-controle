@@ -79,10 +79,10 @@ typedef struct FanSpeedKipKopParam{
 #define GRILL_FULL_OPEN                     100
 #define PRIMARY_MINIMUM_OPENING				13 //12degree/0.9 =13step
 #define PRIMARY_CLOSED  					PRIMARY_MINIMUM_OPENING
-#define PRIMARY_FULL_OPEN			   		200
+#define PRIMARY_FULL_OPEN			   		100
 #define SECONDARY_MINIMUM_OPENING			13
 #define SECONDARY_CLOSED					SECONDARY_MINIMUM_OPENING
-#define SECONDARY_FULL_OPEN				200
+#define SECONDARY_FULL_OPEN				    100
 #define STEP_RANGE_PRIMARY   (PRIMARY_FULL_OPEN - PRIMARY_MINIMUM_OPENING)
 #define STEP_RANGE_GRILL   (GRILL_FULL_OPEN - GRILL_CLOSED)
 
@@ -108,8 +108,8 @@ void Steppermanager(void const * argument);
 void AllMotorToZero();
 MotorControl_t* pstGetMotor(motor_t Index);
 void MotorManagerTask(void const * argument);
-extern void vSetSpeed(Mot_FanSpeed RequestedSpeed);
-extern bool Mot_InPosition( AirInput * self,motor_t Motorid);
+void vSetSpeed(Mot_FanSpeed RequestedSpeed);
+bool Mot_InPosition( AirInput * self,motor_t Motorid);
 //public function
 extern Mot_FanSpeed Mot_getFanSpeed();
 extern void StepperMotorProdTest(motor_t MotorId);

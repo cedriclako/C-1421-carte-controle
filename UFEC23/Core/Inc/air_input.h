@@ -8,6 +8,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#define SEC_PER_STEP_FORCE 0xAAAA
+
 typedef struct {
   int aperture;
   int setPoint;
@@ -16,6 +18,7 @@ typedef struct {
   int maxValue;
   int minValue;
 } AirInput;
+
 
 /* maxVal is the maximum value of the aperture. */
 #define AirInput_init(minVal, maxVal) {.aperture = 0, .setPoint = 0, .timeRefRampe = 0, .minValue = minVal, .maxValue = maxVal}
@@ -27,6 +30,9 @@ bool AirInput_InPosition( AirInput * self);
 
 /* Get the current aperture. */
 int AirInput_getAperture( AirInput * self);
+
+/* Get the current setpoint  */
+int AirInput_getSetPoint( AirInput * self);
 
 /* Set point of the aperture. The aperture will reach the set point using the rampe. */
 void AirInput_setSetPoint( AirInput * self, int setPoint, uint32_t secPerStep);

@@ -133,17 +133,20 @@ void DebugManager(void const * argument)
 		}
 		else
 		{
-			printf("CLOSED");
+			printf("CLOSED ");
 		}
-		printf("PartCH0:%u ", Particle_getCH0());
-		printf("PartCH1:%u ", Particle_getCH1());
+		printf("PartCH0ON:%u ", Particle_getCH0());
+		printf("PartCH1ON:%u ", Particle_getCH1());
+		printf("PartCH0OFF:%u ",Particle_getCH0_OFF());
+		printf("PartCH1OFF:%u ",Particle_getCH1_OFF());
 		printf("PartVar:%u ",Particle_getVariance());
 		printf("PartSlope:%i ",Particle_getSlope());
-		printf("TPart:%uF ",Particle_getTemperature());
+		printf("TPart:%umF ",Particle_getTemperature());
 		printf("PartCurr:%u ",Particle_getCurrent());
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
-		printf("PartTime:%lu", Particle_getTime());
+		printf("PartTime:%lu ", Particle_getTime());
+		//printf("GlobalStatus:%u", );
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

@@ -8,10 +8,14 @@ void AirInput_forceAperture( AirInput * self, int aperture) {
   self->setPoint = aperture;
 }
 
-
 int AirInput_getAperture( AirInput * self) {
   return self->aperture;
 }
+
+int AirInput_getSetPoint( AirInput * self) {
+  return self->setPoint;
+}
+
 bool AirInput_InPosition( AirInput * self)
 {
 	return self->aperture == self->setPoint;
@@ -34,7 +38,7 @@ void AirInput_setAjustement( AirInput * self, int adjustement, uint32_t secPerSt
 void AirInput_task( AirInput * self, uint32_t currentTime_ms) {
 
   if (self->aperture != self->setPoint) {
-    if ((currentTime_ms - self->timeRefRampe) >= (self->secPerStep * 1000)) {
+    if ((currentTime_ms - self->timeRefRampe) >= (self->secPerStep * 1000) || self->secPerStep == SEC_PER_STEP_FORCE) {
       self->timeRefRampe = currentTime_ms;
       if (self->setPoint > self->aperture) {
         self->aperture++;
