@@ -49,8 +49,6 @@ Thumbs.db
 *.wmv
 
 # STMCubeIDE
-*.project
-*.cproject
 .metadata/
 UFEC23/Debug/
 UFEC23/Release/
