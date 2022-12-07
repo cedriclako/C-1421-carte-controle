@@ -303,6 +303,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	//AirInput_forceAperture(&primary, PrimaryMotorParam.MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
     	//AirInput_forceAperture(&grill, GrillMotorParam.MaxWaiting);// GRILL_CLOSED);
     	//AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
+
     	AirInput_setSetPoint(&primary, PrimaryMotorParam.MaxWaiting, SEC_PER_STEP_FORCE);
     	AirInput_setSetPoint(&grill, GrillMotorParam.MaxWaiting, SEC_PER_STEP_FORCE);
     	AirInput_setSetPoint(&secondary, SecondaryMotorParam.MaxWaiting, SEC_PER_STEP_FORCE);

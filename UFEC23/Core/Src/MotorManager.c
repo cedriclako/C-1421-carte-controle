@@ -214,21 +214,21 @@ void vStepperPositioning(int RequestedPosition,int *CurrentPosition, motor_t Mot
 			switch(MotorId)
 			{
 			case PrimaryStepper:
-				if (*CurrentPosition < PRIMARY_MINIMUM_OPENING)
+				if (*CurrentPosition < (int)PRIMARY_MINIMUM_OPENING)
 				{
 					*CurrentPosition = PRIMARY_MINIMUM_OPENING;
 					vDisableStepper(PrimaryStepper);
 				}
 				break;
 			case GrillStepper:
-				if(*CurrentPosition < 0)
+				if(*CurrentPosition < (int)GRILL_MINIMUM_OPENING)
 				{
 					*CurrentPosition = 0;
 					vDisableStepper(GrillStepper);
 				}
 				break;
 			case SecondaryStepper:
-				if (*CurrentPosition < SECONDARY_MINIMUM_OPENING)
+				if (*CurrentPosition < (int)SECONDARY_MINIMUM_OPENING)
 				{
 					*CurrentPosition = SECONDARY_MINIMUM_OPENING;
 					vDisableStepper(SecondaryStepper);
