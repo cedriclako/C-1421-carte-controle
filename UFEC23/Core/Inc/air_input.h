@@ -8,8 +8,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-#define SEC_PER_STEP_FORCE 0xAAAA
-
 typedef struct {
   int aperture;
   int setPoint;

@@ -38,7 +38,7 @@ void AirInput_setAjustement( AirInput * self, int adjustement, uint32_t secPerSt
 void AirInput_task( AirInput * self, uint32_t currentTime_ms) {
 
   if (self->aperture != self->setPoint) {
-    if ((currentTime_ms - self->timeRefRampe) >= (self->secPerStep * 1000) || self->secPerStep == SEC_PER_STEP_FORCE) {
+    if ((currentTime_ms - self->timeRefRampe) >= (self->secPerStep * 1000)) {
       self->timeRefRampe = currentTime_ms;
       if (self->setPoint > self->aperture) {
         self->aperture++;

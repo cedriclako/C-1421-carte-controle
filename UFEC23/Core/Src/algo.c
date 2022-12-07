@@ -300,13 +300,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		break;
     case WAITING:
 
-    	//AirInput_forceAperture(&primary, PrimaryMotorParam.MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
-    	//AirInput_forceAperture(&grill, GrillMotorParam.MaxWaiting);// GRILL_CLOSED);
-    	//AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
-
-    	AirInput_setSetPoint(&primary, PrimaryMotorParam.MaxWaiting, SEC_PER_STEP_FORCE);
-    	AirInput_setSetPoint(&grill, GrillMotorParam.MaxWaiting, SEC_PER_STEP_FORCE);
-    	AirInput_setSetPoint(&secondary, SecondaryMotorParam.MaxWaiting, SEC_PER_STEP_FORCE);
+    	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
+    	AirInput_forceAperture(&grill, GrillMotorParam.MaxWaiting);// GRILL_CLOSED);
+    	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
 
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
@@ -328,20 +324,15 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     case RELOAD_IGNITION:
 
-		//AirInput_forceAperture(&primary, PrimaryMotorParam.MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
-		//AirInput_forceAperture(&grill, GrillMotorParam.MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
-		//AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxReload);
-
-    	AirInput_setSetPoint(&primary, PrimaryMotorParam.MaxReload, SEC_PER_STEP_FORCE);
-    	AirInput_setSetPoint(&grill, GrillMotorParam.MaxReload, SEC_PER_STEP_FORCE);
-    	AirInput_setSetPoint(&secondary, SecondaryMotorParam.MaxReload, SEC_PER_STEP_FORCE);
+		AirInput_forceAperture(&primary, PrimaryMotorParam.MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
+		AirInput_forceAperture(&grill, GrillMotorParam.MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
+		AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxReload);
 
 
 		if (((baffleTemperature > TemperatureParam.IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
 		reloadingEvent = false;
-		//AirInput_forceAperture(&grill, GRILL_CLOSED);
-		AirInput_setSetPoint(&grill, GRILL_CLOSED, SEC_PER_STEP_FORCE);
+		AirInput_forceAperture(&grill, GRILL_CLOSED);
 		}
 		if(timeSinceStateEntry >= MINUTES(20))
 		{
@@ -355,12 +346,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		targetTemperature = thermostatRequest ? TemperatureParam.TriseTargetHigh : TemperatureParam.TriseTargetLow;
 
 		if(historyState != currentState){
-		  //AirInput_forceAperture(&primary, PrimaryMotorParam.MaxTempRise);
-		  //AirInput_forceAperture(&grill, GrillMotorParam.MaxTempRise);
-		  //AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxTempRise);
-	    	AirInput_setSetPoint(&primary, PrimaryMotorParam.MaxTempRise, SEC_PER_STEP_FORCE);
-	    	AirInput_setSetPoint(&grill, GrillMotorParam.MaxTempRise, SEC_PER_STEP_FORCE);
-	    	AirInput_setSetPoint(&secondary, SecondaryMotorParam.MaxTempRise, SEC_PER_STEP_FORCE);
+		  AirInput_forceAperture(&primary, PrimaryMotorParam.MaxTempRise);
+		  AirInput_forceAperture(&grill, GrillMotorParam.MaxTempRise);
+		  AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxTempRise);
 		  historyState = currentState;
 		}
 #if PID_CONTROL_ON
@@ -490,8 +478,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 			if (rearTemperature < TemperatureParam.FlameLoss && ( deltaTemperature < TemperatureParam.FlameLossDelta)) { //changement de reartemp pour le flameloss au lieu de baffletemp GTF 2022-08-30
 				nextState = FLAME_LOSS;
-				//AirInput_forceAperture(&grill, GRILL_FULL_OPEN);
-				AirInput_setSetPoint(&grill, GRILL_FULL_OPEN, SEC_PER_STEP_FORCE);
+				AirInput_forceAperture(&grill, GRILL_FULL_OPEN);
 			}
 		else{
 				//we loss the flamme but we are not in coal yet, we reopen the grill
@@ -569,13 +556,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COAL_LOW: //remplacement de la logic du low pour la logic du high de la fournaise pour UFEC 23 2021-11-23
 
     	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,SET);//active le relai pour activer la carte 2 PLV 15/12/21
-    	//AirInput_forceAperture(&primary, PrimaryMotorParam.MaxCoalLow);
-    	//AirInput_forceAperture(&grill, GrillMotorParam.MaxCoalLow);
-    	//AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalLow);
-
-    	AirInput_setSetPoint(&primary, PrimaryMotorParam.MaxCoalLow, SEC_PER_STEP_FORCE);
-        AirInput_setSetPoint(&grill, GrillMotorParam.MaxCoalLow, SEC_PER_STEP_FORCE);
-    	AirInput_setSetPoint(&secondary, SecondaryMotorParam.MaxCoalLow, SEC_PER_STEP_FORCE);
+    	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxCoalLow);
+    	AirInput_forceAperture(&grill, GrillMotorParam.MaxCoalLow);
+    	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalLow);
 
     	if (thermostatRequest) {
     	          nextState = COAL_HIGH;
@@ -667,13 +650,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     case OVERTEMP:
     case SAFETY:
-      //AirInput_forceAperture(&grill, GRILL_CLOSED);
-      //AirInput_forceAperture(&primary, PRIMARY_CLOSED);
-      //AirInput_forceAperture(&secondary,SECONDARY_CLOSED); //TODO: Choose what to do with secondary
-
-      AirInput_setSetPoint(&primary, PRIMARY_CLOSED, SEC_PER_STEP_FORCE);
-      AirInput_setSetPoint(&grill, GRILL_CLOSED, SEC_PER_STEP_FORCE);
-      AirInput_setSetPoint(&secondary, SECONDARY_CLOSED, SEC_PER_STEP_FORCE);
+      AirInput_forceAperture(&grill, GRILL_CLOSED);
+      AirInput_forceAperture(&primary, PRIMARY_CLOSED);
+      AirInput_forceAperture(&secondary,SECONDARY_CLOSED); //TODO: Choose what to do with secondary
 
 
       if ((baffleTemperature < TemperatureParam.OverheatBaffle)
