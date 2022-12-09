@@ -122,7 +122,7 @@ void Steppermanager(void const * argument)
 	//printf("\n Stepper manager running");
 
 	HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,RESET);
-	//HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
+	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
 	Algo_init();
 
   for(;;)
@@ -248,7 +248,7 @@ void vStepperPositioning(int RequestedPosition, int *CurrentPosition, motor_t Mo
 			vSetStepperMotorDirection(MotorId, Opening);
 			*CurrentPosition = *CurrentPosition + 1;
 			vToggleOneStep(MotorId);
-			StepToPerform++;
+			StepToPerform = *CurrentPosition - RequestedPosition;
 		}
 		//Calculate or new position
 	}
@@ -605,7 +605,7 @@ void AllMotorToZero()
 			vToggleOneStep(i);
 			osDelay(5);
 		}
-		//vDisableStepper(i);
+		vDisableStepper(i);
 	}
 }
 

@@ -111,7 +111,7 @@ void ParticlesManager(void const * argument) {
 
 
 		}
-
+		rx_payload_size = 0;
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 
 		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
@@ -233,7 +233,7 @@ int Particle_getSlope(void)
 
 uint16_t Particle_getTemperature(void)
 {
-	return ParticleDevice.temperature;
+	return (uint16_t)(ParticleDevice.temperature*9/5000+32);
 }
 
 uint16_t Particle_getCurrent(void)
