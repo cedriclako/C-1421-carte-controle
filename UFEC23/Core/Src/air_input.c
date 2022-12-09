@@ -21,13 +21,6 @@ bool AirInput_InPosition( AirInput * self)
 	return self->aperture == self->setPoint;
 }
 
-void AirInput_setSetPoint( AirInput * self, int setPoint, uint32_t secPerStep) {
-  setPoint = constrain(setPoint, self->minValue, self->maxValue);
-  self->setPoint = setPoint;
-  self->secPerStep = secPerStep;
-}
-
-
 void AirInput_setAjustement( AirInput * self, int adjustement, uint32_t secPerStep) {
   self->setPoint += adjustement;
   self->setPoint = constrain(self->setPoint, self->minValue, self->maxValue);

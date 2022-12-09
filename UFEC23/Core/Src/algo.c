@@ -482,7 +482,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			}
 		else{
 				//we loss the flamme but we are not in coal yet, we reopen the grill
-				//AirInput_setSetPoint(&grill, GRILL_CLOSED, SEC_PER_STEP_COMB_LOW);
 				if (TimeForStep >= (1 * SEC_PER_STEP_COMB_LOW * 1000)
 						&& AirInput_InPosition(&grill)
 						&& AirInput_InPosition(&primary)
@@ -935,6 +934,7 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 		else
 		{
 			AirInput_setAjustement(&primary, adjustement, secondPerStep);
+			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 		}
 	}
 	else if (adjustement < 0)
@@ -948,6 +948,7 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 			if(AirInput_getAperture(&primary) > MinPrimary)
 			{
 				AirInput_setAjustement(&primary, adjustement, secondPerStep);
+				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 			}
 		}
 	}

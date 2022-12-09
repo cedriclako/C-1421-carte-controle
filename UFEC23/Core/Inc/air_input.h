@@ -32,9 +32,6 @@ int AirInput_getAperture( AirInput * self);
 /* Get the current setpoint  */
 int AirInput_getSetPoint( AirInput * self);
 
-/* Set point of the aperture. The aperture will reach the set point using the rampe. */
-void AirInput_setSetPoint( AirInput * self, int setPoint, uint32_t secPerStep);
-
 /* adjustement: +/- a given value added to the set point. */
 void AirInput_setAjustement( AirInput * self, int adjustement, uint32_t secPerStep);
 
