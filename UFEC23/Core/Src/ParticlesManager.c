@@ -29,6 +29,7 @@ CR    | 2022/10/12 | -       | Creation
 */
 
 #include "main.h"
+#include "algo.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
@@ -48,6 +49,8 @@ osSemaphoreId MP_UART_SemaphoreHandle;
 static uint8_t RX_BUFFER[RX_BUFFER_LENGTH];
 static uint8_t TX_BUFFER[TX_BUFFER_LENGTH];
 static MeasureParticles_t ParticleDevice;
+static uint16_t uartErrorCount = 0;
+static bool particleBoardAbsent = false;
 
 bool validateRxChecksum(uint8_t buffer_index);
 
@@ -70,7 +73,13 @@ void ParticlesManager(void const * argument) {
 		if(rx_success)
 		{
 			rx_success = false;
+			particleBoardAbsent = false;
+			uartErrorCount = 0;
 			osDelay(5000);
+		}
+		if(particleBoardAbsent)
+		{
+			osDelay(30000); //Ping every 30 sec... see if back on line
 		}
 
 		if(!config_mode)
@@ -102,7 +111,7 @@ void ParticlesManager(void const * argument) {
 
 
 		}
-
+		rx_payload_size = 0;
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 
 		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
@@ -131,6 +140,14 @@ void ParticlesManager(void const * argument) {
 						if(rx_payload_size != 0 && RX_BUFFER[rx_payload_size + 4] == STOP_BYTE)
 						{
 							Rx_complete = true;
+						}
+
+					}else
+					{
+						uartErrorCount++;
+						if(uartErrorCount > 10)
+						{
+							particleBoardAbsent = true;
 						}
 
 					}
@@ -195,6 +212,15 @@ uint16_t Particle_getCH1(void)
 	return ParticleDevice.ch1_ON;
 }
 
+uint16_t Particle_getCH0_OFF(void)
+{
+	return ParticleDevice.ch0_OFF;
+}
+uint16_t Particle_getCH1_OFF(void)
+{
+	return ParticleDevice.ch1_OFF;
+}
+
 uint16_t Particle_getVariance(void)
 {
 	return ParticleDevice.variance;
@@ -207,7 +233,7 @@ int Particle_getSlope(void)
 
 uint16_t Particle_getTemperature(void)
 {
-	return ParticleDevice.temperature;
+	return (uint16_t)(ParticleDevice.temperature*9/5000+32);
 }
 
 uint16_t Particle_getCurrent(void)
@@ -248,7 +274,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	if(huart->Instance == USART3)
 	{
-
 		osSemaphoreRelease(MP_UART_SemaphoreHandle);
 	}else if(huart->Instance == USART2)
 	{
@@ -270,16 +295,16 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 }
 
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
+	uint32_t errorcode;
+	ErrorType error = UART;
 
-	if(huart->Instance == USART3)
+	if(huart->Instance == USART3 || huart->Instance == USART2)
 	{
-		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
-	}else if(huart->Instance == USART2)
-	{
-		uint32_t errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
+		errorcode = huart->ErrorCode;//send this error code up the line to communicate to PC?
+		setErrorFlag(errorcode, error);
 	}
-
 
 }

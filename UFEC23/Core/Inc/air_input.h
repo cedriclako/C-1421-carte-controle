@@ -17,6 +17,7 @@ typedef struct {
   int minValue;
 } AirInput;
 
+
 /* maxVal is the maximum value of the aperture. */
 #define AirInput_init(minVal, maxVal) {.aperture = 0, .setPoint = 0, .timeRefRampe = 0, .minValue = minVal, .maxValue = maxVal}
 
@@ -28,8 +29,8 @@ bool AirInput_InPosition( AirInput * self);
 /* Get the current aperture. */
 int AirInput_getAperture( AirInput * self);
 
-/* Set point of the aperture. The aperture will reach the set point using the rampe. */
-void AirInput_setSetPoint( AirInput * self, int setPoint, uint32_t secPerStep);
+/* Get the current setpoint  */
+int AirInput_getSetPoint( AirInput * self);
 
 /* adjustement: +/- a given value added to the set point. */
 void AirInput_setAjustement( AirInput * self, int adjustement, uint32_t secPerStep);

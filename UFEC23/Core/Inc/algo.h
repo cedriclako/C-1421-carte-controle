@@ -44,6 +44,11 @@ typedef enum {
   ALGO_DEL_ON
 } Algo_DELState;
 
+typedef enum {
+	UART,
+	I2C,
+	Particle,
+}ErrorType;
 
 extern float Algo_Simulator_slopeTempAvant;
 extern int16_t PIDTrapPosition;
@@ -57,6 +62,7 @@ extern int Algo_getRearTemp();
 extern int Algo_getPlenumTemp();
 extern void managePlenumSpeed(int plenumTemp, bool thermostatRequest, uint32_t Time_ms);
 extern void manageButtonLed();
+void setErrorFlag(uint32_t errorcode, ErrorType type);
 
 /* Parameter temp in [tenth *C] */
 extern void Algo_setBaffleTemp(int temp);
@@ -68,14 +74,16 @@ extern void Algo_setRearTemp(int temp);
 void Algo_setPlenumTemp(int temp);
 
 /* Returns a value in [degrees] */
-extern int Algo_getPrimary();
-extern int Algo_getSecondary();
+int Algo_getPrimary();
+int Algo_getSecondary();
+
+int Algo_getPrimarySetPoint(void);
+int Algo_getGrillSetPoint(void);;
+int Algo_getSecondarySetPoint(void);
 
 /* Returns a value in [degrees] */
 extern int Algo_getGrill();
 uint32_t Algo_getTimeOfReloadRequest();
-
-extern int Algo_getPrimary();
 
 bool IsDoorOpen(void);
 

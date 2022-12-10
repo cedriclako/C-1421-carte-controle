@@ -61,7 +61,7 @@ void DebugManager(void const * argument)
 		HAL_RTC_GetTime(&hrtc,&sTime,0);
 		printf("#");
 		printf("%02i:%02i:%02i ",sTime.Hours,sTime.Minutes,sTime.Seconds);
-		printf("Tavant:%iF TArriere:%iF Plenum:%iF ",Algo_getBaffleTemp()/10,Algo_getRearTemp()/10,Algo_getPlenumTemp()/10);
+		printf("Tavant:%i TArriere:%i Plenum:%i ",Algo_getBaffleTemp()/10,Algo_getRearTemp()/10,Algo_getPlenumTemp()/10);
 		printf("State:");
 
 		TempAlgoState = Algo_getState();
@@ -124,7 +124,7 @@ void DebugManager(void const * argument)
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
 		printf("Sec:%i ",Algo_getSecondary()*9/10);
-		printf("Tboard:%iF ",get_BoardTemp());
+		printf("Tboard:%i ",get_BoardTemp());
 		printf("Door:");
 		if(IsDoorOpen())
 		{
@@ -133,17 +133,20 @@ void DebugManager(void const * argument)
 		}
 		else
 		{
-			printf("CLOSED");
+			printf("CLOSED ");
 		}
-		printf("PartCH0:%u ", Particle_getCH0());
-		printf("PartCH1:%u ", Particle_getCH1());
+		printf("PartCH0ON:%u ", Particle_getCH0());
+		printf("PartCH1ON:%u ", Particle_getCH1());
+		printf("PartCH0OFF:%u ",Particle_getCH0_OFF());
+		printf("PartCH1OFF:%u ",Particle_getCH1_OFF());
 		printf("PartVar:%u ",Particle_getVariance());
 		printf("PartSlope:%i ",Particle_getSlope());
-		printf("TPart:%uF ",Particle_getTemperature());
+		printf("TPart:%u ",Particle_getTemperature());
 		printf("PartCurr:%u ",Particle_getCurrent());
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
-		printf("PartTime:%lu", Particle_getTime());
+		printf("PartTime:%lu ", Particle_getTime());
+		printf("GlobalStatus:FORMAT_TBD" );
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

@@ -122,7 +122,7 @@ void Steppermanager(void const * argument)
 	//printf("\n Stepper manager running");
 
 	HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,RESET);
-	//HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
+	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
 	Algo_init();
 
   for(;;)
@@ -147,7 +147,7 @@ void Steppermanager(void const * argument)
 }
 
 
-void vStepperPositioning(int RequestedPosition,int *CurrentPosition, motor_t MotorId)
+void vStepperPositioning(int RequestedPosition, int *CurrentPosition, motor_t MotorId)
 {
     //MotorControl_t* pstMotorControl;
     //pstMotorControl = &stMotor[MotorId];
@@ -162,13 +162,13 @@ void vStepperPositioning(int RequestedPosition,int *CurrentPosition, motor_t Mot
     	switch(MotorId)
     	{
     	case PrimaryStepper:
-    		*CurrentPosition = PRIMARY_MINIMUM_OPENING;
+    		*CurrentPosition = (int)PRIMARY_MINIMUM_OPENING;
     		break;
     	case GrillStepper:
-    		*CurrentPosition = 0;
+    		*CurrentPosition = (int)GRILL_MINIMUM_OPENING;
     		break;
     	case SecondaryStepper:
-    		*CurrentPosition = SECONDARY_MINIMUM_OPENING;
+    		*CurrentPosition = (int)SECONDARY_MINIMUM_OPENING;
     		break;
     	default:
     		break;
@@ -180,19 +180,19 @@ void vStepperPositioning(int RequestedPosition,int *CurrentPosition, motor_t Mot
 	switch(MotorId)
 	{
 	case PrimaryStepper:
-		if (*CurrentPosition == PRIMARY_MINIMUM_OPENING	 && !StepperToZero)
+		if (*CurrentPosition == (int)PRIMARY_MINIMUM_OPENING	 && !StepperToZero)
 		{
 			StepToPerform = 1;
 		}
 		break;
 	case GrillStepper:
-		if (*CurrentPosition == 0 && !StepperToZero)
+		if (*CurrentPosition == (int)GRILL_MINIMUM_OPENING && !StepperToZero)
 		{
 			StepToPerform = 1;
 		}
 		break;
 	case SecondaryStepper:
-		if (*CurrentPosition == SECONDARY_MINIMUM_OPENING && !StepperToZero)
+		if (*CurrentPosition == (int)SECONDARY_MINIMUM_OPENING && !StepperToZero)
 		{
 			StepToPerform = 1;
 		}
@@ -214,23 +214,23 @@ void vStepperPositioning(int RequestedPosition,int *CurrentPosition, motor_t Mot
 			switch(MotorId)
 			{
 			case PrimaryStepper:
-				if (*CurrentPosition < PRIMARY_MINIMUM_OPENING)
+				if (*CurrentPosition < (int)PRIMARY_MINIMUM_OPENING)
 				{
-					*CurrentPosition = PRIMARY_MINIMUM_OPENING;
+					*CurrentPosition = (int)PRIMARY_MINIMUM_OPENING;
 					vDisableStepper(PrimaryStepper);
 				}
 				break;
 			case GrillStepper:
-				if(*CurrentPosition < 0)
+				if(*CurrentPosition < (int)GRILL_MINIMUM_OPENING)
 				{
-					*CurrentPosition = 0;
+					*CurrentPosition = (int)GRILL_MINIMUM_OPENING;
 					vDisableStepper(GrillStepper);
 				}
 				break;
 			case SecondaryStepper:
-				if (*CurrentPosition < SECONDARY_MINIMUM_OPENING)
+				if (*CurrentPosition < (int)SECONDARY_MINIMUM_OPENING)
 				{
-					*CurrentPosition = SECONDARY_MINIMUM_OPENING;
+					*CurrentPosition = (int)SECONDARY_MINIMUM_OPENING;
 					vDisableStepper(SecondaryStepper);
 				}
 				break;
@@ -248,7 +248,7 @@ void vStepperPositioning(int RequestedPosition,int *CurrentPosition, motor_t Mot
 			vSetStepperMotorDirection(MotorId, Opening);
 			*CurrentPosition = *CurrentPosition + 1;
 			vToggleOneStep(MotorId);
-			StepToPerform++;
+			StepToPerform = *CurrentPosition - RequestedPosition;
 		}
 		//Calculate or new position
 	}
@@ -605,7 +605,7 @@ void AllMotorToZero()
 			vToggleOneStep(i);
 			osDelay(5);
 		}
-		//vDisableStepper(i);
+		vDisableStepper(i);
 	}
 }
 

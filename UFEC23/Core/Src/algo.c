@@ -165,6 +165,7 @@ const MotorOpeningsParam_t SecondaryMotorParam =
 //state machine variable and initial values
 static State currentState = ZEROING_STEPPER;
 static bool reloadingEvent = false;
+static bool errorFlag = false;
 bool fanPauseRequired = false;
 static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_FULL_OPEN);
 static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
@@ -262,6 +263,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int R_flamelossB = 0;
 	  static int R_flamelossR = 0;
 
+
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 3;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
@@ -287,9 +289,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     default:
     case ZEROING_STEPPER:
-		AirInput_forceAperture(&primary, PrimaryMotorParam.MinWaiting);
-		AirInput_forceAperture(&grill, GrillMotorParam.MinWaiting);
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MinWaiting);
+		AirInput_forceAperture(&primary, PrimaryMotorParam.MinWaiting); // Porter attention à l'utilisation de cette fonction
+		AirInput_forceAperture(&grill, GrillMotorParam.MinWaiting);     // Elle change l'aperture et le setpoint en même temps
+		AirInput_forceAperture(&secondary, SecondaryMotorParam.MinWaiting); // À cet endroit ça ne pose pas de problème, mais dans les autres états, oui
 		AllMotorToZero(); //set all motors to zero
 		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
@@ -301,6 +303,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
     	AirInput_forceAperture(&grill, GrillMotorParam.MaxWaiting);// GRILL_CLOSED);
     	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
+
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
 
@@ -324,6 +327,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		AirInput_forceAperture(&primary, PrimaryMotorParam.MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
 		AirInput_forceAperture(&grill, GrillMotorParam.MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
 		AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxReload);
+
 
 		if (((baffleTemperature > TemperatureParam.IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
@@ -478,7 +482,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			}
 		else{
 				//we loss the flamme but we are not in coal yet, we reopen the grill
-				//AirInput_setSetPoint(&grill, GRILL_CLOSED, SEC_PER_STEP_COMB_LOW);
 				if (TimeForStep >= (1 * SEC_PER_STEP_COMB_LOW * 1000)
 						&& AirInput_InPosition(&grill)
 						&& AirInput_InPosition(&primary)
@@ -555,6 +558,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxCoalLow);
     	AirInput_forceAperture(&grill, GrillMotorParam.MaxCoalLow);
     	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalLow);
+
     	if (thermostatRequest) {
     	          nextState = COAL_HIGH;
     	}else if (reloadingEvent) {
@@ -649,6 +653,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
       AirInput_forceAperture(&primary, PRIMARY_CLOSED);
       AirInput_forceAperture(&secondary,SECONDARY_CLOSED); //TODO: Choose what to do with secondary
 
+
       if ((baffleTemperature < TemperatureParam.OverheatBaffle)
     		  && (rearTemperature < TemperatureParam.OverheatChamber)
 			  && (Algo_getPlenumTemp() < TemperatureParam.OverheatPlenumExit)){
@@ -684,45 +689,43 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	}
   /* Perform superstate action's */
   switch (currentState) {
+  	  case WAITING:
+  		  //case RELOAD_IGNITION:
+  	  case OVERTEMP:
+  	  case SAFETY:
+  	  case PRODUCTION_TEST:
+  		  /* do nothing */
+  		  break;
+  	  default:
+  		  if ((baffleTemperature > TemperatureParam.OverheatBaffle) || (rearTemperature > TemperatureParam.OverheatChamber) || (Algo_getPlenumTemp()>TemperatureParam.OverheatPlenum)) {
+  			  nextState = OVERTEMP;
+  		  }
+  		  if(currentState == TEMPERATURE_RISE || currentState == COMBUSTION_HIGH || currentState == COMBUSTION_LOW || currentState == COMBUSTION_SUPERLOW)
+  		  {
+  			  if ((baffleTemperature < ColdStoveTemp) && (rearTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
+  				  nextState = WAITING;
+  			  }
+  			  //flameloss decision
 
-    default:
-    	if ((baffleTemperature > TemperatureParam.OverheatBaffle) || (rearTemperature > TemperatureParam.OverheatChamber) || (Algo_getPlenumTemp()>TemperatureParam.OverheatPlenum)) {
-    		nextState = OVERTEMP;
-    	}
-    	if(currentState == TEMPERATURE_RISE || currentState == COMBUSTION_HIGH || currentState == COMBUSTION_LOW || currentState == COMBUSTION_SUPERLOW)
-    	{
-    		if ((baffleTemperature < ColdStoveTemp) && (rearTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
-    			nextState = WAITING;
-    		}
-		//flameloss decision
-
-    		if ((currentTime_ms - timer_flameloss) >= MINUTES(TRFlameLoss)){
-    			for (int i = 0; i < 3; i++){
-    				TFlameLossArrayB[i] = TFlameLossArrayB[i+1];
-    				TFlameLossArrayR[i] = TFlameLossArrayR[i+1];
-    			}
-    			TFlameLossArrayB[3] = Algo_getBaffleTemp();
-    			TFlameLossArrayR[3] = Algo_getRearTemp();
-    			R_flamelossB = TFlameLossArrayB[0] - TFlameLossArrayB[3];
-    			R_flamelossR = TFlameLossArrayR[0] - TFlameLossArrayR[3];
-    			timer_flameloss = currentTime_ms;
-    			if ((R_flamelossB > RFlameLossB) || (R_flamelossR > RFlameLossR)){
-					nextState = FLAME_LOSS;
-    			}
-    		}
-    	}
-    	if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
-    		nextState = currentState;
-    	}
+  			  if ((currentTime_ms - timer_flameloss) >= MINUTES(TRFlameLoss)){
+  				  for (int i = 0; i < 3; i++){
+  					  TFlameLossArrayB[i] = TFlameLossArrayB[i+1];
+  					  TFlameLossArrayR[i] = TFlameLossArrayR[i+1];
+  				  }
+  				  TFlameLossArrayB[3] = Algo_getBaffleTemp();
+  				  TFlameLossArrayR[3] = Algo_getRearTemp();
+  				  R_flamelossB = TFlameLossArrayB[0] - TFlameLossArrayB[3];
+  				  R_flamelossR = TFlameLossArrayR[0] - TFlameLossArrayR[3];
+  				  timer_flameloss = currentTime_ms;
+  				  if ((R_flamelossB > RFlameLossB) || (R_flamelossR > RFlameLossR)){
+  					  nextState = FLAME_LOSS;
+  				  }
+  			  }
+  		  }
+  		  if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
+  			  nextState = currentState;
+  		  }
     	break;
-
-    case WAITING:
-    //case RELOAD_IGNITION:
-    case OVERTEMP:
-    case SAFETY:
-    case PRODUCTION_TEST:
-      /* do nothing */
-      break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
   {
@@ -830,6 +833,21 @@ int Algo_getSecondary() {
 	return AirInput_getAperture(&secondary);
 }
 
+int Algo_getPrimarySetPoint(void)
+{
+	return AirInput_getSetPoint(&primary);
+}
+
+int Algo_getGrillSetPoint(void)
+{
+	return AirInput_getSetPoint(&grill);
+}
+
+int Algo_getSecondarySetPoint(void)
+{
+	return AirInput_getSetPoint(&secondary);
+}
+
 Algo_DELState Algo_getStateFinChargemenent() {
   return delLoadingEnd;
 }
@@ -916,6 +934,7 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 		else
 		{
 			AirInput_setAjustement(&primary, adjustement, secondPerStep);
+			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 		}
 	}
 	else if (adjustement < 0)
@@ -929,6 +948,7 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 			if(AirInput_getAperture(&primary) > MinPrimary)
 			{
 				AirInput_setAjustement(&primary, adjustement, secondPerStep);
+				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 			}
 		}
 	}
@@ -977,5 +997,24 @@ void StateEntryControlAdjustment(const uint8_t MinPrimary, const uint8_t MaxPrim
 bool IsDoorOpen(void)
 {
 	return GPIO_PIN_SET == HAL_GPIO_ReadPin(Limit_switch_Door_GPIO_Port,Limit_switch_Door_Pin);
+}
+
+void setErrorFlag(uint32_t errorcode, ErrorType type)
+{
+	errorFlag = true;
+	static uint16_t uartCounter = 0;
+
+	switch(type)
+	{
+	case UART:
+		uartCounter++;
+		break;
+	case I2C:
+		break;
+	case Particle:
+		break;
+	default:
+		break;
+	}
 }
 
