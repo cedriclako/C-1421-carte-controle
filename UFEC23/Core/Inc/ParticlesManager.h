@@ -27,9 +27,9 @@ typedef struct MeasureParticles
 	uint32_t TimeSinceInit;
 
 	uint16_t time_window;
-
 	uint8_t TSL_gain;
 	uint8_t TSL_integration_time;
+	uint8_t LED_current_CMD;
 
 }MeasureParticles_t;
 
@@ -45,6 +45,7 @@ uint16_t Particle_getLuxOFF(void);
 uint32_t Particle_getTime(void);
 
 int Particle_getSlope(void);
+void Particle_setConfig(void);
 
 
 void ParticlesManager(void const * argument);

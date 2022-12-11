@@ -41,7 +41,7 @@ CR    | 2022/10/12 | -       | Creation
 #define STOP_BYTE 0x99
 
 #define RX_BUFFER_LENGTH 30
-#define TX_BUFFER_LENGTH 12
+#define TX_BUFFER_LENGTH 20
 
 extern UART_HandleTypeDef huart3;
 osSemaphoreId MP_UART_SemaphoreHandle;
@@ -51,6 +51,7 @@ static uint8_t TX_BUFFER[TX_BUFFER_LENGTH];
 static MeasureParticles_t ParticleDevice;
 static uint16_t uartErrorCount = 0;
 static bool particleBoardAbsent = false;
+static bool config_mode = false;
 
 bool validateRxChecksum(uint8_t buffer_index);
 
@@ -63,9 +64,14 @@ void ParticlesManager(void const * argument) {
 
 	static bool Rx_complete = false;
 	static bool rx_success = true;
-	static bool config_mode = false;
 	static uint16_t tx_checksum, rx_checksum;
 	uint8_t rx_payload_size, tx_size;
+
+	ParticleDevice.time_window = 1;
+	ParticleDevice.TSL_gain = 3;
+	ParticleDevice.TSL_integration_time = 5;
+	ParticleDevice.LED_current_CMD = 100;
+
 
 
 	for(;;) {
@@ -79,7 +85,7 @@ void ParticlesManager(void const * argument) {
 		}
 		if(particleBoardAbsent)
 		{
-			osDelay(30000); //Ping every 30 sec... see if back on line
+			//osDelay(30000); //Ping every 30 sec... see if back on line
 		}
 
 		if(!config_mode)
@@ -94,12 +100,12 @@ void ParticlesManager(void const * argument) {
 		}else
 		{
 			TX_BUFFER[0] = START_BYTE;
-			TX_BUFFER[1] = WRITE_CMD;
-			tx_checksum = WRITE_CMD;
-			TX_BUFFER[2] = 0x03;
-			TX_BUFFER[3] = 0x05;
-			TX_BUFFER[4] = 110;
-			TX_BUFFER[5] = 0x01;
+			TX_BUFFER[1] = WRITE_CMD | 0x04;
+			tx_checksum = TX_BUFFER[1];
+			TX_BUFFER[2] = ParticleDevice.TSL_gain;
+			TX_BUFFER[3] = ParticleDevice.TSL_integration_time;
+			TX_BUFFER[4] = ParticleDevice.LED_current_CMD;
+			TX_BUFFER[5] = ParticleDevice.time_window;
 			for(uint8_t j = 2;j < 6;j++)
 			{
 				tx_checksum += TX_BUFFER[j];
@@ -108,6 +114,7 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[8] = STOP_BYTE;
 			tx_size = 9;
+
 
 
 		}
@@ -129,9 +136,10 @@ void ParticlesManager(void const * argument) {
 			RX_BUFFER[0] = 0;
 			HAL_UARTEx_ReceiveToIdle_IT(&huart3, RX_BUFFER,RX_BUFFER_LENGTH);
 			Rx_complete = false;
+			config_mode = false;
 			do{
 
-				if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,200))
+				if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,400))
 				{
 					if(RX_BUFFER[0] == START_BYTE)
 					{
@@ -194,6 +202,12 @@ void ParticlesManager(void const * argument) {
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
 					//TODO: Implement config
+					if(RX_BUFFER[2] == ParticleDevice.TSL_gain && RX_BUFFER[3] == ParticleDevice.TSL_integration_time
+							&& RX_BUFFER[4] == ParticleDevice.LED_current_CMD && RX_BUFFER[5] == ParticleDevice.time_window)
+					{
+						config_mode = false;
+					}
+
 				}
 			}
 		}
@@ -307,4 +321,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 		setErrorFlag(errorcode, error);
 	}
 
+}
+void Particle_setConfig(void)
+{
+	config_mode = true;
 }

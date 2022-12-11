@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
+#include "ParticlesManager.h"
 #include "algo.h"
 #include "main.h"
 #include "ProdTest.h"
@@ -197,6 +198,7 @@ void HmiManager()
 					Algo_startChargement(kerneltime);
 					ButtonBlinkingrequired = true;
 					buttonblinkrequirecount = 6;
+					//Particle_setConfig();
 				}
 				else
 				{
