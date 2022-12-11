@@ -52,3 +52,8 @@ Thumbs.db
 .metadata/
 UFEC23/Debug/
 UFEC23/Release/
+
+#MPLAB_IDE
+C-1333_-_Mesures_emissions.X/build/
+C-1333_-_Mesures_emissions.X/debug/
+C-1333_-_Mesures_emissions.X/nbproject/
