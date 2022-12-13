@@ -45,8 +45,7 @@
 
 
 /* Private variables ---------------------------------------------------------*/
-extern I2C_HandleTypeDef hi2c1;
-osSemaphoreId I2CSemaphoreHandle;
+static osSemaphoreId I2CSemaphoreHandle;
 static int Tboard;
 
 /* Private function ---------------------------------------------------------*/

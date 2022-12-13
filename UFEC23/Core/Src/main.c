@@ -64,16 +64,16 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
-osThreadId defaultTaskHandle;
-osTimerId TimerHandle;
+static osThreadId defaultTaskHandle;
+static osTimerId TimerHandle;
 /* USER CODE BEGIN PV */
-osThreadId TemperatureMeasHandle;
-osThreadId StepperManagerTHandle;
-osThreadId DebugManagerTHandle;
-osThreadId HmiManagerTHandle;
+static osThreadId TemperatureMeasHandle;
+static osThreadId StepperManagerTHandle;
+static osThreadId DebugManagerTHandle;
+static osThreadId HmiManagerTHandle;
 
 #if MEASURE_PARTICLES_ISACTIVE
-osThreadId ParticlesManagerTHandle;
+static osThreadId ParticlesManagerTHandle;
 #endif
 
 #if ESP32_ISACTIVE
