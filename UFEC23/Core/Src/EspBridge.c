@@ -33,8 +33,8 @@ CR    | 2022/11/21 | -       | Creation
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
 
-extern UART_HandleTypeDef huart2;
 //osSemaphoreId ESP_UART_SemaphoreHandle;
+osSemaphoreId ESP_UART_SemaphoreHandle;
 
 
 void EspManager(void const * argument) {

@@ -62,7 +62,7 @@ typedef struct ParticlesParam{
 
 
 
-const CombTempParam_t TemperatureParam =
+static const CombTempParam_t TemperatureParam =
 {
 	//UFEC23 - Test du 2022-11-29 NOUVEAU PCB (une seule carte)               //tenth of F
 	.WaitingToIgnition = 1000,
@@ -97,7 +97,7 @@ const CombTempParam_t TemperatureParam =
 //all values are express in step 0.9degrees.
 
 
-const MotorOpeningsParam_t PrimaryMotorParam =
+static const MotorOpeningsParam_t PrimaryMotorParam =
 {
 	.MaxWaiting = 6,
 	.MinWaiting = 6,
@@ -118,7 +118,7 @@ const MotorOpeningsParam_t PrimaryMotorParam =
 
 };
 
-const MotorOpeningsParam_t GrillMotorParam =
+static const MotorOpeningsParam_t GrillMotorParam =
 {
 	.MaxWaiting = 0,
 	.MinWaiting = 0,
@@ -140,7 +140,7 @@ const MotorOpeningsParam_t GrillMotorParam =
 
 };
 
-const MotorOpeningsParam_t SecondaryMotorParam =
+static const MotorOpeningsParam_t SecondaryMotorParam =
 {//Added for current PCB model (parameters must be adjusted by user)
 	.MaxWaiting = 6,
 	.MinWaiting = 6,
@@ -171,8 +171,8 @@ static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_FULL_OP
 static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
 static AirInput secondary = AirInput_init(SECONDARY_MINIMUM_OPENING, SECONDARY_FULL_OPEN);
 
-Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
-Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
+static Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
+static Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
 
 static int baffleTemperature = 0;   // [Tenth *F]
 static int rearTemperature = 0; // [Tenth *F]

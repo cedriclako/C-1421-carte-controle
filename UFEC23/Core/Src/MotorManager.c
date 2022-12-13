@@ -71,7 +71,7 @@ void vStepperMaxTorque(motor_t Motor,bool bApplyMaxTorque);
 //#define limitSwitchPrimaryActive() (GPIO_PIN_RESET == HAL_GPIO_ReadPin(LimitSwitch2_GPIO_Port,LimitSwitch2_Pin))
 
 //KIP KOP Temperature for fan operation.
-const FanSpeedKipKopParam_t FanSpeedParameters =
+static const FanSpeedKipKopParam_t FanSpeedParameters =
 {
 	.KipSpeed1 = 1300,
 	.KopSpeed1 = 1050,
@@ -95,10 +95,22 @@ const FanSpeedKipKopParam_t FanSpeedParameters =
 //private variables
 static Mot_FanSpeed plenumSpeed = MOT_PLENUM_STOP;
 
-int stepperPosition[NumberOfMotors];
-int GrillPosition = 0;
-int PrimaryPosition = 0;
-int SecondaryPosition = 0;
+static int stepperPosition[NumberOfMotors];
+static int GrillPosition = 0;
+static int PrimaryPosition = 0;
+static int SecondaryPosition = 0;
+
+static uint16_t convertedValue;
+static uint16_t Temperature;
+
+static uint8_t OpenState;
+static uint8_t TimeState;
+
+static uint8_t Channel, Period, Percent, Minute;
+
+//public handle
+osThreadId MotorManagerTaskHandle;
+
 
 bool Mot_InPosition( AirInput * self,motor_t Motorid)
 {

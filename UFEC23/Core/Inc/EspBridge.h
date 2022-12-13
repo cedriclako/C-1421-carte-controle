@@ -7,10 +7,11 @@
 
 #ifndef SRC_ESPBRIDGE_H_
 #define SRC_ESPBRIDGE_H_
+
 #include <stdlib.h>
 #include <stdio.h>
 
-osSemaphoreId ESP_UART_SemaphoreHandle;
+extern osSemaphoreId ESP_UART_SemaphoreHandle;
 
 void EspManager(void const * argument);
 
