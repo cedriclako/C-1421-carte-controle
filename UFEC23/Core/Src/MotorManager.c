@@ -100,6 +100,18 @@ int GrillPosition = 0;
 int PrimaryPosition = 0;
 int SecondaryPosition = 0;
 
+uint16_t convertedValue;
+uint16_t Temperature;
+
+uint8_t OpenState;
+uint8_t TimeState;
+
+uint8_t Channel, Period, Percent, Minute;
+
+//public handle
+osThreadId MotorManagerTaskHandle;
+
+
 bool Mot_InPosition( AirInput * self,motor_t Motorid)
 {
 	return self->aperture == stepperPosition[Motorid];

@@ -86,15 +86,6 @@ typedef struct FanSpeedKipKopParam{
 #define STEP_RANGE_PRIMARY   (PRIMARY_FULL_OPEN - PRIMARY_MINIMUM_OPENING)
 #define STEP_RANGE_GRILL   (GRILL_FULL_OPEN - GRILL_CLOSED)
 
-
-uint16_t convertedValue;
-uint16_t Temperature;
-
-uint8_t OpenState;
-uint8_t TimeState;
-
-uint8_t Channel, Period, Percent, Minute;
-
 //#private functions
 void vFullOpen(void);
 void vOpen(uint8_t Percent);
@@ -113,9 +104,6 @@ bool Mot_InPosition( AirInput * self,motor_t Motorid);
 //public function
 extern Mot_FanSpeed Mot_getFanSpeed();
 extern void StepperMotorProdTest(motor_t MotorId);
-
-//public handle
-osThreadId MotorManagerTaskHandle;
 
 #ifdef	__cplusplus // Provide C++ Compatibility
 }
