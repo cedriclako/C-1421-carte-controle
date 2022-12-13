@@ -42,6 +42,18 @@ void PARAMFILE_Init()
 	PFL_LoadAll(&PARAMFILE_g_sHandle);
 }
 
+uint32_t PARAMFILE_GetParamEntryCount()
+{
+	return PARAMFILE_g_sHandle.u32ParameterEntryCount;
+}
+
+const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
+{
+	if (u32Index >= PARAMETERITEM_COUNT)
+		return NULL;
+	return &PARAMFILE_g_sHandle.pParameterEntries[u32Index];
+}
+
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
 	// TODO: Flash reading is not yet implemented
@@ -51,6 +63,5 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 {
 	// TODO: Flash writing is not yet implemented
 }
-
 
 #endif /* SRC_PARAMETERFILEDEF_C_ */
