@@ -32,6 +32,7 @@
 #include "Hmi.h"
 #include "ParticlesManager.h"
 #include "EspBridge.h"
+#include "ParamFile.h"
 #include <stdio.h>
 /* USER CODE END Includes */
 
@@ -137,6 +138,8 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  PARAMFILE_Init(); // Initialize param file reader before main process
 
   /* USER CODE END 2 */
 

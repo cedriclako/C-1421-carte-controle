@@ -24,7 +24,7 @@ typedef struct
 	const char* szKey;
 	const char* szDesc;
 	PFL_TYPE eType;
-	const void* vdArgument;
+	void* vdVar;
 	union
 	{
 		struct
@@ -42,12 +42,24 @@ typedef struct
 	} uType;
 } PFL_SParameterItem;
 
+typedef struct _PFL_SHandle PFL_SHandle;
+
+typedef void (*FnLoadAll)(const PFL_SHandle* psHandle);
+typedef void (*FnCommitAll)(const PFL_SHandle* psHandle);
+
 typedef struct
+{
+	FnLoadAll ptrLoadAll;
+	FnCommitAll ptrCommitAll;
+} PFL_SConfig;
+
+struct _PFL_SHandle
 {
 	const PFL_SParameterItem* pParameterEntries;
 	uint32_t u32ParameterEntryCount;
-} PFL_SHandle;
 
+	const PFL_SConfig* psConfig;
+};
 
 typedef enum
 {
@@ -55,12 +67,16 @@ typedef enum
     PFL_ESETRET_CannotSet = 1,
     PFL_ESETRET_InvalidRange = 2,
     PFL_ESETRET_ValidatorFailed = 3,
+	PFL_ESETRET_EntryNoFound = 4,
 } PFL_ESETRET;
 
+void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries, uint32_t u32ParameterEntryCount, const PFL_SConfig* psConfig);
 
-void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries, uint32_t u32ParameterEntryCount);
+void PFL_LoadAll(PFL_SHandle* pHandle);
 
-int32_t PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName);
+void PFL_CommitAll(PFL_SHandle* pHandle);
+
+PFL_ESETRET PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t* psOut32Value);
 
 PFL_ESETRET PFL_SetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t s32NewValue);
 
