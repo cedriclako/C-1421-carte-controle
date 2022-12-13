@@ -82,8 +82,6 @@ const CombTempParam_t TemperatureParam =
 	.OverheatPlenumExit = 2100,
 	.OverheatBaffle = 15000,
 	.OverheatChamber = 15000,
-
-
 };
 
 #define ColdStoveTemp 900 //90F
