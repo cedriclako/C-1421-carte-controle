@@ -15,16 +15,17 @@ typedef enum
 {
 	FLASHMAP_EPARTITION_App,
 	FLASHMAP_EPARTITION_Parameter,
+	FLASHMAP_EPARTITION_BootInfo,
 
 	FLASHMAP_EPARTITION_Count
 } FLASHMAP_EPARTITION;
 
 typedef struct
 {
-	uint32_t u32PageAddress;
+	uint32_t u32PageStart;
 	uint32_t u32PageCount;
 } FLASHMAP_SPartition;
 
-extern const FLASHMAP_SPartition FLASHMAP_g_sPartitions[];
+const FLASHMAP_SPartition* GetPartition(FLASHMAP_EPARTITION ePartition);
 
 #endif

@@ -17,6 +17,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	{ .szKey = PFD_DACCMD, .szDesc = "Commande de DAC qui gere le courant des DELs", .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = 0, .s32Min = 0, .s32Max = 255 } } },
 	{ .szKey = PFD_TIMEINTERVAL, .szDesc = "Intervale entre mesure lumiere (sec)", .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = 0, .s32Min = 0, .s32Max = 255 } } },
 };
+
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )
 
 PFL_SHandle PARAMFILE_g_sHandle;
