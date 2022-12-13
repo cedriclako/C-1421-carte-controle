@@ -24,6 +24,7 @@ typedef struct
 	const char* szKey;
 	const char* szDesc;
 	PFL_TYPE eType;
+	const void* vdArgument;
 	union
 	{
 		struct

@@ -17,7 +17,6 @@ typedef struct {
   int minValue;
 } AirInput;
 
-
 /* maxVal is the maximum value of the aperture. */
 #define AirInput_init(minVal, maxVal) {.aperture = 0, .setPoint = 0, .timeRefRampe = 0, .minValue = minVal, .maxValue = maxVal}
 
