@@ -174,13 +174,13 @@ void vStepperPositioning(int RequestedPosition, int *CurrentPosition, motor_t Mo
     	switch(MotorId)
     	{
     	case PrimaryStepper:
-    		*CurrentPosition = (int)PRIMARY_MINIMUM_OPENING;
+    		*CurrentPosition = (int)PF_PRIMARY_MINIMUM_OPENING;
     		break;
     	case GrillStepper:
-    		*CurrentPosition = (int)GRILL_MINIMUM_OPENING;
+    		*CurrentPosition = (int)PF_GRILL_MINIMUM_OPENING;
     		break;
     	case SecondaryStepper:
-    		*CurrentPosition = (int)SECONDARY_MINIMUM_OPENING;
+    		*CurrentPosition = (int)PF_SECONDARY_MINIMUM_OPENING;
     		break;
     	default:
     		break;
@@ -192,19 +192,19 @@ void vStepperPositioning(int RequestedPosition, int *CurrentPosition, motor_t Mo
 	switch(MotorId)
 	{
 	case PrimaryStepper:
-		if (*CurrentPosition == (int)PRIMARY_MINIMUM_OPENING	 && !StepperToZero)
+		if (*CurrentPosition == (int)PF_PRIMARY_MINIMUM_OPENING	 && !StepperToZero)
 		{
 			StepToPerform = 1;
 		}
 		break;
 	case GrillStepper:
-		if (*CurrentPosition == (int)GRILL_MINIMUM_OPENING && !StepperToZero)
+		if (*CurrentPosition == (int)PF_GRILL_MINIMUM_OPENING && !StepperToZero)
 		{
 			StepToPerform = 1;
 		}
 		break;
 	case SecondaryStepper:
-		if (*CurrentPosition == (int)SECONDARY_MINIMUM_OPENING && !StepperToZero)
+		if (*CurrentPosition == (int)PF_SECONDARY_MINIMUM_OPENING && !StepperToZero)
 		{
 			StepToPerform = 1;
 		}
@@ -226,23 +226,23 @@ void vStepperPositioning(int RequestedPosition, int *CurrentPosition, motor_t Mo
 			switch(MotorId)
 			{
 			case PrimaryStepper:
-				if (*CurrentPosition < (int)PRIMARY_MINIMUM_OPENING)
+				if (*CurrentPosition < (int)PF_PRIMARY_MINIMUM_OPENING)
 				{
-					*CurrentPosition = (int)PRIMARY_MINIMUM_OPENING;
+					*CurrentPosition = (int)PF_PRIMARY_MINIMUM_OPENING;
 					vDisableStepper(PrimaryStepper);
 				}
 				break;
 			case GrillStepper:
-				if(*CurrentPosition < (int)GRILL_MINIMUM_OPENING)
+				if(*CurrentPosition < (int)PF_GRILL_MINIMUM_OPENING)
 				{
-					*CurrentPosition = (int)GRILL_MINIMUM_OPENING;
+					*CurrentPosition = (int)PF_GRILL_MINIMUM_OPENING;
 					vDisableStepper(GrillStepper);
 				}
 				break;
 			case SecondaryStepper:
-				if (*CurrentPosition < (int)SECONDARY_MINIMUM_OPENING)
+				if (*CurrentPosition < (int)PF_SECONDARY_MINIMUM_OPENING)
 				{
-					*CurrentPosition = (int)SECONDARY_MINIMUM_OPENING;
+					*CurrentPosition = (int)PF_SECONDARY_MINIMUM_OPENING;
 					vDisableStepper(SecondaryStepper);
 				}
 				break;

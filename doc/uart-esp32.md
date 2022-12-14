@@ -1,39 +1,33 @@
 # ESP32 exchange protocol
 
-To efficiently exchange data between the stove board and the ESP32 we need a UART framing protocol.
+To exchange data between the ESP32 and the microcontroller we use a simple framing protocol.
 
-## Suggested protocol:
+## Protocol details
 
-One frame can contains one or more data.
-
-SOF [Frame Payload] [CRC32 16 bits] EOF
-
-Frame payload needs to be escaped using the escape character.
-
-| Name | Flag |
-|---|---|
-| Start of Frame flag | 0x12
-| End of Frame flag | 0x13
-| Escape (DLE) | 0x7D
-
-Endianness? (To be defined)
-
-## Frame payload
-
-Frame payload is composed of one or more variable identified by an ID:
-
-| Name | Type | Description |
+| Byte | Value | Description |
 |---|---|---|
-| Variable ID | 16 bits | 1 array (1 bit) + Variable type (3 bits) + ID (12 bits)
-| Variable Data | Variable data depend on variable type
+| START_BYTE | 0xCC | Start of Frame
+| STOP_BYTE | 0x99 | End of Frame
 
-### Variable Type
 
-| Type ID | Name | Length
-|---|---|---|
-| 0x80 | Flag indicate if it's an array | The next character represent data length (Up to 255).
-| 1 | byte | 1
-| 2 | int16 | 2
-| 3 | int32 | 4
-| 4 | float | 4
-| 5 | double | 8
+Basically: [START BYTE] [ID] [DATA LENGTH] [DATAS ...] [CHECKSUM] [STOP BYTE] 
+
+We start reading on 0xCC until we get 0x99
+Then we calculate the checksum, if it pass the frame is accepted.
+
+The protocol support up to 255 bytes frame
+
+
+## Calculate the checksum
+
+The check sum is composed of every bytes between start byte and checksum. 
+Followed by a bitwise operation.
+
+Example:
+
+Frame: [0xCC 01 04 BA DC OF FE 52 0x99]
+
+01 + 04 + BA + DC + OF + FE = 0x02AD
+
+We keep the last 8 bits so:
+0xAD, then we do bitwise on it: 0x52

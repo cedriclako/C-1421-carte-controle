@@ -36,9 +36,9 @@ static State currentState = ZEROING_STEPPER;
 static bool reloadingEvent = false;
 static bool errorFlag = false;
 bool fanPauseRequired = false;
-static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_FULL_OPEN);
-static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
-static AirInput secondary = AirInput_init(SECONDARY_MINIMUM_OPENING, SECONDARY_FULL_OPEN);
+static AirInput primary = AirInput_init(PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN);
+static AirInput grill = AirInput_init(PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN);
+static AirInput secondary = AirInput_init(PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN);
 
 static Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
 static Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
@@ -101,9 +101,9 @@ void Algo_init() {
   }
 
   reloadingEvent = false;
-  AirInput_forceAperture(&primary, PRIMARY_CLOSED);
-  AirInput_forceAperture(&grill, GRILL_CLOSED);
-  AirInput_forceAperture(&secondary, SECONDARY_CLOSED);  //CR TODO: Choose what to do with Secondary
+  AirInput_forceAperture(&primary, PF_PRIMARY_CLOSED);
+  AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
+  AirInput_forceAperture(&secondary, PF_SECONDARY_CLOSED);  //CR TODO: Choose what to do with Secondary
   baffleTemperature = 0;
   rearTemperature = 0;
   thermostatRequest = false;
@@ -206,7 +206,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		if (((baffleTemperature > pTemperatureParam->IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
 		reloadingEvent = false;
-		AirInput_forceAperture(&grill, GRILL_CLOSED);
+		AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
 		}
 		if(timeSinceStateEntry >= MINUTES(20))
 		{
@@ -352,7 +352,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 			if (rearTemperature < pTemperatureParam->FlameLoss && ( deltaTemperature < pTemperatureParam->FlameLossDelta)) { //changement de reartemp pour le flameloss au lieu de baffletemp GTF 2022-08-30
 				nextState = FLAME_LOSS;
-				AirInput_forceAperture(&grill, GRILL_FULL_OPEN);
+				AirInput_forceAperture(&grill, PF_GRILL_FULL_OPEN);
 			}
 		else{
 				//we loss the flamme but we are not in coal yet, we reopen the grill
@@ -470,13 +470,13 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	break;
 
     case FLAME_LOSS:
-    	AirInput_forceAperture(&grill, GRILL_FULL_OPEN);
+    	AirInput_forceAperture(&grill, PF_GRILL_FULL_OPEN);
     	deltaTemperature = abs(rearTemperature - baffleTemperature);
     	//if( deltaTemperature > pTemperatureParam->FlameLossDelta && timeSinceStateEntry >= MINUTES(1))
     	if( rearTemperature > (pTemperatureParam->CoalCrossOverRearLow+400) && timeSinceStateEntry >= MINUTES(1)) // ajout + 20 deg GTF 2022-10-20
     	{
     		nextState = historyState;
-    		AirInput_forceAperture(&grill, GRILL_CLOSED);
+    		AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
     	}
 		if(reloadingEvent) {
 			nextState = ZEROING_STEPPER;
@@ -490,7 +490,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COAL_HIGH:
 		if(historyState != currentState){
 			StateEntryControlAdjustment(pPrimaryMotorParam->MinCoalHigh, pPrimaryMotorParam->MaxCoalHigh,
-										GRILL_CLOSED,GRILL_CLOSED,
+						PF_GRILL_CLOSED, PF_GRILL_CLOSED,
 										pSecondaryMotorParam->MinCoalHigh, pSecondaryMotorParam->MaxCoalHigh);
 		    historyState = currentState;
 		}
@@ -523,9 +523,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     case OVERTEMP:
     case SAFETY:
-      AirInput_forceAperture(&grill, GRILL_CLOSED);
-      AirInput_forceAperture(&primary, PRIMARY_CLOSED);
-      AirInput_forceAperture(&secondary,SECONDARY_CLOSED); //TODO: Choose what to do with secondary
+      AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
+      AirInput_forceAperture(&primary, PF_PRIMARY_CLOSED);
+      AirInput_forceAperture(&secondary, PF_SECONDARY_CLOSED); //TODO: Choose what to do with secondary
 
 
       if ((baffleTemperature < pTemperatureParam->OverheatBaffle)
