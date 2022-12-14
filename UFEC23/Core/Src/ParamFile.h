@@ -9,6 +9,55 @@
 
 #include "../Libs/ParameterFileLib.h"
 
+typedef struct
+{
+	int32_t s32TLSGain;
+	int32_t s32TSLINT;
+	int32_t s32DACCMD;
+	int32_t s32TIMEINTERVAL;
+} PF_UsrParam;
+
+typedef struct
+{
+	int32_t WaitingToIgnition; //max environ 32000dixieme de f
+	int32_t IgnitionToTrise;
+	int32_t TriseTargetLow;
+	int32_t TriseTargetHigh;
+	int32_t CombLowTarget;
+	int32_t CombHighTarget;
+	int32_t CombLowtoSuperLow;
+	int32_t FlameLoss;
+	int32_t FlameLossDelta;
+	int32_t CoalCrossOverRearLow;
+	int32_t CoalCrossOverRearHigh;
+	int32_t CoalDeltaTemp;
+	int32_t CoalStoveTemp;
+	int32_t OverheatPlenum;
+	int32_t OverheatPlenumExit;
+	int32_t OverheatBaffle;
+	int32_t OverheatChamber;
+} PF_CombTempParam_t;
+
+typedef struct
+{
+	int32_t MaxWaiting; //max environ 32000 dixieme de f
+	int32_t MinWaiting;
+	int32_t MaxReload;
+	int32_t MinReload;
+	int32_t MaxTempRise;
+	int32_t MinTempRise;
+	int32_t MaxCombLow;
+	int32_t MinCombLow;
+	int32_t MaxCombSuperLow;
+	int32_t MinCombSuperLow;
+	int32_t MaxCombHigh;
+	int32_t MinCombHigh;
+	int32_t MaxCoalHigh;
+	int32_t MinCoalHigh;
+	int32_t MaxCoalLow;
+	int32_t MinCoalLow;
+} PF_MotorOpeningsParam_t;
+
 #define PFD_TSLGAIN 		"TSLgain"
 #define PFD_TSLINT 			"TSLint"
 #define PFD_DACCMD 			"DACcmd"
@@ -94,6 +143,14 @@ void PARAMFILE_Init();
 uint32_t PARAMFILE_GetParamEntryCount();
 
 const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index);
+
+const PF_CombTempParam_t* PB_GetTemperatureParam();
+
+const PF_MotorOpeningsParam_t* PB_GetPrimaryMotorParam();
+
+const PF_MotorOpeningsParam_t* PB_GetSecondaryMotorParam();
+
+const PF_MotorOpeningsParam_t* PB_GetGrillMotorParam();
 
 #endif
 

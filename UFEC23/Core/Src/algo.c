@@ -10,7 +10,7 @@
 #include "ProdTest.h"
 #include "MotorManager.h"
 #include "Hmi.h"
-#include "ParameterBlock.h"
+#include "ParamFile.h"
 
 typedef struct ParticlesParam{
 	int16_t TempRiseMax;
@@ -114,10 +114,10 @@ void Algo_init() {
 
 static void manageStateMachine(uint32_t currentTime_ms) {
 
-	const MotorOpeningsParam_t* pGrillMotorParam = PB_GetGrillMotorParam();
-	const MotorOpeningsParam_t* pPrimaryMotorParam = PB_GetPrimaryMotorParam();
-	const MotorOpeningsParam_t* pSecondaryMotorParam = PB_GetSecondaryMotorParam();
-	const CombTempParam_t* pTemperatureParam = PB_GetTemperatureParam();
+	const PF_MotorOpeningsParam_t* pGrillMotorParam = PB_GetGrillMotorParam();
+	const PF_MotorOpeningsParam_t* pPrimaryMotorParam = PB_GetPrimaryMotorParam();
+	const PF_MotorOpeningsParam_t* pSecondaryMotorParam = PB_GetSecondaryMotorParam();
+	const PF_CombTempParam_t* pTemperatureParam = PB_GetTemperatureParam();
 
 	  State nextState = currentState;
 	  float dTavant;

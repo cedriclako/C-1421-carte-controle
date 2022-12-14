@@ -4,22 +4,98 @@
  *  Created on: 13 déc. 2022
  *      Author: mcarrier
  */
-
-#ifndef SRC_PARAMFILE_C_
-#define SRC_PARAMFILE_C_
-
 #include "ParamFile.h"
-#include "ParameterBlock.h"
 
-typedef struct
+static PF_CombTempParam_t m_sTemperatureParam =
 {
-	int32_t s32TLSGain;
-	int32_t s32TSLINT;
-	int32_t s32DACCMD;
-	int32_t s32TIMEINTERVAL;
-} SMemBlock;
+		// THe param file matrix will automatically fill it.
+	//UFEC23 - Test du 2022-11-29 NOUVEAU PCB (une seule carte)               //tenth of F
+	/*.WaitingToIgnition = 1000,
+	.IgnitionToTrise = 5250,
+	.TriseTargetLow = 6500,
+	.TriseTargetHigh = 6900,
+	.CombLowTarget = 6600,
+	.CombHighTarget = 7000,
+	.CombLowtoSuperLow = 7000,
+	.FlameLoss = 7500,
+	.FlameLossDelta = 1750,
+	.CoalCrossOverRearLow = 8000,
+	.CoalCrossOverRearHigh = 7000,
+	.CoalDeltaTemp = 2500,
+	.CoalStoveTemp = 900,
+	.OverheatPlenum = 2200,
+	.OverheatPlenumExit = 2100,
+	.OverheatBaffle = 15000,
+	.OverheatChamber = 15000,*/
+};
 
-static SMemBlock m_sMemBlock = { 0xFF }; // Simulate a flash memory
+static PF_MotorOpeningsParam_t m_sPrimaryMotorParam =
+{
+	// THe param file matrix will automatically fill it.
+	/*
+	.MaxWaiting = 6,
+	.MinWaiting = 6,
+	.MaxReload = 97,
+	.MinReload = 58,
+	.MaxTempRise = 85,
+	.MinTempRise = 17,
+	.MaxCombHigh = 70,
+	.MinCombHigh = 14,
+	.MaxCombLow = 39,
+	.MinCombLow = 0,
+	.MaxCombSuperLow = 25,
+	.MinCombSuperLow = 0,
+	.MaxCoalHigh = 0,
+	.MinCoalHigh = 0,
+	.MaxCoalLow = 0,
+	.MinCoalLow = 0,*/
+};
+
+static PF_MotorOpeningsParam_t m_sGrillMotorParam =
+{
+	// THe param file matrix will automatically fill it.
+	/*
+	.MaxWaiting = 0,
+	.MinWaiting = 0,
+	.MaxReload = 97,
+	.MinReload = 0,
+	.MaxTempRise = 30,
+	.MinTempRise = 0,
+	.MaxCombHigh = 0,
+	.MinCombHigh = 0,
+	.MaxCombLow = 0,
+	.MinCombLow = 0,
+	.MaxCombSuperLow = 0,
+	.MinCombSuperLow = 0,
+	.MaxCoalHigh = 97,
+	.MinCoalHigh = 97,
+	.MaxCoalLow = 24,
+	.MinCoalLow = 24,*/
+};
+
+static PF_MotorOpeningsParam_t m_sSecondaryMotorParam =
+{
+	//Added for current PCB model (parameters must be adjusted by user)
+	/*
+	.MaxWaiting = 6,
+	.MinWaiting = 6,
+	.MaxReload = 97,
+	.MinReload = 97,
+	.MaxTempRise = 58,
+	.MinTempRise = 58,
+	.MaxCombHigh = 97,
+	.MinCombHigh = 97,
+	.MaxCombLow = 97,
+	.MinCombLow = 97,
+	.MaxCombSuperLow = 50,
+	.MinCombSuperLow = 50,
+	.MaxCoalHigh = 50,
+	.MinCoalHigh = 50,
+	.MaxCoalLow = 10,
+	.MinCoalLow = 10,*/
+};
+
+static PF_UsrParam m_sMemBlock = { 0xFF }; // Simulate a flash memory
 
 static const PFL_SParameterItem m_sParameterItems[] =
 {
@@ -30,77 +106,77 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_TIMEINTERVAL, 	"Intervale entre mesure lumiere (sec)", &m_sMemBlock.s32TIMEINTERVAL, 				0, 0, 255),
 
 	// Temperature
-	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &PB_g_sTemperatureParam.WaitingToIgnition, 	  1000, -65535, 65535),
-	PFL_INIT_SINT32(PFD_IGNITIONTOTRISE, 		"", &PB_g_sTemperatureParam.IgnitionToTrise, 	  5250, -65535, 65535),
-	PFL_INIT_SINT32(PFD_TRISETARGETLOW, 		"", &PB_g_sTemperatureParam.TriseTargetLow, 	  6500, -65535, 65535),
-	PFL_INIT_SINT32(PFD_TRISETARGETHIGH, 		"", &PB_g_sTemperatureParam.TriseTargetHigh, 	  6900, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COMBLOWTARGET, 			"", &PB_g_sTemperatureParam.CombLowTarget, 		  6600, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COMBHIGHTARGET, 		"", &PB_g_sTemperatureParam.CombHighTarget, 	  7000, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COMBLOWTOSUPERLOW, 		"", &PB_g_sTemperatureParam.CombLowtoSuperLow, 	  7000, -65535, 65535),
-	PFL_INIT_SINT32(PFD_FLAMELOSS, 				"", &PB_g_sTemperatureParam.FlameLoss, 			  7500, -65535, 65535),
-	PFL_INIT_SINT32(PFD_FLAMELOSSDELTA, 		"", &PB_g_sTemperatureParam.FlameLossDelta, 	  1750, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COALCROSSOVERREARLOW, 	"", &PB_g_sTemperatureParam.CoalCrossOverRearLow, 8000, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COALCROSSOVERREARHIGH, 	"", &PB_g_sTemperatureParam.CoalCrossOverRearHigh,7000, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COALDELTATEMP, 			"", &PB_g_sTemperatureParam.CoalDeltaTemp, 		  2500, -65535, 65535),
-	PFL_INIT_SINT32(PFD_COALSTOVETEMP, 			"", &PB_g_sTemperatureParam.CoalStoveTemp, 		   900, -65535, 65535),
-	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &PB_g_sTemperatureParam.OverheatPlenum, 	  2200, -65535, 65535),
-	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT, 	"", &PB_g_sTemperatureParam.OverheatPlenumExit,   2100, -65535, 65535),
-	PFL_INIT_SINT32(PFD_OVERHEATBAFFLE, 		"", &PB_g_sTemperatureParam.OverheatBaffle, 	 15000, -65535, 65535),
-	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		"", &PB_g_sTemperatureParam.OverheatChamber, 	 15000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &m_sTemperatureParam.WaitingToIgnition, 	  1000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_IGNITIONTOTRISE, 		"", &m_sTemperatureParam.IgnitionToTrise, 	  5250, -65535, 65535),
+	PFL_INIT_SINT32(PFD_TRISETARGETLOW, 		"", &m_sTemperatureParam.TriseTargetLow, 	  6500, -65535, 65535),
+	PFL_INIT_SINT32(PFD_TRISETARGETHIGH, 		"", &m_sTemperatureParam.TriseTargetHigh, 	  6900, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COMBLOWTARGET, 			"", &m_sTemperatureParam.CombLowTarget, 		  6600, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COMBHIGHTARGET, 		"", &m_sTemperatureParam.CombHighTarget, 	  7000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COMBLOWTOSUPERLOW, 		"", &m_sTemperatureParam.CombLowtoSuperLow, 	  7000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_FLAMELOSS, 				"", &m_sTemperatureParam.FlameLoss, 			  7500, -65535, 65535),
+	PFL_INIT_SINT32(PFD_FLAMELOSSDELTA, 		"", &m_sTemperatureParam.FlameLossDelta, 	  1750, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COALCROSSOVERREARLOW, 	"", &m_sTemperatureParam.CoalCrossOverRearLow, 8000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COALCROSSOVERREARHIGH, 	"", &m_sTemperatureParam.CoalCrossOverRearHigh,7000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COALDELTATEMP, 			"", &m_sTemperatureParam.CoalDeltaTemp, 		  2500, -65535, 65535),
+	PFL_INIT_SINT32(PFD_COALSTOVETEMP, 			"", &m_sTemperatureParam.CoalStoveTemp, 		   900, -65535, 65535),
+	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sTemperatureParam.OverheatPlenum, 	  2200, -65535, 65535),
+	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT, 	"", &m_sTemperatureParam.OverheatPlenumExit,   2100, -65535, 65535),
+	PFL_INIT_SINT32(PFD_OVERHEATBAFFLE, 		"", &m_sTemperatureParam.OverheatBaffle, 	 15000, -65535, 65535),
+	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		"", &m_sTemperatureParam.OverheatChamber, 	 15000, -65535, 65535),
 
 	// Primary motor
-	PFL_INIT_SINT32(PFD_PM_MAXWAITING,     	    "", &PB_g_sPrimaryMotorParam.MaxWaiting, 		 6, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINWAITING,     	    "", &PB_g_sPrimaryMotorParam.MinWaiting, 		 6, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXRELOAD,      	    "", &PB_g_sPrimaryMotorParam.MaxReload, 		97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINRELOAD,      	    "", &PB_g_sPrimaryMotorParam.MinReload, 		58, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXTEMPRISE,    	    "", &PB_g_sPrimaryMotorParam.MaxTempRise, 		85, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINTEMPRISE,    	    "", &PB_g_sPrimaryMotorParam.MinTempRise, 		17, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXCOMBLOW,     	    "", &PB_g_sPrimaryMotorParam.MaxCombLow, 		39, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINCOMBLOW,     	    "", &PB_g_sPrimaryMotorParam.MinCombLow, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXCOMBSUPERLOW,	    "", &PB_g_sPrimaryMotorParam.MaxCombSuperLow, 	25, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINCOMBSUPERLOW,	    "", &PB_g_sPrimaryMotorParam.MinCombSuperLow, 	 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXCOMBHIGH,    	    "", &PB_g_sPrimaryMotorParam.MaxCombHigh, 		70, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINCOMBHIGH,    	    "", &PB_g_sPrimaryMotorParam.MinCombHigh, 		14, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXCOALHIGH,    	    "", &PB_g_sPrimaryMotorParam.MaxCoalHigh, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINCOALHIGH,    	    "", &PB_g_sPrimaryMotorParam.MinCoalHigh, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MAXCOALLOW,     	    "", &PB_g_sPrimaryMotorParam.MaxCoalLow, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_PM_MINCOALLOW,     	    "", &PB_g_sPrimaryMotorParam.MinCoalLow, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXWAITING,     	    "", &m_sPrimaryMotorParam.MaxWaiting, 		 6, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINWAITING,     	    "", &m_sPrimaryMotorParam.MinWaiting, 		 6, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXRELOAD,      	    "", &m_sPrimaryMotorParam.MaxReload, 		97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINRELOAD,      	    "", &m_sPrimaryMotorParam.MinReload, 		58, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXTEMPRISE,    	    "", &m_sPrimaryMotorParam.MaxTempRise, 		85, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINTEMPRISE,    	    "", &m_sPrimaryMotorParam.MinTempRise, 		17, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXCOMBLOW,     	    "", &m_sPrimaryMotorParam.MaxCombLow, 		39, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINCOMBLOW,     	    "", &m_sPrimaryMotorParam.MinCombLow, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXCOMBSUPERLOW,	    "", &m_sPrimaryMotorParam.MaxCombSuperLow, 	25, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINCOMBSUPERLOW,	    "", &m_sPrimaryMotorParam.MinCombSuperLow, 	 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXCOMBHIGH,    	    "", &m_sPrimaryMotorParam.MaxCombHigh, 		70, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINCOMBHIGH,    	    "", &m_sPrimaryMotorParam.MinCombHigh, 		14, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXCOALHIGH,    	    "", &m_sPrimaryMotorParam.MaxCoalHigh, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINCOALHIGH,    	    "", &m_sPrimaryMotorParam.MinCoalHigh, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MAXCOALLOW,     	    "", &m_sPrimaryMotorParam.MaxCoalLow, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_PM_MINCOALLOW,     	    "", &m_sPrimaryMotorParam.MinCoalLow, 		 0, -65535, 65535),
 
 	// Secondary motor
-	PFL_INIT_SINT32(PFD_SM_MAXWAITING,     	    "", &PB_g_sSecondaryMotorParam.MaxWaiting, 		 6, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINWAITING,     	    "", &PB_g_sSecondaryMotorParam.MinWaiting, 		 6, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXRELOAD,      	    "", &PB_g_sSecondaryMotorParam.MaxReload, 		97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINRELOAD,      	    "", &PB_g_sSecondaryMotorParam.MinReload, 		97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXTEMPRISE,    	    "", &PB_g_sSecondaryMotorParam.MaxTempRise, 	58, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINTEMPRISE,    	    "", &PB_g_sSecondaryMotorParam.MinTempRise, 	58, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXCOMBLOW,     	    "", &PB_g_sSecondaryMotorParam.MaxCombLow, 		97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINCOMBLOW,     	    "", &PB_g_sSecondaryMotorParam.MinCombLow, 		97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXCOMBSUPERLOW,	    "", &PB_g_sSecondaryMotorParam.MaxCombSuperLow, 50, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINCOMBSUPERLOW,	    "", &PB_g_sSecondaryMotorParam.MinCombSuperLow, 50, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXCOMBHIGH,    	    "", &PB_g_sSecondaryMotorParam.MaxCombHigh, 	97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINCOMBHIGH,    	    "", &PB_g_sSecondaryMotorParam.MinCombHigh, 	97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXCOALHIGH,    	    "", &PB_g_sSecondaryMotorParam.MaxCoalHigh, 	50, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINCOALHIGH,    	    "", &PB_g_sSecondaryMotorParam.MinCoalHigh, 	50, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MAXCOALLOW,     	    "", &PB_g_sSecondaryMotorParam.MaxCoalLow, 		10, -65535, 65535),
-	PFL_INIT_SINT32(PFD_SM_MINCOALLOW,     	    "", &PB_g_sSecondaryMotorParam.MinCoalLow, 		10, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXWAITING,     	    "", &m_sSecondaryMotorParam.MaxWaiting, 		 6, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINWAITING,     	    "", &m_sSecondaryMotorParam.MinWaiting, 		 6, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXRELOAD,      	    "", &m_sSecondaryMotorParam.MaxReload, 		97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINRELOAD,      	    "", &m_sSecondaryMotorParam.MinReload, 		97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXTEMPRISE,    	    "", &m_sSecondaryMotorParam.MaxTempRise, 	58, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINTEMPRISE,    	    "", &m_sSecondaryMotorParam.MinTempRise, 	58, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXCOMBLOW,     	    "", &m_sSecondaryMotorParam.MaxCombLow, 		97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINCOMBLOW,     	    "", &m_sSecondaryMotorParam.MinCombLow, 		97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXCOMBSUPERLOW,	    "", &m_sSecondaryMotorParam.MaxCombSuperLow, 50, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINCOMBSUPERLOW,	    "", &m_sSecondaryMotorParam.MinCombSuperLow, 50, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXCOMBHIGH,    	    "", &m_sSecondaryMotorParam.MaxCombHigh, 	97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINCOMBHIGH,    	    "", &m_sSecondaryMotorParam.MinCombHigh, 	97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXCOALHIGH,    	    "", &m_sSecondaryMotorParam.MaxCoalHigh, 	50, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINCOALHIGH,    	    "", &m_sSecondaryMotorParam.MinCoalHigh, 	50, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MAXCOALLOW,     	    "", &m_sSecondaryMotorParam.MaxCoalLow, 		10, -65535, 65535),
+	PFL_INIT_SINT32(PFD_SM_MINCOALLOW,     	    "", &m_sSecondaryMotorParam.MinCoalLow, 		10, -65535, 65535),
 
 	// Grill motor
-	PFL_INIT_SINT32(PFD_GM_MAXWAITING,     	    "", &PB_g_sGrillMotorParam.MaxWaiting, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINWAITING,     	    "", &PB_g_sGrillMotorParam.MinWaiting, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXRELOAD,      	    "", &PB_g_sGrillMotorParam.MaxReload, 		97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINRELOAD,      	    "", &PB_g_sGrillMotorParam.MinReload, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXTEMPRISE,    	    "", &PB_g_sGrillMotorParam.MaxTempRise, 	30, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINTEMPRISE,    	    "", &PB_g_sGrillMotorParam.MinTempRise, 	 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXCOMBLOW,     	    "", &PB_g_sGrillMotorParam.MaxCombLow, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINCOMBLOW,     	    "", &PB_g_sGrillMotorParam.MinCombLow, 		 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXCOMBSUPERLOW,	    "", &PB_g_sGrillMotorParam.MaxCombSuperLow,  0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINCOMBSUPERLOW,	    "", &PB_g_sGrillMotorParam.MinCombSuperLow,  0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXCOMBHIGH,    	    "", &PB_g_sGrillMotorParam.MaxCombHigh, 	 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINCOMBHIGH,    	    "", &PB_g_sGrillMotorParam.MinCombHigh, 	 0, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXCOALHIGH,    	    "", &PB_g_sGrillMotorParam.MaxCoalHigh, 	97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINCOALHIGH,    	    "", &PB_g_sGrillMotorParam.MinCoalHigh, 	97, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MAXCOALLOW,     	    "", &PB_g_sGrillMotorParam.MaxCoalLow, 		24, -65535, 65535),
-	PFL_INIT_SINT32(PFD_GM_MINCOALLOW,     	    "", &PB_g_sGrillMotorParam.MinCoalLow, 		24, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXWAITING,     	    "", &m_sGrillMotorParam.MaxWaiting, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINWAITING,     	    "", &m_sGrillMotorParam.MinWaiting, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXRELOAD,      	    "", &m_sGrillMotorParam.MaxReload, 		97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINRELOAD,      	    "", &m_sGrillMotorParam.MinReload, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXTEMPRISE,    	    "", &m_sGrillMotorParam.MaxTempRise, 	30, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINTEMPRISE,    	    "", &m_sGrillMotorParam.MinTempRise, 	 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXCOMBLOW,     	    "", &m_sGrillMotorParam.MaxCombLow, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINCOMBLOW,     	    "", &m_sGrillMotorParam.MinCombLow, 		 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXCOMBSUPERLOW,	    "", &m_sGrillMotorParam.MaxCombSuperLow,  0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINCOMBSUPERLOW,	    "", &m_sGrillMotorParam.MinCombSuperLow,  0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXCOMBHIGH,    	    "", &m_sGrillMotorParam.MaxCombHigh, 	 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINCOMBHIGH,    	    "", &m_sGrillMotorParam.MinCombHigh, 	 0, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXCOALHIGH,    	    "", &m_sGrillMotorParam.MaxCoalHigh, 	97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINCOALHIGH,    	    "", &m_sGrillMotorParam.MinCoalHigh, 	97, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MAXCOALLOW,     	    "", &m_sGrillMotorParam.MaxCoalLow, 		24, -65535, 65535),
+	PFL_INIT_SINT32(PFD_GM_MINCOALLOW,     	    "", &m_sGrillMotorParam.MinCoalLow, 		24, -65535, 65535),
 };
 
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )
@@ -139,4 +215,23 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 	// TODO: Flash writing is not yet implemented
 }
 
-#endif /* SRC_PARAMETERFILEDEF_C_ */
+
+const PF_CombTempParam_t* PB_GetTemperatureParam()
+{
+	return &m_sTemperatureParam;
+}
+
+const PF_MotorOpeningsParam_t* PB_GetPrimaryMotorParam()
+{
+	return &m_sPrimaryMotorParam;
+}
+
+const PF_MotorOpeningsParam_t* PB_GetSecondaryMotorParam()
+{
+	return &m_sSecondaryMotorParam;
+}
+
+const PF_MotorOpeningsParam_t* PB_GetGrillMotorParam()
+{
+	return &m_sGrillMotorParam;
+}
