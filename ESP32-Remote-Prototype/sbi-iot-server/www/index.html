@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SBI-Iot-Server</title>
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" type="text/css" href="css/content.css">
+</head>
+<body>
+    <div id="app">
+        <button id="idStartPairing" @click="idStartPairing_Click">{{ livedata.state.is_pairing ? "Stop Pairing (esp-now)" : "Start Pairing (esp-now)" }}</button>
+        <div>
+            <span>{{ livedata.wireless.rx }} / {{ livedata.wireless.tx }}</span>
+        </div>
+        <br>
+        <br>
+        <h1>System Informations</h1>
+        <table>
+            <thead>
+                <th>Name</th>
+                <th>Value</th>
+            </thead>
+            <tbody>
+                <tr v-if="sysinfos" v-for="item in sysinfos">
+                    <td>{{ item.name }}</td>
+                    <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
+                </tr>
+                <tr v-if="!sysinfos">
+                    <td>Information is not yet loaded</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="text/javascript" src="js/vue.min.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
+</body>
+</html>
