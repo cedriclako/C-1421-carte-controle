@@ -1,0 +1,19 @@
+#ifndef _HARDWAREGPIO_H_
+#define _HARDWAREGPIO_H_
+
+#include "driver/uart.h"
+#include "driver/gpio.h"
+
+#define HWGPIO_BRIDGEUART_TXD (16)
+#define HWGPIO_BRIDGEUART_RXD (17)
+#define HWGPIO_BRIDGEUART_RTS (UART_PIN_NO_CHANGE)
+#define HWGPIO_BRIDGEUART_CTS (UART_PIN_NO_CHANGE)
+
+#define HWGPIO_BRIDGEUART_PORT_NUM      (UART_NUM_1)
+#define HWGPIO_BRIDGEUART_BAUDRATE      (115200)
+
+#define HWGPIO_BRIDGEUART_BUFFSIZE 255
+
+void HARDWAREGPIO_Init();
+
+#endif

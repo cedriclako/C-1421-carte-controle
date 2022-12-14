@@ -9,12 +9,13 @@
 #include "mdns.h"
 #include "lwip/apps/netbiosns.h"
 #include <esp_sntp.h>
-
 #include "fwconfig.h"
 #include "webserver.h"
 #include "settings.h"
 #include "main.h"
 #include "espnowprocess.h"
+#include "hardwaregpio.h"
+#include "uartbridge.h"
 
 #define TAG "main"
 
@@ -176,7 +177,11 @@ void app_main(void)
     }
     ESP_ERROR_CHECK( ret );
 
+    HARDWAREGPIO_Init();
+
     SETTINGS_Init();
+
+    UARTBRIDGE_Init();
 
     WIFI_Init();
 
@@ -195,6 +200,7 @@ void app_main(void)
     while (true)
     {
         ESPNOWPROCESS_Handler();
+        UARTBRIDGE_Handler();
 
         vTaskDelay(1);
     }   

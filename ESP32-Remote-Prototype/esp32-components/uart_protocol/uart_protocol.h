@@ -20,8 +20,12 @@ typedef enum
   UARTPROTOCOL_ESTEP_WaitingStopByte
 } UARTPROTOCOL_ESTEP;
 
+// Allows to use handle inside callback.
 typedef struct _UARTPROTOCOL_SHandle UARTPROTOCOL_SHandle;
 
+// ------------------------------------
+// Callbacks
+// ------------------------------------
 typedef void (*FnAcceptFrame)(const UARTPROTOCOL_SHandle* psHandle, const uint8_t u8Payloads[], uint8_t u8PayloadLen);
 typedef void (*FnDropFrame)(const UARTPROTOCOL_SHandle* psHandle, const char* szReason);
 typedef int64_t (*FnGetTimerCountMS)(const UARTPROTOCOL_SHandle* psHandle);

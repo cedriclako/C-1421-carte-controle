@@ -66,3 +66,4 @@ C-1333_-_Mesures_emissions.X/nbproject/
 /ESP32-Remote-Prototype/tools-src/res2code/src/obj
 /ESP32-Remote-Prototype/sbi-iot-server/main/assets/EmbeddedFilesBin.c
 /ESP32-Remote-Prototype/sbi-iot-client/main/assets/EmbeddedFilesBin.c
+/.vscode
