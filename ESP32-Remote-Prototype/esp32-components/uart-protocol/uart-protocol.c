@@ -18,6 +18,7 @@ void UARTPROTOCOL_Reset(UARTPROTOCOL_SHandle* psHandle)
     psHandle->eStep = UARTPROTOCOL_ESTEP_WaitingForStartByte;
     psHandle->u32PayloadCount = 0;
 
+    psHandle->s64StartTimeMS = 0;
     psHandle->u8FrameID = 0;
 
     psHandle->u8ChecksumCalculation = 0;
@@ -31,6 +32,21 @@ void UARTPROTOCOL_HandleIn(UARTPROTOCOL_SHandle* psHandle, const uint8_t* u8Data
 
 static void AddByte(UARTPROTOCOL_SHandle* psHandle, uint8_t u8)
 {
+    // Timeout is supported but optional ...
+    if (psHandle->eStep != UARTPROTOCOL_ESTEP_WaitingForStartByte)
+    {
+        if (psHandle->psConfig->fnGetTimerCountMSCb != NULL &&
+            psHandle->psConfig->u32FrameReceiveTimeOutMS > 0)
+        {       
+            const int64_t s64TimeDiffMS = psHandle->psConfig->fnGetTimerCountMSCb() - psHandle->s64StartTimeMS;
+            if (s64TimeDiffMS > psHandle->psConfig->u32FrameReceiveTimeOutMS)
+            {
+                // We don't break here on purpose, we give it a chance to start a new frame.
+                DropFrame(psHandle, "Timeout");
+            }
+        }
+    }
+
     switch(psHandle->eStep)
     {
         case UARTPROTOCOL_ESTEP_WaitingForStartByte:
@@ -39,6 +55,13 @@ static void AddByte(UARTPROTOCOL_SHandle* psHandle, uint8_t u8)
             if (u8 == UARTPROTOCOL_START_BYTE)
             {
                 psHandle->u8ChecksumCalculation = 0;
+
+                // IF we support timeout ...
+                if (psHandle->psConfig->fnGetTimerCountMSCb != NULL)
+                    psHandle->s64StartTimeMS = psHandle->psConfig->fnGetTimerCountMSCb();
+                else
+                    psHandle->s64StartTimeMS = 0;
+
                 psHandle->eStep = UARTPROTOCOL_ESTEP_WaitingFrameID;
             }
             break;
@@ -53,6 +76,12 @@ static void AddByte(UARTPROTOCOL_SHandle* psHandle, uint8_t u8)
         case UARTPROTOCOL_ESTEP_WaitingPayloadLength:
         {
             psHandle->u8FramePayloadLen = u8;
+            if (psHandle->u8FramePayloadLen > psHandle->psConfig->u8PayloadBufferLen)
+            {
+                DropFrame(psHandle, "Payload is too big for the buffer");
+                break;
+            }
+
             psHandle->u8ChecksumCalculation += u8;
             psHandle->eStep = UARTPROTOCOL_ESTEP_GettingPayload;
             break;

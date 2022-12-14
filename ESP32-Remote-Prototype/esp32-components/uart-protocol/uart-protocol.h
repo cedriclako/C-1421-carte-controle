@@ -24,15 +24,19 @@ typedef struct _UARTPROTOCOL_SHandle UARTPROTOCOL_SHandle;
 
 typedef void (*FnAcceptFrame)(const UARTPROTOCOL_SHandle* psHandle, const uint8_t u8Payloads[], uint8_t u8PayloadLen);
 typedef void (*FnDropFrame)(const UARTPROTOCOL_SHandle* psHandle, const char* szReason);
+typedef int64_t (*FnGetTimerCountMS)(const UARTPROTOCOL_SHandle* psHandle);
 
 typedef struct 
 {
     uint8_t* u8PayloadBuffers;
     uint8_t u8PayloadBufferLen;
 
+    uint32_t u32FrameReceiveTimeOutMS;
+
     // Callback configs
     const FnAcceptFrame fnAcceptFrameCb;
     const FnDropFrame fnDropFrameCb;
+    const FnGetTimerCountMS fnGetTimerCountMSCb;
 } UARTPROTOCOL_SConfig;
 
 struct _UARTPROTOCOL_SHandle
@@ -40,6 +44,8 @@ struct _UARTPROTOCOL_SHandle
     // Current step
     UARTPROTOCOL_ESTEP eStep;
     uint32_t u32PayloadCount;
+
+    int64_t s64StartTimeMS;
 
     // Frame payload len. 
     uint8_t u8FrameID;
