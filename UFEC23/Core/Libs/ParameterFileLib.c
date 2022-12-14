@@ -6,7 +6,6 @@
  */
 #include <string.h>
 #include "ParameterFileLib.h"
-#include "ParamFile.h"
 
 static const PFL_SParameterItem* GetParameterEntryByKey(const PFL_SHandle* pHandle, const char* szKey);
 static PFL_ESETRET ValidateValueInt32(const PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterFile, int32_t s32Value);
@@ -51,7 +50,7 @@ void PFL_CommitAll(PFL_SHandle* pHandle)
 PFL_ESETRET PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t* psOut32Value)
 {
 	const PFL_SParameterItem* pEnt = GetParameterEntryByKey(pHandle, szName);
-	if (pEnt == NULL || pEnt->eType != PFL_TYPE_Int32)
+	if (pEnt == NULL || pEnt->eType != PFL_TYPE_Int32 || pEnt->vdVar == NULL)
 		return PFL_ESETRET_EntryNoFound;
 
 	const int32_t* ps32Value = ((int32_t*)pEnt->vdVar);
@@ -68,7 +67,7 @@ PFL_ESETRET PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName, in
 PFL_ESETRET PFL_SetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t s32NewValue)
 {
 	const PFL_SParameterItem* pEnt = GetParameterEntryByKey(pHandle, szName);
-	if (pEnt == NULL || pEnt->eType != PFL_TYPE_Int32)
+	if (pEnt == NULL || pEnt->eType != PFL_TYPE_Int32 || pEnt->vdVar == NULL)
 		return PFL_ESETRET_EntryNoFound;
 
 	int32_t* ps32Value = ((int32_t*)pEnt->vdVar);

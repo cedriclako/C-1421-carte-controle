@@ -15,7 +15,7 @@
 
 typedef enum
 {
-	PFL_TYPE_Float,
+	//PFL_TYPE_Float,
 	PFL_TYPE_Int32
 } PFL_TYPE;
 
@@ -27,12 +27,12 @@ typedef struct
 	void* vdVar;
 	union
 	{
-		struct
+		/*struct
 		{
 			float fDefault;
 			float fMin;
 			float fMax;
-		} sFloat;
+		} sFloat;*/
 		struct
 		{
 			int32_t s32Default;
@@ -69,6 +69,8 @@ typedef enum
     PFL_ESETRET_ValidatorFailed = 3,
 	PFL_ESETRET_EntryNoFound = 4,
 } PFL_ESETRET;
+
+#define PFL_INIT_SINT32(_key,_desc,_ptrvdvar,_defaultValue,_minValue,_maxValue) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} } }
 
 void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries, uint32_t u32ParameterEntryCount, const PFL_SConfig* psConfig);
 
