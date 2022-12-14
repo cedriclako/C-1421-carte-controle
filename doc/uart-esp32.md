@@ -9,7 +9,6 @@ To exchange data between the ESP32 and the microcontroller we use a simple frami
 | START_BYTE | 0xCC | Start of Frame
 | STOP_BYTE | 0x99 | End of Frame
 
-
 Basically: [START BYTE] [ID] [DATA LENGTH] [DATAS ...] [CHECKSUM] [STOP BYTE] 
 
 We start reading on 0xCC until we get 0x99
