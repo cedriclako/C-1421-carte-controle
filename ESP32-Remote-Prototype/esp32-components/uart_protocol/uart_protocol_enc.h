@@ -1,5 +1,5 @@
-#ifndef _UART_PROTOCOLDEC_H_
-#define _UART_PROTOCOLDEC_H_
+#ifndef _UART_PROTOCOLENC_H_
+#define _UART_PROTOCOLENC_H_
 
 #include <stddef.h>
 #include <stdint.h>

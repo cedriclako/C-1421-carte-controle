@@ -4,7 +4,9 @@
 void UARTPROTOCOLENC_Init(UARTPROTOCOLENC_SHandle* psHandle, const UARTPROTOCOLENC_SConfig* psConfig)
 {
     assert(psHandle != NULL && psConfig != NULL);
-    assert(psHandle->psConfig->fnWriteCb != NULL);
+    assert(psConfig->fnWriteCb != NULL);
+
+    psHandle->psConfig = psConfig;
 }
 
 void UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint8_t u8PayloadLen)
@@ -16,6 +18,7 @@ void UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
     psHandle->psConfig->fnWriteCb(psHandle, &u8Len, 1);
     psHandle->psConfig->fnWriteCb(psHandle, u8Payloads, u8PayloadLen);
 
+    // Calculate checksum on the fly ...
     uint8_t u8Checksum = 0;
     for(int i = 0; i < u8PayloadLen; i++)
         u8Checksum += u8Payloads[i];
