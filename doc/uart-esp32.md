@@ -9,13 +9,12 @@ To exchange data between the ESP32 and the microcontroller we use a simple frami
 | START_BYTE | 0xCC | Start of Frame
 | STOP_BYTE | 0x99 | End of Frame
 
-Basically: [START BYTE] [ID] [DATA LENGTH] [DATAS ...] [CHECKSUM] [STOP BYTE] 
+Basically: [START BYTE] [ID] [PAYLOAD LENGTH] [PAYLOAD  ...] [CHECKSUM] [STOP BYTE] 
 
 We start reading on 0xCC until we get 0x99
 Then we calculate the checksum, if it pass the frame is accepted.
 
-The protocol support up to 255 bytes frame
-
+The protocol support up to 255 bytes as payload per frame.
 
 ## Calculate the checksum
 
