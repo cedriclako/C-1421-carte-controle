@@ -88,3 +88,25 @@ MotorOpeningsParam_t PB_g_sSecondaryMotorParam =
 	.MaxCoalLow = 10,
 	.MinCoalLow = 10,*/
 };
+
+const CombTempParam_t* PB_GetTemperatureParam()
+{
+	return &PB_g_sTemperatureParam;
+}
+
+const MotorOpeningsParam_t* PB_GetPrimaryMotorParam()
+{
+	return &PB_g_sPrimaryMotorParam;
+}
+
+const MotorOpeningsParam_t* PB_GetSecondaryMotorParam()
+{
+	return &PB_g_sSecondaryMotorParam;
+}
+
+const MotorOpeningsParam_t* PB_GetGrillMotorParam()
+{
+	return &PB_g_sGrillMotorParam;
+}
+
+

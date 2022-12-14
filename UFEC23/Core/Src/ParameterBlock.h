@@ -59,4 +59,12 @@ extern MotorOpeningsParam_t PB_g_sPrimaryMotorParam;
 extern MotorOpeningsParam_t PB_g_sGrillMotorParam;
 extern MotorOpeningsParam_t PB_g_sSecondaryMotorParam;
 
+const CombTempParam_t* PB_GetTemperatureParam();
+
+const MotorOpeningsParam_t* PB_GetPrimaryMotorParam();
+
+const MotorOpeningsParam_t* PB_GetSecondaryMotorParam();
+
+const MotorOpeningsParam_t* PB_GetGrillMotorParam();
+
 #endif /* SRC_PARAMETERBLOCK_H_ */

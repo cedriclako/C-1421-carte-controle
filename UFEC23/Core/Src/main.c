@@ -140,6 +140,19 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   PARAMFILE_Init(); // Initialize param file reader before main process
+  // Print all parameters into the debug file
+  for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
+  {
+	  const PFL_SParameterItem* pParamItem = PARAMFILE_GetParamEntryByIndex(ix);
+	  if (pParamItem == NULL)
+		  continue;
+
+	  char tmp[128+1];
+	  int s32Value;
+	  PFL_GetValueInt32(&PARAMFILE_g_sHandle, pParamItem->szKey, &s32Value);
+	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)", pParamItem->szKey, s32Value, pParamItem->uType.sInt32.s32Default, pParamItem->uType.sInt32.s32Min, pParamItem->uType.sInt32.s32Max);
+	  printf(tmp);
+  }
 
   /* USER CODE END 2 */
 
