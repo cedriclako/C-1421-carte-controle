@@ -34,7 +34,6 @@ void PFL_LoadAll(PFL_SHandle* pHandle)
 			const PFL_ESETRET eSetRet = ValidateValueInt32(pHandle, pEnt, *ps32Value);
 			if (eSetRet != PFL_ESETRET_OK)
 			{
-				// Load default value then ...
 				*ps32Value = pEnt->uType.sInt32.s32Default;
 			}
 		}
@@ -54,12 +53,13 @@ PFL_ESETRET PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName, in
 		return PFL_ESETRET_EntryNoFound;
 
 	const int32_t* ps32Value = ((int32_t*)pEnt->vdVar);
-	const PFL_ESETRET eValidateRet = ValidateValueInt32(pHandle, pEnt, *ps32Value);
+	// We don't need to validate on read finally because the LoadAll function will put load or put default values
+/*	const PFL_ESETRET eValidateRet = ValidateValueInt32(pHandle, pEnt, *ps32Value);
 	if (eValidateRet != PFL_ESETRET_OK)
 	{
 		*psOut32Value = pEnt->uType.sInt32.s32Default;
 		return eValidateRet;
-	}
+	}*/
 	*psOut32Value = *ps32Value;
 	return PFL_ESETRET_OK;
 }

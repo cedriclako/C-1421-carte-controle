@@ -2,8 +2,9 @@
 
 CombTempParam_t PB_g_sTemperatureParam =
 {
+		// THe param file matrix will automatically fill it.
 	//UFEC23 - Test du 2022-11-29 NOUVEAU PCB (une seule carte)               //tenth of F
-	.WaitingToIgnition = 1000,
+	/*.WaitingToIgnition = 1000,
 	.IgnitionToTrise = 5250,
 	.TriseTargetLow = 6500,
 	.TriseTargetHigh = 6900,
@@ -19,11 +20,13 @@ CombTempParam_t PB_g_sTemperatureParam =
 	.OverheatPlenum = 2200,
 	.OverheatPlenumExit = 2100,
 	.OverheatBaffle = 15000,
-	.OverheatChamber = 15000,
+	.OverheatChamber = 15000,*/
 };
 
 MotorOpeningsParam_t PB_g_sPrimaryMotorParam =
 {
+	// THe param file matrix will automatically fill it.
+	/*
 	.MaxWaiting = 6,
 	.MinWaiting = 6,
 	.MaxReload = 97,
@@ -39,12 +42,13 @@ MotorOpeningsParam_t PB_g_sPrimaryMotorParam =
 	.MaxCoalHigh = 0,
 	.MinCoalHigh = 0,
 	.MaxCoalLow = 0,
-	.MinCoalLow = 0,
-
+	.MinCoalLow = 0,*/
 };
 
 MotorOpeningsParam_t PB_g_sGrillMotorParam =
 {
+	// THe param file matrix will automatically fill it.
+	/*
 	.MaxWaiting = 0,
 	.MinWaiting = 0,
 	.MaxReload = 97,
@@ -60,13 +64,13 @@ MotorOpeningsParam_t PB_g_sGrillMotorParam =
 	.MaxCoalHigh = 97,
 	.MinCoalHigh = 97,
 	.MaxCoalLow = 24,
-	.MinCoalLow = 24,
-
-
+	.MinCoalLow = 24,*/
 };
 
 MotorOpeningsParam_t PB_g_sSecondaryMotorParam =
-{//Added for current PCB model (parameters must be adjusted by user)
+{
+	//Added for current PCB model (parameters must be adjusted by user)
+	/*
 	.MaxWaiting = 6,
 	.MinWaiting = 6,
 	.MaxReload = 97,
@@ -82,5 +86,5 @@ MotorOpeningsParam_t PB_g_sSecondaryMotorParam =
 	.MaxCoalHigh = 50,
 	.MinCoalHigh = 50,
 	.MaxCoalLow = 10,
-	.MinCoalLow = 10,
+	.MinCoalLow = 10,*/
 };
