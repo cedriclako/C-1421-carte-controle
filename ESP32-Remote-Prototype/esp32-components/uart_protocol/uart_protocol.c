@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
-#include "uart-protocol.h"
+#include "uart_protocol.h"
 
 static void AddByte(UARTPROTOCOL_SHandle* psHandle, uint8_t u8);
 
@@ -38,7 +38,7 @@ static void AddByte(UARTPROTOCOL_SHandle* psHandle, uint8_t u8)
         if (psHandle->psConfig->fnGetTimerCountMSCb != NULL &&
             psHandle->psConfig->u32FrameReceiveTimeOutMS > 0)
         {       
-            const int64_t s64TimeDiffMS = psHandle->psConfig->fnGetTimerCountMSCb() - psHandle->s64StartTimeMS;
+            const int64_t s64TimeDiffMS = psHandle->psConfig->fnGetTimerCountMSCb(psHandle) - psHandle->s64StartTimeMS;
             if (s64TimeDiffMS > psHandle->psConfig->u32FrameReceiveTimeOutMS)
             {
                 // We don't break here on purpose, we give it a chance to start a new frame.
@@ -58,7 +58,7 @@ static void AddByte(UARTPROTOCOL_SHandle* psHandle, uint8_t u8)
 
                 // IF we support timeout ...
                 if (psHandle->psConfig->fnGetTimerCountMSCb != NULL)
-                    psHandle->s64StartTimeMS = psHandle->psConfig->fnGetTimerCountMSCb();
+                    psHandle->s64StartTimeMS = psHandle->psConfig->fnGetTimerCountMSCb(psHandle);
                 else
                     psHandle->s64StartTimeMS = 0;
 
