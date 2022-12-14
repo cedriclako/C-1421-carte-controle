@@ -23,9 +23,9 @@ Followed by a bitwise operation.
 
 Example:
 
-Frame: [0xCC 01 04 BA DC OF FE 52 0x99]
+Frame: [CC 01 04 BA DC 0F FE 57 99]
 
-01 + 04 + BA + DC + OF + FE = 0x02AD
+01 + 04 + BA + DC + 0F + FE = 0x02A8
 
 We keep the last 8 bits so:
-0xAD, then we do bitwise on it: 0x52
+0xA8, then we do bitwise on it: 0x57

@@ -1,5 +1,4 @@
 #include "hardwaregpio.h"
-#include "uart_protocol.h"
 
 void HARDWAREGPIO_Init()
 {
