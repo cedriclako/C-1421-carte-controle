@@ -15,7 +15,7 @@
 #include "main.h"
 #include "espnowprocess.h"
 #include "hardwaregpio.h"
-#include "uartbridge.h"
+#include "uartbridge/uartbridge.h"
 #include "Event.h"
 
 #define TAG "main"

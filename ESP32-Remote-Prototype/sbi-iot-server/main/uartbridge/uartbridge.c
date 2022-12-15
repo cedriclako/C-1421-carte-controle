@@ -3,6 +3,7 @@
 #include "uart_protocol_dec.h"
 #include "uart_protocol_enc.h"
 #include "esp_log.h"
+#include "Event.h"
 
 #define TAG "UARTBridge"
 
@@ -18,6 +19,9 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+// Event loops
+static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder = 
 { 
@@ -44,6 +48,9 @@ void UARTBRIDGE_Init()
     UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
     // Encoder
     UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
+
+    // Register events
+    esp_event_handler_register_with(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, RequestConfigReloadEvent, NULL);
 }
 
 void UARTBRIDGE_Handler()
@@ -83,4 +90,9 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
 void UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint8_t u8PayloadLen)
 {
     UARTPROTOCOLENC_Send(&m_sHandleEncoder, (uint8_t)eFrameID, u8Payloads, u8PayloadLen);
+}
+
+static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+    ESP_LOGI(TAG, "RequestConfigReloadEvent");
 }
