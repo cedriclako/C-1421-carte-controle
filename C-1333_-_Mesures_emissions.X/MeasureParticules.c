@@ -96,8 +96,8 @@ void measureParticlesInitialize(void)
     
 
     gs_sMeasPartObject.adcValue = 0;
-    gs_sMeasPartObject.currentCmd = 5.0; //mA
-    //measureSetLED(gs_sMeasPartObject.currentCmd);
+    gs_sMeasPartObject.currentCmd = 5.2; //mA
+    measureSetLED(gs_sMeasPartObject.currentCmd);
     
     TMR0_SetInterruptHandler(MeasureTimerInterrupt);
     TMR0_StartTimer();
@@ -345,21 +345,48 @@ void MeasureTimerInterrupt(void)
 
 void measureSetLED(float currentSetting)
 {
-    uint16_t adcValue;
+    uint16_t adcRequest;
     adc_result_t shunt;
+    uint32_t adcMeasured = 0;
+    uint16_t adc_memory = 0;
+    bool upMotion = false;
+    uint16_t N,i;
     
     DAC1_Enable();
     
-    adcValue = (uint16_t) (4.096*currentSetting/.11);
-    shunt = ADCC_GetSingleConversion(channel_ANB7);
+    adcRequest = (uint16_t) (4096*currentSetting/3.3);
+    //shunt = ADCC_GetSingleConversion(channel_ANB7);
     
-    while(shunt != adcValue)
+    while(adcMeasured != adcRequest)
     {
-        if(shunt > adcValue)
+        adcMeasured = 0;
+        N = 6;
+        i = 0;
+        while(i< N)
         {
-            if(shunt - adcValue > 10)
+            if(ADCC_IsConversionDone())
             {
-                gs_sMeasPartObject.dacValue -= 1;
+                shunt = ADCC_GetSingleConversion(channel_ANB7);
+                adcMeasured += shunt;
+                i++;
+            }
+            
+        }
+        adcMeasured = adcMeasured/N;
+        
+        if(adcMeasured > adcRequest)
+        {
+            if(adcMeasured - adcRequest > 10)
+            {
+                if(upMotion && (adcRequest - adc_memory) < (adcMeasured - adcRequest))
+                {
+                    break;
+                }
+                upMotion = false;
+
+                adc_memory = adcMeasured;
+                //printf("down %u \r\n", adcMeasured);
+                gs_sMeasPartObject.dacValue = gs_sMeasPartObject.dacValue - 1;
                 DAC1_SetOutput(gs_sMeasPartObject.dacValue);    
             }
             else
@@ -369,9 +396,17 @@ void measureSetLED(float currentSetting)
         }
         else
         {
-            if(adcValue - shunt > 10)
+            if(adcRequest - adcMeasured > 10)
             {
-                gs_sMeasPartObject.dacValue += 1;
+                if(!upMotion && (adcRequest - adcMeasured) < (adc_memory - adcMeasured))
+                {
+                    break;
+                }
+                upMotion = true;
+                adc_memory = adcMeasured;
+                //printf("up %u \r\n", adcMeasured);
+
+                gs_sMeasPartObject.dacValue = gs_sMeasPartObject.dacValue - 1;
                 DAC1_SetOutput(gs_sMeasPartObject.dacValue);
             }
             else
@@ -379,7 +414,7 @@ void measureSetLED(float currentSetting)
                 break;
             }
         }
-        shunt = ADCC_GetSingleConversion(channel_ANB7);
+        //shunt = ADCC_GetSingleConversion(channel_ANB7);
     }
     gs_sMeasPartObject.adcValue = (uint16_t) shunt;
     DAC1_Disable();
