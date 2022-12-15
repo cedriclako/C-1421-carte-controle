@@ -54,18 +54,7 @@ void UARTBRIDGE_Handler()
     while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 0)) != 0)
     {
         UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8UARTDriverBuffers, len);
-        // uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, (const char *) u8UARTDriverBuffers, len);
     }
-}
-
-static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint8_t u8PayloadLen)
-{
-    ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u8PayloadLen);
-}
-
-static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
-{
-    ESP_LOGE(TAG, "Dropped frame: %s", szReason);
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -76,4 +65,20 @@ static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
+}
+
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint8_t u8PayloadLen)
+{
+    ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u8PayloadLen);
+}
+
+static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
+{
+    // Exists mostly for debug purpose
+    ESP_LOGE(TAG, "Dropped frame: %s", szReason);
+}
+
+void UARTBRIDGE_SendFrame(uint8_t u8Payloads, uint32_t u8PayloadLen)
+{
+    // UARTPROTOCOLENC_Send(&m_sHandleEncoder,
 }

@@ -16,11 +16,16 @@
 #include "espnowprocess.h"
 #include "hardwaregpio.h"
 #include "uartbridge.h"
+#include "Event.h"
 
 #define TAG "main"
 
+ESP_EVENT_DEFINE_BASE(MAINAPP_EVENT);
+
 static esp_netif_t* m_pWifiSoftAP;
 static esp_netif_t* m_pWifiSTA;
+
+static esp_event_loop_handle_t m_sLoopHandle;
 
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -167,6 +172,11 @@ void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip)
     esp_netif_get_ip_info(m_pWifiSoftAP, ip);
 }
 
+esp_event_loop_handle_t MAIN_GetLoopHandle()
+{
+    return m_sLoopHandle;
+} 
+
 void app_main(void)
 {
     // Initialize NVS
@@ -176,6 +186,12 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK( ret );
+
+    esp_event_loop_args_t loop_args = {
+        .queue_size = 20,
+        .task_name = NULL
+    };
+    esp_event_loop_create(&loop_args, &m_sLoopHandle);
 
     HARDWAREGPIO_Init();
 
@@ -197,11 +213,17 @@ void app_main(void)
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_init();
     
+    char* szAllTask = (char*)malloc(4096);
+    vTaskList(szAllTask);
+    ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
+    free(szAllTask);
+
     while (true)
     {
         ESPNOWPROCESS_Handler();
         UARTBRIDGE_Handler();
 
+        esp_event_loop_run(m_sLoopHandle, pdMS_TO_TICKS(10));
         vTaskDelay(1);
     }   
 }

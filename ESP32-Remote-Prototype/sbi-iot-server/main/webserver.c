@@ -10,6 +10,7 @@
 #include "esp_ota_ops.h"
 #include "cJSON.h"
 
+#include "Event.h"
 #include "webserver.h"
 #include "espnowprocess.h"
 #include "nvsjson.h"
@@ -30,6 +31,7 @@
 #define ACTION_POST_ESPNOW_STOPPAIRING "/action/espnow_stoppairing"
 
 #define ACTION_POST_REBOOT "/action/reboot"
+#define ACTION_POST_DOWNLOADCONFIG "/action/downloadconfig"
 
 #define API_GETSYSINFOJSON_URI "/api/getsysinfo"
 #define API_GETLIVEDATAJSON_URI "/api/getlivedata"
@@ -167,6 +169,10 @@ static esp_err_t file_post_handler(httpd_req_t *req)
     if (strcmp(req->uri, ACTION_POST_REBOOT) == 0)
     {
         esp_restart();
+    }
+    else if (strcmp(req->uri, ACTION_POST_DOWNLOADCONFIG) == 0)
+    {
+        esp_event_post(MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     }
     else if (strcmp(req->uri, ACTION_POST_ESPNOW_STARTPAIRING) == 0)
     {

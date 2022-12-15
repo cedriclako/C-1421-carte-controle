@@ -9,4 +9,6 @@ void MAIN_GetWiFiSTAIP(esp_netif_ip_info_t* ip);
 
 void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip);
 
+esp_event_loop_handle_t MAIN_GetLoopHandle();
+
 #endif
