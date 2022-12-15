@@ -20,6 +20,8 @@ void UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
 
     // Calculate checksum on the fly ...
     uint8_t u8Checksum = 0;
+    u8Checksum += u8ID;
+    u8Checksum += u8PayloadLen;
     for(int i = 0; i < u8PayloadLen; i++)
         u8Checksum += u8Payloads[i];
     u8Checksum = ~u8Checksum;
