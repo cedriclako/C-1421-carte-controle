@@ -16,7 +16,8 @@
 #include "espnowprocess.h"
 #include "hardwaregpio.h"
 #include "uartbridge/uartbridge.h"
-#include "Event.h"
+#include "fwconfig.h"
+#include "event.h"
 
 #define TAG "main"
 
@@ -172,6 +173,9 @@ void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip)
 
 void app_main(void)
 {
+    // Set new priority for main task
+    vTaskPrioritySet( xTaskGetCurrentTaskHandle(), FWCONFIG_MAINTASK_PRIORITY);
+
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -211,13 +215,18 @@ void app_main(void)
     ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
     free(szAllTask);
 
+    const TickType_t xFrequency = pdMS_TO_TICKS( 200 );
+
     while (true)
     {
+        TickType_t xLastWakeTime = xTaskGetTickCount();
+
+        // Basic processes ...
         ESPNOWPROCESS_Handler();
         UARTBRIDGE_Handler();
 
-        esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS(10));
-        vTaskDelay(1);
+        esp_event_loop_run(EVENT_g_LoopHandle, portMAX_DELAY);
+        vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   
 }
 

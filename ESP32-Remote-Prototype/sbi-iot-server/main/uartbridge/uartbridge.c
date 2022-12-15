@@ -3,7 +3,7 @@
 #include "uart_protocol_dec.h"
 #include "uart_protocol_enc.h"
 #include "esp_log.h"
-#include "Event.h"
+#include "event.h"
 
 #define TAG "UARTBridge"
 
@@ -77,8 +77,7 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint8_t u8PayloadLen)
 {
     ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u8PayloadLen);
-    
-    esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
+    // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
 }
 
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)

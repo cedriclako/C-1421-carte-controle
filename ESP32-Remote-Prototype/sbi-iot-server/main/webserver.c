@@ -10,12 +10,13 @@
 #include "esp_ota_ops.h"
 #include "cJSON.h"
 
-#include "Event.h"
+#include "event.h"
 #include "webserver.h"
 #include "espnowprocess.h"
 #include "nvsjson.h"
 #include "settings.h"
 #include "main.h"
+#include "fwconfig.h"
 
 #define TAG "webserver"
 
@@ -96,6 +97,7 @@ void WEBSERVER_Init()
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.task_priority = FWCONFIG_HTTPTASK_PRIORITY;
     config.lru_purge_enable = true;
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.max_open_sockets = 13;
