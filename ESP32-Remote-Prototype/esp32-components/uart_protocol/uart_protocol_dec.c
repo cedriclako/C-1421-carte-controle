@@ -124,7 +124,7 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
             // If we reach this point, the checksum passed
             if (u8 != UARTPROTOCOLCOMMON_STOP_BYTE)
             {
-                DropFrame(psHandle, "Stop byte");
+                DropFrame(psHandle, "Not a stop byte");
                 break;
             }
 

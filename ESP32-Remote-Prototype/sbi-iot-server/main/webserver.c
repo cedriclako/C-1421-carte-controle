@@ -172,7 +172,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
     }
     else if (strcmp(req->uri, ACTION_POST_DOWNLOADCONFIG) == 0)
     {
-        esp_event_post(MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
+        esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     }
     else if (strcmp(req->uri, ACTION_POST_ESPNOW_STARTPAIRING) == 0)
     {

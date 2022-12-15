@@ -70,6 +70,8 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint8_t u8PayloadLen)
 {
     ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u8PayloadLen);
+    
+    esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
 }
 
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
@@ -78,7 +80,7 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
     ESP_LOGE(TAG, "Dropped frame: %s", szReason);
 }
 
-void UARTBRIDGE_SendFrame(uint8_t u8Payloads, uint32_t u8PayloadLen)
+void UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint8_t u8PayloadLen)
 {
-    // UARTPROTOCOLENC_Send(&m_sHandleEncoder,
+    UARTPROTOCOLENC_Send(&m_sHandleEncoder, (uint8_t)eFrameID, u8Payloads, u8PayloadLen);
 }
