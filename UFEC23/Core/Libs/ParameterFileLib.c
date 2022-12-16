@@ -7,6 +7,10 @@
 #include <string.h>
 #include <stdio.h>
 #include "ParameterFileLib.h"
+#include "cJSON/cJSON.h"
+
+#define JSON_ENTRY_KEY_NAME "key"
+#define JSON_ENTRY_VALUE_NAME "value"
 
 static const PFL_SParameterItem* GetParameterEntryByKey(const PFL_SHandle* pHandle, const char* szKey);
 static PFL_ESETRET ValidateValueInt32(const PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterFile, int32_t s32Value);
@@ -115,7 +119,7 @@ int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32
 		// Generate without using external library is fast
 		// I'm aware there are pitfail before string aren't escaped but since it's very specific usecase it's good enough.
 		const int newEntryCnt = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1),
-			"{ \"name\":\"%s\",\"desc\":\"%s\",\"t\":%d,\"def\":%d,\"min\":%d,\"max\":%d }\r\n",
+			"{ \"key\":\"%s\",\"desc\":\"%s\",\"t\":%d,\"def\":%d,\"min\":%d,\"max\":%d }\r\n",
 			/*0*/pEnt->szKey,
 			/*1*/pEnt->szDesc,
 			/*2*/(int)pEnt->eType,
@@ -143,44 +147,76 @@ int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32
 	return 0;
 }
 
-bool PFL_ImportFromJSON(const PFL_SHandle* pHandle, const char* szBuffer, int32_t s32MaxLen)
+bool PFL_ImportFromJSON(const PFL_SHandle* pHandle, const char* szBuffer)
 {
 	bool bRet = false;
+	cJSON* pRoot = cJSON_Parse(szBuffer);
+	if (pRoot == NULL)
+	{
+		goto ERROR;
+	}
 
 	// Two pass process, one to validate and one to write
     for(int pass = 0; pass < 2; pass++)
     {
         const bool bIsDryRun = pass == 0;
 
-        const char* szKey = ""; // TODO: PUT REAL VALUE THERE!!!!
-
-        const PFL_SParameterItem* pParamItem = GetParameterEntryByKey(pHandle, szKey);
-        // Just ignore if it doesn't exists
-        if (pParamItem == NULL)
-        	continue;
-
-        // Int32
-        if (pParamItem->eType == PFL_TYPE_Int32)
+        for(int i = 0; i < cJSON_GetArraySize(pRoot); i++)
         {
-        	const int32_t s32NewValue = 0; // TODO: PUT REAL VALUE THERE!!!!
+            cJSON* pEntryJSON = cJSON_GetArrayItem(pRoot, i);
 
-        	if (bIsDryRun)
-        	{
-				if (ValidateValueInt32(pHandle,  pParamItem, s32NewValue) != PFL_ESETRET_OK)
-					goto ERROR;
-        	}
-        	else
-        	{
-        		// It has been validate on the first run so it should work here. If it doesn't it indicate a bug somewhere in the library.
-        		if (PFL_SetValueInt32(pHandle, szKey, s32NewValue) != PFL_ESETRET_OK)
-					goto ERROR;
-        	}
+            cJSON* pKeyJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_KEY_NAME);
+            if (pKeyJSON == NULL || !cJSON_IsString(pKeyJSON))
+            {
+                goto ERROR;
+            }
+
+            cJSON* pValueJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_VALUE_NAME);
+            if (pValueJSON == NULL)
+            {
+                // We just ignore changing the setting if the value property is not there.
+                // it allows us to handle secret cases.
+                continue;
+            }
+
+    		const char* szKey = pKeyJSON->valuestring;
+
+    		const PFL_SParameterItem* pParamItem = GetParameterEntryByKey(pHandle, szKey);
+    		// Just ignore if it doesn't exists
+    		if (pParamItem == NULL)
+    			continue;
+
+    		// Int32
+    		if (pParamItem->eType == PFL_TYPE_Int32)
+    		{
+                if (!cJSON_IsNumber(pValueJSON))
+                {
+                    // JSON value type is invalid, not a number
+                    goto ERROR;
+                }
+
+                const int32_t s32NewValue = pValueJSON->valueint;
+
+    			if (bIsDryRun)
+    			{
+    				if (ValidateValueInt32(pHandle,  pParamItem, s32NewValue) != PFL_ESETRET_OK)
+    					goto ERROR;
+    			}
+    			else
+    			{
+    				// It has been validate on the first run so it should work here. If it doesn't it indicate a bug somewhere in the library.
+    				if (PFL_SetValueInt32(pHandle, szKey, s32NewValue) != PFL_ESETRET_OK)
+    					goto ERROR;
+    			}
+    		}
         }
     }
 
-    return true;
+    bRet = true;
+    goto END;
     ERROR:
     bRet = false;
     END:
+    cJSON_free(pRoot);
     return bRet;
 }
