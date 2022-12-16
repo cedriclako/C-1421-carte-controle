@@ -142,3 +142,45 @@ int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32
 
 	return 0;
 }
+
+bool PFL_ImportFromJSON(const PFL_SHandle* pHandle, const char* szBuffer, int32_t s32MaxLen)
+{
+	bool bRet = false;
+
+	// Two pass process, one to validate and one to write
+    for(int pass = 0; pass < 2; pass++)
+    {
+        const bool bIsDryRun = pass == 0;
+
+        const char* szKey = ""; // TODO: PUT REAL VALUE THERE!!!!
+
+        const PFL_SParameterItem* pParamItem = GetParameterEntryByKey(pHandle, szKey);
+        // Just ignore if it doesn't exists
+        if (pParamItem == NULL)
+        	continue;
+
+        // Int32
+        if (pParamItem->eType == PFL_TYPE_Int32)
+        {
+        	const int32_t s32NewValue = 0; // TODO: PUT REAL VALUE THERE!!!!
+
+        	if (bIsDryRun)
+        	{
+				if (ValidateValueInt32(pHandle,  pParamItem, s32NewValue) != PFL_ESETRET_OK)
+					goto ERROR;
+        	}
+        	else
+        	{
+        		// It has been validate on the first run so it should work here. If it doesn't it indicate a bug somewhere in the library.
+        		if (PFL_SetValueInt32(pHandle, szKey, s32NewValue) != PFL_ESETRET_OK)
+					goto ERROR;
+        	}
+        }
+    }
+
+    return true;
+    ERROR:
+    bRet = false;
+    END:
+    return bRet;
+}

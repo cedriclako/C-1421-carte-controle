@@ -84,4 +84,6 @@ PFL_ESETRET PFL_SetValueInt32(const PFL_SHandle* pHandle, const char* szName, in
 
 int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32MaxLen);
 
+bool PFL_ImportFromJSON(const PFL_SHandle* pHandle, const char* szBuffer, int32_t s32MaxLen);
+
 #endif /* INC_PARAMETERFILE_H_ */
