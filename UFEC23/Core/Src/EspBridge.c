@@ -85,6 +85,7 @@ void EspManager(void const * argument) {
 	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
 
+	// TODO: Use: UARTPROTOCOLDEC_HandleIn()
 	static uint8_t TX_BUFFER[2];
 
 	TX_BUFFER[0] = 0x61;

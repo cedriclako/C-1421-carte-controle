@@ -35,6 +35,10 @@ static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t e
 
 static void ManageServerConnection();
 
+// Events
+static void ServerConnected();
+static void ServerDisconnected();
+
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder = 
 { 
     .u8PayloadBuffers = m_u8UARTProtocolBuffers, 
@@ -139,8 +143,7 @@ static void ManageServerConnection()
         if (m_sStateMachine.bIsConnected)
         {
             m_sStateMachine.bIsConnected = false;
-            // Disconnected ...
-            ESP_LOGI(TAG, "Server disconnected");
+            ServerDisconnected();
         }
     }
     else
@@ -148,9 +151,7 @@ static void ManageServerConnection()
         if (!m_sStateMachine.bIsConnected)
         {
             m_sStateMachine.bIsConnected = true;
-            // Disconnected ...
-            ESP_LOGI(TAG, "Server Connected");
-
+            ServerConnected();
         }
     }
     
@@ -159,4 +160,20 @@ static void ManageServerConnection()
     {
         UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive, NULL, 0);
     }
+}
+
+static void ServerConnected()
+{
+    // Connected ...
+    ESP_LOGI(TAG, "Server Connected");
+
+    // Send some requests ...
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameterJSON, NULL, 0);
+}
+
+static void ServerDisconnected()
+{
+    // Disconnected ...
+    ESP_LOGI(TAG, "Server disconnected");
 }
