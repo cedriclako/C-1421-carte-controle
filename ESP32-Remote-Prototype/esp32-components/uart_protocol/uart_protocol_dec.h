@@ -6,12 +6,13 @@
 #include <stdbool.h>
 #include "uart_protocol_common.h"
 
-// Looks like this: [START BYTE] [Frame ID] [PAYLOAD LENGTH] [PAYLOAD  ...] [CHECKSUM] [STOP BYTE] 
+// Looks like this: [START BYTE] [Frame ID] [PAYLOAD LENGTH B0 B1] [PAYLOAD  ...] [CHECKSUM] [STOP BYTE] 
 typedef enum
 {
   UARTPROTOCOLDEC_ESTEP_WaitingForStartByte,  
   UARTPROTOCOLDEC_ESTEP_WaitingFrameID,  
-  UARTPROTOCOLDEC_ESTEP_WaitingPayloadLength,
+  UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB0,
+  UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB1,
   UARTPROTOCOLDEC_ESTEP_GettingPayload,
   UARTPROTOCOLDEC_ESTEP_WaitingChecksum,
   UARTPROTOCOLDEC_ESTEP_WaitingStopByte
@@ -23,14 +24,14 @@ typedef struct _UARTPROTOCOLDEC_SHandle UARTPROTOCOLDEC_SHandle;
 // ------------------------------------
 // Callbacks
 // ------------------------------------
-typedef void (*FnAcceptFrame)(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint8_t u8PayloadLen);
+typedef void (*FnAcceptFrame)(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
 typedef void (*FnDropFrame)(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
 typedef int64_t (*FnGetTimerCountMS)(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 typedef struct 
 {
     uint8_t* u8PayloadBuffers;
-    uint8_t u8PayloadBufferLen;
+    uint16_t u16PayloadBufferLen;
 
     uint32_t u32FrameReceiveTimeOutMS;
 
@@ -50,7 +51,7 @@ struct _UARTPROTOCOLDEC_SHandle
 
     // Frame payload len. 
     uint8_t u8FrameID;
-    uint8_t u8FramePayloadLen;
+    uint16_t u16FramePayloadLen;
 
     // On the fly checksum calculation
     uint8_t u8ChecksumCalculation;

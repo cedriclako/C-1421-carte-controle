@@ -12,30 +12,17 @@
 
 #include "event.h"
 #include "webserver.h"
-#include "espnowprocess.h"
+#include "../espnowprocess.h"
 #include "nvsjson.h"
-#include "settings.h"
-#include "main.h"
-#include "fwconfig.h"
+#include "../settings.h"
+#include "../main.h"
+#include "../fwconfig.h"
+#include "apiurl.h"
 
 #define TAG "webserver"
 
 /* Max length a file path can have on storage */
 #define HTTPSERVER_BUFFERSIZE (1024*6)
-
-#define DEFAULT_RELATIVE_URI "/index.html"
-
-#define API_GETSETTINGSJSON_URI "/api/getsettingsjson"
-#define API_POSTSETTINGSJSON_URI "/api/setsettingsjson"
-
-#define ACTION_POST_ESPNOW_STARTPAIRING "/action/espnow_startpairing"
-#define ACTION_POST_ESPNOW_STOPPAIRING "/action/espnow_stoppairing"
-
-#define ACTION_POST_REBOOT "/action/reboot"
-#define ACTION_POST_DOWNLOADCONFIG "/action/downloadconfig"
-
-#define API_GETSYSINFOJSON_URI "/api/getsysinfo"
-#define API_GETLIVEDATAJSON_URI "/api/getlivedata"
 
 static esp_err_t api_get_handler(httpd_req_t *req);
 static esp_err_t api_post_handler(httpd_req_t *req);

@@ -31,7 +31,7 @@ typedef struct
 {
     uint32_t u32Ping;
 } UFEC23ENDEC_S2CReqVersionResp;
-
+/*
 typedef struct 
 {
     uint32_t u32ParameterCount;
@@ -78,7 +78,7 @@ typedef struct
     bool bIsEOF; 
 	bool bHasRecord;
 } UFEC23ENDEC_S2CReqParameterGetResp;
-
+*/
 void UFEC23ENDEC_Init();
 
 #endif
