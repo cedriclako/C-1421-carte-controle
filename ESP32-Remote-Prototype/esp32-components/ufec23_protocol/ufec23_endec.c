@@ -13,7 +13,7 @@ int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen,
     const uint32_t u32GitHashLen = strlen(pSrc->szGitHash);
     if (u32GitHashLen > UFEC23ENDEC_GITHASH_LEN)
         return 0;
-    int n = 0;
+    uint32_t n = 0;
     u8Dst[n++] = pSrc->sVersion.u8Major;
     u8Dst[n++] = pSrc->sVersion.u8Minor;
     u8Dst[n++] = pSrc->sVersion.u8Revision;
@@ -30,20 +30,20 @@ int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen,
 bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     // Version
-    int n = 0;
+	uint32_t n = 0;
     pDst->sVersion.u8Major = u8Datas[n++];
     pDst->sVersion.u8Minor = u8Datas[n++];
     pDst->sVersion.u8Revision = u8Datas[n++];
-    const int swlen = u8Datas[n++];
+    const uint32_t swlen = u8Datas[n++];
     if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN)
         return false;
-    memcpy(pDst->szSoftwareName, u8Datas[n], swlen);
+    memcpy(pDst->szSoftwareName, u8Datas[n], (size_t)swlen);
     pDst->szSoftwareName[swlen] = 0;
     n += swlen;
-    const int gitHashLen = u8Datas[n++];
+    const uint32_t gitHashLen = u8Datas[n++];
     if (gitHashLen > UFEC23ENDEC_GITHASH_LEN)
         return false;
-    memcpy(pDst->szGitHash, u8Datas[n], gitHashLen);
+    memcpy(pDst->szGitHash, u8Datas[n], (size_t)gitHashLen);
     pDst->szGitHash[gitHashLen] = 0;
     n += gitHashLen;
     return true;
