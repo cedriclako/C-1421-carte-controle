@@ -22,15 +22,16 @@ typedef struct
 
 typedef struct 
 {
-    UFEC23ENDEC_SVersion sVersion;
-    char szSoftwareName[12];
-    char szGitHash[12];
+    uint32_t u32Ping;
 } UFEC23ENDEC_C2SReqVersion;
 
 typedef struct 
 {
-    uint32_t u32Ping;
+    UFEC23ENDEC_SVersion sVersion;
+    char szSoftwareName[12];
+    char szGitHash[12];
 } UFEC23ENDEC_S2CReqVersionResp;
+
 /*
 typedef struct 
 {
@@ -80,5 +81,9 @@ typedef struct
 } UFEC23ENDEC_S2CReqParameterGetResp;
 */
 void UFEC23ENDEC_Init();
+
+int32_t UFEC23ENDEC_C2SReqVersionEncode(uint8_t u8Dst[], const UFEC23ENDEC_C2SReqVersion* pSrc);
+
+void UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, uint8_t u8Datas[], uint32_t u32DataLen);
 
 #endif

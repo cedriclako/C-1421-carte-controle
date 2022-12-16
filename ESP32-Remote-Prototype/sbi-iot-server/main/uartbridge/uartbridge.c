@@ -107,9 +107,19 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     switch ((UFEC23PROTOCOL_FRAMEID)u8ID)
     {
+        case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
+        {
+            ESP_LOGI(TAG, "Received frame S2CReqVersionResp");
+            break;
+        }
         case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:
         {
-            ESP_LOGI(TAG, "Accepted frame S2CReqPingAlive");
+            ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMEID_S2CGetParameterJSONResp:
+        {
+            ESP_LOGI(TAG, "Received frame S2CGetParameterJSONResp");
             break;
         }
         default:
