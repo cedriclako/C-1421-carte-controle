@@ -22,7 +22,7 @@
 #define TAG "webserver"
 
 /* Max length a file path can have on storage */
-#define HTTPSERVER_BUFFERSIZE (1024*6)
+#define HTTPSERVER_BUFFERSIZE (1024*4)
 
 static esp_err_t api_get_handler(httpd_req_t *req);
 static esp_err_t api_post_handler(httpd_req_t *req);

@@ -24,8 +24,12 @@ void UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
     uint8_t u8Checksum = 0;
     u8Checksum += u8ID;
     u8Checksum += u16PayloadLen;
-    for(int i = 0; i < u16PayloadLen; i++)
-        u8Checksum += u8Payloads[i];
+    if (u8Payloads != NULL)
+    {
+        for(int i = 0; i < u16PayloadLen; i++)
+            u8Checksum += u8Payloads[i];
+        psHandle->psConfig->fnWriteCb(psHandle, u8Payloads, u16PayloadLen);
+    }
     u8Checksum = ~u8Checksum;
 
     psHandle->psConfig->fnWriteCb(psHandle, &u8Checksum, 1);

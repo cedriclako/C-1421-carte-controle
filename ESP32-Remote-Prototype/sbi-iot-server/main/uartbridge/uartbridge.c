@@ -1,15 +1,25 @@
-#include "hardwaregpio.h"
-#include "uartbridge.h"
 #include "uart_protocol_dec.h"
 #include "uart_protocol_enc.h"
 #include "esp_log.h"
 #include "event.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "hardwaregpio.h"
+#include "uartbridge.h"
 
 #define TAG "UARTBridge"
 
+typedef struct 
+{
+    bool bIsConnected;
+
+    // Connection 
+    TickType_t ttLastCommTicks;
+} SStateMachine;
+
 // UART Protocol decoder handle
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
-static uint8_t m_u8UARTProtocolBuffers[255];
+static uint8_t m_u8UARTProtocolBuffers[1024*12];
 
 static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 
@@ -22,6 +32,8 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 
 // Event loops
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+
+static void ManageServerConnection();
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder = 
 { 
@@ -42,13 +54,20 @@ static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
     .fnWriteCb = EncWriteUART
 };
 
+static SStateMachine m_sStateMachine;
+
 void UARTBRIDGE_Init()
 {
+    // Reset communication
+    m_sStateMachine.bIsConnected = false;
+    m_sStateMachine.ttLastCommTicks = 0;
+
     // Decoder
     UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
     // Encoder
     UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
-
+    // const uint8_t u8Datas[] = { 0xCC, 0x01, 0x00, 0x04, 0xBA, 0xDC, 0x0F, 0xFE, 0x57, 0x99 };
+    // UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8Datas, sizeof(u8Datas));
     // Register events
     esp_event_handler_register_with(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, RequestConfigReloadEvent, NULL);
 }
@@ -62,6 +81,8 @@ void UARTBRIDGE_Handler()
     {
         UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8UARTDriverBuffers, len);
     }
+
+    ManageServerConnection();
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -76,8 +97,21 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
+    m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
+
     ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
+    switch ((UFEC23PROTOCOL_FRAMEID)u8ID)
+    {
+        case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:
+        {
+            ESP_LOGI(TAG, "Accepted frame S2CReqPingAlive");
+            break;
+        }
+        default:
+            break;
+    }
+
 }
 
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
@@ -94,4 +128,35 @@ void UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[],
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ESP_LOGI(TAG, "RequestConfigReloadEvent");
+}
+
+static void ManageServerConnection()
+{
+    // Business logics
+    const TickType_t ttDiffLastComm = (xTaskGetTickCount() - m_sStateMachine.ttLastCommTicks);
+    if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_COMMUNICATIONLOST_TIMEOUT_MS))
+    {
+        if (m_sStateMachine.bIsConnected)
+        {
+            m_sStateMachine.bIsConnected = false;
+            // Disconnected ...
+            ESP_LOGI(TAG, "Server disconnected");
+        }
+    }
+    else
+    {
+        if (!m_sStateMachine.bIsConnected)
+        {
+            m_sStateMachine.bIsConnected = true;
+            // Disconnected ...
+            ESP_LOGI(TAG, "Server Connected");
+
+        }
+    }
+    
+    // Send keep alive if no communication happened for some time ...
+    if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))
+    {
+        UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive, NULL, 0);
+    }
 }
