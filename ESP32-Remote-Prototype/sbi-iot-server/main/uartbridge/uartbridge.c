@@ -1,5 +1,7 @@
 #include "uart_protocol_dec.h"
 #include "uart_protocol_enc.h"
+#include "ufec23_protocol.h"
+#include "ufec23_endec.h"
 #include "esp_log.h"
 #include "event.h"
 #include "freertos/FreeRTOS.h"
@@ -109,7 +111,13 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     {
         case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
         {
-            ESP_LOGI(TAG, "Received frame S2CReqVersionResp");
+            UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionRespDecode;
+            if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionRespDecode, u8Payloads, u16PayloadLen))
+            {
+                ESP_LOGE(TAG, "Dropped S2CReqVersionResp, unable to decode");
+                break;
+            }
+
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:

@@ -2,6 +2,8 @@
 #define _UFEC23ENDEC_H_
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 
 typedef struct 
 {
@@ -20,16 +22,14 @@ typedef struct
     uint32_t u32Ping;
 } UFEC23ENDEC_S2CReqPingAliveResp;
 
-typedef struct 
-{
-    uint32_t u32Ping;
-} UFEC23ENDEC_C2SReqVersion;
+#define UFEC23ENDEC_SOFTWARENAME_LEN (12)
+#define UFEC23ENDEC_GITHASH_LEN (12)
 
 typedef struct 
 {
     UFEC23ENDEC_SVersion sVersion;
-    char szSoftwareName[12];
-    char szGitHash[12];
+    char szSoftwareName[UFEC23ENDEC_SOFTWARENAME_LEN+1];
+    char szGitHash[UFEC23ENDEC_GITHASH_LEN+1];
 } UFEC23ENDEC_S2CReqVersionResp;
 
 /*
@@ -82,8 +82,8 @@ typedef struct
 */
 void UFEC23ENDEC_Init();
 
-int32_t UFEC23ENDEC_C2SReqVersionEncode(uint8_t u8Dst[], const UFEC23ENDEC_C2SReqVersion* pSrc);
+int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
 
-void UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, uint8_t u8Datas[], uint32_t u32DataLen);
+bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 #endif
