@@ -37,13 +37,13 @@ bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, co
     const uint32_t swlen = u8Datas[n++];
     if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN)
         return false;
-    memcpy(pDst->szSoftwareName, u8Datas[n], (size_t)swlen);
+    memcpy(pDst->szSoftwareName, &u8Datas[n], (size_t)swlen);
     pDst->szSoftwareName[swlen] = 0;
     n += swlen;
     const uint32_t gitHashLen = u8Datas[n++];
     if (gitHashLen > UFEC23ENDEC_GITHASH_LEN)
         return false;
-    memcpy(pDst->szGitHash, u8Datas[n], (size_t)gitHashLen);
+    memcpy(pDst->szGitHash, &u8Datas[n], (size_t)gitHashLen);
     pDst->szGitHash[gitHashLen] = 0;
     n += gitHashLen;
     return true;
