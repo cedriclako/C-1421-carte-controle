@@ -153,7 +153,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
                 httpd_resp_sendstr_chunk(req, NULL);
                 /* Respond with 500 Internal Server Error */
                 httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
-               return ESP_FAIL;
+                return ESP_FAIL;
            }
         }
         u32Index += n;
@@ -329,9 +329,8 @@ static const char* GetSysInfo()
     char buff[100];
     pRoot = cJSON_CreateObject();
     if (pRoot == NULL)
-    {
         goto ERROR;
-    }
+ 
     cJSON* pEntries = cJSON_AddArrayToObject(pRoot, "infos");
 
     esp_chip_info_t sChipInfo;

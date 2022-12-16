@@ -210,6 +210,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_init();
     
+    // Just print task list
     char* szAllTask = (char*)malloc(4096);
     vTaskList(szAllTask);
     ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);

@@ -1,0 +1,84 @@
+#ifndef _UFEC23ENDEC_H_
+#define _UFEC23ENDEC_H_
+
+#include <stdint.h>
+
+typedef struct 
+{
+    uint8_t u8Major;
+    uint8_t u8Minor;
+    uint8_t u8Revision;
+} UFEC23ENDEC_SVersion;
+
+typedef struct 
+{
+    uint32_t u32Ping;
+} UFEC23ENDEC_C2SReqPingAlive;
+
+typedef struct 
+{
+    uint32_t u32Ping;
+} UFEC23ENDEC_S2CReqPingAliveResp;
+
+typedef struct 
+{
+    UFEC23ENDEC_SVersion sVersion;
+    char szSoftwareName[12];
+    char szGitHash[12];
+} UFEC23ENDEC_C2SReqVersion;
+
+typedef struct 
+{
+    uint32_t u32Ping;
+} UFEC23ENDEC_S2CReqVersionResp;
+
+typedef struct 
+{
+    uint32_t u32ParameterCount;
+    uint32_t u32CRC32;
+} UFEC23ENDEC_S2CReqParameterTableInfoResp;
+
+typedef enum
+{
+    UFEC23ENDEC_EITERATEOP_First = 0;	// Reset the iterator
+    UFEC23ENDEC_EITERATEOP_Next = 1;	// Send next item
+} UFEC23ENDEC_EITERATEOP;
+
+typedef struct 
+{
+    UFEC23ENDEC_EITERATEOP eIterateOp;
+} UFEC23ENDEC_C2SReqParameterGet;
+
+typedef enum
+{
+    UFEC23ENDEC_EPARAMTYPE_None = 0,
+    UFEC23ENDEC_EPARAMTYPE_Int32 = 1,
+    UFEC23ENDEC_EPARAMTYPE_Float = 2
+} UFEC23ENDEC_EPARAMTYPE;
+
+
+typedef union
+{
+    struct
+    {
+        int32_t s32Default;
+        int32_t s32Min;
+        int32_t s32Max;
+    } sInt32;
+} UFEC23ENDEC_uType;
+
+typedef struct 
+{
+    char szKey[16];
+    char szDesc[64];
+
+    UFEC23ENDEC_EPARAMTYPE eParamType;
+    UFEC23ENDEC_uType uType;
+
+    bool bIsEOF; 
+	bool bHasRecord;
+} UFEC23ENDEC_S2CReqParameterGetResp;
+
+void UFEC23ENDEC_Init();
+
+#endif
