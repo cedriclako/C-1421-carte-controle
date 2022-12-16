@@ -150,9 +150,9 @@ int main(void)
 		  continue;
 
 	  char tmp[128+1];
-	  int s32Value;
+	  int32_t s32Value;
 	  PFL_GetValueInt32(&PARAMFILE_g_sHandle, pParamItem->szKey, &s32Value);
-	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)", pParamItem->szKey, s32Value, pParamItem->uType.sInt32.s32Default, pParamItem->uType.sInt32.s32Min, pParamItem->uType.sInt32.s32Max);
+	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)", pParamItem->szKey, (int)s32Value, (int)pParamItem->uType.sInt32.s32Default, (int)pParamItem->uType.sInt32.s32Min, (int)pParamItem->uType.sInt32.s32Max);
 	  printf(tmp);
   }
 

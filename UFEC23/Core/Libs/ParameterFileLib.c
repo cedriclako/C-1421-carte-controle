@@ -5,6 +5,7 @@
  *      Author: mcarrier
  */
 #include <string.h>
+#include <stdio.h>
 #include "ParameterFileLib.h"
 
 static const PFL_SParameterItem* GetParameterEntryByKey(const PFL_SHandle* pHandle, const char* szKey);
@@ -96,4 +97,48 @@ static const PFL_SParameterItem* GetParameterEntryByKey(const PFL_SHandle* pHand
             return pParamItem;
     }
     return NULL;
+}
+
+int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32MaxLen)
+{
+	int n = 0;
+	szBuffer[n] = '\0';
+	const int c1 = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), "[\r\n");
+	if (c1 <= 0)
+		return -1;
+	n += c1;
+
+	for(int i = 0; i < pHandle->u32ParameterEntryCount; i++)
+	{
+		const PFL_SParameterItem* pEnt = &pHandle->pParameterEntries[i];
+
+		// Generate without using external library is fast
+		// I'm aware there are pitfail before string aren't escaped but since it's very specific usecase it's good enough.
+		const int newEntryCnt = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1),
+			"{ \"name\":\"%s\",\"desc\":\"%s\",\"t\":%d,\"def\":%d,\"min\":%d,\"max\":%d }\r\n",
+			/*0*/pEnt->szKey,
+			/*1*/pEnt->szDesc,
+			/*2*/(int)pEnt->eType,
+			/*3*/(int)pEnt->uType.sInt32.s32Default,
+			/*4*/(int)pEnt->uType.sInt32.s32Min,
+			/*5*/(int)pEnt->uType.sInt32.s32Max);
+		if (newEntryCnt <= 0)
+			return -1;
+		n += newEntryCnt;
+
+		if (i + 1 < pHandle->u32ParameterEntryCount)
+		{
+			const int sepc = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), ",");
+			if (sepc <= 0)
+				return -1;
+			n += sepc;
+		}
+	}
+
+	const int c2 = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), "]");
+	if (c2 <= 0)
+		return -1;
+	n += c2;
+
+	return 0;
 }

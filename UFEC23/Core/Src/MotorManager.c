@@ -96,17 +96,17 @@ static const FanSpeedKipKopParam_t FanSpeedParameters =
 static Mot_FanSpeed plenumSpeed = MOT_PLENUM_STOP;
 
 static int stepperPosition[NumberOfMotors];
-static int GrillPosition = 0;
-static int PrimaryPosition = 0;
-static int SecondaryPosition = 0;
+// static int GrillPosition = 0;
+// static int PrimaryPosition = 0;
+// static int SecondaryPosition = 0;
 
-static uint16_t convertedValue;
-static uint16_t Temperature;
+// static uint16_t convertedValue;
+// static uint16_t Temperature;
 
-static uint8_t OpenState;
-static uint8_t TimeState;
+// static uint8_t OpenState;
+// static uint8_t TimeState;
 
-static uint8_t Channel, Period, Percent, Minute;
+// static uint8_t Channel, Period, Percent, Minute;
 
 //public handle
 osThreadId MotorManagerTaskHandle;
