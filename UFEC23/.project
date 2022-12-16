@@ -29,21 +29,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>esp32-uart_protocol</name>
-			<type>2</type>
-			<location>D:/git/sbi/c-1421-carte-controle/ESP32-Remote-Prototype/esp32-components/uart_protocol</location>
-		</link>
-		<link>
-			<name>esp32-ufec23_protocol</name>
-			<type>2</type>
-			<location>D:/git/sbi/c-1421-carte-controle/ESP32-Remote-Prototype/esp32-components/ufec23_protocol</location>
-		</link>
-		<link>
-			<name>ufec23_protocol</name>
-			<type>2</type>
-			<location>D:/git/sbi/c-1421-carte-controle/ESP32-Remote-Prototype/esp32-components/ufec23_protocol</location>
-		</link>
-	</linkedResources>
 </projectDescription>

@@ -32,10 +32,10 @@ CR    | 2022/11/21 | -       | Creation
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
-#include "uart_protocol_enc.h"
-#include "uart_protocol_dec.h"
-#include "ufec23_endec.h"
-#include "ufec23_protocol.h"
+#include "uart_protocol/uart_protocol_enc.h"
+#include "uart_protocol/uart_protocol_dec.h"
+#include "ufec23_protocol/ufec23_endec.h"
+#include "ufec23_protocol/ufec23_protocol.h"
 
 //osSemaphoreId ESP_UART_SemaphoreHandle;
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
