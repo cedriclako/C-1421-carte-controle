@@ -13,6 +13,8 @@
 
 extern osSemaphoreId ESP_UART_SemaphoreHandle;
 
+void ESPMANAGER_Init();
+
 void EspManager(void const * argument);
 
 

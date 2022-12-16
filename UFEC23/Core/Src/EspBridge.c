@@ -32,10 +32,52 @@ CR    | 2022/11/21 | -       | Creation
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
+#include "uart_protocol_enc.h"
+#include "uart_protocol_dec.h"
+#include "ufec23_endec.h"
+#include "ufec23_protocol.h"
 
 //osSemaphoreId ESP_UART_SemaphoreHandle;
-osSemaphoreId ESP_UART_SemaphoreHandle;
+static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 
+// Callbacks
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
+static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
+static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
+
+osSemaphoreId ESP_UART_SemaphoreHandle;
+static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
+{
+    // Callbacks
+    .fnWriteCb = EncWriteUART
+};
+
+static uint8_t m_u8UARTProtocolBuffers[1024*8];
+
+static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
+{
+    .u8PayloadBuffers = m_u8UARTProtocolBuffers,
+    .u16PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers),
+
+    .u32FrameReceiveTimeOutMS = 50,
+
+    // Callbacks
+    .fnAcceptFrameCb = DecAcceptFrame,
+    .fnDropFrameCb = DecDropFrame,
+    // .fnGetTimerCountMSCb = GetTimerCountMS
+};
+
+static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
+static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
+
+void ESPMANAGER_Init()
+{
+    // Encoder
+    UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
+
+    // Decoder
+    UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
+}
 
 void EspManager(void const * argument) {
 
@@ -69,4 +111,22 @@ void EspManager(void const * argument) {
 
 	}
 
+}
+
+static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+    //uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
+	// Write byte into UART ...
+}
+
+
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
+{
+
+}
+
+static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
+{
+    // Exists mostly for debug purpose
+    // ESP_LOGE(TAG, "Dropped frame: %s", szReason);
 }

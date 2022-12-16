@@ -139,6 +139,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  ESPMANAGER_Init();
+
   PARAMFILE_Init(); // Initialize param file reader before main process
   // Print all parameters into the debug file
   for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
