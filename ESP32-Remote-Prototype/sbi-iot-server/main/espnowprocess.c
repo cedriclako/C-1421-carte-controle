@@ -122,6 +122,10 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     s2c_get_status_resp.stove_state.fan_speed_set.fan_mode = SBI_iot_common_EFanMode_Manual;
     s2c_get_status_resp.stove_state.fan_speed_set.curr = 1;
 
+    s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.min = 1;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 5;
+
     s2c_get_status_resp.stove_state.has_temperature_set = true;
     s2c_get_status_resp.stove_state.temperature_set.tempC_sp = 25.5f;
 
