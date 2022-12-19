@@ -13,7 +13,7 @@ int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen,
     const uint32_t u32GitHashLen = strlen(pSrc->szGitHash);
     if (u32GitHashLen > UFEC23ENDEC_GITHASH_LEN)
         return 0;
-    uint32_t n = 0;
+    int32_t n = 0;
     u8Dst[n++] = pSrc->sVersion.u8Major;
     u8Dst[n++] = pSrc->sVersion.u8Minor;
     u8Dst[n++] = pSrc->sVersion.u8Revision;
@@ -59,7 +59,7 @@ int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32
     int n = 0;
     u8Dst[n++] = pSrc->u8FanSpeedCurr;
     u8Dst[n++] = pSrc->u8FanSpeedMax;
-    u8Dst[n++] = pSrc->bIsAirOpen ? 0x01 : 0x00;
+    u8Dst[n++] = (pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00);
     return n;
 }
 
@@ -69,7 +69,8 @@ bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSetting
         return false;
     pDst->u8FanSpeedCurr = u8Datas[0];
     pDst->u8FanSpeedMax = u8Datas[1];
-    pDst->bIsAirOpen = u8Datas[2] & 0x01;
+    pDst->bIsAirOpen = (u8Datas[2] & 0x01) ? true : false;
+    pDst->bIsFanModeAuto = (u8Datas[2] & 0x02) ? true : false;
     return true;
 }
 
@@ -83,7 +84,7 @@ int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
     u8Dst[n++] = u16 & 0xFF;
 
     u8Dst[n++] = pSrc->u8FanSpeedCurr;
-    u8Dst[n++] = (pSrc->bIsAirOpen & 0x01) | (pSrc->bIsFanModeAuto & 0x02);
+    u8Dst[n++] = (pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00);
     return n;
 }
 

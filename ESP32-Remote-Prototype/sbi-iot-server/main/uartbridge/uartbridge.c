@@ -120,14 +120,14 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     {
         case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
         {
-            UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionRespDecode;
-            if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionRespDecode, u8Payloads, u16PayloadLen))
+            UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
+            if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionResp, u8Payloads, u16PayloadLen))
             {
                 ESP_LOGE(TAG, "Error frame S2CReqVersionResp");
                 break;
             }
-            pMemBlock->sS2CReqVersionRespDecode = sS2CReqVersionRespDecode;
-            pMemBlock->sS2CReqVersionRespDecodeIsSet = true;
+            pMemBlock->sS2CReqVersionResp = sS2CReqVersionResp;
+            pMemBlock->sS2CReqVersionRespIsSet = true;
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:

@@ -2,15 +2,9 @@ syntax = "proto3";
 
 package SBI.iot.common;
 
-enum EFanMode
-{
-	Auto = 0;
-	Manual = 1;
-}
-
 message FanspeedSet
 {
-    EFanMode fan_mode = 1;
+    bool is_automatic = 1;
     uint32 curr = 2;
 }
 

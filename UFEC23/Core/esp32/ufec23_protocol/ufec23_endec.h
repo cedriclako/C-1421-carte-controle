@@ -38,6 +38,7 @@ typedef struct
     uint8_t u8FanSpeedMax;
 
     bool bIsAirOpen;
+    bool bIsFanModeAuto;
 } UFEC23ENDEC_S2CGetRunningSettingResp;
 
 typedef enum 

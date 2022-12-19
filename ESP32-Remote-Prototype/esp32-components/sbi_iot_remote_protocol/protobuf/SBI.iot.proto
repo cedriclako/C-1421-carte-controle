@@ -20,6 +20,7 @@ enum EDEVICETYPE
 	EDEVICETYPE_None = 0;
 	EDEVICETYPE_IoTServer_V1 = 1;
 	EDEVICETYPE_Remote_V1 = 2;
+	EDEVICETYPE_Stove_V1 = 3;
 }
 
 message DeviceInfo
@@ -31,34 +32,12 @@ message DeviceInfo
 message RemoteState
 {
 	float temperatureC_curr = 1;
-	float humidityPerc_curr = 2;
 }
-
 
 message C2SGetStatus
 {
 	RemoteState remote_state = 1;
-}
-
-enum ESTOVESTATE {
-	ESTOVESTATE_ZEROING_STEPPER = 0;
-	ESTOVESTATE_WAITING = 1;
-	ESTOVESTATE_RELOAD_IGNITION = 2;
-	ESTOVESTATE_TEMPERATURE_RISE = 3;
-	ESTOVESTATE_COMBUSTION_HIGH = 4;
-	ESTOVESTATE_COMBUSTION_LOW = 5;
-	ESTOVESTATE_COMBUSTION_SUPERLOW = 6;
-	ESTOVESTATE_COAL_LOW = 7;
-	ESTOVESTATE_FLAME_LOSS = 8;
-	ESTOVESTATE_COAL_HIGH = 9;
-	ESTOVESTATE_OVERTEMP = 10;
-	ESTOVESTATE_SAFETY = 11;
-	ESTOVESTATE_PRODUCTION_TEST = 12;
-
-	ESTOVESTATE_COMBUSTION_HIGH_OPEN = 13;
-	ESTOVESTATE_COMBUSTION_HIGH_CLOSE = 14;
-	ESTOVESTATE_COMBUSTION_LOW_OPEN = 15;
-	ESTOVESTATE_COMBUSTION_LOW_CLOSE = 16;
+	DeviceInfo remote_info = 2;
 }
 
 message S2CGetStatusResp
@@ -66,15 +45,16 @@ message S2CGetStatusResp
 	message StoveState
 	{
 		SBI.iot.common.FanspeedSet fan_speed_set = 1;
-		SBI.iot.common.FanspeedBoundary fan_speed_boundary = 3;
-		SBI.iot.common.TemperatureSet temperature_set = 2;
+		SBI.iot.common.FanspeedBoundary fan_speed_boundary = 2;
+		SBI.iot.common.TemperatureSet remote_temperature_set = 3;
 		bool is_open_air = 4;
 		reserved 5;
 		SBI.iot.common.DateTime datetime = 6;
 	}
 
-	DeviceInfo device_info = 1;
-	StoveState stove_state = 2;
+	DeviceInfo stove_info = 1;	// Represent the stove itself
+	DeviceInfo bridge_info = 2;	// Represent the bridge
+	StoveState stove_state = 3;
 }
 
 message C2SChangeSettingSP
@@ -85,24 +65,22 @@ message C2SChangeSettingSP
 
 message S2CChangeSettingSPResp
 {
-	// New settings, the stove can refuse new settings
-	SBI.iot.common.FanspeedSet fan_speed_set = 1;
-	SBI.iot.common.TemperatureSet temperature_set = 2;
+	
 }
 
 message C2SScan
 {
-	DeviceInfo device_info = 1;
+	DeviceInfo remote_info = 1;
 }
 
 message S2CScanResp
 {
-	DeviceInfo device_info = 1;
+	DeviceInfo bridge_info = 1;
 }
 
 message C2SPairingReq
 {
-	DeviceInfo device_info = 1;
+	DeviceInfo remote_info = 1;
 	bytes encryption_key = 2;	// 16 bytes key
 }
 
@@ -115,8 +93,8 @@ message C2SPairingReqResp
 		InvalidKey = 2;
 	}
 
-	DeviceInfo device_info = 1;
-	EResponse response = 2;
+	DeviceInfo bridge_info = 2;
+	EResponse response = 3;
 }
 
 message Cmd

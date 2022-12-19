@@ -9,12 +9,6 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-/* Enum definitions */
-typedef enum _SBI_iot_common_EFanMode { 
-    SBI_iot_common_EFanMode_Auto = 0, 
-    SBI_iot_common_EFanMode_Manual = 1 
-} SBI_iot_common_EFanMode;
-
 /* Struct definitions */
 typedef struct _SBI_iot_common_Date { 
     uint32_t year;
@@ -28,7 +22,7 @@ typedef struct _SBI_iot_common_FanspeedBoundary {
 } SBI_iot_common_FanspeedBoundary;
 
 typedef struct _SBI_iot_common_FanspeedSet { 
-    SBI_iot_common_EFanMode fan_mode;
+    bool is_automatic;
     uint32_t curr;
 } SBI_iot_common_FanspeedSet;
 
@@ -57,25 +51,19 @@ typedef struct _SBI_iot_common_DateTime {
 } SBI_iot_common_DateTime;
 
 
-/* Helper constants for enums */
-#define _SBI_iot_common_EFanMode_MIN SBI_iot_common_EFanMode_Auto
-#define _SBI_iot_common_EFanMode_MAX SBI_iot_common_EFanMode_Manual
-#define _SBI_iot_common_EFanMode_ARRAYSIZE ((SBI_iot_common_EFanMode)(SBI_iot_common_EFanMode_Manual+1))
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define SBI_iot_common_FanspeedSet_init_default  {_SBI_iot_common_EFanMode_MIN, 0}
+#define SBI_iot_common_FanspeedSet_init_default  {0, 0}
 #define SBI_iot_common_FanspeedBoundary_init_default {0, 0}
 #define SBI_iot_common_TemperatureSet_init_default {0}
 #define SBI_iot_common_Date_init_default         {0, 0, 0}
 #define SBI_iot_common_Time_init_default         {0, 0, 0, 0}
 #define SBI_iot_common_DateTime_init_default     {false, SBI_iot_common_Date_init_default, false, SBI_iot_common_Time_init_default}
 #define SBI_iot_common_Version_init_default      {0, 0, 0}
-#define SBI_iot_common_FanspeedSet_init_zero     {_SBI_iot_common_EFanMode_MIN, 0}
+#define SBI_iot_common_FanspeedSet_init_zero     {0, 0}
 #define SBI_iot_common_FanspeedBoundary_init_zero {0, 0}
 #define SBI_iot_common_TemperatureSet_init_zero  {0}
 #define SBI_iot_common_Date_init_zero            {0, 0, 0}
@@ -89,7 +77,7 @@ extern "C" {
 #define SBI_iot_common_Date_day_tag              3
 #define SBI_iot_common_FanspeedBoundary_min_tag  1
 #define SBI_iot_common_FanspeedBoundary_max_tag  2
-#define SBI_iot_common_FanspeedSet_fan_mode_tag  1
+#define SBI_iot_common_FanspeedSet_is_automatic_tag 1
 #define SBI_iot_common_FanspeedSet_curr_tag      2
 #define SBI_iot_common_TemperatureSet_tempC_sp_tag 2
 #define SBI_iot_common_Time_hour_tag             1
@@ -104,7 +92,7 @@ extern "C" {
 
 /* Struct field encoding specification for nanopb */
 #define SBI_iot_common_FanspeedSet_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    fan_mode,          1) \
+X(a, STATIC,   SINGULAR, BOOL,     is_automatic,      1) \
 X(a, STATIC,   SINGULAR, UINT32,   curr,              2)
 #define SBI_iot_common_FanspeedSet_CALLBACK NULL
 #define SBI_iot_common_FanspeedSet_DEFAULT NULL

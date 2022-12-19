@@ -11,8 +11,8 @@ typedef struct
     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
     bool s2CGetRunningSettingIsSet;
 
-    UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionRespDecode;
-    bool sS2CReqVersionRespDecodeIsSet;
+    UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
+    bool sS2CReqVersionRespIsSet;
 
     // Config JSON
     uint8_t* pS2CConfigJSON;
