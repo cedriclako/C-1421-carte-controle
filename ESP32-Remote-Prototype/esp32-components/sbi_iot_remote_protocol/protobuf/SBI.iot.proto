@@ -66,9 +66,9 @@ message S2CGetStatusResp
 	message StoveState
 	{
 		SBI.iot.common.FanspeedSet fan_speed_set = 1;
+		SBI.iot.common.FanspeedBoundary fan_speed_boundary = 3;
 		SBI.iot.common.TemperatureSet temperature_set = 2;
-		reserved 3;
-		reserved 4;
+		bool is_open_air = 4;
 		reserved 5;
 		SBI.iot.common.DateTime datetime = 6;
 	}

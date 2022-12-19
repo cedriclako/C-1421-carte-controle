@@ -9,6 +9,9 @@
 PB_BIND(SBI_iot_common_FanspeedSet, SBI_iot_common_FanspeedSet, AUTO)
 
 
+PB_BIND(SBI_iot_common_FanspeedBoundary, SBI_iot_common_FanspeedBoundary, AUTO)
+
+
 PB_BIND(SBI_iot_common_TemperatureSet, SBI_iot_common_TemperatureSet, AUTO)
 
 
