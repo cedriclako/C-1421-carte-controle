@@ -130,6 +130,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             ESP_LOGI(TAG, "Received frame S2CGetParameterJSONResp");
             break;
         }
+        case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
+        {
+            ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+            break;
+        }
         default:
             break;
     }
@@ -188,6 +193,7 @@ static void ServerConnected()
     // Send some requests ...
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameterJSON, NULL, 0);
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
 }
 
 static void ServerDisconnected()

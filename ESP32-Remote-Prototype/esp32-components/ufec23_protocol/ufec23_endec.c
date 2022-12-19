@@ -52,7 +52,7 @@ bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, co
     return true;
 }
 
-int32_t UFEC23ENDEC_S2CGetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSetting* pSrc)
+int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc)
 {
     if (u32DstLen < 3)
         return 0;
@@ -63,7 +63,7 @@ int32_t UFEC23ENDEC_S2CGetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
     return n;
 }
 
-bool UFEC23ENDEC_S2CGetRunningSettingDecode(UFEC23ENDEC_S2CGetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSettingResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < 3)
         return false;
@@ -87,12 +87,12 @@ int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
     return n;
 }
 
-bool UFEC23ENDEC_C2SSetRunningSettingRespDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < 4)
         return 0;
-    const uint16_t u16 = (uint16_t)pDst->eRunningSettingFlags;
-    pDst->eRunningSettingFlags = (UFEC23ENDEC_ERUNNINGSETTINGFLAGS)(u8Datas[0] << 8) | u8Datas[1];
+    const uint16_t u16 = (uint16_t)((u8Datas[0] << 8) | u8Datas[1]);
+    pDst->eRunningSettingFlags = (UFEC23ENDEC_ERUNNINGSETTINGFLAGS)u16;
     pDst->u8FanSpeedCurr = u8Datas[2];
     pDst->bIsAirOpen = u8Datas[3] & 0x01;
     return false;

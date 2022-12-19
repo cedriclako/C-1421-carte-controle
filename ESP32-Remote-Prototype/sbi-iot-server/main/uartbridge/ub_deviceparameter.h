@@ -1,4 +1,0 @@
-#ifndef _UB_DEVICEPARAMETER_H_
-#define _UB_DEVICEPARAMETER_H_
-
-#endif
