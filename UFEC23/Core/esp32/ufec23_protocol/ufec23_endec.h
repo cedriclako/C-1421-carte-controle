@@ -32,6 +32,28 @@ typedef struct
     char szGitHash[UFEC23ENDEC_GITHASH_LEN+1];
 } UFEC23ENDEC_S2CReqVersionResp;
 
+typedef struct 
+{
+    uint8_t u8FanSpeedCurr;
+    uint8_t u8FanSpeedMax;
+
+    bool bIsAirOpen;
+} UFEC23ENDEC_S2CGetRunningSetting;
+
+typedef enum 
+{
+  UFEC23ENDEC_ERUNNINGSETTINGFLAGS_None = 0,
+  UFEC23ENDEC_ERUNNINGSETTINGFLAGS_FanSpeed = 1,
+  UFEC23ENDEC_ERUNNINGSETTINGFLAGS_IsAirOpen = 2  
+} UFEC23ENDEC_ERUNNINGSETTINGFLAGS;
+
+typedef struct 
+{
+    UFEC23ENDEC_ERUNNINGSETTINGFLAGS eRunningSettingFlags;
+    uint8_t u8FanSpeedCurr;
+    bool bIsAirOpen;
+} UFEC23ENDEC_C2SSetRunningSetting;
+
 /*
 typedef struct 
 {
@@ -85,5 +107,14 @@ void UFEC23ENDEC_Init();
 int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
 
 bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+
+int32_t UFEC23ENDEC_S2CGetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSetting* pSrc);
+
+bool UFEC23ENDEC_S2CGetRunningSettingDecode(UFEC23ENDEC_S2CGetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SSetRunningSetting* pSrc);
+
+bool UFEC23ENDEC_C2SSetRunningSettingRespDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 #endif
