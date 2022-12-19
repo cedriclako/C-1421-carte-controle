@@ -15,4 +15,6 @@
 #define API_GETSYSINFOJSON_URI "/api/getsysinfo"
 #define API_GETLIVEDATAJSON_URI "/api/getlivedata"
 
+#define API_GETSERVERPARAMETERFILEJSON_URI "/api/getserverparameterfile"
+
 #endif

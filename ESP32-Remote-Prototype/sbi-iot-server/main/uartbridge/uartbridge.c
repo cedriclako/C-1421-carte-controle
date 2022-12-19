@@ -22,6 +22,7 @@ typedef struct
 
 // UART Protocol decoder handle
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
+// Big buffer because we want to be able to download JSON file.
 static uint8_t m_u8UARTProtocolBuffers[1024*12];
 
 static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
@@ -106,8 +107,11 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
+    STOVEMB_Take(portMAX_DELAY);
+
     STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlock();
 
+    // Any communication count
     m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
 
     ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
@@ -119,10 +123,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionRespDecode;
             if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionRespDecode, u8Payloads, u16PayloadLen))
             {
-                ESP_LOGE(TAG, "Dropped S2CReqVersionResp, unable to decode");
+                ESP_LOGE(TAG, "Error frame S2CReqVersionResp");
                 break;
             }
-
+            pMemBlock->sS2CReqVersionRespDecode = sS2CReqVersionRespDecode;
+            pMemBlock->sS2CReqVersionRespDecodeIsSet = true;
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:
@@ -130,36 +135,42 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
             break;
         }
-        case UFEC23PROTOCOL_FRAMEID_S2CGetParameterJSONResp:
-        {
-            ESP_LOGI(TAG, "Received frame S2CGetParameterJSONResp");
-            break;
-        }
         case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
         {
             UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSettingResp;
 
             // Receive settings ...
-            if (UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u16PayloadLen))
+            if (!UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u16PayloadLen))
             {
-                // Check if it changed
-                if (memcmp(&pMemBlock->s2CGetRunningSetting, &s2CGetRunningSettingResp, sizeof(UFEC23ENDEC_S2CGetRunningSettingResp)) != 0)
-                {
-                    pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
-                    pMemBlock->s2CGetRunningSettingIsSet = true;
-                }
-                ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+                ESP_LOGE(TAG, "Error frame S2CGetRunningSettingResp");
+                break;
             }
-            else
-            {   
-                ESP_LOGE(TAG, "Received frame S2CGetRunningSettingResp, error");
+            pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
+            pMemBlock->s2CGetRunningSettingIsSet = true;
+            ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMEID_S2CGetParameterJSONResp:
+        {
+            if (pMemBlock->pS2CConfigJSON)
+            {
+                free(pMemBlock->pS2CConfigJSON);
+                pMemBlock->pS2CConfigJSON = NULL;
             }
+
+            // S2C config
+            pMemBlock->pS2CConfigJSON = (uint8_t*)malloc(sizeof(uint8_t)*u16PayloadLen);
+            pMemBlock->u32S2CConfigJSONLen = u16PayloadLen;
+            // payload is supposed to contains a trailing 0 but because I'm paranoid I force it anyway 
+            pMemBlock->pS2CConfigJSON[u16PayloadLen] = 0;
+            memcpy(pMemBlock->pS2CConfigJSON, u8Payloads, u16PayloadLen);
             break;
         }
         default:
             break;
     }
 
+    STOVEMB_Give();
 }
 
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
@@ -215,6 +226,7 @@ static void ServerConnected()
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameterJSON, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameterJSON, NULL, 0);
 }
 
 static void ServerDisconnected()

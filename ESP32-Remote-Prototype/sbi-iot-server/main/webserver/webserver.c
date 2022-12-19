@@ -18,11 +18,12 @@
 #include "../main.h"
 #include "../fwconfig.h"
 #include "apiurl.h"
+#include "../uartbridge/stovemb.h"
 
 #define TAG "webserver"
 
 /* Max length a file path can have on storage */
-#define HTTPSERVER_BUFFERSIZE (1024*4)
+#define HTTPSERVER_BUFFERSIZE (1024*12)
 
 static esp_err_t api_get_handler(httpd_req_t *req);
 static esp_err_t api_post_handler(httpd_req_t *req);
@@ -87,7 +88,7 @@ void WEBSERVER_Init()
     config.task_priority = FWCONFIG_HTTPTASK_PRIORITY;
     config.lru_purge_enable = true;
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_open_sockets = 13;
+    config.max_open_sockets = 3;
 
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -190,34 +191,36 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
 static esp_err_t api_get_handler(httpd_req_t *req)
 {
-    char* pExportJSON = NULL;
+    char* szErrorString = NULL;
+
+    char* pExportJSON = "Error";
 
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {
         pExportJSON = NVSJSON_ExportJSON(&g_sSettingHandle);
 
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
-        {
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to send data");
-            goto END;
-        }
+            goto ERROR;
     }
     else if (strcmp(req->uri, API_GETSYSINFOJSON_URI) == 0)
     {
         pExportJSON = GetSysInfo();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
-        {
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to send data");
-            goto END;
-        }
+            goto ERROR;
     }
     else if (strcmp(req->uri, API_GETLIVEDATAJSON_URI) == 0)
     {
         pExportJSON = GetLiveData();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
+            goto ERROR;
+    }
+    else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
+    {
+        pExportJSON = STOVEMB_CopyServerParameterJSONTo();
+        if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
         {
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to send data");
-            goto END;
+            szErrorString = "Server parameter file is not available";
+            goto ERROR;
         }
     }
     else
@@ -225,11 +228,15 @@ static esp_err_t api_get_handler(httpd_req_t *req)
         ESP_LOGE(TAG, "api_get_handler, url: %s", req->uri);
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
     }
+    goto END;
+    ERROR:
+    if (szErrorString != NULL)
+        ESP_LOGE(TAG, "api_get_handler, url: %s, error: %s", req->uri, szErrorString);
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "request processing error");
     END:
     if (pExportJSON != NULL)
         free(pExportJSON);
 
-    httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
