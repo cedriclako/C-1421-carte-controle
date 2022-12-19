@@ -7,5 +7,6 @@
 //public handle
 //public function
 void DebugManager(void const * argument);
+void set_sec_flag(void);
 
 #endif	/* TEMPERATURE_MAN_H  */
