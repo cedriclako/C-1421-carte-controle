@@ -926,7 +926,10 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 	{
 		if (AirInput_getAperture(&primary) >= MaxPrimary)
 		{
-			if (AirInput_getAperture(&grill) < MaxGrill)
+			if(AirInput_getAperture(&secondary) < MaxSecondary)
+			{
+				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+			}else if (AirInput_getAperture(&grill) < MaxGrill)
 			{
 				AirInput_setAjustement(&grill, adjustement, secondPerStep);
 			}
@@ -934,7 +937,7 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 		else
 		{
 			AirInput_setAjustement(&primary, adjustement, secondPerStep);
-			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+
 		}
 	}
 	else if (adjustement < 0)
@@ -943,12 +946,14 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 		{
 			AirInput_setAjustement(&grill, adjustement, secondPerStep);
 		}
-		else
+		else if(AirInput_getAperture(&secondary) > MinSecondary)
+		{
+			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+		}else
 		{
 			if(AirInput_getAperture(&primary) > MinPrimary)
 			{
 				AirInput_setAjustement(&primary, adjustement, secondPerStep);
-				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 			}
 		}
 	}
