@@ -8,8 +8,13 @@
 typedef struct 
 {
     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
-} STOVEMB_Sa;
+    bool s2CGetRunningSettingIsSet;
+} STOVEMB_SMemBlock;
 
 void STOVEMB_Init();
+
+STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
+
+const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
 
 #endif

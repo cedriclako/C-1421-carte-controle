@@ -8,6 +8,7 @@
 #include "freertos/task.h"
 #include "hardwaregpio.h"
 #include "uartbridge.h"
+#include "stovemb.h"
 
 #define TAG "UARTBridge"
 
@@ -64,6 +65,8 @@ static SStateMachine m_sStateMachine;
 
 void UARTBRIDGE_Init()
 {
+    STOVEMB_Init();
+
     // Reset communication
     m_sStateMachine.bIsConnected = false;
     m_sStateMachine.ttLastCommTicks = 0;
@@ -103,6 +106,8 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
+    STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlock();
+
     m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
 
     ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
@@ -132,7 +137,23 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         }
         case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
         {
-            ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+            UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSettingResp;
+
+            // Receive settings ...
+            if (UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u16PayloadLen))
+            {
+                // Check if it changed
+                if (memcmp(&pMemBlock->s2CGetRunningSetting, &s2CGetRunningSettingResp, sizeof(UFEC23ENDEC_S2CGetRunningSettingResp)) != 0)
+                {
+                    pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
+                    pMemBlock->s2CGetRunningSettingIsSet = true;
+                }
+                ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+            }
+            else
+            {   
+                ESP_LOGE(TAG, "Received frame S2CGetRunningSettingResp, error");
+            }
             break;
         }
         default:
