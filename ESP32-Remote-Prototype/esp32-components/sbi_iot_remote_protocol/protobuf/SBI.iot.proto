@@ -61,33 +61,6 @@ enum ESTOVESTATE {
 	ESTOVESTATE_COMBUSTION_LOW_CLOSE = 16;
 }
 
-// Please see: readme.md for more details
-message MiscStoveState
-{
-	int32 TavantF = 1; 			// Température foyer avant
-	int32 TArriereF = 2; 		// Température foyer arrière
-	int32 PlenumF = 3;			// Température Plenum (147F )
-	ESTOVESTATE state = 4;		// État de l'algo
-	bool tStat = 5;				// État du thermostat	
-	int32 dTav = 6;				// Pente du changement de température avant
-	int32 FanSpeed = 7;			// Vitesse de fan
-	int32 Grille = 8; 			// Position du moteur de grille
-	int32 PIDPos = 9; 	// :0	// Commande PID
-	int32 Prim = 10; 			// Position du moteur du primaire
-	int32 Sec = 11;				// Position du moteur du secondaire
-	int32 TboardF = 12;			// Température du PCB de contrôle
-	bool Door = 13;				// Porte ouverte?
-	int32 PartCH0 = 14;			// # de comptes du capteur de particules (CHO)
-	int32 PartCH1 = 15;			// # de comptes du capteur de particules (CH1)
-	int32 PartVar = 16;			// Variance des mesures de CH0
-	int32 PartSlope = 17; 		// Pente des mesures de CH0
-	int32 TPartF= 18;			// Température
-	int32 PartCurr = 19;		// Courant mesuré dans les DELs
-	int32 PartLuxON = 20;		// Valeur de Lux mesurée avec DELs allumées
-	int32 PartLuxOFF = 21;		// Valeur de Lux mesurée avec DELs éteintes
-	int32 PartTime = 22;		// Millisecondes écoulées depuis l'init
-}
-
 message S2CGetStatusResp
 {
 	message StoveState
@@ -102,7 +75,6 @@ message S2CGetStatusResp
 
 	DeviceInfo device_info = 1;
 	StoveState stove_state = 2;
-	MiscStoveState misc_stove_state = 3;
 }
 
 message C2SChangeSettingSP

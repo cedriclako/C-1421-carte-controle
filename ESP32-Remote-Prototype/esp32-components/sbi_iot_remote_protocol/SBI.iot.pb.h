@@ -63,31 +63,6 @@ typedef struct _SBI_iot_DeviceInfo {
     SBI_iot_common_Version sw_version;
 } SBI_iot_DeviceInfo;
 
-typedef struct _SBI_iot_MiscStoveState { 
-    int32_t TavantF; /* -4445255F */
-    int32_t TArriereF; /* -4445255F */
-    int32_t PlenumF; /* 147F */
-    SBI_iot_ESTOVESTATE state; /* State:ZEROING_STEP */
-    bool tStat; /* :ON */
-    int32_t dTav; /* :0 */
-    int32_t FanSpeed; /* :0 */
-    int32_t Grille; /* :0 */
-    int32_t PIDPos; /* :0 */
-    int32_t Prim; /* :11 */
-    int32_t Sec; /* :11 */
-    int32_t TboardF; /* :74F */
-    bool Door; /* :OPEN */
-    int32_t PartCH0; /* :65535 */
-    int32_t PartCH1; /* :65535 */
-    int32_t PartVar; /* :22176 */
-    int32_t PartSlope; /* :0 */
-    int32_t TPartF; /* :23500F */
-    int32_t PartCurr; /* :20968 */
-    int32_t PartLuxON; /* :0 */
-    int32_t PartLuxOFF; /* :0 */
-    int32_t PartTime; /* :64752* */
-} SBI_iot_MiscStoveState;
-
 typedef struct _SBI_iot_RemoteState { 
     float temperatureC_curr;
     float humidityPerc_curr;
@@ -136,8 +111,6 @@ typedef struct _SBI_iot_S2CGetStatusResp {
     SBI_iot_DeviceInfo device_info;
     bool has_stove_state;
     SBI_iot_S2CGetStatusResp_StoveState stove_state;
-    bool has_misc_stove_state;
-    SBI_iot_MiscStoveState misc_stove_state;
 } SBI_iot_S2CGetStatusResp;
 
 typedef struct _SBI_iot_S2CScanResp { 
@@ -186,8 +159,7 @@ extern "C" {
 #define SBI_iot_DeviceInfo_init_default          {_SBI_iot_EDEVICETYPE_MIN, false, SBI_iot_common_Version_init_default}
 #define SBI_iot_RemoteState_init_default         {0, 0}
 #define SBI_iot_C2SGetStatus_init_default        {false, SBI_iot_RemoteState_init_default}
-#define SBI_iot_MiscStoveState_init_default      {0, 0, 0, _SBI_iot_ESTOVESTATE_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-#define SBI_iot_S2CGetStatusResp_init_default    {false, SBI_iot_DeviceInfo_init_default, false, SBI_iot_S2CGetStatusResp_StoveState_init_default, false, SBI_iot_MiscStoveState_init_default}
+#define SBI_iot_S2CGetStatusResp_init_default    {false, SBI_iot_DeviceInfo_init_default, false, SBI_iot_S2CGetStatusResp_StoveState_init_default}
 #define SBI_iot_S2CGetStatusResp_StoveState_init_default {false, SBI_iot_common_FanspeedSet_init_default, false, SBI_iot_common_TemperatureSet_init_default, false, SBI_iot_common_DateTime_init_default}
 #define SBI_iot_C2SChangeSettingSP_init_default  {false, SBI_iot_common_FanspeedSet_init_default, false, SBI_iot_common_TemperatureSet_init_default}
 #define SBI_iot_S2CChangeSettingSPResp_init_default {false, SBI_iot_common_FanspeedSet_init_default, false, SBI_iot_common_TemperatureSet_init_default}
@@ -199,8 +171,7 @@ extern "C" {
 #define SBI_iot_DeviceInfo_init_zero             {_SBI_iot_EDEVICETYPE_MIN, false, SBI_iot_common_Version_init_zero}
 #define SBI_iot_RemoteState_init_zero            {0, 0}
 #define SBI_iot_C2SGetStatus_init_zero           {false, SBI_iot_RemoteState_init_zero}
-#define SBI_iot_MiscStoveState_init_zero         {0, 0, 0, _SBI_iot_ESTOVESTATE_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-#define SBI_iot_S2CGetStatusResp_init_zero       {false, SBI_iot_DeviceInfo_init_zero, false, SBI_iot_S2CGetStatusResp_StoveState_init_zero, false, SBI_iot_MiscStoveState_init_zero}
+#define SBI_iot_S2CGetStatusResp_init_zero       {false, SBI_iot_DeviceInfo_init_zero, false, SBI_iot_S2CGetStatusResp_StoveState_init_zero}
 #define SBI_iot_S2CGetStatusResp_StoveState_init_zero {false, SBI_iot_common_FanspeedSet_init_zero, false, SBI_iot_common_TemperatureSet_init_zero, false, SBI_iot_common_DateTime_init_zero}
 #define SBI_iot_C2SChangeSettingSP_init_zero     {false, SBI_iot_common_FanspeedSet_init_zero, false, SBI_iot_common_TemperatureSet_init_zero}
 #define SBI_iot_S2CChangeSettingSPResp_init_zero {false, SBI_iot_common_FanspeedSet_init_zero, false, SBI_iot_common_TemperatureSet_init_zero}
@@ -215,28 +186,6 @@ extern "C" {
 #define SBI_iot_C2SChangeSettingSP_temperature_set_tag 2
 #define SBI_iot_DeviceInfo_device_type_tag       1
 #define SBI_iot_DeviceInfo_sw_version_tag        2
-#define SBI_iot_MiscStoveState_TavantF_tag       1
-#define SBI_iot_MiscStoveState_TArriereF_tag     2
-#define SBI_iot_MiscStoveState_PlenumF_tag       3
-#define SBI_iot_MiscStoveState_state_tag         4
-#define SBI_iot_MiscStoveState_tStat_tag         5
-#define SBI_iot_MiscStoveState_dTav_tag          6
-#define SBI_iot_MiscStoveState_FanSpeed_tag      7
-#define SBI_iot_MiscStoveState_Grille_tag        8
-#define SBI_iot_MiscStoveState_PIDPos_tag        9
-#define SBI_iot_MiscStoveState_Prim_tag          10
-#define SBI_iot_MiscStoveState_Sec_tag           11
-#define SBI_iot_MiscStoveState_TboardF_tag       12
-#define SBI_iot_MiscStoveState_Door_tag          13
-#define SBI_iot_MiscStoveState_PartCH0_tag       14
-#define SBI_iot_MiscStoveState_PartCH1_tag       15
-#define SBI_iot_MiscStoveState_PartVar_tag       16
-#define SBI_iot_MiscStoveState_PartSlope_tag     17
-#define SBI_iot_MiscStoveState_TPartF_tag        18
-#define SBI_iot_MiscStoveState_PartCurr_tag      19
-#define SBI_iot_MiscStoveState_PartLuxON_tag     20
-#define SBI_iot_MiscStoveState_PartLuxOFF_tag    21
-#define SBI_iot_MiscStoveState_PartTime_tag      22
 #define SBI_iot_RemoteState_temperatureC_curr_tag 1
 #define SBI_iot_RemoteState_humidityPerc_curr_tag 2
 #define SBI_iot_S2CChangeSettingSPResp_fan_speed_set_tag 1
@@ -252,7 +201,6 @@ extern "C" {
 #define SBI_iot_C2SScan_device_info_tag          1
 #define SBI_iot_S2CGetStatusResp_device_info_tag 1
 #define SBI_iot_S2CGetStatusResp_stove_state_tag 2
-#define SBI_iot_S2CGetStatusResp_misc_stove_state_tag 3
 #define SBI_iot_S2CScanResp_device_info_tag      1
 #define SBI_iot_Cmd_seq_number_tag               1
 #define SBI_iot_Cmd_eQoS_tag                     2
@@ -283,41 +231,13 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  remote_state,      1)
 #define SBI_iot_C2SGetStatus_DEFAULT NULL
 #define SBI_iot_C2SGetStatus_remote_state_MSGTYPE SBI_iot_RemoteState
 
-#define SBI_iot_MiscStoveState_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT32,    TavantF,           1) \
-X(a, STATIC,   SINGULAR, INT32,    TArriereF,         2) \
-X(a, STATIC,   SINGULAR, INT32,    PlenumF,           3) \
-X(a, STATIC,   SINGULAR, UENUM,    state,             4) \
-X(a, STATIC,   SINGULAR, BOOL,     tStat,             5) \
-X(a, STATIC,   SINGULAR, INT32,    dTav,              6) \
-X(a, STATIC,   SINGULAR, INT32,    FanSpeed,          7) \
-X(a, STATIC,   SINGULAR, INT32,    Grille,            8) \
-X(a, STATIC,   SINGULAR, INT32,    PIDPos,            9) \
-X(a, STATIC,   SINGULAR, INT32,    Prim,             10) \
-X(a, STATIC,   SINGULAR, INT32,    Sec,              11) \
-X(a, STATIC,   SINGULAR, INT32,    TboardF,          12) \
-X(a, STATIC,   SINGULAR, BOOL,     Door,             13) \
-X(a, STATIC,   SINGULAR, INT32,    PartCH0,          14) \
-X(a, STATIC,   SINGULAR, INT32,    PartCH1,          15) \
-X(a, STATIC,   SINGULAR, INT32,    PartVar,          16) \
-X(a, STATIC,   SINGULAR, INT32,    PartSlope,        17) \
-X(a, STATIC,   SINGULAR, INT32,    TPartF,           18) \
-X(a, STATIC,   SINGULAR, INT32,    PartCurr,         19) \
-X(a, STATIC,   SINGULAR, INT32,    PartLuxON,        20) \
-X(a, STATIC,   SINGULAR, INT32,    PartLuxOFF,       21) \
-X(a, STATIC,   SINGULAR, INT32,    PartTime,         22)
-#define SBI_iot_MiscStoveState_CALLBACK NULL
-#define SBI_iot_MiscStoveState_DEFAULT NULL
-
 #define SBI_iot_S2CGetStatusResp_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  device_info,       1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  stove_state,       2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  misc_stove_state,   3)
+X(a, STATIC,   OPTIONAL, MESSAGE,  stove_state,       2)
 #define SBI_iot_S2CGetStatusResp_CALLBACK NULL
 #define SBI_iot_S2CGetStatusResp_DEFAULT NULL
 #define SBI_iot_S2CGetStatusResp_device_info_MSGTYPE SBI_iot_DeviceInfo
 #define SBI_iot_S2CGetStatusResp_stove_state_MSGTYPE SBI_iot_S2CGetStatusResp_StoveState
-#define SBI_iot_S2CGetStatusResp_misc_stove_state_MSGTYPE SBI_iot_MiscStoveState
 
 #define SBI_iot_S2CGetStatusResp_StoveState_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  fan_speed_set,     1) \
@@ -392,7 +312,6 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,s2c_change_settingsp_resp,payload.s2
 extern const pb_msgdesc_t SBI_iot_DeviceInfo_msg;
 extern const pb_msgdesc_t SBI_iot_RemoteState_msg;
 extern const pb_msgdesc_t SBI_iot_C2SGetStatus_msg;
-extern const pb_msgdesc_t SBI_iot_MiscStoveState_msg;
 extern const pb_msgdesc_t SBI_iot_S2CGetStatusResp_msg;
 extern const pb_msgdesc_t SBI_iot_S2CGetStatusResp_StoveState_msg;
 extern const pb_msgdesc_t SBI_iot_C2SChangeSettingSP_msg;
@@ -407,7 +326,6 @@ extern const pb_msgdesc_t SBI_iot_Cmd_msg;
 #define SBI_iot_DeviceInfo_fields &SBI_iot_DeviceInfo_msg
 #define SBI_iot_RemoteState_fields &SBI_iot_RemoteState_msg
 #define SBI_iot_C2SGetStatus_fields &SBI_iot_C2SGetStatus_msg
-#define SBI_iot_MiscStoveState_fields &SBI_iot_MiscStoveState_msg
 #define SBI_iot_S2CGetStatusResp_fields &SBI_iot_S2CGetStatusResp_msg
 #define SBI_iot_S2CGetStatusResp_StoveState_fields &SBI_iot_S2CGetStatusResp_StoveState_msg
 #define SBI_iot_C2SChangeSettingSP_fields &SBI_iot_C2SChangeSettingSP_msg
@@ -424,13 +342,12 @@ extern const pb_msgdesc_t SBI_iot_Cmd_msg;
 #define SBI_iot_C2SGetStatus_size                12
 #define SBI_iot_C2SPairingReqResp_size           26
 #define SBI_iot_C2SScan_size                     24
-#define SBI_iot_Cmd_size                         328
+#define SBI_iot_Cmd_size                         102
 #define SBI_iot_DeviceInfo_size                  22
-#define SBI_iot_MiscStoveState_size              222
 #define SBI_iot_RemoteState_size                 10
 #define SBI_iot_S2CChangeSettingSPResp_size      17
 #define SBI_iot_S2CGetStatusResp_StoveState_size 65
-#define SBI_iot_S2CGetStatusResp_size            316
+#define SBI_iot_S2CGetStatusResp_size            91
 #define SBI_iot_S2CScanResp_size                 24
 
 #ifdef __cplusplus

@@ -127,30 +127,6 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 
     FillDeviceInfo(&s2c_get_status_resp.device_info);
 
-    s2c_get_status_resp.has_misc_stove_state = true;
-    s2c_get_status_resp.misc_stove_state.TavantF = 500;
-    s2c_get_status_resp.misc_stove_state.TArriereF = 500;
-    s2c_get_status_resp.misc_stove_state.PlenumF = 200;
-    s2c_get_status_resp.misc_stove_state.state = SBI_iot_ESTOVESTATE_ESTOVESTATE_COMBUSTION_HIGH;
-    s2c_get_status_resp.misc_stove_state.tStat = true;
-    s2c_get_status_resp.misc_stove_state.dTav = 200;
-    s2c_get_status_resp.misc_stove_state.FanSpeed = 5;
-    s2c_get_status_resp.misc_stove_state.Grille = 800;
-    s2c_get_status_resp.misc_stove_state.PIDPos = 800;
-    s2c_get_status_resp.misc_stove_state.Prim = 200;
-    s2c_get_status_resp.misc_stove_state.Sec = 200;
-    s2c_get_status_resp.misc_stove_state.TboardF = 200;
-    s2c_get_status_resp.misc_stove_state.Door = true;
-    s2c_get_status_resp.misc_stove_state.PartCH0 = 200;
-    s2c_get_status_resp.misc_stove_state.PartCH1 = 200;
-    s2c_get_status_resp.misc_stove_state.PartVar = 200;
-    s2c_get_status_resp.misc_stove_state.PartSlope = 200;
-    s2c_get_status_resp.misc_stove_state.TPartF = 200;
-    s2c_get_status_resp.misc_stove_state.PartCurr = 200;
-    s2c_get_status_resp.misc_stove_state.PartLuxON = 200;
-    s2c_get_status_resp.misc_stove_state.PartLuxOFF = 200;
-    s2c_get_status_resp.misc_stove_state.PartTime = 200;
-
     // Date time
     s2c_get_status_resp.stove_state.has_datetime = true;
     s2c_get_status_resp.stove_state.datetime.has_date = true;

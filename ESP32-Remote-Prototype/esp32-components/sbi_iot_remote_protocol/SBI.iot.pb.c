@@ -15,9 +15,6 @@ PB_BIND(SBI_iot_RemoteState, SBI_iot_RemoteState, AUTO)
 PB_BIND(SBI_iot_C2SGetStatus, SBI_iot_C2SGetStatus, AUTO)
 
 
-PB_BIND(SBI_iot_MiscStoveState, SBI_iot_MiscStoveState, AUTO)
-
-
 PB_BIND(SBI_iot_S2CGetStatusResp, SBI_iot_S2CGetStatusResp, AUTO)
 
 
