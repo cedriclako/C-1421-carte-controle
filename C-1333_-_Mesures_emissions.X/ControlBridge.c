@@ -11,7 +11,7 @@ Public prefix : control
 
 Project # : C-1421
 
-Product: Mesure d'émissions polluantes
+Product: Mesure d'ï¿½missions polluantes
 
 Creation date:  2022/10/14
 
@@ -435,7 +435,7 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     bOBJ.CH1_ON = mOBJ->m_uIrLighted;
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
     bOBJ.CH1_OFF = mOBJ->m_uIrDark;
-    bOBJ.LED_current_meas = (uint16_t)(3.3*mOBJ->adcValue/4.096);
+    bOBJ.LED_current_meas = (uint16_t)(0.33*mOBJ->adcValue/4.096);
     bOBJ.time_window = mOBJ->m_uMeasureInterval;
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
