@@ -194,7 +194,7 @@ bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp
 	return true;
 }
 
-int32_t UFEC23PROTOCOL_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_C2SSetParameter* pSrc)
+int32_t UFEC23ENDEC_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_C2SSetParameter* pSrc)
 {
     if (u32DstLen < UFEC23ENDEC_C2SSETPARAMETER_COUNT)
         return false;
@@ -210,7 +210,7 @@ int32_t UFEC23PROTOCOL_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen
     return n;
 }
 
-bool UFEC23PROTOCOL_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < UFEC23ENDEC_C2SSETPARAMETER_COUNT)
         return false;
@@ -224,7 +224,7 @@ bool UFEC23PROTOCOL_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, 
     return true;
 }
 
-int32_t UFEC23PROTOCOL_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_S2CSetParameterResp* pSrc)
+int32_t UFEC23ENDEC_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_S2CSetParameterResp* pSrc)
 {
     if (u32DstLen < UFEC23ENDEC_S2CSETPARAMETERRESP_COUNT)
         return 0;
@@ -233,7 +233,7 @@ int32_t UFEC23PROTOCOL_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32Ds
     return n;
 }
 
-bool UFEC23PROTOCOL_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < UFEC23ENDEC_S2CSETPARAMETERRESP_COUNT)
         return 0;

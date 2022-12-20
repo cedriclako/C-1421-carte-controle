@@ -12,6 +12,13 @@
 
 #define TAG "UARTBridge"
 
+typedef enum
+{
+    EPARAMETERPROCESS_None,
+    EPARAMETERPROCESS_Downloading,
+    EPARAMETERPROCESS_Uploading,
+} EPARAMETERPROCESS;
+
 typedef struct 
 {
     bool bIsConnected;
@@ -20,8 +27,9 @@ typedef struct
     TickType_t ttLastCommTicks;
 
     // Parameter file download
-    bool bProcParameterInProgress;
+    EPARAMETERPROCESS eProcParameterProcess;
     TickType_t ttParameterStartDownTicks;
+    int32_t s32WriteLastIndex;
 } SStateMachine;
 
 // UART Protocol decoder handle
@@ -55,6 +63,8 @@ static bool ProcParameterDownload();
 static bool ProcParameterUpload();
 static void ProcParameterAbort();
 
+static bool SendSetParameter(const STOVEMB_SParameterEntry* psParamEntry);
+
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder = 
 { 
     .u8PayloadBuffers = m_u8UARTProtocolBuffers, 
@@ -84,6 +94,9 @@ void UARTBRIDGE_Init()
     m_sStateMachine.bIsConnected = false;
     m_sStateMachine.ttLastCommTicks = 0;
 
+    // Reset parameter process
+    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
+
     // Decoder
     UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
     // Encoder
@@ -109,11 +122,13 @@ void UARTBRIDGE_Handler()
 
     // State machine ...
     // Expiration time ...
-    if (m_sStateMachine.bProcParameterInProgress &&
-        (xTaskGetTickCount() - m_sStateMachine.ttParameterStartDownTicks) > pdMS_TO_TICKS(UARTBRIDGE_PROCDOWNLOADUPLOAD_MS))
+    if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_None)
     {
-        ProcParameterAbort();
-    }
+        if ((xTaskGetTickCount() - m_sStateMachine.ttParameterStartDownTicks) > pdMS_TO_TICKS(UARTBRIDGE_PROCDOWNLOADUPLOAD_MS))
+        {
+            ProcParameterAbort();
+        }
+    }   
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -173,6 +188,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
         case UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp:
         {
+            if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_Downloading)
+            {
+                break;  // We don't care when we aren't downloading.
+            }
+
             // Received (Get Parameter Resp)
             UFEC23ENDEC_S2CReqParameterGetResp s;
             if (!UFEC23ENDEC_S2CReqParameterGetRespDecode(&s, u8Payloads, u16PayloadLen))
@@ -206,7 +226,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             // Request the next one ... until we get EOF flag
             if (s.bIsEOF || isOverflow)
             {
-                m_sStateMachine.bProcParameterInProgress = false;
+                m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 pMemBlock->bIsParameterDownloadCompleted = true;
                 ESP_LOGI(TAG, "Parameter download done, entries: %d", pMemBlock->u32ParameterCount);
                 break;
@@ -218,6 +238,42 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             };
             const int32_t n = UFEC23ENDEC_C2SReqParameterGetEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
             UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMEID_S2CSetParameterResp:
+        {
+            if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_Uploading)
+            {
+                break;  // We don't care when we aren't downloading.
+            }
+            // Received (Get Parameter Resp)
+            UFEC23PROTOCOL_S2CSetParameterResp s;
+            if (!UFEC23ENDEC_S2CSetParameterRespDecode(&s, u8Payloads, u16PayloadLen))
+            {
+                ProcParameterAbort();
+                break;
+            }
+
+            m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
+            // Ask for the next one to write ...
+            STOVEMB_Take(portMAX_DELAY);
+            // Upload
+            STOVEMB_SParameterEntry sParamEntry;
+            const int32_t s32Index = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
+            STOVEMB_Give();
+
+            // Return true because it's a normal usecase to not have anything to upload
+            if (s32Index < 0)
+            {
+                // Upload completed.
+                m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
+                ESP_LOGI(TAG, "Parameter upload process done");
+            }
+            else
+            {
+                m_sStateMachine.s32WriteLastIndex = s32Index;               
+                SendSetParameter(&sParamEntry);
+            }
             break;
         }
         default:
@@ -300,7 +356,7 @@ static void ServerDisconnected()
 
 static bool ProcParameterDownload()
 {
-    if (m_sStateMachine.bProcParameterInProgress)
+    if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_None)
     {
         ESP_LOGW(TAG, "Parameter download is already in progress");
         return false;
@@ -310,7 +366,7 @@ static bool ProcParameterDownload()
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
 
     // Reset
-    m_sStateMachine.bProcParameterInProgress = true;
+    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_Downloading;
     m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
 
     pMB->u32ParameterCount = 0;
@@ -329,12 +385,14 @@ static bool ProcParameterDownload()
 
 static bool ProcParameterUpload()
 {
-    if (m_sStateMachine.bProcParameterInProgress)
+    if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_None)
     {
         ESP_LOGE(TAG, "Unable to upload parameters");
         return false;
     }
 
+    m_sStateMachine.s32WriteLastIndex = 0;
+    
     STOVEMB_Take(portMAX_DELAY);
     // Upload
     STOVEMB_SParameterEntry sParamEntry;
@@ -345,22 +403,37 @@ static bool ProcParameterUpload()
     if (s32Index < 0)
         return true;
 
-    UFEC23PROTOCOL_C2SSetParameter sParam;
-    strcpy(sParam.szKey, sParamEntry.sEntry.szKey);
-    memcpy(&sParam.uValue, &sParamEntry.sWriteValue, sizeof(UFEC23ENDEC_uValue));
-    const int32_t n = UFEC23PROTOCOL_C2SSetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sParam);
-    if (n == 0)
+    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
+
+    if (!SendSetParameter(&sParamEntry))
     {
         ESP_LOGE(TAG, "Unable to encode parameter write command");
         return false;
     }
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
+
+    // Declare the process started
+    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_Uploading;
+    m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
+    return true;
+}
+
+static bool SendSetParameter(const STOVEMB_SParameterEntry* psParamEntry)
+{
+    UFEC23PROTOCOL_C2SSetParameter sParam;
+    strcpy(sParam.szKey, psParamEntry->sEntry.szKey);
+    memcpy(&sParam.uValue, &psParamEntry->sWriteValue, sizeof(UFEC23ENDEC_uValue));
+    const int32_t n = UFEC23ENDEC_C2SSetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sParam);
+    if (n == 0)
+        return false;
+        
+    ESP_LOGI(TAG, "Parameter upload, key: %s", psParamEntry->sEntry.szKey);
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SSetParameter, m_u8UARTSendProtocols, n);
     return true;
 }
 
 static void ProcParameterAbort()
 {
-    if (m_sStateMachine.bProcParameterInProgress)
+    if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_None)
     {
         ESP_LOGE(TAG, "Unable to download parameters");
         return;
@@ -368,7 +441,7 @@ static void ProcParameterAbort()
 
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-    m_sStateMachine.bProcParameterInProgress = false;
+    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
     pMB->bIsParameterDownloadCompleted = false;
     pMB->u32ParameterCount = 0;
     STOVEMB_Give();
