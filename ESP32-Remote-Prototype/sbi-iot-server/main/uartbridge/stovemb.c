@@ -9,7 +9,7 @@
 static STOVEMB_SMemBlock m_sMemBlock = {0};
 static SemaphoreHandle_t m_xSemaphoreExt = NULL;
 
-static STOVEMB_SEntryChanged* GetParamEntry(const char* szKey);
+static STOVEMB_SParameterEntry* GetParamEntry(const char* szKey);
 
 void STOVEMB_Init()
 {
@@ -62,7 +62,7 @@ char* STOVEMB_ExportParamToJSON()
         if (pEntryJSON == NULL)
             goto ERROR;
 
-        const STOVEMB_SEntryChanged* pEntryChanged = &m_sMemBlock.arrParameterEntries[i];
+        const STOVEMB_SParameterEntry* pEntryChanged = &m_sMemBlock.arrParameterEntries[i];
 
         cJSON_AddItemToObject(pEntryJSON, "key", cJSON_CreateString(pEntryChanged->sEntry.szKey));
         
@@ -134,14 +134,14 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
             goto ERROR;
         }
 
-        STOVEMB_SEntryChanged* pParamEntry = GetParamEntry(pKeyJSON->valuestring);
+        STOVEMB_SParameterEntry* pParamEntry = GetParamEntry(pKeyJSON->valuestring);
         if (pParamEntry == NULL)
         {
             ESP_LOGW(TAG, "parameter entry is not found : %s", pParamEntry->sEntry.szKey);
             continue;
         }
 
-        // 
+        // Buffer changes
         pParamEntry->sWriteValue.s32Value = (int32_t)pValueJSON->valueint;
         pParamEntry->bIsNeedWrite = true;
     }
@@ -158,17 +158,46 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
     return bRet;
 }
 
-static STOVEMB_SEntryChanged* GetParamEntry(const char* szKey)
+int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry* pEntry)
 {
+    int32_t s32Ret = -1;
+    STOVEMB_Take(portMAX_DELAY);
+    // Find write
+    for(int32_t i = s32IndexStart; i < m_sMemBlock.u32ParameterCount; i++)
+    {
+        const STOVEMB_SParameterEntry* pEntryParam = &m_sMemBlock.arrParameterEntries[i];
+        if (pEntryParam->bIsNeedWrite)
+        {
+            *pEntry = *pEntryParam;
+            s32Ret = i;
+            goto END;
+        }
+    }
+    END:
+    STOVEMB_Give();
+    return s32Ret;
+}
+
+static STOVEMB_SParameterEntry* GetParamEntry(const char* szKey)
+{
+    STOVEMB_SParameterEntry* pEntryRet = NULL;
+    STOVEMB_Take(portMAX_DELAY);
+
     // Not ready
     if (!m_sMemBlock.bIsParameterDownloadCompleted)
-        return NULL;
-    
+        goto END;
+
     for(int i = 0; i < m_sMemBlock.u32ParameterCount; i++)
     {
-        STOVEMB_SEntryChanged* pEntry = &m_sMemBlock.arrParameterEntries[i];
+        STOVEMB_SParameterEntry* pEntry = &m_sMemBlock.arrParameterEntries[i];
         if (strcmp(pEntry->sEntry.szKey, szKey) == 0)
-            return pEntry;
+        {
+            pEntryRet = pEntry;
+            goto END;
+        }
     }
-    return NULL;
+
+    END:
+    STOVEMB_Give();
+    return pEntryRet;
 }

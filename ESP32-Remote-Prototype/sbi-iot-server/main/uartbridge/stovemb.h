@@ -15,7 +15,7 @@ typedef struct
     // Value to write
     UFEC23ENDEC_uValue sWriteValue;
     bool bIsNeedWrite;
-} STOVEMB_SEntryChanged;
+} STOVEMB_SParameterEntry;
 
 typedef struct 
 {
@@ -27,7 +27,7 @@ typedef struct
 
     // Parameter JSON
     volatile bool bIsParameterDownloadCompleted;
-    STOVEMB_SEntryChanged arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
+    STOVEMB_SParameterEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
     uint32_t u32ParameterCount;
 } STOVEMB_SMemBlock;
 
@@ -40,6 +40,8 @@ void STOVEMB_Give();
 STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
 
 const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
+
+int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry* pEntry);
 
 char* STOVEMB_ExportParamToJSON();
 
