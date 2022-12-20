@@ -170,6 +170,8 @@ bool fanPauseRequired = false;
 static AirInput primary = AirInput_init(PRIMARY_MINIMUM_OPENING, PRIMARY_FULL_OPEN);
 static AirInput grill = AirInput_init(GRILL_MINIMUM_OPENING, GRILL_FULL_OPEN);
 static AirInput secondary = AirInput_init(SECONDARY_MINIMUM_OPENING, SECONDARY_FULL_OPEN);
+static bool fixed_sec = false;
+static int16_t sec_aperture;
 
 static Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
 static Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
@@ -289,9 +291,16 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     default:
     case ZEROING_STEPPER:
-		AirInput_forceAperture(&primary, PrimaryMotorParam.MinWaiting); // Porter attention à l'utilisation de cette fonction
-		AirInput_forceAperture(&grill, GrillMotorParam.MinWaiting);     // Elle change l'aperture et le setpoint en même temps
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MinWaiting); // À cet endroit ça ne pose pas de problème, mais dans les autres états, oui
+		AirInput_forceAperture(&primary, PrimaryMotorParam.MinWaiting);
+		AirInput_forceAperture(&grill, GrillMotorParam.MinWaiting);
+		if(!fixed_sec)
+		{
+			AirInput_forceAperture(&secondary, SecondaryMotorParam.MinWaiting);
+		}else
+		{
+			AirInput_forceAperture(&secondary,sec_aperture);
+		}
+
 		AllMotorToZero(); //set all motors to zero
 		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
@@ -302,7 +311,14 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
     	AirInput_forceAperture(&grill, GrillMotorParam.MaxWaiting);// GRILL_CLOSED);
-    	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
+		if(!fixed_sec)
+		{
+			AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
+		}else
+		{
+			AirInput_forceAperture(&secondary,sec_aperture);
+		}
+
 
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
@@ -326,8 +342,14 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 		AirInput_forceAperture(&primary, PrimaryMotorParam.MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
 		AirInput_forceAperture(&grill, GrillMotorParam.MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxReload);
 
+		if(!fixed_sec)
+		{
+			AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxReload);
+		}else
+		{
+			AirInput_forceAperture(&secondary,sec_aperture);
+		}
 
 		if (((baffleTemperature > TemperatureParam.IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
@@ -348,7 +370,15 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		if(historyState != currentState){
 		  AirInput_forceAperture(&primary, PrimaryMotorParam.MaxTempRise);
 		  AirInput_forceAperture(&grill, GrillMotorParam.MaxTempRise);
-		  AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxTempRise);
+
+
+			if(!fixed_sec)
+			{
+				AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxTempRise);
+			}else
+			{
+				AirInput_forceAperture(&secondary,sec_aperture);
+			}
 		  historyState = currentState;
 		}
 #if PID_CONTROL_ON
@@ -371,10 +401,20 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			  timeRefAutoMode = currentTime_ms;
 
 			  adjustement = computeAjustement(targetTemperature, dTavant);
-			  AirAdjustment(adjustement, SEC_PER_STEP_TEMP_RISE,
-							  PrimaryMotorParam.MinTempRise, PrimaryMotorParam.MaxTempRise,
-							  GrillMotorParam.MinTempRise,GrillMotorParam.MaxTempRise,
-							  SecondaryMotorParam.MinTempRise,SecondaryMotorParam.MaxTempRise);
+				if(!fixed_sec)
+				{
+					AirAdjustment(adjustement, SEC_PER_STEP_TEMP_RISE,
+												  PrimaryMotorParam.MinTempRise, PrimaryMotorParam.MaxTempRise,
+												  GrillMotorParam.MinTempRise,GrillMotorParam.MaxTempRise,
+												  SecondaryMotorParam.MinTempRise,SecondaryMotorParam.MaxTempRise);
+				}else
+				{
+					AirAdjustment(adjustement, SEC_PER_STEP_TEMP_RISE,
+												  PrimaryMotorParam.MinTempRise, PrimaryMotorParam.MaxTempRise,
+												  GrillMotorParam.MinTempRise,GrillMotorParam.MaxTempRise,
+												  sec_aperture,sec_aperture);
+				}
+
 			}
 			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
@@ -402,10 +442,17 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 				AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
 				AirInput_forceAperture(&secondary,  AirInput_getAperture(&secondary));
 
-
-				StateEntryControlAdjustment(PrimaryMotorParam.MinCombHigh, PrimaryMotorParam.MaxCombHigh,
-							  				GrillMotorParam.MinCombHigh,GrillMotorParam.MaxCombHigh,
+				if(!fixed_sec)
+				{
+					StateEntryControlAdjustment(PrimaryMotorParam.MinCombHigh, PrimaryMotorParam.MaxCombHigh,
+											GrillMotorParam.MinCombHigh,GrillMotorParam.MaxCombHigh,
 											SecondaryMotorParam.MinCombHigh,SecondaryMotorParam.MaxCombHigh);
+				}else
+				{
+					StateEntryControlAdjustment(PrimaryMotorParam.MinCombHigh, PrimaryMotorParam.MaxCombHigh,
+																GrillMotorParam.MinCombHigh,GrillMotorParam.MaxCombHigh,
+																sec_aperture,sec_aperture);
+				}
 				historyState = currentState;
 			}
 #if PID_CONTROL_ON
@@ -422,10 +469,20 @@ static void manageStateMachine(uint32_t currentTime_ms) {
             if (TimeForStep >= (3 * SEC_PER_STEP_COMB_HIGH * 1000)&& AirInput_InPosition(&grill) && AirInput_InPosition(&primary) && AirInput_InPosition(&secondary)) {
               timeRefAutoMode = currentTime_ms;
               adjustement = computeAjustement(TemperatureParam.CombHighTarget, dTavant);
-			  AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
-											PrimaryMotorParam.MinCombHigh, PrimaryMotorParam.MaxCombHigh,
-							  				GrillMotorParam.MinCombHigh,GrillMotorParam.MaxCombHigh,
-											SecondaryMotorParam.MinCombHigh,SecondaryMotorParam.MaxCombHigh);
+
+				if(!fixed_sec)
+				{
+					AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+																PrimaryMotorParam.MinCombHigh, PrimaryMotorParam.MaxCombHigh,
+												  				GrillMotorParam.MinCombHigh,GrillMotorParam.MaxCombHigh,
+																SecondaryMotorParam.MinCombHigh,SecondaryMotorParam.MaxCombHigh);
+				}else
+				{
+					AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+																PrimaryMotorParam.MinCombHigh, PrimaryMotorParam.MaxCombHigh,
+												  				GrillMotorParam.MinCombHigh,GrillMotorParam.MaxCombHigh,
+																sec_aperture,sec_aperture);
+				}
 
             }
 #endif
@@ -455,9 +512,18 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
 			AirInput_forceAperture(&secondary, AirInput_getAperture(&secondary));
 
-			StateEntryControlAdjustment(PrimaryMotorParam.MinCombLow, PrimaryMotorParam.MaxCombLow,
-							  			GrillMotorParam.MinCombLow,GrillMotorParam.MaxCombLow,
-										SecondaryMotorParam.MinCombLow,SecondaryMotorParam.MaxCombLow);
+			if(!fixed_sec)
+			{
+				StateEntryControlAdjustment(PrimaryMotorParam.MinCombLow, PrimaryMotorParam.MaxCombLow,
+											GrillMotorParam.MinCombLow,GrillMotorParam.MaxCombLow,
+											SecondaryMotorParam.MinCombLow,SecondaryMotorParam.MaxCombLow);
+			}else
+			{
+				StateEntryControlAdjustment(PrimaryMotorParam.MinCombLow, PrimaryMotorParam.MaxCombLow,
+											GrillMotorParam.MinCombLow,GrillMotorParam.MaxCombLow,
+											sec_aperture,sec_aperture);
+			}
+
 		    historyState = currentState;
 		}
 #if PID_CONTROL_ON
@@ -496,10 +562,20 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 						nextState = COMBUSTION_SUPERLOW;
 					}
 
-					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
-									PrimaryMotorParam.MinCombLow, PrimaryMotorParam.MaxCombLow,
-									GrillMotorParam.MinCombLow, GrillMotorParam.MaxCombLow,
-									SecondaryMotorParam.MinCombLow, SecondaryMotorParam.MaxCombLow);
+
+					if(!fixed_sec)
+					{
+						AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+															PrimaryMotorParam.MinCombLow, PrimaryMotorParam.MaxCombLow,
+															GrillMotorParam.MinCombLow, GrillMotorParam.MaxCombLow,
+															SecondaryMotorParam.MinCombLow, SecondaryMotorParam.MaxCombLow);
+					}else
+					{
+						AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+															PrimaryMotorParam.MinCombLow, PrimaryMotorParam.MaxCombLow,
+															GrillMotorParam.MinCombLow, GrillMotorParam.MaxCombLow,
+															sec_aperture, sec_aperture);
+					}
 				}
 		}
 
@@ -523,15 +599,34 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		}
       break;
     case COMBUSTION_SUPERLOW:
-    	StateEntryControlAdjustment(PrimaryMotorParam.MinCombSuperLow,PrimaryMotorParam.MaxCombSuperLow,
-									GrillMotorParam.MinCombSuperLow,GrillMotorParam.MaxCombSuperLow,
-									SecondaryMotorParam.MinCombSuperLow,SecondaryMotorParam.MaxCombSuperLow);
+
+		if(!fixed_sec)
+		{
+			StateEntryControlAdjustment(PrimaryMotorParam.MinCombSuperLow,PrimaryMotorParam.MaxCombSuperLow,
+												GrillMotorParam.MinCombSuperLow,GrillMotorParam.MaxCombSuperLow,
+												SecondaryMotorParam.MinCombSuperLow,SecondaryMotorParam.MaxCombSuperLow);
+		}else
+		{
+			StateEntryControlAdjustment(PrimaryMotorParam.MinCombSuperLow,PrimaryMotorParam.MaxCombSuperLow,
+												GrillMotorParam.MinCombSuperLow,GrillMotorParam.MaxCombSuperLow,
+												sec_aperture, sec_aperture);
+		}
 		adjustement = computeAjustement(TemperatureParam.CombLowTarget, dTavant);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
 
-		AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
-							PrimaryMotorParam.MinCombSuperLow,PrimaryMotorParam.MaxCombSuperLow,
-							GrillMotorParam.MinCombSuperLow,GrillMotorParam.MaxCombSuperLow,
-							SecondaryMotorParam.MinCombSuperLow,SecondaryMotorParam.MaxCombSuperLow);
+
+		if(!fixed_sec)
+		{
+			AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+										PrimaryMotorParam.MinCombSuperLow,PrimaryMotorParam.MaxCombSuperLow,
+										GrillMotorParam.MinCombSuperLow,GrillMotorParam.MaxCombSuperLow,
+										SecondaryMotorParam.MinCombSuperLow,SecondaryMotorParam.MaxCombSuperLow);
+		}else
+		{
+			AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+										PrimaryMotorParam.MinCombSuperLow,PrimaryMotorParam.MaxCombSuperLow,
+										GrillMotorParam.MinCombSuperLow,GrillMotorParam.MaxCombSuperLow,
+										sec_aperture, sec_aperture);
+		}
 
 		if ( ((baffleTemperature) >= (rearTemperature-TemperatureParam.CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
 		            		&& (rearTemperature < TemperatureParam.CoalCrossOverRearLow) ) //détection de l'état coal/braise
@@ -557,7 +652,15 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,SET);//active le relai pour activer la carte 2 PLV 15/12/21
     	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxCoalLow);
     	AirInput_forceAperture(&grill, GrillMotorParam.MaxCoalLow);
-    	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalLow);
+
+
+		if(!fixed_sec)
+		{
+			AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalLow);
+		}else
+		{
+			AirInput_forceAperture(&secondary, sec_aperture);
+		}
 
     	if (thermostatRequest) {
     	          nextState = COAL_HIGH;
@@ -615,9 +718,19 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     case COAL_HIGH:
 		if(historyState != currentState){
-			StateEntryControlAdjustment(PrimaryMotorParam.MinCoalHigh, PrimaryMotorParam.MaxCoalHigh,
-										GRILL_CLOSED,GRILL_CLOSED,
-										SecondaryMotorParam.MinCoalHigh, SecondaryMotorParam.MaxCoalHigh);
+
+			if(!fixed_sec)
+			{
+				StateEntryControlAdjustment(PrimaryMotorParam.MinCoalHigh, PrimaryMotorParam.MaxCoalHigh,
+												GRILL_CLOSED,GRILL_CLOSED,
+												SecondaryMotorParam.MinCoalHigh, SecondaryMotorParam.MaxCoalHigh);
+			}else
+			{
+				StateEntryControlAdjustment(PrimaryMotorParam.MinCoalHigh, PrimaryMotorParam.MaxCoalHigh,
+														GRILL_CLOSED,GRILL_CLOSED,
+														sec_aperture, sec_aperture);
+			}
+
 		    historyState = currentState;
 		}
         /* Since the control algo (i.e. computeAjustement) is limited
@@ -632,10 +745,20 @@ static void manageStateMachine(uint32_t currentTime_ms) {
         	{
         		adjustement = computeAjustement( TemperatureParam.CombHighTarget, dTavant);
         	}
-            AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
-					  	  	  PrimaryMotorParam.MinCoalHigh, PrimaryMotorParam.MaxCoalHigh,
-							  GrillMotorParam.MinCoalHigh, GrillMotorParam.MaxCoalHigh,
-							  SecondaryMotorParam.MinCoalHigh, SecondaryMotorParam.MaxCoalHigh);
+
+            if(!fixed_sec)
+			{
+            	AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+            						  	  	  PrimaryMotorParam.MinCoalHigh, PrimaryMotorParam.MaxCoalHigh,
+            								  GrillMotorParam.MinCoalHigh, GrillMotorParam.MaxCoalHigh,
+            								  SecondaryMotorParam.MinCoalHigh, SecondaryMotorParam.MaxCoalHigh);
+			}else
+			{
+				AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+									  	  	  PrimaryMotorParam.MinCoalHigh, PrimaryMotorParam.MaxCoalHigh,
+											  GrillMotorParam.MinCoalHigh, GrillMotorParam.MaxCoalHigh,
+											  sec_aperture, sec_aperture);
+			}
         }
 
     	if (!thermostatRequest) {
@@ -1023,3 +1146,17 @@ void setErrorFlag(uint32_t errorcode, ErrorType type)
 	}
 }
 
+void algo_fixSecondary(int16_t aperture)
+{
+	if(aperture >= SECONDARY_MINIMUM_OPENING && aperture <= SECONDARY_FULL_OPEN)
+	{
+		sec_aperture = aperture;
+		AirInput_forceAperture(&secondary,sec_aperture);
+		fixed_sec = true;
+	}else
+	{
+		fixed_sec = false;
+	}
+
+
+}
