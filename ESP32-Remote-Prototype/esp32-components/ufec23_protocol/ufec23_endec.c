@@ -141,7 +141,7 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
     n += u8KeyLen;
     if (psEntry->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
     {
-        memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Value, sizeof(int32_t));
+        memcpy(&u8Dst[n], &pSrc->uValue.s32Value, sizeof(int32_t));
         n += sizeof(int32_t);
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Default, sizeof(int32_t));
         n += sizeof(int32_t);
@@ -177,13 +177,13 @@ bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp
     n += u8KeyLen;
     if (pDst->sEntry.eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
     {
-        memcpy(&pDst->sEntry.uType.sInt32.s32Value, &u8Datas[n], sizeof(int32_t));
-        n += sizeof(int32_t);
         memcpy(&pDst->sEntry.uType.sInt32.s32Default, &u8Datas[n], sizeof(int32_t));
         n += sizeof(int32_t);
         memcpy(&pDst->sEntry.uType.sInt32.s32Min, &u8Datas[n], sizeof(int32_t));
         n += sizeof(int32_t);
         memcpy(&pDst->sEntry.uType.sInt32.s32Max, &u8Datas[n], sizeof(int32_t));
+        n += sizeof(int32_t);
+        memcpy(&pDst->uValue.s32Value, &u8Datas[n], sizeof(int32_t));
         n += sizeof(int32_t);
     }
     else

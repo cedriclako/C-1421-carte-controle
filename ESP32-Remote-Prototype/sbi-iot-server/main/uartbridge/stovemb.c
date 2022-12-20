@@ -62,16 +62,16 @@ char* STOVEMB_ExportParamToJSON()
         if (pEntryJSON == NULL)
             goto ERROR;
 
-        const UFEC23ENDEC_SEntry* pEntry = &m_sMemBlock.arrParameterEntries[i];
+        const STOVEMB_SEntryChanged* pEntryChanged = &m_sMemBlock.arrParameterEntries[i];
 
-        cJSON_AddItemToObject(pEntryJSON, "key", cJSON_CreateString(pEntry->szKey));
+        cJSON_AddItemToObject(pEntryJSON, "key", cJSON_CreateString(pEntryChanged->sEntry.szKey));
         
-        if (pEntry->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
+        if (pEntryChanged->sEntry.eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
         {
-            cJSON_AddItemToObject(pEntryJSON, "default", cJSON_CreateNumber(pEntry->uType.sInt32.s32Default));
-            cJSON_AddItemToObject(pEntryJSON, "min", cJSON_CreateNumber(pEntry->uType.sInt32.s32Min));
-            cJSON_AddItemToObject(pEntryJSON, "max", cJSON_CreateNumber(pEntry->uType.sInt32.s32Max));
-            cJSON_AddItemToObject(pEntryJSON, "value", cJSON_CreateNumber(pEntry->uType.sInt32.s32Value));
+            cJSON_AddItemToObject(pEntryJSON, "default", cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Default));
+            cJSON_AddItemToObject(pEntryJSON, "min", cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Min));
+            cJSON_AddItemToObject(pEntryJSON, "max", cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Max));
+            cJSON_AddItemToObject(pEntryJSON, "value", cJSON_CreateNumber(pEntryChanged->sWriteValue.s32Value));
         }
         
         cJSON_AddItemToArray(pEntries, pEntryJSON);
