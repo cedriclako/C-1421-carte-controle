@@ -192,7 +192,9 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 }
                 else
                 {
-                    memcpy(&pMemBlock->arrParameterEntries[pMemBlock->u32ParameterCount], &s.sEntry, sizeof(UFEC23ENDEC_SEntry));
+                    STOVEMB_SEntryChanged* psEntryChanged = &pMemBlock->arrParameterEntries[pMemBlock->u32ParameterCount];
+                    psEntryChanged->bIsWrite = false;
+                    memcpy(&psEntryChanged->sEntry, &s.sEntry, sizeof(UFEC23ENDEC_SEntry));
                     pMemBlock->u32ParameterCount++;
                 }
             }
@@ -235,6 +237,7 @@ void UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[],
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ESP_LOGI(TAG, "RequestConfigReloadEvent");
+    ProcParameterStartDownload();
 }
 
 static void ManageServerConnection()
@@ -287,6 +290,12 @@ static void ServerDisconnected()
 
 static void ProcParameterStartDownload()
 {
+    if (m_sStateMachine.bProcParameterInProgress)
+    {
+        ESP_LOGW(TAG, "Parameter download is already in progress");
+        return;
+    }
+
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
 

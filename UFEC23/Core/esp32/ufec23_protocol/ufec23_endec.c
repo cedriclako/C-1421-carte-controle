@@ -40,13 +40,13 @@ bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, co
     pDst->sVersion.u8Minor = u8Datas[n++];
     pDst->sVersion.u8Revision = u8Datas[n++];
     const uint32_t swlen = u8Datas[n++];
-    if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN || n + swlen > u32DataLen)
+    if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN)
         return false;
     memcpy(pDst->szSoftwareName, &u8Datas[n], (size_t)swlen);
     pDst->szSoftwareName[swlen] = 0;
     n += swlen;
     const uint32_t gitHashLen = u8Datas[n++];
-    if (gitHashLen > UFEC23ENDEC_GITHASH_LEN || n + gitHashLen > u32DataLen)
+    if (gitHashLen > UFEC23ENDEC_GITHASH_LEN)
         return false;
     memcpy(pDst->szGitHash, &u8Datas[n], (size_t)gitHashLen);
     pDst->szGitHash[gitHashLen] = 0;
@@ -130,7 +130,8 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
     const UFEC23ENDEC_SEntry* psEntry = &pSrc->sEntry;
 	int32_t n = 0;
 	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD : 0x00) | 
-                           (pSrc->bIsEOF ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00));
+                           (pSrc->bIsEOF ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00)) | 
+                           (pSrc->bIsFirstRecord ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD : 0x00);
 	u8Dst[n++] = (uint8_t)psEntry->eParamType;
 	const uint8_t u8KeyLen = (uint8_t)strnlen(psEntry->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
 	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
@@ -165,6 +166,7 @@ bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp
     int n = 0;
     pDst->bHasRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD) ? true : false;
     pDst->bIsEOF = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF) ? true : false; // Flags
+    pDst->bIsFirstRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD) ? true : false; // Flags
     n++;
     pDst->sEntry.eParamType = (UFEC23ENDEC_EPARAMTYPE)u8Datas[n++];
     const uint8_t u8KeyLen = u8Datas[n++];
@@ -192,3 +194,32 @@ bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp
 	return true;
 }
 
+int32_t UFEC23PROTOCOL_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_C2SSetParameter* pSrc)
+{
+    if (u32DstLen < UFEC23ENDEC_C2SSETPARAMETER_COUNT)
+        return false;
+    int n = 0;
+	const uint8_t u8KeyLen = (uint8_t)strnlen(pSrc->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
+	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
+		return 0;
+    u8Dst[n++] = u8KeyLen;
+    memcpy(&u8Dst[n], pSrc->szKey, u8KeyLen);
+    n += u8KeyLen;
+    memcpy(&u8Dst[n], &pSrc->uValue, sizeof(UFEC23ENDEC_uValue));
+    n += sizeof(UFEC23ENDEC_uValue);
+    return n;
+}
+
+bool UFEC23PROTOCOL_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+    if (u32DataLen < UFEC23ENDEC_C2SSETPARAMETER_COUNT)
+        return false;
+    int n = 0;
+    const uint8_t u8KeyLen = u8Datas[n++];
+    memcpy(pDst->szKey, &u8Datas[n], u8KeyLen);
+    pDst->szKey[u8KeyLen] = 0;
+    n += u8KeyLen;
+    memcpy(&pDst->uValue, &u8Datas[n], sizeof(UFEC23ENDEC_uValue));
+    n += sizeof(UFEC23ENDEC_uValue);
+    return true;
+}

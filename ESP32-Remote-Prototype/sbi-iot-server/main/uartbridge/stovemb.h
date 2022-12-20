@@ -8,6 +8,12 @@
 
 #define STOVEMB_MAXIMUMSETTING_ENTRIES (100)
 
+typedef struct
+{
+    UFEC23ENDEC_SEntry sEntry;
+    bool bIsWrite;
+} STOVEMB_SEntryChanged;
+
 typedef struct 
 {
     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
@@ -18,7 +24,7 @@ typedef struct
 
     // Parameter JSON
     volatile bool bIsParameterDownloadCompleted;
-    UFEC23ENDEC_SEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
+    STOVEMB_SEntryChanged arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
     uint32_t u32ParameterCount;
 } STOVEMB_SMemBlock;
 

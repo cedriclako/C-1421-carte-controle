@@ -34,7 +34,9 @@ typedef struct
 #define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
 #define UFEC23ENDEC_C2SREQPARAMETERGET_COUNT (1)
 #define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
+#define UFEC23ENDEC_C2SSETPARAMETER_COUNT ( 1 + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1 + sizeof(int32_t) )
 
+#define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD (0x04)
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF (0x02)
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD (0x01)
 
@@ -89,7 +91,6 @@ typedef enum
     // UFEC23ENDEC_EPARAMTYPE_Float = 1
 } UFEC23ENDEC_EPARAMTYPE;
 
-
 typedef union
 {
     struct
@@ -99,7 +100,20 @@ typedef union
         int32_t s32Max;
         int32_t s32Value;
     } sInt32;
+    struct
+    {
+        float fltDefault;
+        float fltMin;
+        float fltMax;
+        float fltValue;
+    } sFloat;
 } UFEC23ENDEC_uType;
+
+typedef union
+{
+    int32_t s32Value;
+    float fltValue;
+} UFEC23ENDEC_uValue;
 
 typedef struct 
 {
@@ -116,7 +130,14 @@ typedef struct
 
     bool bIsEOF; 
 	bool bHasRecord;
+    bool bIsFirstRecord;
 } UFEC23ENDEC_S2CReqParameterGetResp;
+
+typedef struct 
+{
+    char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
+    UFEC23ENDEC_uValue uValue;
+} UFEC23PROTOCOL_C2SSetParameter;
 
 void UFEC23ENDEC_Init();
 
@@ -143,5 +164,9 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
 
 bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
+
+int32_t UFEC23PROTOCOL_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_C2SSetParameter* pSrc);
+
+bool UFEC23PROTOCOL_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 #endif
