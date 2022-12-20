@@ -16,5 +16,6 @@
 #define API_GETLIVEDATAJSON_URI "/api/getlivedata"
 
 #define API_GETSERVERPARAMETERFILEJSON_URI "/api/getserverparameterfile"
+#define API_POSTSERVERPARAMETERFILEJSON_URI "/api/setserverparameterfile"
 
 #endif

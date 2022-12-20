@@ -11,7 +11,10 @@
 typedef struct
 {
     UFEC23ENDEC_SEntry sEntry;
-    bool bIsWrite;
+
+    // Value to write
+    UFEC23ENDEC_uValue sWriteValue;
+    bool bIsNeedWrite;
 } STOVEMB_SEntryChanged;
 
 typedef struct 
@@ -39,5 +42,7 @@ STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
 const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
 
 char* STOVEMB_ExportParamToJSON();
+
+bool STOVEMB_InputParamFromJSON(const char* szJSON);
 
 #endif

@@ -193,7 +193,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 else
                 {
                     STOVEMB_SEntryChanged* psEntryChanged = &pMemBlock->arrParameterEntries[pMemBlock->u32ParameterCount];
-                    psEntryChanged->bIsWrite = false;
+                    psEntryChanged->bIsNeedWrite = false;
                     memcpy(&psEntryChanged->sEntry, &s.sEntry, sizeof(UFEC23ENDEC_SEntry));
                     pMemBlock->u32ParameterCount++;
                 }

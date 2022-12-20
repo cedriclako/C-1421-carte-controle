@@ -23,7 +23,7 @@
 #define TAG "webserver"
 
 /* Max length a file path can have on storage */
-#define HTTPSERVER_BUFFERSIZE (1024*12)
+#define HTTPSERVER_BUFFERSIZE (1024*10)
 
 static esp_err_t api_get_handler(httpd_req_t *req);
 static esp_err_t api_post_handler(httpd_req_t *req);
@@ -242,18 +242,23 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 }
 
 static esp_err_t api_post_handler(httpd_req_t *req)
-{
+{        
+    int n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE-1);
+    m_u8Buffers[n] = '\0';
+
     ESP_LOGI(TAG, "api_post_handler, url: %s", req->uri);
     if (strcmp(req->uri, API_POSTSETTINGSJSON_URI) == 0)
     {
-        int n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE);
-        m_u8Buffers[n] = '\0';
-
         if (!NVSJSON_ImportJSON(&g_sSettingHandle, (const char*)m_u8Buffers))
         {
             ESP_LOGE(TAG, "Unable to import JSON");
             httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Unknown request");
         }
+    }
+    else if (strcmp(req->uri, API_POSTSERVERPARAMETERFILEJSON_URI) == 0)
+    {
+        STOVEMB_InputParamFromJSON((const char*)m_u8Buffers);
+        esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
     }
     else
     {
