@@ -35,6 +35,7 @@ typedef struct
 #define UFEC23ENDEC_C2SREQPARAMETERGET_COUNT (1)
 #define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
 #define UFEC23ENDEC_C2SSETPARAMETER_COUNT ( 1 + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1 + sizeof(int32_t) )
+#define UFEC23ENDEC_S2CSETPARAMETERRESP_COUNT (1)
 
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD (0x04)
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF (0x02)
@@ -139,6 +140,17 @@ typedef struct
     UFEC23ENDEC_uValue uValue;
 } UFEC23PROTOCOL_C2SSetParameter;
 
+typedef enum
+{
+    UFEC23PROTOCOL_ERESULT_Ok = 0,
+    UFEC23PROTOCOL_ERESULT_Fail = 0
+} UFEC23PROTOCOL_ERESULT;
+
+typedef struct 
+{
+    UFEC23PROTOCOL_ERESULT eResult;
+} UFEC23PROTOCOL_S2CSetParameterResp;
+
 void UFEC23ENDEC_Init();
 
 int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
@@ -168,5 +180,9 @@ bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp
 int32_t UFEC23PROTOCOL_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_C2SSetParameter* pSrc);
 
 bool UFEC23PROTOCOL_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+int32_t UFEC23PROTOCOL_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_S2CSetParameterResp* pSrc);
+
+bool UFEC23PROTOCOL_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 #endif

@@ -223,3 +223,20 @@ bool UFEC23PROTOCOL_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, 
     n += sizeof(UFEC23ENDEC_uValue);
     return true;
 }
+
+int32_t UFEC23PROTOCOL_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_S2CSetParameterResp* pSrc)
+{
+    if (u32DstLen < UFEC23ENDEC_S2CSETPARAMETERRESP_COUNT)
+        return 0;
+    int n = 0;
+    u8Dst[n++] = (uint8_t)pSrc->eResult;
+    return n;
+}
+
+bool UFEC23PROTOCOL_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+    if (u32DataLen < UFEC23ENDEC_S2CSETPARAMETERRESP_COUNT)
+        return 0;
+    pDst->eResult = (UFEC23PROTOCOL_ERESULT)u8Datas[0];
+    return true;
+}
