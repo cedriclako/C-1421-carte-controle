@@ -32,6 +32,6 @@ STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
 
 const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
 
-char* STOVEMB_CopyServerParameterJSONTo();
+char* STOVEMB_ExportParamToJSON();
 
 #endif

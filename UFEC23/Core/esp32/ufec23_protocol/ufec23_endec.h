@@ -27,6 +27,12 @@ typedef struct
 
 #define UFEC23ENDEC_PARAMETERITEM_KEY_LEN (15)
 
+// Maximum size for messages
+#define UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT (2 + 1 + (4*4) + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1)
+
+#define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF (0x02)
+#define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD (0x01)
+
 typedef struct 
 {
     UFEC23ENDEC_SVersion sVersion;
@@ -74,9 +80,8 @@ typedef struct
 
 typedef enum
 {
-    UFEC23ENDEC_EPARAMTYPE_None = 0,
-    UFEC23ENDEC_EPARAMTYPE_Int32 = 1,
-    UFEC23ENDEC_EPARAMTYPE_Float = 2
+    UFEC23ENDEC_EPARAMTYPE_Int32 = 0,
+    UFEC23ENDEC_EPARAMTYPE_Float = 1
 } UFEC23ENDEC_EPARAMTYPE;
 
 
@@ -87,6 +92,7 @@ typedef union
         int32_t s32Default;
         int32_t s32Min;
         int32_t s32Max;
+        int32_t s32Value;
     } sInt32;
 } UFEC23ENDEC_uType;
 

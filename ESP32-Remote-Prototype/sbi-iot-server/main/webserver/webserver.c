@@ -216,7 +216,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
     }
     else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
     {
-        pExportJSON = STOVEMB_CopyServerParameterJSONTo();
+        pExportJSON = STOVEMB_ExportParamToJSON();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
         {
             szErrorString = "Server parameter file is not available";

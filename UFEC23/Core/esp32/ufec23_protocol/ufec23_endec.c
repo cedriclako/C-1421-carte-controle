@@ -120,8 +120,7 @@ bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pD
 
 int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)
 {
-    const int32_t s32MinLen = 2 + 1 + (4*3) + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1;
-    if (u32DstLen < s32MinLen)
+    if (u32DstLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
     {
         return 0;
     }
@@ -129,7 +128,8 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
     const UFEC23ENDEC_SEntry* psEntry = &pSrc->sEntry;
     
 	int32_t n = 0;
-	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? 0x01 : 0x00) | (pSrc->bIsEOF ? 0x02 : 0x00));
+	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD : 0x00) | 
+                           (pSrc->bIsEOF ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00));
 	u8Dst[n++] = (uint8_t)psEntry->eParamType;
 	const uint8_t u8KeyLen = (uint8_t)strnlen(psEntry->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
 	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
@@ -137,20 +137,22 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
 	u8Dst[n++] = (uint8_t)u8KeyLen;
     memcpy(u8Dst + n, psEntry->szKey, (size_t)u8KeyLen);
     n += u8KeyLen;
-
     if (psEntry->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
     {
-    	u8Dst[n] = (uint8_t)psEntry->uType.sInt32.s32Default;
+        memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Value, sizeof(int32_t));
+        n += sizeof(int32_t);
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Default, sizeof(int32_t));
         n += sizeof(int32_t);
-    	u8Dst[n] = (uint8_t)psEntry->uType.sInt32.s32Min;
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Min, sizeof(int32_t));
         n += sizeof(int32_t);
-    	u8Dst[n] = (uint8_t)psEntry->uType.sInt32.s32Max;
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Max, sizeof(int32_t));
         n += sizeof(int32_t);
     }
-
+    else
+    {
+        // Not supported
+        return 0;
+    }
 	return n;
 }
 
