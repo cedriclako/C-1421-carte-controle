@@ -23,7 +23,7 @@ typedef struct
 // UART Protocol decoder handle
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
 // Big buffer because we want to be able to download JSON file.
-static uint8_t m_u8UARTProtocolBuffers[1024*12];
+static uint8_t m_u8UARTProtocolBuffers[1024*4];
 
 static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 

@@ -86,7 +86,7 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
         {
             psHandle->u8ChecksumCalculation += u8;
             // Little endian ...
-            psHandle->u16FramePayloadLen |= ((uint16_t)u8 << 8);
+            psHandle->u16FramePayloadLen |= (uint16_t)((uint16_t)u8 << 8);
 
             if (psHandle->u16FramePayloadLen > psHandle->psConfig->u16PayloadBufferLen)
             {
@@ -144,6 +144,8 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
             UARTPROTOCOLDEC_Reset(psHandle);
             break;
         }
+        default:
+        	break;
     }
 }
 

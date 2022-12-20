@@ -15,8 +15,8 @@ typedef struct
     bool sS2CReqVersionRespIsSet;
 
     // Config JSON
-    uint8_t* pS2CConfigJSON;
-    uint32_t u32S2CConfigJSONLen;
+    UFEC23ENDEC_SEntry arrEntries[100]; // 100 maximum for now
+    uint32_t u32Count;
 } STOVEMB_SMemBlock;
 
 void STOVEMB_Init();

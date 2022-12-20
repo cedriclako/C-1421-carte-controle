@@ -7,7 +7,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "ParameterFileLib.h"
-#include "cJSON/cJSON.h"
 
 #define JSON_ENTRY_KEY_NAME "key"
 #define JSON_ENTRY_VALUE_NAME "value"

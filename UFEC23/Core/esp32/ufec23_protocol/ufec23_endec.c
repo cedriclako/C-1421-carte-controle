@@ -107,31 +107,33 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
     {
         return 0;
     }
+
+    const UFEC23ENDEC_SEntry* psEntry = &pSrc->sEntry;
     
 	int32_t n = 0;
 	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? 0x01 : 0x00) | (pSrc->bIsEOF ? 0x02 : 0x00));
-	u8Dst[n++] = (uint8_t)pSrc->eParamType;
-	const uint8_t u8KeyLen = (uint8_t)strnlen(pSrc->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
+	u8Dst[n++] = (uint8_t)psEntry->eParamType;
+	const uint8_t u8KeyLen = (uint8_t)strnlen(psEntry->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
 	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
 		return 0;
 	u8Dst[n++] = (uint8_t)u8KeyLen;
-    memcpy(u8Dst + n, pSrc->szKey, (size_t)u8KeyLen);
+    memcpy(u8Dst + n, psEntry->szKey, (size_t)u8KeyLen);
     n += u8KeyLen;
 
-    if (pSrc->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
+    if (psEntry->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
     {
-    	u8Dst[n] = (uint8_t)pSrc->uType.sInt32.s32Default;
-        memcpy(&u8Dst[n], &pSrc->uType.sInt32.s32Default, sizeof(int32_t));
+    	u8Dst[n] = (uint8_t)psEntry->uType.sInt32.s32Default;
+        memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Default, sizeof(int32_t));
         n += sizeof(int32_t);
-    	u8Dst[n] = (uint8_t)pSrc->uType.sInt32.s32Min;
-        memcpy(&u8Dst[n], &pSrc->uType.sInt32.s32Min, sizeof(int32_t));
+    	u8Dst[n] = (uint8_t)psEntry->uType.sInt32.s32Min;
+        memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Min, sizeof(int32_t));
         n += sizeof(int32_t);
-    	u8Dst[n] = (uint8_t)pSrc->uType.sInt32.s32Max;
-        memcpy(&u8Dst[n], &pSrc->uType.sInt32.s32Max, sizeof(int32_t));
+    	u8Dst[n] = (uint8_t)psEntry->uType.sInt32.s32Max;
+        memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Max, sizeof(int32_t));
         n += sizeof(int32_t);
     }
 
-	return 0;
+	return n;
 }
 
 bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)

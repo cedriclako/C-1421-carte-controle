@@ -94,6 +94,12 @@ typedef struct
 
     UFEC23ENDEC_EPARAMTYPE eParamType;
     UFEC23ENDEC_uType uType;
+} UFEC23ENDEC_SEntry;
+
+
+typedef struct 
+{
+    UFEC23ENDEC_SEntry sEntry;
 
     bool bIsEOF; 
 	bool bHasRecord;
