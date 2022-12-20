@@ -7,6 +7,9 @@ void UFEC23ENDEC_Init()
 
 int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc)
 {
+    if (u32DstLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
+        return 0;
+
     const uint8_t u32SWNameLen = (uint8_t)strlen(pSrc->szSoftwareName);
     if (u32SWNameLen > UFEC23ENDEC_SOFTWARENAME_LEN)
         return 0;
@@ -29,8 +32,7 @@ int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen,
 
 bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    // 3 bytes for version + 1 for len + 1 for len
-    if (u32DataLen < 5)
+    if (u32DataLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
         return false;
     // Version
 	uint32_t n = 0;
@@ -54,7 +56,7 @@ bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, co
 
 int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc)
 {
-    if (u32DstLen < 3)
+    if (u32DstLen < UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT)
         return 0;
     int n = 0;
     u8Dst[n++] = pSrc->u8FanSpeedCurr;
@@ -65,7 +67,7 @@ int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32
 
 bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSettingResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < 3)
+    if (u32DataLen < UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT)
         return false;
     pDst->u8FanSpeedCurr = u8Datas[0];
     pDst->u8FanSpeedMax = u8Datas[1];
@@ -76,7 +78,7 @@ bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSetting
 
 int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SSetRunningSetting* pSrc)
 {
-    if (u32DstLen < 4)
+    if (u32DstLen < UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT)
         return 0;
     int n = 0;
     const uint16_t u16 = (uint16_t)pSrc->eRunningSettingFlags;
@@ -90,6 +92,8 @@ int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
 
 int32_t UFEC23ENDEC_C2SReqParameterGetEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqParameterGet* pSrc)
 {
+    if (u32DstLen < UFEC23ENDEC_C2SREQPARAMETERGET_COUNT)
+        return false;
     int n = 0;
     u8Dst[n++] = (uint8_t)pSrc->eIterateOp;
     return n;
@@ -97,7 +101,7 @@ int32_t UFEC23ENDEC_C2SReqParameterGetEncode(uint8_t u8Dst[], uint32_t u32DstLen
 
 bool UFEC23ENDEC_C2SReqParameterGetDecode(UFEC23ENDEC_C2SReqParameterGet* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < 1)
+    if (u32DataLen < UFEC23ENDEC_C2SREQPARAMETERGET_COUNT)
         return false;
     pDst->eIterateOp = (UFEC23ENDEC_EITERATEOP)u8Datas[0];
     if (pDst->eIterateOp >= UFEC23ENDEC_EITERATEOP_Count)
@@ -108,7 +112,7 @@ bool UFEC23ENDEC_C2SReqParameterGetDecode(UFEC23ENDEC_C2SReqParameterGet* pDst, 
 
 bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < 4)
+    if (u32DataLen < UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT)
         return false;
     const uint16_t u16 = (uint16_t)((u8Datas[0] << 8) | u8Datas[1]);
     pDst->eRunningSettingFlags = (UFEC23ENDEC_EWRITESETTINGFLAGS)u16;

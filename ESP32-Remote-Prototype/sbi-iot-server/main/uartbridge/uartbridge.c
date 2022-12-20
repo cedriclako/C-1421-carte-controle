@@ -12,12 +12,6 @@
 
 #define TAG "UARTBridge"
 
-typedef enum
-{
-    EPROCPARAMETERENTRY_None = 0,
-    EPROCPARAMETERENTRY_WaitParameterResponse = 1
-} EPROCPARAMETERENTRY;
-
 typedef struct 
 {
     bool bIsConnected;
@@ -26,7 +20,7 @@ typedef struct
     TickType_t ttLastCommTicks;
 
     // Parameter file download
-    EPROCPARAMETERENTRY eProcParameterEntry;
+    bool bProcParameterInProgress;
     TickType_t ttParameterStartDownTicks;
 } SStateMachine;
 
@@ -111,6 +105,12 @@ void UARTBRIDGE_Handler()
     ManageServerConnection();
 
     // State machine ...
+    // Expiration time ...
+    if (m_sStateMachine.bProcParameterInProgress &&
+        (xTaskGetTickCount() - m_sStateMachine.ttParameterStartDownTicks) > pdMS_TO_TICKS(5000))
+    {
+        ProcParameterAbortDownload();
+    }
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -178,6 +178,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 break;
             }
 
+            m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
+
             bool isOverflow = false;
 
             if (s.bHasRecord)
@@ -198,7 +200,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             // Request the next one ... until we get EOF flag
             if (s.bIsEOF || isOverflow)
             {
-                m_sStateMachine.eProcParameterEntry = EPROCPARAMETERENTRY_None;
+                m_sStateMachine.bProcParameterInProgress = false;
                 pMemBlock->bIsParameterDownloadCompleted = true;
                 ESP_LOGI(TAG, "Parameter download done, entries: %d", pMemBlock->u32ParameterCount);
                 break;
@@ -289,7 +291,7 @@ static void ProcParameterStartDownload()
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
 
     // Reset
-    m_sStateMachine.eProcParameterEntry = EPROCPARAMETERENTRY_WaitParameterResponse;
+    m_sStateMachine.bProcParameterInProgress = true;
     m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
 
     pMB->u32ParameterCount = 0;
@@ -306,7 +308,7 @@ static void ProcParameterStartDownload()
 
 static void ProcParameterAbortDownload()
 {
-    if (m_sStateMachine.eProcParameterEntry != EPROCPARAMETERENTRY_None)
+    if (m_sStateMachine.bProcParameterInProgress)
     {
         ESP_LOGE(TAG, "Unable to decode get parameter");
         return;
@@ -314,7 +316,7 @@ static void ProcParameterAbortDownload()
 
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-    m_sStateMachine.eProcParameterEntry = EPROCPARAMETERENTRY_None;
+    m_sStateMachine.bProcParameterInProgress = false;
     pMB->bIsParameterDownloadCompleted = false;
     pMB->u32ParameterCount = 0;
     STOVEMB_Give();
