@@ -34,7 +34,28 @@
         </table>
         <br>
         <h1>System Parameters</h1>
-        
+        <div class="content">
+            <!-- Config file -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            Config file
+                            <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <textarea id="idConfigFileText" rows="40" cols="100" v-model="configJSON"></textarea>
+                            <br>
+                            <button id="idSaveConfig" @click="idSaveConfig_OnClick($event)">Save</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script type="text/javascript" src="js/vue.min.js"></script>

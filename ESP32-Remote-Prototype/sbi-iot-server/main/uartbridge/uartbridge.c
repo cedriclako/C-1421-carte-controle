@@ -25,6 +25,7 @@ typedef struct
 
     // Connection 
     TickType_t ttLastCommTicks;
+    TickType_t ttLastKeepAliveSent;
 
     // Parameter file download
     EPARAMETERPROCESS eProcParameterProcess;
@@ -113,7 +114,7 @@ void UARTBRIDGE_Handler()
     // Read data from the UART
     uint8_t u8UARTDriverBuffers[128];
     int len = 0;
-    while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 0)) != 0)
+    while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 1)) > 0)
     {
         UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8UARTDriverBuffers, len);
     }
@@ -255,14 +256,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
 
             m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
-            // Ask for the next one to write ...
-            STOVEMB_Take(portMAX_DELAY);
-            // Upload
+            
             STOVEMB_SParameterEntry sParamEntry;
             const int32_t s32Index = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
-            STOVEMB_Give();
 
-            // Return true because it's a normal usecase to not have anything to upload
+            // The last one has been uploaded ...
             if (s32Index < 0)
             {
                 // Upload completed.
@@ -318,7 +316,7 @@ static void ManageServerConnection()
             ServerDisconnected();
         }
     }
-    else
+    else if (m_sStateMachine.ttLastCommTicks != 0)
     {
         if (!m_sStateMachine.bIsConnected)
         {
@@ -328,9 +326,12 @@ static void ManageServerConnection()
     }
     
     // Send keep alive if no communication happened for some time ...
-    if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))
+    if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS) &&
+        (xTaskGetTickCount() - m_sStateMachine.ttLastKeepAliveSent) > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))
     {
+        //ESP_LOGI(TAG, "UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive");
         UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive, NULL, 0);
+        m_sStateMachine.ttLastKeepAliveSent = xTaskGetTickCount(); 
     }
 }
 
@@ -342,7 +343,7 @@ static void ServerConnected()
     // Send some requests ...
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
-
+    
     // Start downloading parameters
     ProcParameterDownload();
 }

@@ -227,7 +227,7 @@ void app_main(void)
         ESPNOWPROCESS_Handler();
         UARTBRIDGE_Handler();
 
-        esp_event_loop_run(EVENT_g_LoopHandle, portMAX_DELAY);
+        esp_event_loop_run(EVENT_g_LoopHandle, 1);
         vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   
 }

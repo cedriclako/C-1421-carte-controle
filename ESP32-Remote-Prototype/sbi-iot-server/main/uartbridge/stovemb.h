@@ -19,9 +19,11 @@ typedef struct
 
 typedef struct 
 {
+    // Settings
     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
     bool s2CGetRunningSettingIsSet;
 
+    // Version infos
     UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
     bool sS2CReqVersionRespIsSet;
 
@@ -29,6 +31,9 @@ typedef struct
     volatile bool bIsParameterDownloadCompleted;
     STOVEMB_SParameterEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
     uint32_t u32ParameterCount;
+
+    // Is stove connected
+    bool bIsStoveConnected;
 } STOVEMB_SMemBlock;
 
 void STOVEMB_Init();

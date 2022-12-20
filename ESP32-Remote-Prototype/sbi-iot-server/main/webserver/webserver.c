@@ -231,8 +231,12 @@ static esp_err_t api_get_handler(httpd_req_t *req)
     goto END;
     ERROR:
     if (szErrorString != NULL)
+    {
         ESP_LOGE(TAG, "api_get_handler, url: %s, error: %s", req->uri, szErrorString);
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "request processing error");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, szErrorString);
+    }
+    else
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "request processing error");
     END:
     if (pExportJSON != NULL)
         free(pExportJSON);
