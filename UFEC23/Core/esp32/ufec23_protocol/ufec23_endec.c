@@ -125,12 +125,9 @@ bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pD
 int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)
 {
     if (u32DstLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
-    {
         return 0;
-    }
-
+ 
     const UFEC23ENDEC_SEntry* psEntry = &pSrc->sEntry;
-    
 	int32_t n = 0;
 	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD : 0x00) | 
                            (pSrc->bIsEOF ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00));
@@ -162,6 +159,36 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
 
 bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
+    if (u32DataLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
+        return false;
+
+    int n = 0;
+    pDst->bHasRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD) ? true : false;
+    pDst->bIsEOF = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF) ? true : false; // Flags
+    n++;
+    pDst->sEntry.eParamType = (UFEC23ENDEC_EPARAMTYPE)u8Datas[n++];
+    const uint8_t u8KeyLen = u8Datas[n++];
+    if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
+        return false;
+    memcpy(pDst->sEntry.szKey, &u8Datas[n], u8KeyLen);
+    pDst->sEntry.szKey[u8KeyLen] = 0;
+    n += u8KeyLen;
+    if (pDst->sEntry.eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
+    {
+        memcpy(&pDst->sEntry.uType.sInt32.s32Value, &u8Datas[n], sizeof(int32_t));
+        n += sizeof(int32_t);
+        memcpy(&pDst->sEntry.uType.sInt32.s32Default, &u8Datas[n], sizeof(int32_t));
+        n += sizeof(int32_t);
+        memcpy(&pDst->sEntry.uType.sInt32.s32Min, &u8Datas[n], sizeof(int32_t));
+        n += sizeof(int32_t);
+        memcpy(&pDst->sEntry.uType.sInt32.s32Max, &u8Datas[n], sizeof(int32_t));
+        n += sizeof(int32_t);
+    }
+    else
+    {
+        return false;
+    }
+
 	return true;
 }
 

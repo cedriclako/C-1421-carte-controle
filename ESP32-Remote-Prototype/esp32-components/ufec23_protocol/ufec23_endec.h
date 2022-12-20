@@ -86,7 +86,7 @@ typedef struct
 typedef enum
 {
     UFEC23ENDEC_EPARAMTYPE_Int32 = 0,
-    UFEC23ENDEC_EPARAMTYPE_Float = 1
+    // UFEC23ENDEC_EPARAMTYPE_Float = 1
 } UFEC23ENDEC_EPARAMTYPE;
 
 
