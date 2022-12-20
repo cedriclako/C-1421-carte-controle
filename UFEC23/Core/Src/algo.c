@@ -1151,6 +1151,7 @@ void algo_fixSecondary(int16_t aperture)
 	if(aperture >= SECONDARY_MINIMUM_OPENING && aperture <= SECONDARY_FULL_OPEN)
 	{
 		sec_aperture = aperture;
+		AirInput_forceAperture(&secondary,sec_aperture);
 		fixed_sec = true;
 	}else
 	{
