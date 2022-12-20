@@ -88,16 +88,34 @@ int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
     return n;
 }
 
+int32_t UFEC23ENDEC_C2SReqParameterGetEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqParameterGet* pSrc)
+{
+    int n = 0;
+    u8Dst[n++] = (uint8_t)pSrc->eIterateOp;
+    return n;
+}
+
+bool UFEC23ENDEC_C2SReqParameterGetDecode(UFEC23ENDEC_C2SReqParameterGet* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+    if (u32DataLen < 1)
+        return false;
+    pDst->eIterateOp = (UFEC23ENDEC_EITERATEOP)u8Datas[0];
+    if (pDst->eIterateOp >= UFEC23ENDEC_EITERATEOP_Count)
+        return false;
+    return true;
+}
+
+
 bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < 4)
-        return 0;
+        return false;
     const uint16_t u16 = (uint16_t)((u8Datas[0] << 8) | u8Datas[1]);
     pDst->eRunningSettingFlags = (UFEC23ENDEC_EWRITESETTINGFLAGS)u16;
     pDst->u8FanSpeedCurr = u8Datas[2];
     pDst->bIsAirOpen = (u8Datas[3] & 0x01) ? 0x01 : 0x00;
     pDst->bIsFanModeAuto = (u8Datas[3] & 0x02) ? 0x01 : 0x00;
-    return false;
+    return true;
 }
 
 int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)

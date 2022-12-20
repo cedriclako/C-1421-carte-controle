@@ -8,7 +8,7 @@ static SemaphoreHandle_t m_xSemaphoreExt = NULL;
 
 void STOVEMB_Init()
 {
-    m_xSemaphoreExt = xSemaphoreCreateMutex();
+    m_xSemaphoreExt = xSemaphoreCreateRecursiveMutex();
     assert(m_xSemaphoreExt != NULL);
 
     memset(&m_sMemBlock, 0, sizeof(STOVEMB_SMemBlock));
@@ -26,12 +26,12 @@ const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO()
 
 bool STOVEMB_Take(TickType_t xTicksToWait)
 {
-    return xSemaphoreTake( m_xSemaphoreExt, xTicksToWait) == pdTRUE;
+    return xSemaphoreTakeRecursive( m_xSemaphoreExt, xTicksToWait) == pdTRUE;
 }
 
 void STOVEMB_Give()
 {
-    xSemaphoreGive( m_xSemaphoreExt);
+    xSemaphoreGiveRecursive( m_xSemaphoreExt);
 }
 
 char* STOVEMB_CopyServerParameterJSONTo()

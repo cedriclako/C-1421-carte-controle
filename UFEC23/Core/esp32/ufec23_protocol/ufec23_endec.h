@@ -63,6 +63,8 @@ typedef enum
 {
     UFEC23ENDEC_EITERATEOP_First = 0,	// Reset the iterator
     UFEC23ENDEC_EITERATEOP_Next = 1,	// Send next item
+
+    UFEC23ENDEC_EITERATEOP_Count
 } UFEC23ENDEC_EITERATEOP;
 
 typedef struct 
@@ -119,8 +121,13 @@ int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
 
 bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
-
+// ========================================
 // Request one parameter
+int32_t UFEC23ENDEC_C2SReqParameterGetEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqParameterGet* pSrc);
+
+bool UFEC23ENDEC_C2SReqParameterGetDecode(UFEC23ENDEC_C2SReqParameterGet* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+
 int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc);
 
 bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);

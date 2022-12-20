@@ -12,18 +12,31 @@
 
 #define TAG "UARTBridge"
 
+typedef enum
+{
+    EPROCPARAMETERENTRY_None = 0,
+    EPROCPARAMETERENTRY_WaitParameterResponse = 1
+} EPROCPARAMETERENTRY;
+
 typedef struct 
 {
     bool bIsConnected;
 
     // Connection 
     TickType_t ttLastCommTicks;
+
+    // Parameter file download
+    EPROCPARAMETERENTRY eProcParameterEntry;
+    TickType_t ttParameterStartDownTicks;
 } SStateMachine;
 
 // UART Protocol decoder handle
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
 // Big buffer because we want to be able to download JSON file.
+#define SENDPROTOCOL_COUNT 64
+
 static uint8_t m_u8UARTProtocolBuffers[1024*4];
+static uint8_t m_u8UARTSendProtocols[SENDPROTOCOL_COUNT];
 
 static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 
@@ -42,6 +55,9 @@ static void ManageServerConnection();
 // Events
 static void ServerConnected();
 static void ServerDisconnected();
+
+static void ProcParameterStartDownload();
+static void ProcParameterAbortDownload();
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder = 
 { 
@@ -93,6 +109,8 @@ void UARTBRIDGE_Handler()
     }
 
     ManageServerConnection();
+
+    // State machine ...
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -108,7 +126,6 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
     STOVEMB_Take(portMAX_DELAY);
-
     STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlock();
 
     // Any communication count
@@ -148,6 +165,51 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
             pMemBlock->s2CGetRunningSettingIsSet = true;
             ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+            break;
+        }
+
+        case UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp:
+        {
+            // Received (Get Parameter Resp)
+            UFEC23ENDEC_S2CReqParameterGetResp s;
+            if (!UFEC23ENDEC_S2CReqParameterGetRespDecode(&s, u8Payloads, u16PayloadLen))
+            {
+                ProcParameterAbortDownload();
+                break;
+            }
+
+            bool isOverflow = false;
+
+            if (s.bHasRecord)
+            {
+                // Overflow detected ...
+                if (pMemBlock->u32ParameterCount + 1 > STOVEMB_MAXIMUMSETTING_ENTRIES)
+                {
+                    ESP_LOGW(TAG, "Overflow, too many parameter received from the device");
+                    isOverflow = true;
+                }
+                else
+                {
+                    memcpy(&pMemBlock->arrParameterEntries[pMemBlock->u32ParameterCount], &s.sEntry, sizeof(UFEC23ENDEC_SEntry));
+                    pMemBlock->u32ParameterCount++;
+                }
+            }
+
+            // Request the next one ... until we get EOF flag
+            if (s.bIsEOF || isOverflow)
+            {
+                m_sStateMachine.eProcParameterEntry = EPROCPARAMETERENTRY_None;
+                pMemBlock->bIsParameterDownloadCompleted = true;
+                ESP_LOGI(TAG, "Parameter download done, entries: %d", pMemBlock->u32ParameterCount);
+                break;
+            }
+
+            UFEC23ENDEC_C2SReqParameterGet sC2SReqParameterGet = 
+            {
+                .eIterateOp = UFEC23ENDEC_EITERATEOP_Next
+            };
+            const int32_t n = UFEC23ENDEC_C2SReqParameterGetEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
+            UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
             break;
         }
         default:
@@ -209,10 +271,51 @@ static void ServerConnected()
     // Send some requests ...
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+
+    // Start downloading parameters
+    ProcParameterStartDownload();
 }
 
 static void ServerDisconnected()
 {
     // Disconnected ...
     ESP_LOGI(TAG, "Server disconnected");
+    ProcParameterAbortDownload();
+}
+
+static void ProcParameterStartDownload()
+{
+    STOVEMB_Take(portMAX_DELAY);
+    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+
+    // Reset
+    m_sStateMachine.eProcParameterEntry = EPROCPARAMETERENTRY_WaitParameterResponse;
+    m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
+
+    pMB->u32ParameterCount = 0;
+    pMB->bIsParameterDownloadCompleted = false;
+
+    UFEC23ENDEC_C2SReqParameterGet sC2SReqParameterGet = 
+    {
+        .eIterateOp = UFEC23ENDEC_EITERATEOP_First
+    };
+    const int32_t n = UFEC23ENDEC_C2SReqParameterGetEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
+    STOVEMB_Give();
+}
+
+static void ProcParameterAbortDownload()
+{
+    if (m_sStateMachine.eProcParameterEntry != EPROCPARAMETERENTRY_None)
+    {
+        ESP_LOGE(TAG, "Unable to decode get parameter");
+        return;
+    }
+
+    STOVEMB_Take(portMAX_DELAY);
+    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+    m_sStateMachine.eProcParameterEntry = EPROCPARAMETERENTRY_None;
+    pMB->bIsParameterDownloadCompleted = false;
+    pMB->u32ParameterCount = 0;
+    STOVEMB_Give();
 }

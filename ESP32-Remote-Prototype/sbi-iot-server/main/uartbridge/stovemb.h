@@ -6,6 +6,8 @@
 #include "ufec23_protocol.h"
 #include "ufec23_endec.h"
 
+#define STOVEMB_MAXIMUMSETTING_ENTRIES (100)
+
 typedef struct 
 {
     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
@@ -14,9 +16,10 @@ typedef struct
     UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
     bool sS2CReqVersionRespIsSet;
 
-    // Config JSON
-    UFEC23ENDEC_SEntry arrEntries[100]; // 100 maximum for now
-    uint32_t u32Count;
+    // Parameter JSON
+    volatile bool bIsParameterDownloadCompleted;
+    UFEC23ENDEC_SEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
+    uint32_t u32ParameterCount;
 } STOVEMB_SMemBlock;
 
 void STOVEMB_Init();
