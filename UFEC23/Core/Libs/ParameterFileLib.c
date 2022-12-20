@@ -102,121 +102,121 @@ static const PFL_SParameterItem* GetParameterEntryByKey(const PFL_SHandle* pHand
     }
     return NULL;
 }
-
-int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32MaxLen)
-{
-	int n = 0;
-	szBuffer[n] = '\0';
-	const int c1 = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), "[\r\n");
-	if (c1 <= 0)
-		return -1;
-	n += c1;
-
-	for(int i = 0; i < pHandle->u32ParameterEntryCount; i++)
-	{
-		const PFL_SParameterItem* pEnt = &pHandle->pParameterEntries[i];
-
-		// Generate without using external library is fast
-		// I'm aware there are pitfail before string aren't escaped but since it's very specific usecase it's good enough.
-		const int newEntryCnt = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1),
-			"{ \"key\":\"%s\",\"desc\":\"%s\",\"t\":%d,\"def\":%d,\"min\":%d,\"max\":%d }\r\n",
-			/*0*/pEnt->szKey,
-			/*1*/pEnt->szDesc,
-			/*2*/(int)pEnt->eType,
-			/*3*/(int)pEnt->uType.sInt32.s32Default,
-			/*4*/(int)pEnt->uType.sInt32.s32Min,
-			/*5*/(int)pEnt->uType.sInt32.s32Max);
-		if (newEntryCnt <= 0)
-			return -1;
-		n += newEntryCnt;
-
-		if (i + 1 < pHandle->u32ParameterEntryCount)
-		{
-			const int sepc = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), ",");
-			if (sepc <= 0)
-				return -1;
-			n += sepc;
-		}
-	}
-
-	const int c2 = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), "]");
-	if (c2 <= 0)
-		return -1;
-	n += c2;
-
-	return 0;
-}
-
-bool PFL_ImportFromJSON(const PFL_SHandle* pHandle, const char* szBuffer)
-{
-	bool bRet = false;
-	cJSON* pRoot = cJSON_Parse(szBuffer);
-	if (pRoot == NULL)
-	{
-		goto ERROR;
-	}
-
-	// Two pass process, one to validate and one to write
-    for(int pass = 0; pass < 2; pass++)
-    {
-        const bool bIsDryRun = pass == 0;
-
-        for(int i = 0; i < cJSON_GetArraySize(pRoot); i++)
-        {
-            cJSON* pEntryJSON = cJSON_GetArrayItem(pRoot, i);
-
-            cJSON* pKeyJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_KEY_NAME);
-            if (pKeyJSON == NULL || !cJSON_IsString(pKeyJSON))
-            {
-                goto ERROR;
-            }
-
-            cJSON* pValueJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_VALUE_NAME);
-            if (pValueJSON == NULL)
-            {
-                // We just ignore changing the setting if the value property is not there.
-                // it allows us to handle secret cases.
-                continue;
-            }
-
-    		const char* szKey = pKeyJSON->valuestring;
-
-    		const PFL_SParameterItem* pParamItem = GetParameterEntryByKey(pHandle, szKey);
-    		// Just ignore if it doesn't exists
-    		if (pParamItem == NULL)
-    			continue;
-
-    		// Int32
-    		if (pParamItem->eType == PFL_TYPE_Int32)
-    		{
-                if (!cJSON_IsNumber(pValueJSON))
-                {
-                    // JSON value type is invalid, not a number
-                    goto ERROR;
-                }
-
-                const int32_t s32NewValue = pValueJSON->valueint;
-
-    			if (bIsDryRun)
-    			{
-    				if (ValidateValueInt32(pHandle,  pParamItem, s32NewValue) != PFL_ESETRET_OK)
-    					goto ERROR;
-    			}
-    			else
-    			{
-    				// It has been validate on the first run so it should work here. If it doesn't it indicate a bug somewhere in the library.
-    				if (PFL_SetValueInt32(pHandle, szKey, s32NewValue) != PFL_ESETRET_OK)
-    					goto ERROR;
-    			}
-    		}
-        }
-    }
-
-    bRet = true;
-    goto END;
-    ERROR:
-    bRet = false;
-    END:
-    cJSON_free(pRoot);
-    return bRet;
-}
+//
+//int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32MaxLen)
+//{
+//	int n = 0;
+//	szBuffer[n] = '\0';
+//	const int c1 = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), "[\r\n");
+//	if (c1 <= 0)
+//		return -1;
+//	n += c1;
+//
+//	for(int i = 0; i < pHandle->u32ParameterEntryCount; i++)
+//	{
+//		const PFL_SParameterItem* pEnt = &pHandle->pParameterEntries[i];
+//
+//		// Generate without using external library is fast
+//		// I'm aware there are pitfail before string aren't escaped but since it's very specific usecase it's good enough.
+//		const int newEntryCnt = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1),
+//			"{ \"key\":\"%s\",\"desc\":\"%s\",\"t\":%d,\"def\":%d,\"min\":%d,\"max\":%d }\r\n",
+//			/*0*/pEnt->szKey,
+//			/*1*/pEnt->szDesc,
+//			/*2*/(int)pEnt->eType,
+//			/*3*/(int)pEnt->uType.sInt32.s32Default,
+//			/*4*/(int)pEnt->uType.sInt32.s32Min,
+//			/*5*/(int)pEnt->uType.sInt32.s32Max);
+//		if (newEntryCnt <= 0)
+//			return -1;
+//		n += newEntryCnt;
+//
+//		if (i + 1 < pHandle->u32ParameterEntryCount)
+//		{
+//			const int sepc = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), ",");
+//			if (sepc <= 0)
+//				return -1;
+//			n += sepc;
+//		}
+//	}
+//
+//	const int c2 = snprintf(szBuffer+n, (size_t)(s32MaxLen - n - 1), "]");
+//	if (c2 <= 0)
+//		return -1;
+//	n += c2;
+//
+//	return 0;
+//}
+//
+//bool PFL_ImportFromJSON(const PFL_SHandle* pHandle, const char* szBuffer)
+//{
+//	bool bRet = false;
+//	cJSON* pRoot = cJSON_Parse(szBuffer);
+//	if (pRoot == NULL)
+//	{
+//		goto ERROR;
+//	}
+//
+//	// Two pass process, one to validate and one to write
+//    for(int pass = 0; pass < 2; pass++)
+//    {
+//        const bool bIsDryRun = pass == 0;
+//
+//        for(int i = 0; i < cJSON_GetArraySize(pRoot); i++)
+//        {
+//            cJSON* pEntryJSON = cJSON_GetArrayItem(pRoot, i);
+//
+//            cJSON* pKeyJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_KEY_NAME);
+//            if (pKeyJSON == NULL || !cJSON_IsString(pKeyJSON))
+//            {
+//                goto ERROR;
+//            }
+//
+//            cJSON* pValueJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_VALUE_NAME);
+//            if (pValueJSON == NULL)
+//            {
+//                // We just ignore changing the setting if the value property is not there.
+//                // it allows us to handle secret cases.
+//                continue;
+//            }
+//
+//    		const char* szKey = pKeyJSON->valuestring;
+//
+//    		const PFL_SParameterItem* pParamItem = GetParameterEntryByKey(pHandle, szKey);
+//    		// Just ignore if it doesn't exists
+//    		if (pParamItem == NULL)
+//    			continue;
+//
+//    		// Int32
+//    		if (pParamItem->eType == PFL_TYPE_Int32)
+//    		{
+//                if (!cJSON_IsNumber(pValueJSON))
+//                {
+//                    // JSON value type is invalid, not a number
+//                    goto ERROR;
+//                }
+//
+//                const int32_t s32NewValue = pValueJSON->valueint;
+//
+//    			if (bIsDryRun)
+//    			{
+//    				if (ValidateValueInt32(pHandle,  pParamItem, s32NewValue) != PFL_ESETRET_OK)
+//    					goto ERROR;
+//    			}
+//    			else
+//    			{
+//    				// It has been validate on the first run so it should work here. If it doesn't it indicate a bug somewhere in the library.
+//    				if (PFL_SetValueInt32(pHandle, szKey, s32NewValue) != PFL_ESETRET_OK)
+//    					goto ERROR;
+//    			}
+//    		}
+//        }
+//    }
+//
+//    bRet = true;
+//    goto END;
+//    ERROR:
+//    bRet = false;
+//    END:
+//    cJSON_free(pRoot);
+//    return bRet;
+//}

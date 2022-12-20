@@ -2,7 +2,7 @@
 
 To exchange data between the ESP32 and the microcontroller we use a simple framing protocol.
 
-Everything is defined as network byte order (BIG ENDIAN).
+Everything is defined as network byte order (LITTLE ENDIAN).
 
 ## Protocol details
 
@@ -28,9 +28,9 @@ Followed by a bitwise operation.
 
 Example:
 
-Frame: [CC 01 00 04 BA DC 0F FE 57 99]
+Frame: [CC 01 04 00 BA DC 0F FE 57 99]
 
-01 + 00 + 04 + BA + DC + 0F + FE = 0x02A8
+01 + 04 + 00 + BA + DC + 0F + FE = 0x02A8
 
 We keep the last 8 bits so:
 0xA8, then we do bitwise on it: 0x57

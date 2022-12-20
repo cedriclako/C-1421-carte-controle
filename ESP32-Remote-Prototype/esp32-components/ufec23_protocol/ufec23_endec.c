@@ -7,10 +7,10 @@ void UFEC23ENDEC_Init()
 
 int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc)
 {
-    const uint32_t u32SWNameLen = strlen(pSrc->szSoftwareName);
+    const uint8_t u32SWNameLen = (uint8_t)strlen(pSrc->szSoftwareName);
     if (u32SWNameLen > UFEC23ENDEC_SOFTWARENAME_LEN)
         return 0;
-    const uint32_t u32GitHashLen = strlen(pSrc->szGitHash);
+    const uint8_t u32GitHashLen = (uint8_t)strlen(pSrc->szGitHash);
     if (u32GitHashLen > UFEC23ENDEC_GITHASH_LEN)
         return 0;
     int32_t n = 0;
@@ -59,7 +59,7 @@ int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32
     int n = 0;
     u8Dst[n++] = pSrc->u8FanSpeedCurr;
     u8Dst[n++] = pSrc->u8FanSpeedMax;
-    u8Dst[n++] = (pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00);
+    u8Dst[n++] = (uint8_t)((pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00));
     return n;
 }
 
@@ -80,11 +80,11 @@ int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstL
         return 0;
     int n = 0;
     const uint16_t u16 = (uint16_t)pSrc->eRunningSettingFlags;
-    u8Dst[n++] = (u16 >> 8) & 0xFF;
-    u8Dst[n++] = u16 & 0xFF;
+    u8Dst[n++] = (uint8_t)((u16 >> 8) & 0xFF);
+    u8Dst[n++] = (uint8_t)(u16 & 0xFF);
 
     u8Dst[n++] = pSrc->u8FanSpeedCurr;
-    u8Dst[n++] = (pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00);
+    u8Dst[n++] = (uint8_t)((pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00));
     return n;
 }
 
@@ -99,3 +99,43 @@ bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pD
     pDst->bIsFanModeAuto = (u8Datas[3] & 0x02) ? 0x01 : 0x00;
     return false;
 }
+
+int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)
+{
+    const int32_t s32MinLen = 2 + 1 + (4*3) + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1;
+    if (u32DstLen < s32MinLen)
+    {
+        return 0;
+    }
+    
+	int32_t n = 0;
+	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? 0x01 : 0x00) | (pSrc->bIsEOF ? 0x02 : 0x00));
+	u8Dst[n++] = (uint8_t)pSrc->eParamType;
+	const uint8_t u8KeyLen = (uint8_t)strnlen(pSrc->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
+	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
+		return 0;
+	u8Dst[n++] = (uint8_t)u8KeyLen;
+    memcpy(u8Dst + n, pSrc->szKey, (size_t)u8KeyLen);
+    n += u8KeyLen;
+
+    if (pSrc->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
+    {
+    	u8Dst[n] = (uint8_t)pSrc->uType.sInt32.s32Default;
+        memcpy(&u8Dst[n], &pSrc->uType.sInt32.s32Default, sizeof(int32_t));
+        n += sizeof(int32_t);
+    	u8Dst[n] = (uint8_t)pSrc->uType.sInt32.s32Min;
+        memcpy(&u8Dst[n], &pSrc->uType.sInt32.s32Min, sizeof(int32_t));
+        n += sizeof(int32_t);
+    	u8Dst[n] = (uint8_t)pSrc->uType.sInt32.s32Max;
+        memcpy(&u8Dst[n], &pSrc->uType.sInt32.s32Max, sizeof(int32_t));
+        n += sizeof(int32_t);
+    }
+
+	return 0;
+}
+
+bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+	return true;
+}
+

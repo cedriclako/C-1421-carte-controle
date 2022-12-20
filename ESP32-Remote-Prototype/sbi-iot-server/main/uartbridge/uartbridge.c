@@ -150,22 +150,6 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
             break;
         }
-        case UFEC23PROTOCOL_FRAMEID_S2CGetParameterJSONResp:
-        {
-            if (pMemBlock->pS2CConfigJSON)
-            {
-                free(pMemBlock->pS2CConfigJSON);
-                pMemBlock->pS2CConfigJSON = NULL;
-            }
-
-            // S2C config
-            pMemBlock->pS2CConfigJSON = (uint8_t*)malloc(sizeof(uint8_t)*u16PayloadLen);
-            pMemBlock->u32S2CConfigJSONLen = u16PayloadLen;
-            // payload is supposed to contains a trailing 0 but because I'm paranoid I force it anyway 
-            pMemBlock->pS2CConfigJSON[u16PayloadLen] = 0;
-            memcpy(pMemBlock->pS2CConfigJSON, u8Payloads, u16PayloadLen);
-            break;
-        }
         default:
             break;
     }
@@ -224,9 +208,7 @@ static void ServerConnected()
 
     // Send some requests ...
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameterJSON, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameterJSON, NULL, 0);
 }
 
 static void ServerDisconnected()

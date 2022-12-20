@@ -25,6 +25,8 @@ typedef struct
 #define UFEC23ENDEC_SOFTWARENAME_LEN (12)
 #define UFEC23ENDEC_GITHASH_LEN (12)
 
+#define UFEC23ENDEC_PARAMETERITEM_KEY_LEN (15)
+
 typedef struct 
 {
     UFEC23ENDEC_SVersion sVersion;
@@ -57,17 +59,10 @@ typedef struct
     bool bIsAirOpen;
 } UFEC23ENDEC_C2SSetRunningSetting;
 
-/*
-typedef struct 
-{
-    uint32_t u32ParameterCount;
-    uint32_t u32CRC32;
-} UFEC23ENDEC_S2CReqParameterTableInfoResp;
-
 typedef enum
 {
-    UFEC23ENDEC_EITERATEOP_First = 0;	// Reset the iterator
-    UFEC23ENDEC_EITERATEOP_Next = 1;	// Send next item
+    UFEC23ENDEC_EITERATEOP_First = 0,	// Reset the iterator
+    UFEC23ENDEC_EITERATEOP_Next = 1,	// Send next item
 } UFEC23ENDEC_EITERATEOP;
 
 typedef struct 
@@ -95,8 +90,7 @@ typedef union
 
 typedef struct 
 {
-    char szKey[16];
-    char szDesc[64];
+    char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
 
     UFEC23ENDEC_EPARAMTYPE eParamType;
     UFEC23ENDEC_uType uType;
@@ -104,7 +98,7 @@ typedef struct
     bool bIsEOF; 
 	bool bHasRecord;
 } UFEC23ENDEC_S2CReqParameterGetResp;
-*/
+
 void UFEC23ENDEC_Init();
 
 int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
@@ -118,5 +112,12 @@ bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSetting
 int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SSetRunningSetting* pSrc);
 
 bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+
+// Request one parameter
+int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc);
+
+bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
 
 #endif

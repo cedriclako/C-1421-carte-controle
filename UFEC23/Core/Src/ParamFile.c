@@ -99,11 +99,11 @@ static PF_UsrParam m_sMemBlock = { 0xFF }; // Simulate a flash memory
 
 static const PFL_SParameterItem m_sParameterItems[] =
 {
-	// KEY								DESCRIPTION									VARIABLE POINTER						DEFAULT, MIN, MAX
-	PFL_INIT_SINT32(PFD_TSLGAIN, 		"Gain du module de detection lumnineuse", &m_sMemBlock.s32TLSGain, 					0, 0, 3),
-	PFL_INIT_SINT32(PFD_TSLINT,  		"Temps d'integration du module de detection lumineuse", &m_sMemBlock.s32TSLINT, 	0, 0, 5),
-	PFL_INIT_SINT32(PFD_DACCMD,  		"Commande de DAC qui gere le courant des DELs", &m_sMemBlock.s32DACCMD, 			0, 0, 255),
-	PFL_INIT_SINT32(PFD_TIMEINTERVAL, 	"Intervale entre mesure lumiere (sec)", &m_sMemBlock.s32TIMEINTERVAL, 				0, 0, 255),
+	// KEY										    VARIABLE POINTER								DEFAULT, MIN, MAX
+	PFL_INIT_SINT32(PFD_TSLGAIN, 				"", &m_sMemBlock.s32TLSGain, 				                0, 0, 3),
+	PFL_INIT_SINT32(PFD_TSLINT,  				"", &m_sMemBlock.s32TSLINT, 					    	    0, 0, 5),
+	PFL_INIT_SINT32(PFD_DACCMD,  				"", &m_sMemBlock.s32DACCMD, 							  0, 0, 255),
+	PFL_INIT_SINT32(PFD_TIMEINTERVAL, 			"", &m_sMemBlock.s32TIMEINTERVAL, 					      0, 0, 255),
 
 	// Temperature
 	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &m_sTemperatureParam.WaitingToIgnition, 	  	1000, 0, 20000),

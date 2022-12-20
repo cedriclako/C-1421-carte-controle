@@ -14,9 +14,10 @@ void UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
     const uint8_t u8STARTBYTE = UARTPROTOCOLCOMMON_START_BYTE;
     psHandle->psConfig->fnWriteCb(psHandle, &u8STARTBYTE, 1);
     psHandle->psConfig->fnWriteCb(psHandle, &u8ID, 1);
-    const uint8_t u8LenB0 = (u16PayloadLen >> 8) & 0xFF;
+    // Payload in LITTLE ENDIAN format
+    const uint8_t u8LenB0 = u16PayloadLen & 0xFF;
     psHandle->psConfig->fnWriteCb(psHandle, &u8LenB0, 1);
-    const uint8_t u8LenB1 = u16PayloadLen & 0xFF;
+    const uint8_t u8LenB1 = (u16PayloadLen >> 8) & 0xFF;
     psHandle->psConfig->fnWriteCb(psHandle, &u8LenB1, 1);
     psHandle->psConfig->fnWriteCb(psHandle, u8Payloads, u16PayloadLen);
 

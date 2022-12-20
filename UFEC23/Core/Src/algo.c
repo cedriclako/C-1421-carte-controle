@@ -81,13 +81,13 @@ static inline bool inBetween( int var, int low, int high);
 static float computeSlopeBaffleTemp(unsigned int nbData);
 void Algo_init();
 static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS);
-void StateEntryControlAdjustment(const uint8_t MinPrimary, const uint8_t MaxPrimary,
-		const uint8_t MinGrill, const uint8_t MaxGrill,
-		const uint8_t MinSecondary, const uint8_t MaxSecondary);
-void AirAdjustment(int adjustement, const uint32_t secondPerStep,
-		const uint8_t MinPrimary, const uint8_t MaxPrimary,
-		const uint8_t MinGrill, const uint8_t MaxGrill,
-		const uint8_t MinSecondary, const uint8_t MaxSecondary);
+static void StateEntryControlAdjustment(uint8_t MinPrimary, uint8_t MaxPrimary,
+		uint8_t MinGrill, uint8_t MaxGrill,
+		uint8_t MinSecondary, uint8_t MaxSecondary);
+static void AirAdjustment(int adjustement, uint32_t secondPerStep,
+		uint8_t MinPrimary, uint8_t MaxPrimary,
+		uint8_t MinGrill, uint8_t MaxGrill,
+		uint8_t MinSecondary, uint8_t MaxSecondary);
 
 void Algo_init() {
 
@@ -246,9 +246,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 			  adjustement = computeAjustement(targetTemperature, dTavant);
 			  AirAdjustment(adjustement, SEC_PER_STEP_TEMP_RISE,
-							  pPrimaryMotorParam->MinTempRise, pPrimaryMotorParam->MaxTempRise,
-							  pGrillMotorParam->MinTempRise,pGrillMotorParam->MaxTempRise,
-							  pSecondaryMotorParam->MinTempRise,pSecondaryMotorParam->MaxTempRise);
+							  (uint8_t)pPrimaryMotorParam->MinTempRise, (uint8_t)pPrimaryMotorParam->MaxTempRise,
+							  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
+							  (uint8_t)pSecondaryMotorParam->MinTempRise, (uint8_t)pSecondaryMotorParam->MaxTempRise);
 			}
 			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
@@ -791,10 +791,10 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-void AirAdjustment(int adjustement, const uint32_t secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
-		const uint8_t MinPrimary, const uint8_t MaxPrimary,
-		const uint8_t MinGrill, const uint8_t MaxGrill,
-		const uint8_t MinSecondary, const uint8_t MaxSecondary)
+static void AirAdjustment(int adjustement, uint32_t secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
+		uint8_t MinPrimary, uint8_t MaxPrimary,
+		uint8_t MinGrill, uint8_t MaxGrill,
+		uint8_t MinSecondary, uint8_t MaxSecondary)
 {
 	if (adjustement > 0)
 	{
@@ -830,9 +830,9 @@ void AirAdjustment(int adjustement, const uint32_t secondPerStep, //////////////
 }
 
 
-void StateEntryControlAdjustment(const uint8_t MinPrimary, const uint8_t MaxPrimary, ////////////// Insérer la gestion du secondaire dans cette fonction
-		const uint8_t MinGrill, const uint8_t MaxGrill,
-		const uint8_t MinSecondary, const uint8_t MaxSecondary)
+static void StateEntryControlAdjustment(uint8_t MinPrimary, uint8_t MaxPrimary, ////////////// Insérer la gestion du secondaire dans cette fonction
+		uint8_t MinGrill, uint8_t MaxGrill,
+		uint8_t MinSecondary, uint8_t MaxSecondary)
 {
 	int aperture = AirInput_getAperture(&primary);
 	int apertureAdjustment = 0;

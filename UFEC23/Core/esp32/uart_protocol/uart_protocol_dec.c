@@ -77,7 +77,7 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
         case UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB0:
         {
             psHandle->u8ChecksumCalculation += u8;
-            psHandle->u16FramePayloadLen = ((uint16_t)u8 << 8);
+            psHandle->u16FramePayloadLen = u8;
 
             psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB1;
             break;
@@ -85,7 +85,8 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
         case UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB1:
         {
             psHandle->u8ChecksumCalculation += u8;
-            psHandle->u16FramePayloadLen |= u8;
+            // Little endian ...
+            psHandle->u16FramePayloadLen |= ((uint16_t)u8 << 8);
 
             if (psHandle->u16FramePayloadLen > psHandle->psConfig->u16PayloadBufferLen)
             {
