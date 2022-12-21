@@ -86,6 +86,7 @@ void WEBSERVER_Init()
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.task_priority = FWCONFIG_HTTPTASK_PRIORITY;
+    config.stack_size = 7500;
     config.lru_purge_enable = true;
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.max_open_sockets = 3;
@@ -247,7 +248,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 
 static esp_err_t api_post_handler(httpd_req_t *req)
 {
-    char szError[128+1];
+    char szError[128+1] = {0,};
 
     int n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE-1);
     m_u8Buffers[n] = '\0';
@@ -265,7 +266,6 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     {
         if (!STOVEMB_InputParamFromJSON((const char*)m_u8Buffers, szError, sizeof(szError)))
         {
-            snprintf(szError, sizeof(szError), "%s", "Unable to decode JSON");
             goto ERROR;
         }
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
@@ -277,7 +277,7 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     }
     goto END;
     ERROR:
-    if (szError != NULL)
+    if (strlen(szError) > 0)
     {
         ESP_LOGE(TAG, "api_post_handler, url: %s, error: %s", req->uri, szError);
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, szError);
@@ -473,14 +473,15 @@ static char* GetLiveData()
 
     cJSON_AddItemToObject(pRoot, "wireless", pWireless);
 
-    cJSON* pStove = cJSON_CreateObject();
     STOVEMB_Take(portMAX_DELAY);
+    cJSON* pStove = cJSON_CreateObject();
+    
     const STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlockRO();
     cJSON_AddItemToObject(pStove, "is_connected", cJSON_CreateBool(pMemBlock->bIsStoveConnectedAndReady));
     cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
     cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
-    STOVEMB_Give();
     cJSON_AddItemToObject(pRoot, "stove", pStove);
+    STOVEMB_Give();
 
     char* pStr =  cJSON_PrintUnformatted(pRoot);
     cJSON_Delete(pRoot);

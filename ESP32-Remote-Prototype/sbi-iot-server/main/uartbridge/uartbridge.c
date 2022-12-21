@@ -111,8 +111,6 @@ void UARTBRIDGE_Init()
 
 void UARTBRIDGE_Handler()
 {
-    //STOVEMB_Take(portMAX_DELAY);
-
     // Read data from the UART
     uint8_t u8UARTDriverBuffers[128];
     int len = 0;
@@ -131,9 +129,7 @@ void UARTBRIDGE_Handler()
         {
             ProcParameterAbort();
         }
-    }   
-    
-    //STOVEMB_Give();
+    }
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)

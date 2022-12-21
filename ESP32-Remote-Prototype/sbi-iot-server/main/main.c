@@ -219,6 +219,8 @@ void app_main(void)
 
     const TickType_t xFrequency = pdMS_TO_TICKS( 200 );
 
+    ESP_LOGI(TAG, "Starting ...");
+
     while (true)
     {
         TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -227,8 +229,10 @@ void app_main(void)
         ESPNOWPROCESS_Handler();
         UARTBRIDGE_Handler();
 
-        esp_event_loop_run(EVENT_g_LoopHandle, 1);
+        esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 5 ));
         vTaskDelayUntil( &xLastWakeTime, xFrequency );
+        
+        // ESP_LOGI(TAG, "loop ...");
     }   
 }
 
