@@ -86,18 +86,17 @@ void EspManager(void const * argument) {
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
 
 	// TODO: Use: UARTPROTOCOLDEC_HandleIn()
-	static uint8_t TX_BUFFER[2];
-
-	TX_BUFFER[0] = 0x61;
-	TX_BUFFER[1] = 0x62;
-
+	//static uint8_t TX_BUFFER[] = { 0xCC, 0x01, 0x04, 0x00, 0xBA, 0xDC, 0x0F, 0xFE, 0x57, 0x99 };
 
 	for(;;) {
 
 		osDelay(1000);
 
+		const uint8_t u8DummyPayloads[] = { 'c', 'o', 'u', 'c', 'o', 'u' };
+		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
+		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
 
-		HAL_UART_Transmit_IT(&huart2, TX_BUFFER, 2);
+		//HAL_UART_Transmit_IT(&huart2, TX_BUFFER, sizeof(TX_BUFFER));
 
 		if(osErrorOS == osSemaphoreWait(ESP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
 		{
@@ -118,6 +117,7 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 {
     //uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 	// Write byte into UART ...
+	HAL_UART_Transmit(&huart2, u8Datas, u32DataLen, 500);
 }
 
 

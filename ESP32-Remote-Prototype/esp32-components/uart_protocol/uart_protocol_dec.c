@@ -94,7 +94,11 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
                 break;
             }
 
-            psHandle->eStep = UARTPROTOCOLDEC_ESTEP_GettingPayload;
+            // 0 byte payload are supported
+            if (psHandle->u16FramePayloadLen == 0)
+            	psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingChecksum;
+            else
+            	psHandle->eStep = UARTPROTOCOLDEC_ESTEP_GettingPayload;
             break;
         }
         case UARTPROTOCOLDEC_ESTEP_GettingPayload:

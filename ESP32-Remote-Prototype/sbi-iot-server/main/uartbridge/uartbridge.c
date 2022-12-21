@@ -112,9 +112,10 @@ void UARTBRIDGE_Init()
 void UARTBRIDGE_Handler()
 {
     // Read data from the UART
-    uint8_t u8UARTDriverBuffers[128];
+    uint8_t u8UARTDriverBuffers[128];    
+    uint8_t dbg[128];
     int len = 0;
-    while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 1)) > 0)
+    while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 0)) > 0)
     {
         UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8UARTDriverBuffers, len);
     }
@@ -127,6 +128,7 @@ void UARTBRIDGE_Handler()
     {
         if ((xTaskGetTickCount() - m_sStateMachine.ttParameterStartDownTicks) > pdMS_TO_TICKS(UARTBRIDGE_PROCDOWNLOADUPLOAD_MS))
         {
+            ESP_LOGE(TAG, "Process time expired");
             ProcParameterAbort();
         }
     }
@@ -364,6 +366,35 @@ static void ServerDisconnected()
     ProcParameterAbort();
 }
 
+static bool SendSetParameter(const STOVEMB_SParameterEntry* psParamEntry)
+{
+    UFEC23PROTOCOL_C2SSetParameter sParam;
+    strcpy(sParam.szKey, psParamEntry->sEntry.szKey);
+    memcpy(&sParam.uValue, &psParamEntry->sWriteValue, sizeof(UFEC23ENDEC_uValue));
+    const int32_t n = UFEC23ENDEC_C2SSetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sParam);
+    if (n == 0)
+        return false;
+        
+    ESP_LOGI(TAG, "Parameter upload, key: %s", psParamEntry->sEntry.szKey);
+    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SSetParameter, m_u8UARTSendProtocols, n);
+    return true;
+}
+
+static void ProcParameterAbort()
+{
+    if (m_sStateMachine.eProcParameterProcess == EPARAMETERPROCESS_Downloading)
+    {
+        ESP_LOGE(TAG, "Unable to download process aborted");
+        STOVEMB_Take(portMAX_DELAY);
+        STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+        pMB->bIsParameterDownloadCompleted = false;
+        pMB->u32ParameterCount = 0;
+        STOVEMB_Give();
+    }
+
+    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
+}
+
 static bool ProcParameterDownload()
 {
     if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_None)
@@ -426,34 +457,4 @@ static bool ProcParameterUpload()
     m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_Uploading;
     m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
     return true;
-}
-
-static bool SendSetParameter(const STOVEMB_SParameterEntry* psParamEntry)
-{
-    UFEC23PROTOCOL_C2SSetParameter sParam;
-    strcpy(sParam.szKey, psParamEntry->sEntry.szKey);
-    memcpy(&sParam.uValue, &psParamEntry->sWriteValue, sizeof(UFEC23ENDEC_uValue));
-    const int32_t n = UFEC23ENDEC_C2SSetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sParam);
-    if (n == 0)
-        return false;
-        
-    ESP_LOGI(TAG, "Parameter upload, key: %s", psParamEntry->sEntry.szKey);
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SSetParameter, m_u8UARTSendProtocols, n);
-    return true;
-}
-
-static void ProcParameterAbort()
-{
-    if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_None)
-    {
-        ESP_LOGE(TAG, "Unable to download parameters");
-        return;
-    }
-
-    STOVEMB_Take(portMAX_DELAY);
-    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-    m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
-    pMB->bIsParameterDownloadCompleted = false;
-    pMB->u32ParameterCount = 0;
-    STOVEMB_Give();
 }

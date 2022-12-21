@@ -47,7 +47,7 @@
 #define MINOR_VER 0
 #define REVISION_VER 8
 
-#define ESP32_ISACTIVE (0)
+#define ESP32_ISACTIVE (1)
 #define MEASURE_PARTICLES_ISACTIVE (1)
 /* USER CODE END PD */
 
@@ -639,9 +639,8 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
 
-
+	  osDelay(1);
   }
   /* USER CODE END 5 */
 }

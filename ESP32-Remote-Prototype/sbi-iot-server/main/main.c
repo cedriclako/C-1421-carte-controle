@@ -221,6 +221,9 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Starting ...");
 
+    static bool isActive = false;
+    TickType_t ttLed = xTaskGetTickCount();
+
     while (true)
     {
         TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -229,10 +232,16 @@ void app_main(void)
         ESPNOWPROCESS_Handler();
         UARTBRIDGE_Handler();
 
+        // Sanity LED process
+        if ( (xTaskGetTickCount() - ttLed) > pdMS_TO_TICKS( 250 ))
+        {
+            ttLed = xTaskGetTickCount();
+            HARDWAREGPIO_SetSanity(isActive);
+            isActive = !isActive;
+        }
+
         esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 5 ));
         vTaskDelayUntil( &xLastWakeTime, xFrequency );
-        
-        // ESP_LOGI(TAG, "loop ...");
     }   
 }
 
