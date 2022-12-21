@@ -252,7 +252,7 @@ uint16_t Particle_getTemperature(void)
 
 uint16_t Particle_getCurrent(void)
 {
-	return (uint16_t)(ParticleDevice.LED_current_meas*3.3/4.096);
+	return (uint16_t)(ParticleDevice.LED_current_meas);
 }
 
 uint16_t Particle_getLuxON(void)

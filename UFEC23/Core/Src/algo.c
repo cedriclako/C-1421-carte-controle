@@ -98,18 +98,18 @@ static const CombTempParam_t TemperatureParam =
 
 
 static const MotorOpeningsParam_t PrimaryMotorParam =
-{
-	.MaxWaiting = 6,
-	.MinWaiting = 6,
-	.MaxReload = 97,
-	.MinReload = 58,
-	.MaxTempRise = 85,
-	.MinTempRise = 17,
-	.MaxCombHigh = 70,
-	.MinCombHigh = 14,
-	.MaxCombLow = 39,
+{//Doubling the SBI settings to fit 180 degrees freedom of movement
+	.MaxWaiting = 12,
+	.MinWaiting = 12,
+	.MaxReload = 197,
+	.MinReload = 116,
+	.MaxTempRise = 170,
+	.MinTempRise = 24,
+	.MaxCombHigh = 140,
+	.MinCombHigh = 28,
+	.MaxCombLow = 78,
 	.MinCombLow = 0,
-	.MaxCombSuperLow = 25,
+	.MaxCombSuperLow = 50,
 	.MinCombSuperLow = 0,
 	.MaxCoalHigh = 0,
 	.MinCoalHigh = 0,
@@ -122,9 +122,9 @@ static const MotorOpeningsParam_t GrillMotorParam =
 {
 	.MaxWaiting = 0,
 	.MinWaiting = 0,
-	.MaxReload = 97,
+	.MaxReload = 197,
 	.MinReload = 0,
-	.MaxTempRise = 30,
+	.MaxTempRise = 60,
 	.MinTempRise = 0,
 	.MaxCombHigh = 0,
 	.MinCombHigh = 0,
@@ -132,32 +132,32 @@ static const MotorOpeningsParam_t GrillMotorParam =
 	.MinCombLow = 0,
 	.MaxCombSuperLow = 0,
 	.MinCombSuperLow = 0,
-	.MaxCoalHigh = 97,
-	.MinCoalHigh = 97,
-	.MaxCoalLow = 24,
-	.MinCoalLow = 24,
+	.MaxCoalHigh = 197,
+	.MinCoalHigh = 197,
+	.MaxCoalLow = 48,
+	.MinCoalLow = 48,
 
 
 };
 
 static const MotorOpeningsParam_t SecondaryMotorParam =
 {//Added for current PCB model (parameters must be adjusted by user)
-	.MaxWaiting = 6,
-	.MinWaiting = 6,
-	.MaxReload = 97,
-	.MinReload = 97,
-	.MaxTempRise = 58,
-	.MinTempRise = 58,
-	.MaxCombHigh = 97,
-	.MinCombHigh = 97,
-	.MaxCombLow = 97,
-	.MinCombLow = 97,
-	.MaxCombSuperLow = 25,
-	.MinCombSuperLow = 25,
-	.MaxCoalHigh = 50,
-	.MinCoalHigh = 50,
-	.MaxCoalLow = 10,
-	.MinCoalLow = 10,
+	.MaxWaiting = 12,
+	.MinWaiting = 12,
+	.MaxReload = 197,
+	.MinReload = 197,
+	.MaxTempRise = 116,
+	.MinTempRise = 116,
+	.MaxCombHigh = 197,
+	.MinCombHigh = 197,
+	.MaxCombLow = 197,
+	.MinCombLow = 197,
+	.MaxCombSuperLow = 50,
+	.MinCombSuperLow = 50,
+	.MaxCoalHigh = 100,
+	.MinCoalHigh = 100,
+	.MaxCoalLow = 20,
+	.MinCoalLow = 20,
 
 };
 
@@ -333,7 +333,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		else if ((baffleTemperature > TemperatureParam.WaitingToIgnition || reloadingEvent) && (!Algo_getInterlockRequest()) ) { //at 95F, someone is starting a fire
 		  nextState = RELOAD_IGNITION;
 		  reloadingEvent = false;
-		  initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
+		  //initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
 		}
 
 		break;

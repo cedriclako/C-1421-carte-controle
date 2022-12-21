@@ -76,13 +76,13 @@ typedef struct FanSpeedKipKopParam{
 
 #define GRILL_CLOSED                   		0
 #define GRILL_MINIMUM_OPENING 				GRILL_CLOSED
-#define GRILL_FULL_OPEN                     100
+#define GRILL_FULL_OPEN                     200
 #define PRIMARY_MINIMUM_OPENING				6 //5.4 degres @ 0.9 deg/pas
 #define PRIMARY_CLOSED  					PRIMARY_MINIMUM_OPENING
-#define PRIMARY_FULL_OPEN			   		100
+#define PRIMARY_FULL_OPEN			   		200
 #define SECONDARY_MINIMUM_OPENING			6
 #define SECONDARY_CLOSED					SECONDARY_MINIMUM_OPENING
-#define SECONDARY_FULL_OPEN				    100
+#define SECONDARY_FULL_OPEN				    200
 #define STEP_RANGE_PRIMARY   (PRIMARY_FULL_OPEN - PRIMARY_MINIMUM_OPENING)
 #define STEP_RANGE_GRILL   (GRILL_FULL_OPEN - GRILL_CLOSED)
 

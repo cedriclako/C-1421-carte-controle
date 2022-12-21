@@ -57,9 +57,9 @@ void DebugManager(void const * argument)
 
 	State TempAlgoState;
 	uint8_t sec_aper = 0;
-	uint8_t rx_buff[2];
+	uint8_t rx_buff[3];
 	rx_buff[0] = 'a';
-	HAL_UART_Receive_IT(&huart1, rx_buff, 2);
+	HAL_UART_Receive_IT(&huart1, rx_buff, 3);
 
 	for(;;)
 	{
@@ -71,7 +71,7 @@ void DebugManager(void const * argument)
 			algo_fixSecondary( sec_aper);
 
 			printf("New setting for secondary aperture: %u \r\n \r\n", sec_aper);
-			HAL_UART_Receive_IT(&huart1, rx_buff, 2);
+			HAL_UART_Receive_IT(&huart1, rx_buff, 3);
 
 
 		}

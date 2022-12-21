@@ -340,7 +340,7 @@ uint8_t fillBuffer(void)
     TX_BUFFER[23] = (uint8_t)(bOBJ.time_since_beginning & 0x000000FF);
     
 //    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.variance,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
-    printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
+    //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
 
     return 24;
 }
