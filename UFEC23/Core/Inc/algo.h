@@ -108,6 +108,8 @@ void Algo_init();
 /* currentTime_ms is in [ms] */
 void Algo_task(uint32_t currentTime_ms);
 
+void algo_fixSecondary(int16_t aperture);
+
 #ifdef __cplusplus
 }
 #endif

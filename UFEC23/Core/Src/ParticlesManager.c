@@ -33,6 +33,7 @@ CR    | 2022/10/12 | -       | Creation
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
+#include "DebugManager.h"
 #include "ParticlesManager.h"
 
 #define START_BYTE 0xCC
@@ -291,6 +292,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	}else if(huart->Instance == USART2)
 	{
 		osSemaphoreRelease(ESP_UART_SemaphoreHandle);
+	}else if(huart->Instance == USART1)
+	{
+		set_sec_flag();
 	}
 
 }
