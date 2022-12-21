@@ -226,8 +226,8 @@ static void ENChannelFoundCallback(uint8_t u8Channel)
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 {
     ESP_LOGI(TAG, "temp. sp: %f, fanmode: %d, fanspeed: %d", 
-        pMsg->stove_state.temperature_set.tempC_sp,
-        pMsg->stove_state.fan_speed_set.fan_mode,
+        pMsg->stove_state.remote_temperature_set.tempC_sp,
+        pMsg->stove_state.fan_speed_set.is_automatic,
         pMsg->stove_state.fan_speed_set.curr);
    m_bDataReceived = true;
 }
