@@ -11,8 +11,7 @@ const API_POSTSERVERPARAMETERFILEJSON_URI = "/api/setserverparameterfile";
 let mData = 
 {
     sysinfos: [],
-    livedata: { state: { is_pairing: false}, wireless: { rx: 0,tx: 0, channel: 0}},
-
+    livedata: { state: { is_pairing: false}, wireless: { rx: 0,tx: 0, channel: 0}, stove: { is_connected: false, param_cnt: 0 } },
     // Config JSON
     configJSON: ""
 };
@@ -89,34 +88,53 @@ var app = new Vue({
         idLoadConfig_OnClick(event)
         {
             console.log("idLoadConfig_OnClick");
+            this.configJSON = "";
             // Get system informations
+            let isOK = false;
             fetch(API_GETSERVERPARAMETERFILEJSON_URI)
-                .then((response) => response.text())
                 .then((response) => 
                 {
+                    isOK = response.ok;
+                    return response.text();
+                })
+                .then((response) => 
+                {
+                    if (!isOK)
+                        throw Error(response);
                     console.log("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " data: ", response);
                     this.configJSON = response;
                 })
-                .catch((ex) => 
+                .catch((error) => 
                 {
-                    console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", ex);
-                    this.configJSON = "";
+                    console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
+                    this.configJSON = error;
+                    alert("Error: " + error);
                 });
         },
         idSaveConfig_OnClick(event)
         {
-            // Get system informations
-            // fetch(API_SETSERVERPARAMETERFILEJSON_URI)
-            //     .then((response) => response.text())
-            //     .then((response) => 
-            //     {
-            //         console.log("url: ", API_SETSERVERPARAMETERFILEJSON_URI, " data: ", response);
-            //         this.configJSON = response;
-            //     })
-            //     .catch((ex) => 
-            //     {
-            //         console.error("url: ", API_SETSERVERPARAMETERFILEJSON_URI, " error: ", ex);
-            //     });
+            let isOK = false;
+            fetch(API_POSTSERVERPARAMETERFILEJSON_URI, {
+                method: 'POST', // or 'PUT'
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: this.configJSON,
+              })
+            .then((response) => 
+            {
+                isOK = response.ok;
+                return response.text();
+            })
+            .then((response) => {
+                if (!isOK)
+                    throw Error(response);
+                console.log("url: ", API_POSTSERVERPARAMETERFILEJSON_URI, " data: ", response);
+            })
+            .catch((error) => {
+                console.error("url: ", API_POSTSERVERPARAMETERFILEJSON_URI, " error: ", error);
+                alert("Error: " + error);
+            });
             console.log("idSaveConfig_OnClick");
         }
 	}

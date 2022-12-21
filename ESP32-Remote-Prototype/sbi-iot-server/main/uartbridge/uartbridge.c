@@ -111,6 +111,8 @@ void UARTBRIDGE_Init()
 
 void UARTBRIDGE_Handler()
 {
+    //STOVEMB_Take(portMAX_DELAY);
+
     // Read data from the UART
     uint8_t u8UARTDriverBuffers[128];
     int len = 0;
@@ -130,6 +132,8 @@ void UARTBRIDGE_Handler()
             ProcParameterAbort();
         }
     }   
+    
+    //STOVEMB_Give();
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -264,6 +268,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             if (s32Index < 0)
             {
                 // Upload completed.
+                STOVEMB_ResetAllParameterWriteFlag();
+
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 ESP_LOGI(TAG, "Parameter upload process done");
             }
@@ -340,6 +346,8 @@ static void ServerConnected()
     // Connected ...
     ESP_LOGI(TAG, "Server Connected");
 
+    STOVEMB_GetMemBlock()->bIsStoveConnectedAndReady = true;
+
     // Send some requests ...
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
@@ -349,7 +357,9 @@ static void ServerConnected()
 }
 
 static void ServerDisconnected()
-{
+{   
+    STOVEMB_GetMemBlock()->bIsStoveConnectedAndReady = false;
+
     // Disconnected ...
     ESP_LOGI(TAG, "Server disconnected");
     ProcParameterAbort();

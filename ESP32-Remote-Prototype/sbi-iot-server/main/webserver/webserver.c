@@ -34,8 +34,8 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
 
 static const EF_SFile* GetFile(const char* strFilename);
 
-static const char* GetSysInfo();
-static const char* GetLiveData();
+static char* GetSysInfo();
+static char* GetLiveData();
 static void ToHexString(char *dstHexString, const uint8_t* data, uint8_t len);
 static const char* GetESPChipId(esp_chip_model_t eChipid);
 
@@ -246,7 +246,9 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 }
 
 static esp_err_t api_post_handler(httpd_req_t *req)
-{        
+{
+    char* szError = NULL;
+
     int n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE-1);
     m_u8Buffers[n] = '\0';
 
@@ -255,13 +257,17 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     {
         if (!NVSJSON_ImportJSON(&g_sSettingHandle, (const char*)m_u8Buffers))
         {
-            ESP_LOGE(TAG, "Unable to import JSON");
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Unknown request");
+            szError = "Unable to import JSON";
+            goto ERROR;
         }
     }
     else if (strcmp(req->uri, API_POSTSERVERPARAMETERFILEJSON_URI) == 0)
     {
-        STOVEMB_InputParamFromJSON((const char*)m_u8Buffers);
+        if (!STOVEMB_InputParamFromJSON((const char*)m_u8Buffers))
+        {
+            szError = "Unable to decode JSON";
+            goto ERROR;
+        }
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
     }
     else
@@ -269,7 +275,16 @@ static esp_err_t api_post_handler(httpd_req_t *req)
         ESP_LOGE(TAG, "api_post_handler, url: %s", req->uri);
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
     }
-
+    goto END;
+    ERROR:
+    if (szError != NULL)
+    {
+        ESP_LOGE(TAG, "api_post_handler, url: %s, error: %s", req->uri, szError);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, szError);
+    }
+    else
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
+    END:
     httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
@@ -325,7 +340,7 @@ static const EF_SFile* GetFile(const char* strFilename)
     return NULL;
 }
 
-static const char* GetSysInfo()
+static char* GetSysInfo()
 {
     cJSON* pRoot = NULL;
 
@@ -425,7 +440,7 @@ static const char* GetSysInfo()
     cJSON_AddItemToObject(pEntryJSON10, "value", cJSON_CreateString(buff));
     cJSON_AddItemToArray(pEntries, pEntryJSON10);
 
-    const char* pStr =  cJSON_PrintUnformatted(pRoot);
+    char* pStr =  cJSON_PrintUnformatted(pRoot);
     cJSON_Delete(pRoot);
     return pStr;
     ERROR:
@@ -433,7 +448,7 @@ static const char* GetSysInfo()
     return NULL;
 }
 
-static const char* GetLiveData()
+static char* GetLiveData()
 {
     cJSON* pRoot = NULL;
 
@@ -458,7 +473,15 @@ static const char* GetLiveData()
 
     cJSON_AddItemToObject(pRoot, "wireless", pWireless);
 
-    const char* pStr =  cJSON_PrintUnformatted(pRoot);
+    cJSON* pStove = cJSON_CreateObject();
+    STOVEMB_Take(portMAX_DELAY);
+    const STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlockRO();
+    cJSON_AddItemToObject(pStove, "is_connected", cJSON_CreateBool(pMemBlock->bIsStoveConnectedAndReady));
+    cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
+    STOVEMB_Give();
+    cJSON_AddItemToObject(pRoot, "stove", pStove);
+
+    char* pStr =  cJSON_PrintUnformatted(pRoot);
     cJSON_Delete(pRoot);
     return pStr;
     ERROR:

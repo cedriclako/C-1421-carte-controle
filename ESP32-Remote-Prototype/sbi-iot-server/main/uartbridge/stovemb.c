@@ -6,6 +6,17 @@
 
 #define TAG "stovemb"
 
+// JSON entries
+#define JSON_ENTRIES_NAME "entries"
+
+#define JSON_ENTRY_KEY_NAME "key"
+#define JSON_ENTRY_VALUE_NAME "value"
+
+#define JSON_ENTRY_INFO_DEFAULT_NAME "def"
+#define JSON_ENTRY_INFO_MIN_NAME "min"
+#define JSON_ENTRY_INFO_MAX_NAME "max"
+#define JSON_ENTRY_INFO_TYPE_NAME "type"
+
 static STOVEMB_SMemBlock m_sMemBlock = {0};
 static SemaphoreHandle_t m_xSemaphoreExt = NULL;
 
@@ -54,7 +65,7 @@ char* STOVEMB_ExportParamToJSON()
     if (pRoot == NULL)
         goto ERROR;
 
-    cJSON* pEntries = cJSON_AddArrayToObject(pRoot, "entries");
+    cJSON* pEntries = cJSON_AddArrayToObject(pRoot, JSON_ENTRIES_NAME);
 
     for(int32_t i = 0; i < m_sMemBlock.u32ParameterCount; i++)
     {
@@ -64,14 +75,15 @@ char* STOVEMB_ExportParamToJSON()
 
         const STOVEMB_SParameterEntry* pEntryChanged = &m_sMemBlock.arrParameterEntries[i];
 
-        cJSON_AddItemToObject(pEntryJSON, "key", cJSON_CreateString(pEntryChanged->sEntry.szKey));
+        cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_KEY_NAME, cJSON_CreateString(pEntryChanged->sEntry.szKey));
         
         if (pEntryChanged->sEntry.eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
         {
-            cJSON_AddItemToObject(pEntryJSON, "default", cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Default));
-            cJSON_AddItemToObject(pEntryJSON, "min", cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Min));
-            cJSON_AddItemToObject(pEntryJSON, "max", cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Max));
-            cJSON_AddItemToObject(pEntryJSON, "value", cJSON_CreateNumber(pEntryChanged->sWriteValue.s32Value));
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_DEFAULT_NAME, cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Default));
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_MIN_NAME, cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Min));
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_MAX_NAME, cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Max));
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_VALUE_NAME, cJSON_CreateNumber(pEntryChanged->sWriteValue.s32Value));
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_TYPE_NAME, cJSON_CreateString("int32"));
         }
         
         cJSON_AddItemToArray(pEntries, pEntryJSON);
@@ -91,19 +103,23 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
 {
     bool bRet = true;
     cJSON* pRoot = NULL;
+    char* szError = NULL;
 
     STOVEMB_Take(portMAX_DELAY);
     // Not ready
     if (!m_sMemBlock.bIsParameterDownloadCompleted)
+    {
+        szError = "Parameter list hasn't been downloaded yet";
         goto ERROR;
+    }
 
     // Decode JSON
     pRoot = cJSON_Parse(szJSON);
 
-    cJSON* pEntriesArray = cJSON_GetObjectItemCaseSensitive(pRoot, "entries");
+    cJSON* pEntriesArray = cJSON_GetObjectItemCaseSensitive(pRoot, JSON_ENTRIES_NAME);
     if (!cJSON_IsArray(pEntriesArray))
     {
-        ESP_LOGE(TAG, "Entries array is not valid");
+        szError = "Entries array is not valid";
         goto ERROR;
     }
 
@@ -111,14 +127,14 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
     {
         cJSON* pEntryJSON = cJSON_GetArrayItem(pEntriesArray, i);
 
-        cJSON* pKeyJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, "key");
+        cJSON* pKeyJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_KEY_NAME);
         if (pKeyJSON == NULL || !cJSON_IsString(pKeyJSON))
         {
-            ESP_LOGE(TAG, "Cannot find JSON key element");
+            szError = "Cannot find JSON key element";
             goto ERROR;
         }
 
-        cJSON* pValueJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, "value");
+        cJSON* pValueJSON = cJSON_GetObjectItemCaseSensitive(pEntryJSON, JSON_ENTRY_VALUE_NAME);
         if (pValueJSON == NULL)
         {
             // We just ignore changing the setting if the value property is not there.
@@ -130,7 +146,7 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
         // We only support int32 for now.
         if (!cJSON_IsNumber(pValueJSON))
         {
-            ESP_LOGE(TAG, "JSON value type is invalid, not a number");
+            szError = "JSON value type is invalid, not a number";
             goto ERROR;
         }
 
@@ -150,6 +166,8 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
     ESP_LOGI(TAG, "Import JSON completed");
     goto END;
     ERROR:
+    if (szError != NULL)
+        ESP_LOGE(TAG, "Error: %s", szError);
     bRet = false;
     END:
     if (pRoot != NULL)
@@ -176,6 +194,17 @@ int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry*
     END:
     STOVEMB_Give();
     return s32Ret;
+}
+
+void STOVEMB_ResetAllParameterWriteFlag()
+{
+    STOVEMB_Take(portMAX_DELAY);
+    // Find write
+    for(int32_t i = 0; i < m_sMemBlock.u32ParameterCount; i++)
+    {
+        m_sMemBlock.arrParameterEntries[i].bIsNeedWrite = false;
+    }
+    STOVEMB_Give();
 }
 
 static STOVEMB_SParameterEntry* GetParamEntry(const char* szKey)

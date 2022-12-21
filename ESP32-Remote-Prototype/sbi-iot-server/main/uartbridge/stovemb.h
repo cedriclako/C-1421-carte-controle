@@ -33,7 +33,7 @@ typedef struct
     uint32_t u32ParameterCount;
 
     // Is stove connected
-    bool bIsStoveConnected;
+    bool bIsStoveConnectedAndReady;
 } STOVEMB_SMemBlock;
 
 void STOVEMB_Init();
@@ -47,6 +47,8 @@ STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
 const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
 
 int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry* pEntry);
+
+void STOVEMB_ResetAllParameterWriteFlag();
 
 char* STOVEMB_ExportParamToJSON();
 
