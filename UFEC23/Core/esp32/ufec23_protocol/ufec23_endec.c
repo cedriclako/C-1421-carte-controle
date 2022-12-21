@@ -71,8 +71,8 @@ bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSetting
         return false;
     pDst->u8FanSpeedCurr = u8Datas[0];
     pDst->u8FanSpeedMax = u8Datas[1];
-    pDst->bIsAirOpen = (u8Datas[2] & 0x01) ? true : false;
-    pDst->bIsFanModeAuto = (u8Datas[2] & 0x02) ? true : false;
+    pDst->bIsAirOpen = (u8Datas[2] & 0x01) != 0;
+    pDst->bIsFanModeAuto = (u8Datas[2] & 0x02) != 0;
     return true;
 }
 
@@ -164,9 +164,9 @@ bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp
         return false;
 
     int n = 0;
-    pDst->bHasRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD) ? true : false;
-    pDst->bIsEOF = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF) ? true : false; // Flags
-    pDst->bIsFirstRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD) ? true : false; // Flags
+    pDst->bHasRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD) != 0;
+    pDst->bIsEOF = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF) != 0; // Flags
+    pDst->bIsFirstRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD) != 0; // Flags
     n++;
     pDst->sEntry.eParamType = (UFEC23ENDEC_EPARAMTYPE)u8Datas[n++];
     const uint8_t u8KeyLen = u8Datas[n++];

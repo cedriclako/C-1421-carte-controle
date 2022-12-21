@@ -32,6 +32,8 @@ typedef struct
     STOVEMB_SParameterEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
     uint32_t u32ParameterCount;
 
+    bool bIsAnyUploadError;
+
     // Is stove connected
     bool bIsStoveConnectedAndReady;
 } STOVEMB_SMemBlock;
@@ -52,6 +54,6 @@ void STOVEMB_ResetAllParameterWriteFlag();
 
 char* STOVEMB_ExportParamToJSON();
 
-bool STOVEMB_InputParamFromJSON(const char* szJSON);
+bool STOVEMB_InputParamFromJSON(const char* szJSON, char* szDstError, uint32_t u32DstErrorLen);
 
 #endif

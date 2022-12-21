@@ -99,7 +99,7 @@ char* STOVEMB_ExportParamToJSON()
     return szRet;
 }
 
-bool STOVEMB_InputParamFromJSON(const char* szJSON)
+bool STOVEMB_InputParamFromJSON(const char* szJSON, char* szDstError, uint32_t u32DstErrorLen)
 {
     bool bRet = true;
     cJSON* pRoot = NULL;
@@ -167,7 +167,15 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON)
     goto END;
     ERROR:
     if (szError != NULL)
+    {
+        if (szDstError != NULL)
+        {
+            strncpy(szDstError, szError, u32DstErrorLen - 1);
+            szDstError[u32DstErrorLen-1] = 0;
+        }
+
         ESP_LOGE(TAG, "Error: %s", szError);
+    }
     bRet = false;
     END:
     if (pRoot != NULL)

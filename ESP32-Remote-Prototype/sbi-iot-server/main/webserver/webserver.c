@@ -247,7 +247,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 
 static esp_err_t api_post_handler(httpd_req_t *req)
 {
-    char* szError = NULL;
+    char szError[128+1];
 
     int n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE-1);
     m_u8Buffers[n] = '\0';
@@ -257,15 +257,15 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     {
         if (!NVSJSON_ImportJSON(&g_sSettingHandle, (const char*)m_u8Buffers))
         {
-            szError = "Unable to import JSON";
+            snprintf(szError, sizeof(szError), "%s", "Unable to import JSON");
             goto ERROR;
         }
     }
     else if (strcmp(req->uri, API_POSTSERVERPARAMETERFILEJSON_URI) == 0)
     {
-        if (!STOVEMB_InputParamFromJSON((const char*)m_u8Buffers))
+        if (!STOVEMB_InputParamFromJSON((const char*)m_u8Buffers, szError, sizeof(szError)))
         {
-            szError = "Unable to decode JSON";
+            snprintf(szError, sizeof(szError), "%s", "Unable to decode JSON");
             goto ERROR;
         }
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
@@ -478,6 +478,7 @@ static char* GetLiveData()
     const STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlockRO();
     cJSON_AddItemToObject(pStove, "is_connected", cJSON_CreateBool(pMemBlock->bIsStoveConnectedAndReady));
     cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
+    cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
     STOVEMB_Give();
     cJSON_AddItemToObject(pRoot, "stove", pStove);
 

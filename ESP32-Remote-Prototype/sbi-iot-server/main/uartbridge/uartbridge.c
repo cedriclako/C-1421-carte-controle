@@ -259,6 +259,9 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 break;
             }
 
+            // The stove can refuse to set parameter.
+            pMemBlock->bIsAnyUploadError |= (s.eResult != UFEC23PROTOCOL_ERESULT_Ok);
+
             m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
             
             STOVEMB_SParameterEntry sParamEntry;
@@ -406,6 +409,7 @@ static bool ProcParameterUpload()
     
     STOVEMB_Take(portMAX_DELAY);
     // Upload
+    STOVEMB_GetMemBlock()->bIsAnyUploadError = false;
     STOVEMB_SParameterEntry sParamEntry;
     const int32_t s32Index = STOVEMB_FindNextWritable(0, &sParamEntry);
     STOVEMB_Give();
