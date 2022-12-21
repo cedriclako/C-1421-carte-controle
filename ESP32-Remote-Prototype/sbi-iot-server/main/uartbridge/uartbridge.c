@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "uart_protocol_dec.h"
 #include "uart_protocol_enc.h"
 #include "ufec23_protocol.h"
@@ -150,7 +151,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlock();
 
     // Any communication count
-    m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
+    if (m_sStateMachine.bIsConnected)
+    {
+        // If it's connected, we accept any message as stay alive
+        m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
+    }
 
     ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
@@ -171,6 +176,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:
         {
             ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
+            // If it's connected, we accept any message as stay alive
+            m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
