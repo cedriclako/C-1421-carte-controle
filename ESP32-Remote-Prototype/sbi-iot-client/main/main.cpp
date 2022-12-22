@@ -225,10 +225,20 @@ static void ENChannelFoundCallback(uint8_t u8Channel)
 
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 {
-    ESP_LOGI(TAG, "temp. sp: %f, fanmode: %d, fanspeed: %d", 
-        pMsg->stove_state.remote_temperature_set.tempC_sp,
-        pMsg->stove_state.fan_speed_set.is_automatic,
-        pMsg->stove_state.fan_speed_set.curr);
+    if (pMsg->has_stove_state && pMsg->stove_state.has_fan_speed_set && pMsg->stove_state.has_fan_speed_boundary)
+    {
+        ESP_LOGI(TAG, "temp. sp: %f, fanmode: %d, fanspeed: %d [%d-%d]", 
+            pMsg->stove_state.remote_temperature_set.tempC_sp,
+            (int)pMsg->stove_state.fan_speed_set.is_automatic,
+            (int)pMsg->stove_state.fan_speed_set.curr,
+            
+            (int)pMsg->stove_state.fan_speed_boundary.min,
+            (int)pMsg->stove_state.fan_speed_boundary.max);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "GetStatus received but no stove_state");
+    }
    m_bDataReceived = true;
 }
 

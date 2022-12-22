@@ -145,8 +145,19 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     // Return a response
     SBI_iot_S2CGetStatusResp s2c_get_status_resp;
     s2c_get_status_resp.has_stove_state = true;
+    s2c_get_status_resp.stove_state.has_fan_speed_set = true;
+    s2c_get_status_resp.stove_state.fan_speed_set.is_automatic = true;
+    s2c_get_status_resp.stove_state.fan_speed_set.curr = 25;
+
+    s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.min = 0; // TODO: Not sure if it's 0 or 1 the minimum ???
+    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 50;
+
+    s2c_get_status_resp.stove_state.is_open_air = false;
+    /*
     if (pMB->s2CGetRunningSettingIsSet)
     {
+        s2c_get_status_resp.has_stove_state = true;
         s2c_get_status_resp.stove_state.has_fan_speed_set = true;
         s2c_get_status_resp.stove_state.fan_speed_set.is_automatic = pMB->s2CGetRunningSetting.bIsFanModeAuto;
         s2c_get_status_resp.stove_state.fan_speed_set.curr = pMB->s2CGetRunningSetting.u8FanSpeedCurr;
@@ -156,7 +167,7 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
         s2c_get_status_resp.stove_state.fan_speed_boundary.max = pMB->s2CGetRunningSetting.u8FanSpeedMax;
 
         s2c_get_status_resp.stove_state.is_open_air = pMB->s2CGetRunningSetting.bIsAirOpen;
-    }
+    }*/
 
     // These values comes from the remote
     if (m_sHandle.sRemoteState.has_tempC_sp)
