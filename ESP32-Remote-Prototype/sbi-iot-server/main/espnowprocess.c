@@ -42,10 +42,9 @@ static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPR
 
 static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayloadData, uint32_t u32PayloadDataLen);
 
-static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo);
+// static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo);
 
 // Receivers
-static void RecvC2SScanHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SScan* pC2SScan);
 static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2SGetStatus);
 static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP);
 
@@ -100,9 +99,6 @@ void ESPNOWPROCESS_Handler()
 
         switch(inCmd.which_payload)
         {
-            case SBI_iot_Cmd_c2s_scan_tag:
-                RecvC2SScanHandler(&inCmd, &inCmd.payload.c2s_scan);
-                break;
             case SBI_iot_Cmd_c2s_get_status_tag:
                 RecvC2SStatusHandler(&inCmd, &inCmd.payload.c2s_get_status);
                 break;
@@ -115,15 +111,6 @@ void ESPNOWPROCESS_Handler()
                 break;
         }
     }
-}
-
-static void RecvC2SScanHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SScan* pC2SScan)
-{
-    SBI_iot_S2CScanResp s2c_scan_resp;
-
-    FillBridgeInfo(&s2c_scan_resp.bridge_info);
-
-    SendESPNow(SBI_iot_Cmd_s2c_scan_resp_tag, pInCmd->seq_number, &s2c_scan_resp, sizeof(SBI_iot_S2CScanResp));
 }
 
 static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2SGetStatus)
@@ -186,8 +173,8 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
         s2c_get_status_resp.stove_info.sw_version.revision = pMB->sS2CReqVersionResp.sVersion.u8Revision;
     }
 
-    if (FillBridgeInfo(&s2c_get_status_resp.bridge_info))
-        s2c_get_status_resp.has_bridge_info = true;
+    //if (FillBridgeInfo(&s2c_get_status_resp.bridge_info))
+    //    s2c_get_status_resp.has_bridge_info = true;
 
     // Date time
     s2c_get_status_resp.stove_state.has_datetime = true;
@@ -213,7 +200,7 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
         m_sHandle.sRemoteState.tempC_sp = pC2SChangeSettingSP->temperature_set.tempC_sp;
     }
 }
-
+/*
 static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo)
 {
     pDeviceInfo->device_type = SBI_iot_EDEVICETYPE_EDEVICETYPE_IoTServer_V1;
@@ -222,7 +209,7 @@ static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo)
     pDeviceInfo->sw_version.minor = VERSION_MINOR;
     pDeviceInfo->sw_version.revision = VERSION_REVISION;
     return true;
-}
+}*/
 
 ESPNOWPROCESS_ESPNowInfo ESPNOWPROCESS_GetESPNowInfo()
 {

@@ -5,10 +5,6 @@ const char* SBIIOTUTIL_GetCmdPayloadPrettyString(pb_size_t which_payload)
 {
     switch (which_payload)
     {
-        case SBI_iot_Cmd_c2s_scan_tag: 
-            return "c2s_scan";
-        case SBI_iot_Cmd_s2c_scan_resp_tag: 
-            return "s2c_scan_resp";
         case SBI_iot_Cmd_c2s_get_status_tag: 
             return "c2s_get_status";
         case SBI_iot_Cmd_s2c_get_status_resp_tag: 

@@ -15,7 +15,6 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
 
 static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32PayloadDataLen);
 
-static void RecvC2SScanRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CScanResp* pC2SScan);
 static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus);
 
 static void wifi_uninit();
@@ -164,9 +163,6 @@ void ESPNOWCOMM_Handler()
 
         switch(inCmd.which_payload)
         {
-            case SBI_iot_Cmd_s2c_scan_resp_tag:
-                RecvC2SScanRespHandler(&inCmd, &inCmd.payload.s2c_scan_resp);
-                break;
             case SBI_iot_Cmd_s2c_get_status_resp_tag:
                 RecvC2SStatusRespHandler(&inCmd, &inCmd.payload.s2c_get_status_resp);
                 break;
@@ -198,27 +194,18 @@ void ESPNOWCOMM_Handler()
             while(!m_bWaitInit);
 
             ESP_LOGI(TAG, "Change channel for: %d", m_sHandle.u8CurrChannel);
-            // Send data
-            SBI_iot_C2SScan c2s_scan;
-            SendESPNow(SBI_iot_Cmd_c2s_scan_tag, &c2s_scan, sizeof(SBI_iot_C2SScan));
+
+            SBI_iot_C2SGetStatus c2sGetStatus;
+            c2sGetStatus.has_remote_state = true;
+            c2sGetStatus.remote_state.temperatureC_curr = 25;
+            SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
 
             m_sHandle.ttChangeChannelTicks = xTaskGetTickCount();
         }
     }
-    else {
-        if ( m_sHandle.ttLastPingTicks == 0 || 
-            (xTaskGetTickCount() - m_sHandle.ttLastPingTicks) > pdMS_TO_TICKS(ESPNOWCOMM_GETSTATUS_RETRY_MS))
-        {
-            SBI_iot_C2SGetStatus c2sGetStatus;
-            SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
-
-            ESP_LOGI(TAG, "Sending on channel: %d", m_sHandle.u8CurrChannel);
-            m_sHandle.ttLastPingTicks = xTaskGetTickCount();
-        }
-    }
 }
 
-static void RecvC2SScanRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CScanResp* pC2SScan)
+static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus)
 {
     if (!m_sHandle.bIsFrequencyFound)
     {
@@ -228,12 +215,9 @@ static void RecvC2SScanRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CS
         if (m_sHandle.fnChannelFoundCb != NULL)
             m_sHandle.fnChannelFoundCb(m_sHandle.u8CurrChannel);
     }
-}
 
-static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus)
-{
     if (m_sHandle.fnS2CGetStatusRespCb != NULL)
-        m_sHandle.fnS2CGetStatusRespCb(&pC2SGetStatus);
+        m_sHandle.fnS2CGetStatusRespCb(pC2SGetStatus);
 }
 
 static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32PayloadDataLen)

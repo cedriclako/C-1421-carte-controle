@@ -27,12 +27,6 @@ PB_BIND(SBI_iot_C2SChangeSettingSP, SBI_iot_C2SChangeSettingSP, AUTO)
 PB_BIND(SBI_iot_S2CChangeSettingSPResp, SBI_iot_S2CChangeSettingSPResp, AUTO)
 
 
-PB_BIND(SBI_iot_C2SScan, SBI_iot_C2SScan, AUTO)
-
-
-PB_BIND(SBI_iot_S2CScanResp, SBI_iot_S2CScanResp, AUTO)
-
-
 PB_BIND(SBI_iot_C2SPairingReq, SBI_iot_C2SPairingReq, AUTO)
 
 
@@ -40,7 +34,6 @@ PB_BIND(SBI_iot_C2SPairingReqResp, SBI_iot_C2SPairingReqResp, AUTO)
 
 
 PB_BIND(SBI_iot_Cmd, SBI_iot_Cmd, AUTO)
-
 
 
 

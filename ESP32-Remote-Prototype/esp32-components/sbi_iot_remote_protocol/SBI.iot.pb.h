@@ -11,11 +11,7 @@
 #endif
 
 /* Enum definitions */
-typedef enum _SBI_iot_EQOS { 
-    SBI_iot_EQOS_EQOS_FireAndForget = 0, 
-    SBI_iot_EQOS_EQOS_NeedAcknowledge = 1 
-} SBI_iot_EQOS;
-
+/* Unfortunately, C code enum make it mandatory to ensure the name is globally unique. */
 typedef enum _SBI_iot_EDEVICETYPE { 
     SBI_iot_EDEVICETYPE_EDEVICETYPE_None = 0, 
     SBI_iot_EDEVICETYPE_EDEVICETYPE_IoTServer_V1 = 1, 
@@ -23,6 +19,7 @@ typedef enum _SBI_iot_EDEVICETYPE {
     SBI_iot_EDEVICETYPE_EDEVICETYPE_Stove_V1 = 3 
 } SBI_iot_EDEVICETYPE;
 
+/* Unfortunately, C code enum make it mandatory to ensure the name is globally unique. */
 typedef enum _SBI_iot_C2SPairingReqResp_EResponse { 
     SBI_iot_C2SPairingReqResp_EResponse_OK = 0, 
     SBI_iot_C2SPairingReqResp_EResponse_IncompatibleDevice = 1, 
@@ -80,32 +77,17 @@ typedef struct _SBI_iot_C2SPairingReqResp {
     SBI_iot_C2SPairingReqResp_EResponse response;
 } SBI_iot_C2SPairingReqResp;
 
-typedef struct _SBI_iot_C2SScan { 
-    bool has_remote_info;
-    SBI_iot_DeviceInfo remote_info;
-} SBI_iot_C2SScan;
-
 typedef struct _SBI_iot_S2CGetStatusResp { 
     bool has_stove_info;
     SBI_iot_DeviceInfo stove_info; /* Represent the stove itself */
-    bool has_bridge_info;
-    SBI_iot_DeviceInfo bridge_info; /* Represent the bridge */
     bool has_stove_state;
     SBI_iot_S2CGetStatusResp_StoveState stove_state;
 } SBI_iot_S2CGetStatusResp;
 
-typedef struct _SBI_iot_S2CScanResp { 
-    bool has_bridge_info;
-    SBI_iot_DeviceInfo bridge_info;
-} SBI_iot_S2CScanResp;
-
 typedef struct _SBI_iot_Cmd { 
     uint32_t seq_number;
-    SBI_iot_EQOS eQoS;
     pb_size_t which_payload;
     union {
-        SBI_iot_C2SScan c2s_scan;
-        SBI_iot_S2CScanResp s2c_scan_resp;
         SBI_iot_C2SGetStatus c2s_get_status;
         SBI_iot_S2CGetStatusResp s2c_get_status_resp;
         SBI_iot_C2SChangeSettingSP c2s_change_settingsp;
@@ -115,10 +97,6 @@ typedef struct _SBI_iot_Cmd {
 
 
 /* Helper constants for enums */
-#define _SBI_iot_EQOS_MIN SBI_iot_EQOS_EQOS_FireAndForget
-#define _SBI_iot_EQOS_MAX SBI_iot_EQOS_EQOS_NeedAcknowledge
-#define _SBI_iot_EQOS_ARRAYSIZE ((SBI_iot_EQOS)(SBI_iot_EQOS_EQOS_NeedAcknowledge+1))
-
 #define _SBI_iot_EDEVICETYPE_MIN SBI_iot_EDEVICETYPE_EDEVICETYPE_None
 #define _SBI_iot_EDEVICETYPE_MAX SBI_iot_EDEVICETYPE_EDEVICETYPE_Stove_V1
 #define _SBI_iot_EDEVICETYPE_ARRAYSIZE ((SBI_iot_EDEVICETYPE)(SBI_iot_EDEVICETYPE_EDEVICETYPE_Stove_V1+1))
@@ -136,27 +114,23 @@ extern "C" {
 #define SBI_iot_DeviceInfo_init_default          {_SBI_iot_EDEVICETYPE_MIN, false, SBI_iot_common_Version_init_default}
 #define SBI_iot_RemoteState_init_default         {0}
 #define SBI_iot_C2SGetStatus_init_default        {false, SBI_iot_RemoteState_init_default}
-#define SBI_iot_S2CGetStatusResp_init_default    {false, SBI_iot_DeviceInfo_init_default, false, SBI_iot_DeviceInfo_init_default, false, SBI_iot_S2CGetStatusResp_StoveState_init_default}
+#define SBI_iot_S2CGetStatusResp_init_default    {false, SBI_iot_DeviceInfo_init_default, false, SBI_iot_S2CGetStatusResp_StoveState_init_default}
 #define SBI_iot_S2CGetStatusResp_StoveState_init_default {false, SBI_iot_common_FanspeedSet_init_default, false, SBI_iot_common_FanspeedBoundary_init_default, false, SBI_iot_common_TemperatureSet_init_default, 0, false, SBI_iot_common_DateTime_init_default}
 #define SBI_iot_C2SChangeSettingSP_init_default  {false, SBI_iot_common_FanspeedSet_init_default, false, SBI_iot_common_TemperatureSet_init_default}
 #define SBI_iot_S2CChangeSettingSPResp_init_default {0}
-#define SBI_iot_C2SScan_init_default             {false, SBI_iot_DeviceInfo_init_default}
-#define SBI_iot_S2CScanResp_init_default         {false, SBI_iot_DeviceInfo_init_default}
 #define SBI_iot_C2SPairingReq_init_default       {false, SBI_iot_DeviceInfo_init_default, {{NULL}, NULL}}
 #define SBI_iot_C2SPairingReqResp_init_default   {false, SBI_iot_DeviceInfo_init_default, _SBI_iot_C2SPairingReqResp_EResponse_MIN}
-#define SBI_iot_Cmd_init_default                 {0, _SBI_iot_EQOS_MIN, 0, {SBI_iot_C2SScan_init_default}}
+#define SBI_iot_Cmd_init_default                 {0, 0, {SBI_iot_C2SGetStatus_init_default}}
 #define SBI_iot_DeviceInfo_init_zero             {_SBI_iot_EDEVICETYPE_MIN, false, SBI_iot_common_Version_init_zero}
 #define SBI_iot_RemoteState_init_zero            {0}
 #define SBI_iot_C2SGetStatus_init_zero           {false, SBI_iot_RemoteState_init_zero}
-#define SBI_iot_S2CGetStatusResp_init_zero       {false, SBI_iot_DeviceInfo_init_zero, false, SBI_iot_DeviceInfo_init_zero, false, SBI_iot_S2CGetStatusResp_StoveState_init_zero}
+#define SBI_iot_S2CGetStatusResp_init_zero       {false, SBI_iot_DeviceInfo_init_zero, false, SBI_iot_S2CGetStatusResp_StoveState_init_zero}
 #define SBI_iot_S2CGetStatusResp_StoveState_init_zero {false, SBI_iot_common_FanspeedSet_init_zero, false, SBI_iot_common_FanspeedBoundary_init_zero, false, SBI_iot_common_TemperatureSet_init_zero, 0, false, SBI_iot_common_DateTime_init_zero}
 #define SBI_iot_C2SChangeSettingSP_init_zero     {false, SBI_iot_common_FanspeedSet_init_zero, false, SBI_iot_common_TemperatureSet_init_zero}
 #define SBI_iot_S2CChangeSettingSPResp_init_zero {0}
-#define SBI_iot_C2SScan_init_zero                {false, SBI_iot_DeviceInfo_init_zero}
-#define SBI_iot_S2CScanResp_init_zero            {false, SBI_iot_DeviceInfo_init_zero}
 #define SBI_iot_C2SPairingReq_init_zero          {false, SBI_iot_DeviceInfo_init_zero, {{NULL}, NULL}}
 #define SBI_iot_C2SPairingReqResp_init_zero      {false, SBI_iot_DeviceInfo_init_zero, _SBI_iot_C2SPairingReqResp_EResponse_MIN}
-#define SBI_iot_Cmd_init_zero                    {0, _SBI_iot_EQOS_MIN, 0, {SBI_iot_C2SScan_init_zero}}
+#define SBI_iot_Cmd_init_zero                    {0, 0, {SBI_iot_C2SGetStatus_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define SBI_iot_C2SChangeSettingSP_fan_speed_set_tag 1
@@ -174,15 +148,9 @@ extern "C" {
 #define SBI_iot_C2SPairingReq_encryption_key_tag 2
 #define SBI_iot_C2SPairingReqResp_bridge_info_tag 2
 #define SBI_iot_C2SPairingReqResp_response_tag   3
-#define SBI_iot_C2SScan_remote_info_tag          1
 #define SBI_iot_S2CGetStatusResp_stove_info_tag  1
-#define SBI_iot_S2CGetStatusResp_bridge_info_tag 2
 #define SBI_iot_S2CGetStatusResp_stove_state_tag 3
-#define SBI_iot_S2CScanResp_bridge_info_tag      1
 #define SBI_iot_Cmd_seq_number_tag               1
-#define SBI_iot_Cmd_eQoS_tag                     2
-#define SBI_iot_Cmd_c2s_scan_tag                 32
-#define SBI_iot_Cmd_s2c_scan_resp_tag            33
 #define SBI_iot_Cmd_c2s_get_status_tag           34
 #define SBI_iot_Cmd_s2c_get_status_resp_tag      35
 #define SBI_iot_Cmd_c2s_change_settingsp_tag     36
@@ -209,12 +177,10 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  remote_state,      1)
 
 #define SBI_iot_S2CGetStatusResp_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  stove_info,        1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  bridge_info,       2) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  stove_state,       3)
 #define SBI_iot_S2CGetStatusResp_CALLBACK NULL
 #define SBI_iot_S2CGetStatusResp_DEFAULT NULL
 #define SBI_iot_S2CGetStatusResp_stove_info_MSGTYPE SBI_iot_DeviceInfo
-#define SBI_iot_S2CGetStatusResp_bridge_info_MSGTYPE SBI_iot_DeviceInfo
 #define SBI_iot_S2CGetStatusResp_stove_state_MSGTYPE SBI_iot_S2CGetStatusResp_StoveState
 
 #define SBI_iot_S2CGetStatusResp_StoveState_FIELDLIST(X, a) \
@@ -243,18 +209,6 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  temperature_set,   2)
 #define SBI_iot_S2CChangeSettingSPResp_CALLBACK NULL
 #define SBI_iot_S2CChangeSettingSPResp_DEFAULT NULL
 
-#define SBI_iot_C2SScan_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  remote_info,       1)
-#define SBI_iot_C2SScan_CALLBACK NULL
-#define SBI_iot_C2SScan_DEFAULT NULL
-#define SBI_iot_C2SScan_remote_info_MSGTYPE SBI_iot_DeviceInfo
-
-#define SBI_iot_S2CScanResp_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  bridge_info,       1)
-#define SBI_iot_S2CScanResp_CALLBACK NULL
-#define SBI_iot_S2CScanResp_DEFAULT NULL
-#define SBI_iot_S2CScanResp_bridge_info_MSGTYPE SBI_iot_DeviceInfo
-
 #define SBI_iot_C2SPairingReq_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  remote_info,       1) \
 X(a, CALLBACK, SINGULAR, BYTES,    encryption_key,    2)
@@ -271,17 +225,12 @@ X(a, STATIC,   SINGULAR, UENUM,    response,          3)
 
 #define SBI_iot_Cmd_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   seq_number,        1) \
-X(a, STATIC,   SINGULAR, UENUM,    eQoS,              2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,c2s_scan,payload.c2s_scan),  32) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,s2c_scan_resp,payload.s2c_scan_resp),  33) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,c2s_get_status,payload.c2s_get_status),  34) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,s2c_get_status_resp,payload.s2c_get_status_resp),  35) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,c2s_change_settingsp,payload.c2s_change_settingsp),  36) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,s2c_change_settingsp_resp,payload.s2c_change_settingsp_resp),  37)
 #define SBI_iot_Cmd_CALLBACK NULL
 #define SBI_iot_Cmd_DEFAULT NULL
-#define SBI_iot_Cmd_payload_c2s_scan_MSGTYPE SBI_iot_C2SScan
-#define SBI_iot_Cmd_payload_s2c_scan_resp_MSGTYPE SBI_iot_S2CScanResp
 #define SBI_iot_Cmd_payload_c2s_get_status_MSGTYPE SBI_iot_C2SGetStatus
 #define SBI_iot_Cmd_payload_s2c_get_status_resp_MSGTYPE SBI_iot_S2CGetStatusResp
 #define SBI_iot_Cmd_payload_c2s_change_settingsp_MSGTYPE SBI_iot_C2SChangeSettingSP
@@ -294,8 +243,6 @@ extern const pb_msgdesc_t SBI_iot_S2CGetStatusResp_msg;
 extern const pb_msgdesc_t SBI_iot_S2CGetStatusResp_StoveState_msg;
 extern const pb_msgdesc_t SBI_iot_C2SChangeSettingSP_msg;
 extern const pb_msgdesc_t SBI_iot_S2CChangeSettingSPResp_msg;
-extern const pb_msgdesc_t SBI_iot_C2SScan_msg;
-extern const pb_msgdesc_t SBI_iot_S2CScanResp_msg;
 extern const pb_msgdesc_t SBI_iot_C2SPairingReq_msg;
 extern const pb_msgdesc_t SBI_iot_C2SPairingReqResp_msg;
 extern const pb_msgdesc_t SBI_iot_Cmd_msg;
@@ -308,8 +255,6 @@ extern const pb_msgdesc_t SBI_iot_Cmd_msg;
 #define SBI_iot_S2CGetStatusResp_StoveState_fields &SBI_iot_S2CGetStatusResp_StoveState_msg
 #define SBI_iot_C2SChangeSettingSP_fields &SBI_iot_C2SChangeSettingSP_msg
 #define SBI_iot_S2CChangeSettingSPResp_fields &SBI_iot_S2CChangeSettingSPResp_msg
-#define SBI_iot_C2SScan_fields &SBI_iot_C2SScan_msg
-#define SBI_iot_S2CScanResp_fields &SBI_iot_S2CScanResp_msg
 #define SBI_iot_C2SPairingReq_fields &SBI_iot_C2SPairingReq_msg
 #define SBI_iot_C2SPairingReqResp_fields &SBI_iot_C2SPairingReqResp_msg
 #define SBI_iot_Cmd_fields &SBI_iot_Cmd_msg
@@ -319,14 +264,12 @@ extern const pb_msgdesc_t SBI_iot_Cmd_msg;
 #define SBI_iot_C2SChangeSettingSP_size          17
 #define SBI_iot_C2SGetStatus_size                7
 #define SBI_iot_C2SPairingReqResp_size           26
-#define SBI_iot_C2SScan_size                     24
-#define SBI_iot_Cmd_size                         143
+#define SBI_iot_Cmd_size                         116
 #define SBI_iot_DeviceInfo_size                  22
 #define SBI_iot_RemoteState_size                 5
 #define SBI_iot_S2CChangeSettingSPResp_size      0
 #define SBI_iot_S2CGetStatusResp_StoveState_size 81
-#define SBI_iot_S2CGetStatusResp_size            131
-#define SBI_iot_S2CScanResp_size                 24
+#define SBI_iot_S2CGetStatusResp_size            107
 
 #ifdef __cplusplus
 } /* extern "C" */
