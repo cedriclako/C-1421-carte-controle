@@ -94,8 +94,8 @@ void ESPNOWPROCESS_Handler()
             return;
         }
 
-        ESP_LOGI(TAG, "<== which_payload: %d (%s), seq_number: %d, len: %d", 
-            inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload), 
+        ESP_LOGI(TAG, "<== which_payload: %d (%s), seq_number: %d, len: %d",
+            inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload),
             inCmd.seq_number, msg.u8BufferCount);
 
         switch(inCmd.which_payload)
@@ -138,12 +138,13 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     {
         m_sHandle.sRemoteState.has_tempC_current = true;
         m_sHandle.sRemoteState.tempC_current = pC2SGetStatus->remote_state.temperatureC_curr;
+        ESP_LOGI(TAG, "remote temperatureC_curr: %.2f", pC2SGetStatus->remote_state.temperatureC_curr);
     }
 
     // -------------------------------------
     // Return a response
     SBI_iot_S2CGetStatusResp s2c_get_status_resp;
-    s2c_get_status_resp.has_stove_state = true;   
+    s2c_get_status_resp.has_stove_state = true;
     if (pMB->s2CGetRunningSettingIsSet)
     {
         s2c_get_status_resp.stove_state.has_fan_speed_set = true;
@@ -158,8 +159,11 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     }
 
     // These values comes from the remote
-    s2c_get_status_resp.stove_state.has_remote_temperature_set = true;
-    s2c_get_status_resp.stove_state.remote_temperature_set.tempC_sp = 25.5f;
+    if (m_sHandle.sRemoteState.has_tempC_sp)
+    {
+        s2c_get_status_resp.stove_state.has_remote_temperature_set = true;
+        s2c_get_status_resp.stove_state.remote_temperature_set.tempC_sp = m_sHandle.sRemoteState.tempC_sp;
+    }
 
     if (pMB->sS2CReqVersionRespIsSet)
     {
@@ -200,7 +204,7 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 }
 
 static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo)
-{   
+{
     pDeviceInfo->device_type = SBI_iot_EDEVICETYPE_EDEVICETYPE_IoTServer_V1;
     pDeviceInfo->has_sw_version = true;
     pDeviceInfo->sw_version.major = VERSION_MAJOR;
@@ -229,8 +233,8 @@ static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayl
     pb_encode(&outputStream, SBI_iot_Cmd_fields, &cmdResp);
     const int len = SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN + outputStream.bytes_written;
 
-    ESP_LOGI(TAG, "==> which_payload: %d (%s), seq_number: %d, len: %d", 
-        which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(which_payload), 
+    ESP_LOGI(TAG, "==> which_payload: %d (%s), seq_number: %d, len: %d",
+        which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(which_payload),
         seq_number, len);
 
     esp_now_send(m_u8BroadcastAddr, u8OutBuffers, len);
@@ -247,7 +251,7 @@ static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_
     }
 
     m_sHandle.sESPNowInfo.u32TX++;
-}   
+}
 
 static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
@@ -259,20 +263,20 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     if (len > SBIIOTBASEPROTOCOL_MAXPAYLOADLEN)
     {
         ESP_LOGE(TAG, "dropped RX, too big payload, len: %d", len);
-        return;    
+        return;
     }
 
     if (len < SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN)
     {
         ESP_LOGE(TAG, "dropped RX, no magic");
-        return;    
+        return;
     }
 
     const uint8_t u8MagicComps[] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
     if (memcmp(data, u8MagicComps, SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN) != 0)
     {
         ESP_LOGE(TAG, "dropped RX, invalid magic");
-        return;    
+        return;
     }
 
     m_sHandle.sESPNowInfo.u32RX++;
@@ -282,5 +286,5 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     msg.u8BufferCount = len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
     memcpy(msg.u8SrcMACs, mac_addr, ESP_NOW_ETH_ALEN);
     memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
-    xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0); 
+    xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
 }

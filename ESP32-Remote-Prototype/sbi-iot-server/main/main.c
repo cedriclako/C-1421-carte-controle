@@ -26,6 +26,9 @@ ESP_EVENT_DEFINE_BASE(MAINAPP_EVENT);
 static esp_netif_t* m_pWifiSoftAP;
 static esp_netif_t* m_pWifiSTA;
 
+static volatile bool m_bIsConnectedWiFi = false;
+static volatile int32_t m_s32ConnectWiFiCount = 0;
+
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
@@ -233,7 +236,7 @@ void app_main(void)
         UARTBRIDGE_Handler();
 
         // Sanity LED process
-        if ( (xTaskGetTickCount() - ttLed) > pdMS_TO_TICKS( 250 ))
+        if ( (xTaskGetTickCount() - ttLed) > (m_bIsConnectedWiFi ? pdMS_TO_TICKS( 50 ) : pdMS_TO_TICKS( 250 )))
         {
             ttLed = xTaskGetTickCount();
             HARDWAREGPIO_SetSanity(isActive);
@@ -263,15 +266,17 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();    
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        m_bIsConnectedWiFi = true;
         wifi_second_chan_t secondChan;
         uint8_t u8Primary;
         esp_wifi_get_channel(&u8Primary,  &secondChan);
         ESP_LOGI(TAG, "Wifi STA connected to station, channel: %d", (int)u8Primary);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        m_bIsConnectedWiFi = false;
+
         esp_wifi_connect();
-        ESP_LOGI(TAG, "retry to connect to the AP");
-        ESP_LOGI(TAG,"connect to the AP fail");
+        ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%d", ++m_s32ConnectWiFiCount);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));

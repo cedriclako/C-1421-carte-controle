@@ -21,6 +21,8 @@ static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2
 static void wifi_uninit();
 static void wifi_init(uint8_t u8CurrentChannel);
 
+static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+
 typedef struct
 {
     bool bIsWiFiActive;
@@ -47,6 +49,8 @@ typedef struct
 static const uint8_t m_u8BroadcastAddr[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static SHandle m_sHandle = {0};
 
+static volatile bool m_bWaitInit = false;
+
 static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
 
 void ESPNOWCOMM_Init(uint8_t u8CurrChannel)
@@ -59,6 +63,12 @@ void ESPNOWCOMM_Init(uint8_t u8CurrChannel)
     m_sHandle.ttLastPingTicks = xTaskGetTickCount();
     m_sHandle.ttScanTimeTicks = xTaskGetTickCount();
     m_sHandle.ttChangeChannelTicks = xTaskGetTickCount();
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &wifisoftap_event_handler,
+                                                        NULL,
+                                                        NULL));
 
     m_sHandle.ttEstablishedConnectionTicks = xTaskGetTickCount();
 
@@ -102,8 +112,8 @@ static void wifi_init(uint8_t u8CurrentChannel)
         },
     };
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_configAP));
-
-    ESP_ERROR_CHECK( esp_wifi_start());
+    ESP_LOGI(TAG, "esp_wifi_start()");
+    ESP_ERROR_CHECK(esp_wifi_start());
     
     /* Initialize ESPNOW and register sending and receiving callback function. */
     ESP_ERROR_CHECK( esp_now_init() );
@@ -181,10 +191,13 @@ void ESPNOWCOMM_Handler()
 
             if (m_sHandle.bIsWiFiActive)
                 wifi_uninit();
+            
+            m_bWaitInit = false;
             wifi_init(m_sHandle.u8CurrChannel);
+            // TEst
+            while(!m_bWaitInit);
 
             ESP_LOGI(TAG, "Change channel for: %d", m_sHandle.u8CurrChannel);
-
             // Send data
             SBI_iot_C2SScan c2s_scan;
             SendESPNow(SBI_iot_Cmd_c2s_scan_tag, &c2s_scan, sizeof(SBI_iot_C2SScan));
@@ -244,7 +257,6 @@ static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32
         cmdResp.seq_number, len);
 
     esp_now_send(m_u8BroadcastAddr, u8OutBuffers, len);
-
 }
 
 /* ESPNOW sending or receiving callback function is called in WiFi task.
@@ -289,12 +301,29 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     // Put into receive queue
     ESPNOWCOMM_SMsg msg;
     msg.u8BufferCount = len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
-    /*
-    ESP_LOGI(TAG,
-        "len: %d, rx: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x",
-        len,
-        (uint32_t)data[0], (uint32_t)data[1], (uint32_t)data[2], (uint32_t)data[3], (uint32_t)data[4], (uint32_t)data[5], (uint32_t)data[6], (uint32_t)data[7] );
-    */
+
     memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
     xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0); 
+}
+
+static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
+{
+    if (event_id == WIFI_EVENT_AP_START)
+    {
+        m_bWaitInit = true;
+        ESP_LOGI(TAG, "event_id: %d [WIFI_EVENT_AP_START]", event_id);
+    }
+    else if (event_id == WIFI_EVENT_AP_STOP)
+    {
+        ESP_LOGI(TAG, "event_id: %d [WIFI_EVENT_AP_STOP]", event_id);       
+    }
+   /* if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+        ESP_LOGI(TAG, "station "MACSTR" join, AID=%d",
+                 MAC2STR(event->mac), event->aid);
+    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+        ESP_LOGI(TAG, "station "MACSTR" leave, AID=%d",
+                 MAC2STR(event->mac), event->aid);
+    }*/
 }
