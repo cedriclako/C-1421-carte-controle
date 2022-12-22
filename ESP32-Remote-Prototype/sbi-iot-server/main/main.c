@@ -236,7 +236,7 @@ void app_main(void)
         UARTBRIDGE_Handler();
 
         // Sanity LED process
-        if ( (xTaskGetTickCount() - ttLed) > (m_bIsConnectedWiFi ? pdMS_TO_TICKS( 50 ) : pdMS_TO_TICKS( 250 )))
+        if ( (xTaskGetTickCount() - ttLed) > pdMS_TO_TICKS(m_bIsConnectedWiFi ? 50 : 250) )
         {
             ttLed = xTaskGetTickCount();
             HARDWAREGPIO_SetSanity(isActive);

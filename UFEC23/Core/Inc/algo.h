@@ -78,7 +78,7 @@ int Algo_getPrimary();
 int Algo_getSecondary();
 
 int Algo_getPrimarySetPoint(void);
-int Algo_getGrillSetPoint(void);;
+int Algo_getGrillSetPoint(void);
 int Algo_getSecondarySetPoint(void);
 
 /* Returns a value in [degrees] */
