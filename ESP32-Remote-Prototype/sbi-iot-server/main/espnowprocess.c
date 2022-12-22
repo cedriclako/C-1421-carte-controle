@@ -134,11 +134,11 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     s2c_get_status_resp.has_stove_state = true;
     s2c_get_status_resp.stove_state.has_fan_speed_set = true;
     s2c_get_status_resp.stove_state.fan_speed_set.is_automatic = true;
-    s2c_get_status_resp.stove_state.fan_speed_set.curr = 25;
+    s2c_get_status_resp.stove_state.fan_speed_set.curr = 1;
 
     s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
-    s2c_get_status_resp.stove_state.fan_speed_boundary.min = 0; // TODO: Not sure if it's 0 or 1 the minimum ???
-    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 50;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.min = 1;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 5;
 
     s2c_get_status_resp.stove_state.is_open_air = false;
     /*

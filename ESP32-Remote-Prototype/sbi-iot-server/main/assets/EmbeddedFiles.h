@@ -20,10 +20,13 @@ typedef struct
 typedef enum
 {
   EF_EFILE_INDEX_HTML = 0,    /*!< @brief File: index.html */
-  EF_EFILE_CSS_CONTENT_CSS = 1,    /*!< @brief File: css/content.css */
-  EF_EFILE_JS_APP_JS = 2,    /*!< @brief File: js/app.js */
-  EF_EFILE_JS_VUE_MIN_JS = 3,    /*!< @brief File: js/vue.min.js */
-  EF_EFILE_COUNT = 4
+  EF_EFILE_OTA_HTML = 1,    /*!< @brief File: ota.html */
+  EF_EFILE_CSS_CONTENT_CSS = 2,    /*!< @brief File: css/content.css */
+  EF_EFILE_JS_APP_JS = 3,    /*!< @brief File: js/app.js */
+  EF_EFILE_JS_OTA_JS = 4,    /*!< @brief File: js/ota.js */
+  EF_EFILE_JS_VUE_MIN_JS = 5,    /*!< @brief File: js/vue.min.js */
+  EF_EFILE_IMG_LOGO_SBI_350X256_PNG = 6,    /*!< @brief File: img/logo-sbi-350x256.png */
+  EF_EFILE_COUNT = 7
 } EF_EFILE;
 
 /*! @brief Check if compressed flag is active */
