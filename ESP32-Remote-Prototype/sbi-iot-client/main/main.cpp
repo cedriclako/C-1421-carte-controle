@@ -16,6 +16,9 @@
 
 #define TAG "main"
 
+#define SCREEN_WIDTH 540
+#define SCREEN_HEIGHT 960
+
 typedef struct 
 {
     struct
@@ -80,17 +83,16 @@ void setup()
     M5.EPD.SetRotation(90);
 
     ESP_LOGI(TAG, "CreateCanvas");
-    m_CanvasResult.createCanvas(540, 960);
+    m_CanvasResult.createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    m_CanvasResult.setFreeFont(FF43);
 
     M5.update();
     if (M5.BtnP.isPressed())
     {
         ESP_LOGI(TAG, "Started using the button");
         M5.EPD.Clear(true);
-
         m_CanvasResult.setTextSize(2);
+        m_CanvasResult.setFreeFont(FF19);
         m_CanvasResult.drawString("Powering on ...", 0, 850);
         m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_A2);
         m_CanvasResult.fillCanvas(0);
@@ -164,35 +166,76 @@ static void UpdateScreen()
     float hum = M5.SHT30.GetRelHumidity();
     char temStr[10];
     char humStr[10];
-    dtostrf(tem, 2, 2 , temStr);
-    dtostrf(hum, 2, 2 , humStr);
-    // m_CanvasResult.fillCanvas(0);
+    dtostrf(tem, 2, 1, temStr);
+    dtostrf(hum, 2, 1, humStr);
 
     // 
-    const EF_SFile* pSFileArrowUp = &EF_g_sFiles[EF_EFILE_ICON_ARROW_UP_JPG];
-    m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 100, 270);
+    const EF_SFile* pSFileArrowUp = &EF_g_sFiles[EF_EFILE_ICON_ARROW_UP_120X60_JPG];
+    const EF_SFile* pSFileArrowDown = &EF_g_sFiles[EF_EFILE_ICON_ARROW_DOWN_120X60_JPG];
+    const EF_SFile* pSFileSetting = &EF_g_sFiles[EF_EFILE_ICON_SETTING_160X160_JPG];
+    const EF_SFile* pSFileSBILogo = &EF_g_sFiles[EF_EFILE_ICON_SBI_LOGO_152X112_JPG];
 
-    const EF_SFile* pSFileArrowDown = &EF_g_sFiles[EF_EFILE_ICON_ARROW_DOWN_JPG];
-    m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 100, 510);
+    // -----------------------------------
+    // Current room temperature
+    {
+        const int32_t s32CurrentTempY = 0;
 
-    const EF_SFile* pSFileHome = &EF_g_sFiles[EF_EFILE_ICON_HOME_JPG];
-    m_CanvasResult.drawJpg(pSFileHome->pu8StartAddr, pSFileHome->u32Length, 30, 128);
+        m_CanvasResult.setFreeFont(FF18);
+        m_CanvasResult.setTextSize(2);
+        m_CanvasResult.drawString("Room", 32, s32CurrentTempY+96);
 
-    const EF_SFile* pSFileFan = &EF_g_sFiles[EF_EFILE_ICON_FAN_JPG];
-    m_CanvasResult.drawJpg(pSFileFan->pu8StartAddr, pSFileFan->u32Length, 390, 128);
+        m_CanvasResult.setFreeFont(FSSB18);
+        m_CanvasResult.setTextSize(3);
+        m_CanvasResult.drawString(String(temStr), 232, s32CurrentTempY+72);
+        m_CanvasResult.setTextSize(1);
+        m_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
+        
+        m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
+    }
 
-    const EF_SFile* pSFileSetting = &EF_g_sFiles[EF_EFILE_ICON_SETTING_JPG];
-    m_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, 344, 760);
-
+    // -----------------------------------
     // Current set point
-    m_CanvasResult.drawRect(35, 390, 260, 100, TFT_WHITE);
+    {
+        const int32_t s32CurrentTempY = 250;
 
-    m_CanvasResult.setTextSize(2);
-    m_CanvasResult.drawString(String(temStr) + "C", 70, 415);
+        m_CanvasResult.setFreeFont(FF19);
+        m_CanvasResult.setTextSize(1);
+        m_CanvasResult.drawString("Setpoint", 32, s32CurrentTempY);
+        m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+32);
+        m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
 
+        m_CanvasResult.setFreeFont(FSSB18);
+        m_CanvasResult.setTextSize(3);
+        m_CanvasResult.drawString(String(temStr), 232, s32CurrentTempY+72);
+        m_CanvasResult.setTextSize(1);
+        m_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
+        
+        m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
+    }
+
+    // -----------------------------------
     // Current temperature
-    m_CanvasResult.setTextSize(2);
-    m_CanvasResult.drawString(String(temStr) + "C", 128, 142);
+    {
+        const int32_t s32CurrentTempY = 500;
+
+        m_CanvasResult.setFreeFont(FF19);
+        m_CanvasResult.setTextSize(1);
+        m_CanvasResult.drawString("Fan kit", 32, s32CurrentTempY);
+        m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+32);
+        m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
+
+        const int32_t s32BarTopY = s32CurrentTempY + 40;
+        const int32_t s32BarHeight = 130;
+        /* 1/4 */m_CanvasResult.drawRect(232, s32BarTopY + 96, 48, s32BarHeight - 96, TFT_WHITE);
+        /* 2/4 */m_CanvasResult.drawRect(232+48+16, s32BarTopY, 48, 128, TFT_WHITE);
+        /* 3/4 */m_CanvasResult.drawRect(232, s32BarTopY, 48, 128, TFT_WHITE);
+        /* 4/4 */m_CanvasResult.drawRect(232, s32BarTopY, 48, 128, TFT_WHITE);
+
+        m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
+    }
+
+    m_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, 344, 760);
+    m_CanvasResult.drawJpg(pSFileSBILogo->pu8StartAddr, pSFileSBILogo->u32Length, 16, 832);
 
     m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU);
     vTaskDelay(pdMS_TO_TICKS(300));
