@@ -97,7 +97,7 @@ void measureParticlesInitialize(void)
 
     gs_sMeasPartObject.adcValue = 0;
     gs_sMeasPartObject.currentCmd = 5.2; //mA
-    //measureSetLED(gs_sMeasPartObject.currentCmd);
+    measureSetLED(gs_sMeasPartObject.currentCmd);
     
     TMR0_SetInterruptHandler(MeasureTimerInterrupt);
     TMR0_StartTimer();

@@ -435,11 +435,12 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     bOBJ.CH1_ON = mOBJ->m_uIrLighted;
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
     bOBJ.CH1_OFF = mOBJ->m_uIrDark;
-    bOBJ.LED_current_meas = (uint16_t)(.33*mOBJ->adcValue/4.096);
+    bOBJ.LED_current_meas = (uint16_t)(.33*mOBJ->adcValue/.4096);
     bOBJ.time_window = mOBJ->m_uMeasureInterval;
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
+    //printf("DAC set to: %u\r\n", mOBJ->dacValue);
     
     DRDY = false;
     
