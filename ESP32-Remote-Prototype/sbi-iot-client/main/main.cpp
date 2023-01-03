@@ -40,6 +40,8 @@ static bool CheckDeepSleepDataChecksum(SDeepSleepState* pDeepSleepState);
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg);
 static void ENChannelFoundCallback(uint8_t u8Channel);
 
+static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar);
+
 static void UpdateScreen();
 
 static bool m_bDataReceived = false;
@@ -182,7 +184,7 @@ static void UpdateScreen()
 
         m_CanvasResult.setFreeFont(FF18);
         m_CanvasResult.setTextSize(2);
-        m_CanvasResult.drawString("Room", 32, s32CurrentTempY+96);
+        m_CanvasResult.drawCentreString("Room", 40+120/2, s32CurrentTempY+96, GFXFF);
 
         m_CanvasResult.setFreeFont(FSSB18);
         m_CanvasResult.setTextSize(3);
@@ -200,8 +202,8 @@ static void UpdateScreen()
 
         m_CanvasResult.setFreeFont(FF19);
         m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawString("Setpoint", 32, s32CurrentTempY);
-        m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+32);
+        m_CanvasResult.drawCentreString("Setpoint", 40+120/2, s32CurrentTempY+92, GFXFF);
+        m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
         m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
 
         m_CanvasResult.setFreeFont(FSSB18);
@@ -220,16 +222,11 @@ static void UpdateScreen()
 
         m_CanvasResult.setFreeFont(FF19);
         m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawString("Fan kit", 32, s32CurrentTempY);
-        m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+32);
+        m_CanvasResult.drawCentreString("Fan speed", 40+120/2, s32CurrentTempY+92, GFXFF);
+        m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
         m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
 
-        const int32_t s32BarTopY = s32CurrentTempY + 40;
-        const int32_t s32BarHeight = 130;
-        /* 1/4 */m_CanvasResult.drawRect(232, s32BarTopY + 96, 48, s32BarHeight - 96, TFT_WHITE);
-        /* 2/4 */m_CanvasResult.drawRect(232+48+16, s32BarTopY, 48, 128, TFT_WHITE);
-        /* 3/4 */m_CanvasResult.drawRect(232, s32BarTopY, 48, 128, TFT_WHITE);
-        /* 4/4 */m_CanvasResult.drawRect(232, s32BarTopY, 48, 128, TFT_WHITE);
+        DrawAllBars(232, s32CurrentTempY, 3);
 
         m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }
@@ -239,6 +236,21 @@ static void UpdateScreen()
 
     m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU);
     vTaskDelay(pdMS_TO_TICKS(300));
+}
+
+static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar)
+{
+    #define BAR_HEIGHT 192
+    #define BAR_WIDTH 48
+    #define BAR_MARGIN 16
+
+    #define BAR_TOP(x) ((BAR_HEIGHT/32)*(32-x))
+    #define DrawAllBars(_index, _level, _isActive) _isActive ? m_CanvasResult.fillRect(s32X+(BAR_WIDTH+BAR_MARGIN)*_index, s32Y + BAR_TOP(_level), BAR_WIDTH, BAR_HEIGHT - BAR_TOP(_level), TFT_WHITE) : m_CanvasResult.drawRect(s32X+(BAR_WIDTH+BAR_MARGIN)*_index, s32Y + BAR_TOP(_level), BAR_WIDTH, BAR_HEIGHT - BAR_TOP(_level), TFT_WHITE)
+ 
+    /* 1/4 */DrawAllBars(0, 12, (u32Bar >= 1));
+    /* 2/4 */DrawAllBars(1, 20, (u32Bar >= 2));
+    /* 3/4 */DrawAllBars(2, 28, (u32Bar >= 3));
+    /* 4/4 */DrawAllBars(3, 32, (u32Bar >= 4));
 }
 
 extern "C" void app_main()
