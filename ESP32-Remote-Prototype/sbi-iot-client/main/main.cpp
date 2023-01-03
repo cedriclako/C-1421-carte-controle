@@ -171,7 +171,7 @@ static void UpdateScreen()
     dtostrf(tem, 2, 1, temStr);
     dtostrf(hum, 2, 1, humStr);
 
-    // 
+    // Images 
     const EF_SFile* pSFileArrowUp = &EF_g_sFiles[EF_EFILE_ICON_ARROW_UP_120X60_JPG];
     const EF_SFile* pSFileArrowDown = &EF_g_sFiles[EF_EFILE_ICON_ARROW_DOWN_120X60_JPG];
     const EF_SFile* pSFileSetting = &EF_g_sFiles[EF_EFILE_ICON_SETTING_160X160_JPG];

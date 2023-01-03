@@ -19,15 +19,15 @@ typedef struct
 
 typedef enum
 {
-  EF_EFILE_CLOCK_64X64_PNG = 0,    /*!< @brief File: clock_64x64.png */
-  EF_EFILE_FAN_512X512_PNG = 1,    /*!< @brief File: fan_512x512.png */
-  EF_EFILE_FAN_72X72_PNG = 2,    /*!< @brief File: fan_72x72.png */
-  EF_EFILE_FLAME_56X72_PNG = 3,    /*!< @brief File: flame_56x72.png */
-  EF_EFILE_HOME_72X72_PNG = 4,    /*!< @brief File: home_72x72.png */
-  EF_EFILE_ICON_ARROW_DOWN_120X60_JPG = 5,    /*!< @brief File: icon-arrow-down_120x60.jpg */
-  EF_EFILE_ICON_ARROW_UP_120X60_JPG = 6,    /*!< @brief File: icon-arrow-up_120x60.jpg */
-  EF_EFILE_ICON_SBI_LOGO_152X112_JPG = 7,    /*!< @brief File: icon-sbi-logo_152x112.jpg */
-  EF_EFILE_ICON_SETTING_160X160_JPG = 8,    /*!< @brief File: icon-setting_160x160.jpg */
+  EF_EFILE_CLOCK_64X64_PNG = 0,                                 /*!< @brief file: clock_64x64.png, size: 2436 */
+  EF_EFILE_FAN_512X512_PNG = 1,                                 /*!< @brief file: fan_512x512.png, size: 7814 */
+  EF_EFILE_FAN_72X72_PNG = 2,                                   /*!< @brief file: fan_72x72.png, size: 2338 */
+  EF_EFILE_FLAME_56X72_PNG = 3,                                 /*!< @brief file: flame_56x72.png, size: 1711 */
+  EF_EFILE_HOME_72X72_PNG = 4,                                  /*!< @brief file: home_72x72.png, size: 1896 */
+  EF_EFILE_ICON_ARROW_DOWN_120X60_JPG = 5,                      /*!< @brief file: icon-arrow-down_120x60.jpg, size: 2442 */
+  EF_EFILE_ICON_ARROW_UP_120X60_JPG = 6,                        /*!< @brief file: icon-arrow-up_120x60.jpg, size: 2347 */
+  EF_EFILE_ICON_SBI_LOGO_152X112_JPG = 7,                       /*!< @brief file: icon-sbi-logo_152x112.jpg, size: 6923 */
+  EF_EFILE_ICON_SETTING_160X160_JPG = 8,                        /*!< @brief file: icon-setting_160x160.jpg, size: 8110 */
   EF_EFILE_COUNT = 9
 } EF_EFILE;
 

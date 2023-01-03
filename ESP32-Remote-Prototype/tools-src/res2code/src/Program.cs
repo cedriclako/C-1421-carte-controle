@@ -70,8 +70,6 @@ namespace res2code
         {
             try
             {
-                int error = 0;
-
                 Parser.Default.ParseArguments<Options>(args)
                        .WithParsed<Options>(o =>
                        {
@@ -174,12 +172,13 @@ namespace res2code
                                sw.WriteLine();
                                sw.WriteLine("typedef enum");
                                sw.WriteLine("{");
+
                                for (int i = 0; i < scanFIs.Count; i++)
                                {
                                    ScanFI scanFI = scanFIs[i];
-                                   sw.Write($"  {NAMETOENUM(scanFI.RelativeFilename)} = {i},    /*!< @brief File: { scanFI.RelativeFilename } */");
-                                   //if (i + 1 < scanFIs.Count)
-                                   //    sw.Write(",");
+                                   string convRelativeFilenameEnum = NAMETOENUM(scanFI.RelativeFilename);
+
+                                   sw.Write($"  {convRelativeFilenameEnum} = {i},".PadRight(64) + $"/*!< @brief file: { scanFI.RelativeFilename }, size: { scanFI.FileInfo.Length } */");
                                    sw.WriteLine();
                                }
                                sw.WriteLine($"  {NAMETOENUM("COUNT")} = {scanFIs.Count}");
