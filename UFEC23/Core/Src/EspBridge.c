@@ -37,7 +37,9 @@ CR    | 2022/11/21 | -       | Creation
 #include "ufec23_protocol/ufec23_endec.h"
 #include "ufec23_protocol/ufec23_protocol.h"
 
-//osSemaphoreId ESP_UART_SemaphoreHandle;
+#define MAX_RX_SIZE 50
+
+static uint8_t RX_BUFFER[MAX_RX_SIZE];
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 // Callbacks
@@ -52,7 +54,7 @@ static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
     .fnWriteCb = EncWriteUART
 };
 
-static uint8_t m_u8UARTProtocolBuffers[1024*8];
+static uint8_t m_u8UARTProtocolBuffers[MAX_RX_SIZE];
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 {
@@ -84,26 +86,28 @@ void EspManager(void const * argument) {
 	osSemaphoreDef(ESP_UART_SemaphoreHandle);
 	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
-
+	uint16_t dum;
 	for(;;) {
 
 		osDelay(1000);
 		const uint8_t u8DummyPayloads[] = { 'c', 'o', 'u', 'c', 'o', 'u' };
-		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
-		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
-
-		//HAL_UART_Transmit_IT(&huart2, TX_BUFFER, sizeof(TX_BUFFER));
-
-		if(osErrorOS == osSemaphoreWait(ESP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
+		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
+		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
+		//dum = sizeof(m_u8UARTProtocolBuffers);
+		dum = MAX_RX_SIZE - hdma_usart2_rx.Instance->CNDTR;
+		if(dum == MAX_RX_SIZE)
 		{
-			//clearly something is wrong Abort the transmission
-			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
-			HAL_UART_Abort_IT(&huart2);
-			HAL_UART_DeInit(&huart2);
-			osDelay(100);
-			MX_USART2_UART_Init();
-			osDelay(100);
+			HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UARTProtocolBuffers, MAX_RX_SIZE);
 		}
+
+
+		if(dum != MAX_RX_SIZE && dum != 1)
+		{
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UARTProtocolBuffers,dum);
+			HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UARTProtocolBuffers, MAX_RX_SIZE);
+		}
+
+
 
 	}
 
