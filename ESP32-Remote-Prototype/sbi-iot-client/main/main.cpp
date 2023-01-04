@@ -19,6 +19,29 @@
 #define SCREEN_WIDTH 540
 #define SCREEN_HEIGHT 960
 
+typedef enum
+{
+    EBUTTONS_SetPointUp = 0,
+    EBUTTONS_SetPointDn,
+    
+    EBUTTONS_FanSpeedUp,
+    EBUTTONS_FanSpeedDn,
+    
+    EBUTTONS_Setting,
+
+    EBUTTONS_Count
+} EBUTTONS;
+
+typedef struct
+{
+    EBUTTONS eBtnId;
+
+    uint16_t u16X1;
+    uint16_t u16Y1;
+    uint16_t u16X2;
+    uint16_t u16Y2;
+} SRect;
+
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg);
 static void ENChannelFoundCallback(uint8_t u8Channel);
 
@@ -30,6 +53,15 @@ static bool m_bDataReceived = false;
 static bool m_isUserModeActive = false;
 
 static bool m_bIsNeedClear = true;
+static uint16_t m_u16Finger0X = 0;
+static uint16_t m_u16Finger0Y = 0;
+
+/*static SRect m_sAllRectangles[] = 
+{
+    [(int)EBUTTONS_SetPointUp] = { 0 },
+};*/
+
+static uint8_t m_u8CurrentFanSpeed = 1;
 
 static TickType_t m_ttProcTimeoutTicks = xTaskGetTickCount();
 
@@ -107,12 +139,21 @@ void loop()
             if (!M5.TP.isFingerUp()) 
             {
                 M5.TP.update();
-                tp_finger_t sFinger = M5.TP.readFinger(1);
+                const tp_finger_t sFinger = M5.TP.readFinger(0);
+                //M5.TP.flush();
 
-                ESP_LOGI(TAG, "finger, x: %d, y: %d", (int)sFinger.x, (int)sFinger.y);
-                
-                m_ttProcTimeoutTicks = xTaskGetTickCount();
-                bIsNeedUpdate = true;
+                if (m_u16Finger0X != sFinger.x || m_u16Finger0Y != sFinger.y)
+                {
+                    ESP_LOGI(TAG, "finger, x: %d, y: %d", (int)sFinger.x, (int)sFinger.y);
+                    
+                    m_ttProcTimeoutTicks = xTaskGetTickCount();
+
+                    // m_u8CurrentFanSpeed
+
+                    m_u16Finger0X = sFinger.x;
+                    m_u16Finger0Y = sFinger.y;
+                    bIsNeedUpdate = true;
+                }
             }
         }
     }
@@ -133,6 +174,7 @@ void loop()
         // Update screen
         m_isUserModeActive = false;
         UpdateScreen();
+        vTaskDelay(pdMS_TO_TICKS(300));
 
         ESP_LOGI(TAG, "Time to go to sleep, good night. time: %d", 
             (int)(esp_timer_get_time() / 1000));
@@ -231,7 +273,7 @@ static void UpdateScreen()
             m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
             m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
         }
-        DrawAllBars(232, s32CurrentTempY, 3);
+        DrawAllBars(232, s32CurrentTempY, m_u8CurrentFanSpeed);
 
         m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }
@@ -250,7 +292,6 @@ static void UpdateScreen()
         m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU4);
 
     m_bIsNeedClear = false;
-    vTaskDelay(pdMS_TO_TICKS(300));
 }
 
 static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar)
