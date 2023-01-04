@@ -9,6 +9,12 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+/* Enum definitions */
+typedef enum _SBI_iot_common_ETEMPERATUREUNIT { 
+    SBI_iot_common_ETEMPERATUREUNIT_Celcius = 0, 
+    SBI_iot_common_ETEMPERATUREUNIT_Farenheit = 1 
+} SBI_iot_common_ETEMPERATUREUNIT;
+
 /* Struct definitions */
 typedef struct _SBI_iot_common_Date { 
     uint32_t year;
@@ -26,9 +32,10 @@ typedef struct _SBI_iot_common_FanspeedSet {
     uint32_t curr;
 } SBI_iot_common_FanspeedSet;
 
-typedef struct _SBI_iot_common_TemperatureSet { 
-    float tempC_sp;
-} SBI_iot_common_TemperatureSet;
+typedef struct _SBI_iot_common_TemperatureSetPoint { 
+    SBI_iot_common_ETEMPERATUREUNIT unit;
+    float temp;
+} SBI_iot_common_TemperatureSetPoint;
 
 typedef struct _SBI_iot_common_Time { 
     uint32_t hour;
@@ -51,6 +58,12 @@ typedef struct _SBI_iot_common_DateTime {
 } SBI_iot_common_DateTime;
 
 
+/* Helper constants for enums */
+#define _SBI_iot_common_ETEMPERATUREUNIT_MIN SBI_iot_common_ETEMPERATUREUNIT_Celcius
+#define _SBI_iot_common_ETEMPERATUREUNIT_MAX SBI_iot_common_ETEMPERATUREUNIT_Farenheit
+#define _SBI_iot_common_ETEMPERATUREUNIT_ARRAYSIZE ((SBI_iot_common_ETEMPERATUREUNIT)(SBI_iot_common_ETEMPERATUREUNIT_Farenheit+1))
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,14 +71,14 @@ extern "C" {
 /* Initializer values for message structs */
 #define SBI_iot_common_FanspeedSet_init_default  {0, 0}
 #define SBI_iot_common_FanspeedBoundary_init_default {0, 0}
-#define SBI_iot_common_TemperatureSet_init_default {0}
+#define SBI_iot_common_TemperatureSetPoint_init_default {_SBI_iot_common_ETEMPERATUREUNIT_MIN, 0}
 #define SBI_iot_common_Date_init_default         {0, 0, 0}
 #define SBI_iot_common_Time_init_default         {0, 0, 0, 0}
 #define SBI_iot_common_DateTime_init_default     {false, SBI_iot_common_Date_init_default, false, SBI_iot_common_Time_init_default}
 #define SBI_iot_common_Version_init_default      {0, 0, 0}
 #define SBI_iot_common_FanspeedSet_init_zero     {0, 0}
 #define SBI_iot_common_FanspeedBoundary_init_zero {0, 0}
-#define SBI_iot_common_TemperatureSet_init_zero  {0}
+#define SBI_iot_common_TemperatureSetPoint_init_zero {_SBI_iot_common_ETEMPERATUREUNIT_MIN, 0}
 #define SBI_iot_common_Date_init_zero            {0, 0, 0}
 #define SBI_iot_common_Time_init_zero            {0, 0, 0, 0}
 #define SBI_iot_common_DateTime_init_zero        {false, SBI_iot_common_Date_init_zero, false, SBI_iot_common_Time_init_zero}
@@ -79,7 +92,8 @@ extern "C" {
 #define SBI_iot_common_FanspeedBoundary_max_tag  2
 #define SBI_iot_common_FanspeedSet_is_automatic_tag 1
 #define SBI_iot_common_FanspeedSet_curr_tag      2
-#define SBI_iot_common_TemperatureSet_tempC_sp_tag 2
+#define SBI_iot_common_TemperatureSetPoint_unit_tag 1
+#define SBI_iot_common_TemperatureSetPoint_temp_tag 2
 #define SBI_iot_common_Time_hour_tag             1
 #define SBI_iot_common_Time_min_tag              2
 #define SBI_iot_common_Time_sec_tag              3
@@ -103,10 +117,11 @@ X(a, STATIC,   SINGULAR, UINT32,   max,               2)
 #define SBI_iot_common_FanspeedBoundary_CALLBACK NULL
 #define SBI_iot_common_FanspeedBoundary_DEFAULT NULL
 
-#define SBI_iot_common_TemperatureSet_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FLOAT,    tempC_sp,          2)
-#define SBI_iot_common_TemperatureSet_CALLBACK NULL
-#define SBI_iot_common_TemperatureSet_DEFAULT NULL
+#define SBI_iot_common_TemperatureSetPoint_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    unit,              1) \
+X(a, STATIC,   SINGULAR, FLOAT,    temp,              2)
+#define SBI_iot_common_TemperatureSetPoint_CALLBACK NULL
+#define SBI_iot_common_TemperatureSetPoint_DEFAULT NULL
 
 #define SBI_iot_common_Date_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   year,              1) \
@@ -140,7 +155,7 @@ X(a, STATIC,   SINGULAR, UINT32,   revision,          3)
 
 extern const pb_msgdesc_t SBI_iot_common_FanspeedSet_msg;
 extern const pb_msgdesc_t SBI_iot_common_FanspeedBoundary_msg;
-extern const pb_msgdesc_t SBI_iot_common_TemperatureSet_msg;
+extern const pb_msgdesc_t SBI_iot_common_TemperatureSetPoint_msg;
 extern const pb_msgdesc_t SBI_iot_common_Date_msg;
 extern const pb_msgdesc_t SBI_iot_common_Time_msg;
 extern const pb_msgdesc_t SBI_iot_common_DateTime_msg;
@@ -149,7 +164,7 @@ extern const pb_msgdesc_t SBI_iot_common_Version_msg;
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define SBI_iot_common_FanspeedSet_fields &SBI_iot_common_FanspeedSet_msg
 #define SBI_iot_common_FanspeedBoundary_fields &SBI_iot_common_FanspeedBoundary_msg
-#define SBI_iot_common_TemperatureSet_fields &SBI_iot_common_TemperatureSet_msg
+#define SBI_iot_common_TemperatureSetPoint_fields &SBI_iot_common_TemperatureSetPoint_msg
 #define SBI_iot_common_Date_fields &SBI_iot_common_Date_msg
 #define SBI_iot_common_Time_fields &SBI_iot_common_Time_msg
 #define SBI_iot_common_DateTime_fields &SBI_iot_common_DateTime_msg
@@ -160,7 +175,7 @@ extern const pb_msgdesc_t SBI_iot_common_Version_msg;
 #define SBI_iot_common_Date_size                 18
 #define SBI_iot_common_FanspeedBoundary_size     12
 #define SBI_iot_common_FanspeedSet_size          8
-#define SBI_iot_common_TemperatureSet_size       5
+#define SBI_iot_common_TemperatureSetPoint_size  7
 #define SBI_iot_common_Time_size                 24
 #define SBI_iot_common_Version_size              18
 

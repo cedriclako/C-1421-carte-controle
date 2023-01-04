@@ -10,10 +10,10 @@ import 'SBI.iot.common.proto';
 /* Unfortunately, C code enum make it mandatory to ensure the name is globally unique. */
 enum EDEVICETYPE
 {
-	EDEVICETYPE_None = 0;
-	EDEVICETYPE_IoTServer_V1 = 1;
-	EDEVICETYPE_Remote_V1 = 2;
-	EDEVICETYPE_Stove_V1 = 3;
+	None = 0;
+	IoTServer_V1 = 1;
+	Remote_V1 = 2;
+	Stove_V1 = 3;
 }
 
 message DeviceInfo
@@ -38,7 +38,7 @@ message S2CGetStatusResp
 	{
 		SBI.iot.common.FanspeedSet fan_speed_set = 1;
 		SBI.iot.common.FanspeedBoundary fan_speed_boundary = 2;
-		SBI.iot.common.TemperatureSet remote_temperature_set = 3;
+		SBI.iot.common.TemperatureSetPoint remote_temperature_setp = 3;
 		bool is_open_air = 4;
 		reserved 5;
 		SBI.iot.common.DateTime datetime = 6;
@@ -51,7 +51,7 @@ message S2CGetStatusResp
 message C2SChangeSettingSP
 {
 	SBI.iot.common.FanspeedSet fan_speed_set = 1;
-	SBI.iot.common.TemperatureSet temperature_set = 2;
+	SBI.iot.common.TemperatureSetPoint temperature_setp = 2;
 }
 
 message S2CChangeSettingSPResp

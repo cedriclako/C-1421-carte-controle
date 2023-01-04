@@ -14,9 +14,16 @@ message FanspeedBoundary
     uint32 max = 2;
 }
 
-message TemperatureSet
+enum ETEMPERATUREUNIT
 {
-    float tempC_sp = 2;
+	Celcius = 0;
+	Farenheit = 1;
+}
+
+message TemperatureSetPoint
+{
+	ETEMPERATUREUNIT unit = 1;
+    float temp = 2;
 }
 
 message Date

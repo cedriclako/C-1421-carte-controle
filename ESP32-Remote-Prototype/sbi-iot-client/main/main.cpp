@@ -166,13 +166,18 @@ static void ENChannelFoundCallback(uint8_t u8Channel)
 
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 {
-    if (pMsg->has_stove_state && pMsg->stove_state.has_fan_speed_set && pMsg->stove_state.has_fan_speed_boundary)
+    if (pMsg->has_stove_state && 
+        pMsg->stove_state.has_fan_speed_set && 
+        pMsg->stove_state.has_fan_speed_boundary && 
+        pMsg->stove_state.has_remote_temperature_setp)
     {
-        ESP_LOGI(TAG, "temp. sp: %f, fanmode: %d, fanspeed: %d [%d-%d]", 
-            pMsg->stove_state.remote_temperature_set.tempC_sp,
-            (int)pMsg->stove_state.fan_speed_set.is_automatic,
+        ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
+            pMsg->stove_state.remote_temperature_setp.temp,
+            ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),
+
+            (pMsg->stove_state.fan_speed_set.is_automatic ? "AUTO" : "MANUAL"),
+
             (int)pMsg->stove_state.fan_speed_set.curr,
-            
             (int)pMsg->stove_state.fan_speed_boundary.min,
             (int)pMsg->stove_state.fan_speed_boundary.max);
     }
