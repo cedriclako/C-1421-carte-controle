@@ -19,29 +19,6 @@
 #define SCREEN_WIDTH 540
 #define SCREEN_HEIGHT 960
 
-typedef enum
-{
-    EBUTTONS_SetPointUp = 0,
-    EBUTTONS_SetPointDn,
-    
-    EBUTTONS_FanSpeedUp,
-    EBUTTONS_FanSpeedDn,
-    
-    EBUTTONS_Setting,
-
-    EBUTTONS_Count
-} EBUTTONS;
-
-typedef struct
-{
-    EBUTTONS eBtnId;
-
-    uint16_t u16X1;
-    uint16_t u16Y1;
-    uint16_t u16X2;
-    uint16_t u16Y2;
-} SRect;
-
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg);
 static void ENChannelFoundCallback(uint8_t u8Channel);
 
@@ -55,11 +32,6 @@ static bool m_isUserModeActive = false;
 static bool m_bIsNeedClear = true;
 static uint16_t m_u16Finger0X = 0;
 static uint16_t m_u16Finger0Y = 0;
-
-/*static SRect m_sAllRectangles[] = 
-{
-    [(int)EBUTTONS_SetPointUp] = { 0 },
-};*/
 
 static uint8_t m_u8CurrentFanSpeed = 1;
 
@@ -216,9 +188,13 @@ static void UpdateScreen()
 
     // Images 
     const EF_SFile* pSFileArrowUp = &EF_g_sFiles[EF_EFILE_ICON_ARROW_UP_120X60_JPG];
+    const EF_SImage* psMetaArrowUp = (const EF_SImage*)pSFileArrowUp->pMetaData;
     const EF_SFile* pSFileArrowDown = &EF_g_sFiles[EF_EFILE_ICON_ARROW_DOWN_120X60_JPG];
+    const EF_SImage* psMetaArrowDown = (const EF_SImage*)pSFileArrowDown->pMetaData;
     const EF_SFile* pSFileSetting = &EF_g_sFiles[EF_EFILE_ICON_SETTING_160X160_JPG];
+    const EF_SImage* psMetaSetting = (const EF_SImage*)pSFileSetting->pMetaData;
     const EF_SFile* pSFileSBILogo = &EF_g_sFiles[EF_EFILE_ICON_SBI_LOGO_152X112_JPG];
+    const EF_SImage* psMetaSBILogo = (const EF_SImage*)pSFileSBILogo->pMetaData;
 
     // -----------------------------------
     // Current room temperature
@@ -227,7 +203,7 @@ static void UpdateScreen()
 
         m_CanvasResult.setFreeFont(FF18);
         m_CanvasResult.setTextSize(2);
-        m_CanvasResult.drawCentreString("Room", 40+120/2, s32CurrentTempY+96, GFXFF);
+        m_CanvasResult.drawCentreString("Room", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+96, GFXFF);
 
         m_CanvasResult.setFreeFont(FSSB18);
         m_CanvasResult.setTextSize(3);
@@ -245,7 +221,7 @@ static void UpdateScreen()
 
         m_CanvasResult.setFreeFont(FF19);
         m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawCentreString("Setpoint", 40+120/2, s32CurrentTempY+92, GFXFF);
+        m_CanvasResult.drawCentreString("Setpoint", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+92, GFXFF);
         if (m_isUserModeActive)
         {
             m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
@@ -267,7 +243,7 @@ static void UpdateScreen()
 
         m_CanvasResult.setFreeFont(FF19);
         m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawCentreString("Fan speed", 40+120/2, s32CurrentTempY+92, GFXFF);
+        m_CanvasResult.drawCentreString("Fan speed", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+92, GFXFF);
         if (m_isUserModeActive)
         {
             m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
