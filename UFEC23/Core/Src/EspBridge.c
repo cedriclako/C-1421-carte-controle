@@ -37,9 +37,8 @@ CR    | 2022/11/21 | -       | Creation
 #include "ufec23_protocol/ufec23_endec.h"
 #include "ufec23_protocol/ufec23_protocol.h"
 
-#define MAX_RX_SIZE 50
+#define MAX_RX_SIZE 1024
 
-static uint8_t RX_BUFFER[MAX_RX_SIZE];
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 // Callbacks
@@ -71,9 +70,11 @@ static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 
 static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
+static uint16_t last_DMA_count;
 
 void ESPMANAGER_Init()
 {
+	last_DMA_count = 0;
     // Encoder
     UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
 
@@ -86,27 +87,29 @@ void EspManager(void const * argument) {
 	osSemaphoreDef(ESP_UART_SemaphoreHandle);
 	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
-	uint16_t dum;
+	uint16_t DMA_count = 0;
+	HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UARTProtocolBuffers, MAX_RX_SIZE);
+
 	for(;;) {
 
-		osDelay(1000);
+		DMA_count = (uint16_t)(MAX_RX_SIZE - hdma_usart2_rx.Instance->CNDTR);
+		osDelay(100);
 		const uint8_t u8DummyPayloads[] = { 'c', 'o', 'u', 'c', 'o', 'u' };
-		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
-		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
-		//dum = sizeof(m_u8UARTProtocolBuffers);
-		dum = MAX_RX_SIZE - hdma_usart2_rx.Instance->CNDTR;
-		if(dum == MAX_RX_SIZE)
+		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
+		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
+
+		if(DMA_count > last_DMA_count)
 		{
-			HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UARTProtocolBuffers, MAX_RX_SIZE);
-		}
 
-
-		if(dum != MAX_RX_SIZE && dum != 1)
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UARTProtocolBuffers[last_DMA_count],(uint32_t)(DMA_count-last_DMA_count));
+			last_DMA_count = DMA_count;
+		}else if(DMA_count < last_DMA_count)
 		{
-			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UARTProtocolBuffers,dum);
-			HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UARTProtocolBuffers, MAX_RX_SIZE);
-		}
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UARTProtocolBuffers[last_DMA_count],(uint32_t)(MAX_RX_SIZE-last_DMA_count));
 
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UARTProtocolBuffers,(uint32_t)(DMA_count));
+			last_DMA_count = DMA_count;
+		}
 
 
 	}
@@ -123,6 +126,10 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
+	//if(UFEC23ENDEC_C2SSetParameterDecode())
+	//{
+
+	//}
 
 }
 
