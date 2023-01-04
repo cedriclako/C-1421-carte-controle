@@ -2,6 +2,12 @@
 #define _MAINUI_H_
 
 #include "CommonUI.h"
+#include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum
 {
@@ -20,13 +26,15 @@ typedef struct
 {
     COMMONUI_SRect sUIButtons[MAINUI_EBUTTONS_Count];
 
-    const COMMONUI_SConfig* psConfig;
+    bool bIsNeedClear;
+    uint8_t u8CurrentFanSpeed;
+    bool isUserModeActive;
 } MAINUI_SHandle;
 
-void MAINUI_Init(MAINUI_SHandle* pContext);
+extern const COMMONUI_SConfig MAINUI_g_sConfig;
 
-void MAINUI_Process(MAINUI_SHandle* pContext);
-
-void MAINUI_OnTouch(MAINUI_SHandle* pContext, int32_t s32X, int32_t s32Y);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

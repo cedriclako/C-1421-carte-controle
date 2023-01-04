@@ -1,5 +1,3 @@
-#include <M5EPD.h>
-#include "Free_Fonts.h"
 #include <stdio.h>
 #include <string.h>
 #include "nvs_flash.h"
@@ -12,32 +10,24 @@
 #include "esp_sleep.h"
 
 #include "espnowcomm.h"
+#include "Global.h"
+#include "UIManager.h"
 #include "assets/EmbeddedFiles.h"
 
 #define TAG "main"
 
-#define SCREEN_WIDTH 540
-#define SCREEN_HEIGHT 960
-
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg);
 static void ENChannelFoundCallback(uint8_t u8Channel);
-
-static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar);
 
 static void UpdateScreen();
 
 static bool m_bDataReceived = false;
 static bool m_isUserModeActive = false;
 
-static bool m_bIsNeedClear = true;
 static uint16_t m_u16Finger0X = 0;
 static uint16_t m_u16Finger0Y = 0;
 
-static uint8_t m_u8CurrentFanSpeed = 1;
-
 static TickType_t m_ttProcTimeoutTicks = xTaskGetTickCount();
-
-static M5EPD_Canvas m_CanvasResult(&M5.EPD);
 
 void setup()
 {
@@ -59,21 +49,13 @@ void setup()
     M5.TP.SetRotation(90);
     M5.EPD.SetRotation(90);
 
-    ESP_LOGI(TAG, "CreateCanvas");
-    m_CanvasResult.createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+    UIMANAGER_Init();
 
     M5.update();
     if (M5.BtnP.isPressed())
     {
         m_isUserModeActive = true;
-
-        ESP_LOGI(TAG, "Started using the button");
-        M5.EPD.Clear(true);
-        m_CanvasResult.setTextSize(2);
-        m_CanvasResult.setFreeFont(FF19);
-        m_CanvasResult.drawCentreString("Powering on ...", SCREEN_WIDTH/2, 850, GFXFF);
-        m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_A2);
-        m_CanvasResult.fillCanvas(0);
+        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_PoweringOn);
     }
 
     ESP_LOGI(TAG, "Init netif");
@@ -120,8 +102,6 @@ void loop()
                     
                     m_ttProcTimeoutTicks = xTaskGetTickCount();
 
-                    // m_u8CurrentFanSpeed
-
                     m_u16Finger0X = sFinger.x;
                     m_u16Finger0Y = sFinger.y;
                     bIsNeedUpdate = true;
@@ -166,125 +146,6 @@ void loop()
     }
 }
 
-static void UpdateScreen()
-{
-    if (m_bIsNeedClear) 
-    {
-        ESP_LOGI(TAG, "Clear EPD");
-        M5.EPD.Clear(true);
-    }
-    
-    // rtc_time_t RTCtime;
-    // rtc_date_t RTCDate;
-    // M5.RTC.getTime(&RTCtime);
-    // M5.RTC.getDate(&RTCDate);
-
-    float tem = M5.SHT30.GetTemperature();
-    float hum = M5.SHT30.GetRelHumidity();
-    char temStr[10];
-    char humStr[10];
-    dtostrf(tem, 2, 1, temStr);
-    dtostrf(hum, 2, 1, humStr);
-
-    // Images 
-    const EF_SFile* pSFileArrowUp = &EF_g_sFiles[EF_EFILE_ICON_ARROW_UP_120X60_JPG];
-    const EF_SImage* psMetaArrowUp = (const EF_SImage*)pSFileArrowUp->pMetaData;
-    const EF_SFile* pSFileArrowDown = &EF_g_sFiles[EF_EFILE_ICON_ARROW_DOWN_120X60_JPG];
-    const EF_SImage* psMetaArrowDown = (const EF_SImage*)pSFileArrowDown->pMetaData;
-    const EF_SFile* pSFileSetting = &EF_g_sFiles[EF_EFILE_ICON_SETTING_160X160_JPG];
-    const EF_SImage* psMetaSetting = (const EF_SImage*)pSFileSetting->pMetaData;
-    const EF_SFile* pSFileSBILogo = &EF_g_sFiles[EF_EFILE_ICON_SBI_LOGO_152X112_JPG];
-    const EF_SImage* psMetaSBILogo = (const EF_SImage*)pSFileSBILogo->pMetaData;
-
-    // -----------------------------------
-    // Current room temperature
-    {
-        const int32_t s32CurrentTempY = 0;
-
-        m_CanvasResult.setFreeFont(FF18);
-        m_CanvasResult.setTextSize(2);
-        m_CanvasResult.drawCentreString("Room", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+96, GFXFF);
-
-        m_CanvasResult.setFreeFont(FSSB18);
-        m_CanvasResult.setTextSize(3);
-        m_CanvasResult.drawString(String(temStr), 232, s32CurrentTempY+72);
-        m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
-        
-        m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
-    }
-
-    // -----------------------------------
-    // Current set point
-    {
-        const int32_t s32CurrentTempY = 250;
-
-        m_CanvasResult.setFreeFont(FF19);
-        m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawCentreString("Setpoint", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+92, GFXFF);
-        if (m_isUserModeActive)
-        {
-            m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
-            m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
-        }
-        m_CanvasResult.setFreeFont(FSSB18);
-        m_CanvasResult.setTextSize(3);
-        m_CanvasResult.drawString(String(temStr), 232, s32CurrentTempY+72);
-        m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
-        
-        m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
-    }
-
-    // -----------------------------------
-    // Current temperature
-    {
-        const int32_t s32CurrentTempY = 500;
-
-        m_CanvasResult.setFreeFont(FF19);
-        m_CanvasResult.setTextSize(1);
-        m_CanvasResult.drawCentreString("Fan speed", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+92, GFXFF);
-        if (m_isUserModeActive)
-        {
-            m_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
-            m_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
-        }
-        DrawAllBars(232, s32CurrentTempY, m_u8CurrentFanSpeed);
-
-        m_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
-    }
-
-    if (m_isUserModeActive)
-    {
-        m_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, 344, 760);
-    }
-
-    m_CanvasResult.drawJpg(pSFileSBILogo->pu8StartAddr, pSFileSBILogo->u32Length, 16, 832);
-
-    // Update screen
-    if (m_bIsNeedClear)
-        m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU);
-    else
-        m_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU4);
-
-    m_bIsNeedClear = false;
-}
-
-static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar)
-{
-    #define BAR_HEIGHT 192
-    #define BAR_WIDTH 48
-    #define BAR_MARGIN 16
-
-    #define BAR_TOP(x) ((BAR_HEIGHT/32)*(32-x))
-    #define DrawAllBars(_index, _level, _isActive) _isActive ? m_CanvasResult.fillRect(s32X+(BAR_WIDTH+BAR_MARGIN)*_index, s32Y + BAR_TOP(_level), BAR_WIDTH, BAR_HEIGHT - BAR_TOP(_level), TFT_WHITE) : m_CanvasResult.drawRect(s32X+(BAR_WIDTH+BAR_MARGIN)*_index, s32Y + BAR_TOP(_level), BAR_WIDTH, BAR_HEIGHT - BAR_TOP(_level), TFT_WHITE)
- 
-    /* 1/4 */DrawAllBars(0, 12, (u32Bar >= 1));
-    /* 2/4 */DrawAllBars(1, 20, (u32Bar >= 2));
-    /* 3/4 */DrawAllBars(2, 28, (u32Bar >= 3));
-    /* 4/4 */DrawAllBars(3, 32, (u32Bar >= 4));
-}
-
 extern "C" void app_main()
 {
     ESP_LOGI(TAG, "initArduino");
@@ -324,4 +185,9 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
         ESP_LOGE(TAG, "GetStatus received but no stove_state");
     }
    m_bDataReceived = true;
+}
+
+static void UpdateScreen()
+{
+    UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
 }
