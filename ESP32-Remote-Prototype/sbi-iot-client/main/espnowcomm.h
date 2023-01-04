@@ -1,10 +1,6 @@
 #ifndef _ESPNOWCOMM_H_
 #define _ESPNOWCOMM_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "SBI.iot.BaseProtocol.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -14,6 +10,10 @@ extern "C" {
 #include "SBI.iot.common.pb.h"
 
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define ESPNOWCOMM_QUEUERX (5)
 

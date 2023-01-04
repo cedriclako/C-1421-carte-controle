@@ -19,8 +19,6 @@
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg);
 static void ENChannelFoundCallback(uint8_t u8Channel);
 
-static void UpdateScreen();
-
 static bool m_bDataReceived = false;
 static bool m_isUserModeActive = false;
 
@@ -97,8 +95,6 @@ void loop()
 
                 if (m_u16Finger0X != sFinger.x || m_u16Finger0Y != sFinger.y)
                 {
-                    ESP_LOGI(TAG, "finger, x: %d, y: %d", (int)sFinger.x, (int)sFinger.y);
-                    
                     m_ttProcTimeoutTicks = xTaskGetTickCount();
 
                     UIMANAGER_OnTouch(sFinger.x, sFinger.y);
@@ -125,7 +121,7 @@ void loop()
 
         // Update screen
         m_isUserModeActive = false;
-        UpdateScreen();
+        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
         vTaskDelay(pdMS_TO_TICKS(300));
 
         ESP_LOGI(TAG, "Time to go to sleep, good night. time: %d", 
@@ -187,7 +183,3 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
    m_bDataReceived = true;
 }
 
-static void UpdateScreen()
-{
-    UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
-}

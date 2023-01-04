@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum
 {
    EF_EFLAGS_None = 0,
@@ -31,11 +35,13 @@ typedef enum
   EF_EFILE_FAN_72X72_PNG = 2,                                   /*!< @brief file: fan_72x72.png, size: 2338 */
   EF_EFILE_FLAME_56X72_PNG = 3,                                 /*!< @brief file: flame_56x72.png, size: 1711 */
   EF_EFILE_HOME_72X72_PNG = 4,                                  /*!< @brief file: home_72x72.png, size: 1896 */
-  EF_EFILE_ICON_ARROW_DOWN_120X60_JPG = 5,                      /*!< @brief file: icon-arrow-down_120x60.jpg, size: 2442 */
-  EF_EFILE_ICON_ARROW_UP_120X60_JPG = 6,                        /*!< @brief file: icon-arrow-up_120x60.jpg, size: 2347 */
-  EF_EFILE_ICON_SBI_LOGO_152X112_JPG = 7,                       /*!< @brief file: icon-sbi-logo_152x112.jpg, size: 6923 */
-  EF_EFILE_ICON_SETTING_160X160_JPG = 8,                        /*!< @brief file: icon-setting_160x160.jpg, size: 8110 */
-  EF_EFILE_COUNT = 9
+  EF_EFILE_ICON_ARROW_DOWN_DISA_120X60_JPG = 5,                 /*!< @brief file: icon-arrow-down_disa_120x60.jpg, size: 893 */
+  EF_EFILE_ICON_ARROW_DOWN_EN_120X60_JPG = 6,                   /*!< @brief file: icon-arrow-down_en_120x60.jpg, size: 2442 */
+  EF_EFILE_ICON_ARROW_UP_DISA_120X60_JPG = 7,                   /*!< @brief file: icon-arrow-up_disa_120x60.jpg, size: 893 */
+  EF_EFILE_ICON_ARROW_UP_EN_120X60_JPG = 8,                     /*!< @brief file: icon-arrow-up_en_120x60.jpg, size: 2347 */
+  EF_EFILE_ICON_SBI_LOGO_152X112_JPG = 9,                       /*!< @brief file: icon-sbi-logo_152x112.jpg, size: 6923 */
+  EF_EFILE_ICON_SETTING_160X160_JPG = 10,                       /*!< @brief file: icon-setting_160x160.jpg, size: 8110 */
+  EF_EFILE_COUNT = 11
 } EF_EFILE;
 
 /*! @brief Check if compressed flag is active */
@@ -50,9 +56,15 @@ extern const EF_SImage EF_g_sIMAGES_FAN_512X512_PNG;
 extern const EF_SImage EF_g_sIMAGES_FAN_72X72_PNG;
 extern const EF_SImage EF_g_sIMAGES_FLAME_56X72_PNG;
 extern const EF_SImage EF_g_sIMAGES_HOME_72X72_PNG;
-extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_DOWN_120X60_JPG;
-extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_UP_120X60_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_DOWN_DISA_120X60_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_DOWN_EN_120X60_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_UP_DISA_120X60_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG;
 extern const EF_SImage EF_g_sIMAGES_ICON_SBI_LOGO_152X112_JPG;
 extern const EF_SImage EF_g_sIMAGES_ICON_SETTING_160X160_JPG;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
