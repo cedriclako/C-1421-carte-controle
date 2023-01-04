@@ -51,6 +51,9 @@ struct _COMMONUI_SConfig
     COMMONUI_OnTouchFn ptrOnTouch;
 };
 
+const EF_SFile* COMMONUI_GetBtnArrowUp(bool bIsEnabled);
+const EF_SFile* COMMONUI_GetBtnArrowDown(bool bIsEnabled);
+
 #ifdef __cplusplus
 }
 #endif

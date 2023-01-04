@@ -19,8 +19,6 @@
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg);
 static void ENChannelFoundCallback(uint8_t u8Channel);
 
-static void UpdateScreen();
-
 static bool m_bDataReceived = false;
 static bool m_isUserModeActive = false;
 
@@ -97,8 +95,6 @@ void loop()
 
                 if (m_u16Finger0X != sFinger.x || m_u16Finger0Y != sFinger.y)
                 {
-                    ESP_LOGI(TAG, "finger, x: %d, y: %d", (int)sFinger.x, (int)sFinger.y);
-                    
                     m_ttProcTimeoutTicks = xTaskGetTickCount();
 
                     UIMANAGER_OnTouch(sFinger.x, sFinger.y);
@@ -125,7 +121,7 @@ void loop()
 
         // Update screen
         m_isUserModeActive = false;
-        UpdateScreen();
+        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
         vTaskDelay(pdMS_TO_TICKS(300));
 
         ESP_LOGI(TAG, "Time to go to sleep, good night. time: %d", 
@@ -170,13 +166,18 @@ static void ENChannelFoundCallback(uint8_t u8Channel)
 
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 {
-    if (pMsg->has_stove_state && pMsg->stove_state.has_fan_speed_set && pMsg->stove_state.has_fan_speed_boundary)
+    if (pMsg->has_stove_state && 
+        pMsg->stove_state.has_fan_speed_set && 
+        pMsg->stove_state.has_fan_speed_boundary && 
+        pMsg->stove_state.has_remote_temperature_setp)
     {
-        ESP_LOGI(TAG, "temp. sp: %f, fanmode: %d, fanspeed: %d [%d-%d]", 
-            pMsg->stove_state.remote_temperature_set.tempC_sp,
-            (int)pMsg->stove_state.fan_speed_set.is_automatic,
+        ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
+            pMsg->stove_state.remote_temperature_setp.temp,
+            ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),
+
+            (pMsg->stove_state.fan_speed_set.is_automatic ? "AUTO" : "MANUAL"),
+
             (int)pMsg->stove_state.fan_speed_set.curr,
-            
             (int)pMsg->stove_state.fan_speed_boundary.min,
             (int)pMsg->stove_state.fan_speed_boundary.max);
     }
@@ -187,7 +188,3 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
    m_bDataReceived = true;
 }
 
-static void UpdateScreen()
-{
-    UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
-}

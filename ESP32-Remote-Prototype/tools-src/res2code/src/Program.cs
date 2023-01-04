@@ -161,12 +161,16 @@ namespace res2code
                            string fileHRelativeFilename = Path.ChangeExtension(assetName, ".h");
                            string fileFullNameH = System.IO.Path.Combine(o.OutputCodePath, fileHRelativeFilename);
                            Console.Error.WriteLine($"Generating file: { fileFullNameH }");
-                           using(StreamWriter sw = new StreamWriter(fileFullNameH, false, System.Text.Encoding.UTF8))
+                           using (StreamWriter sw = new StreamWriter(fileFullNameH, false, System.Text.Encoding.UTF8))
                            {
                                sw.WriteLine($"#ifndef _{assetName.ToUpper()}_");
                                sw.WriteLine($"#define _{assetName.ToUpper()}_");
                                sw.WriteLine();
                                sw.WriteLine("#include <stdint.h>");
+                               sw.WriteLine();
+                               sw.WriteLine("#ifdef __cplusplus");
+                               sw.WriteLine("extern \"C\" {");
+                               sw.WriteLine("#endif");
                                sw.WriteLine();
                                sw.WriteLine("typedef enum");
                                sw.WriteLine("{");
@@ -190,27 +194,22 @@ namespace res2code
                                sw.WriteLine("} EF_SFile;");
                                sw.WriteLine();
 
-                                sw.WriteLine("typedef enum");
-                                sw.WriteLine("{");
-                                for (int i = 0; i < scanFIs.Count; i++)
-                                {
-                                    ScanFI scanFI = scanFIs[i];
-                                    string convRelativeFilenameEnum = NAMETOENUM("EF_EFILE", scanFI.RelativeFilename);
+                               sw.WriteLine("typedef enum");
+                               sw.WriteLine("{");
+                               for (int i = 0; i < scanFIs.Count; i++)
+                               {
+                                   ScanFI scanFI = scanFIs[i];
+                                   string convRelativeFilenameEnum = NAMETOENUM("EF_EFILE", scanFI.RelativeFilename);
 
-                                    sw.Write($"  {convRelativeFilenameEnum} = {i},".PadRight(64) + $"/*!< @brief file: {scanFI.RelativeFilename}, size: {scanFI.FileInfo.Length} */");
-                                    sw.WriteLine();
-                                }
-                                sw.WriteLine($"  {NAMETOENUM("EF_EFILE", "COUNT")} = {scanFIs.Count}");
-                                sw.WriteLine("} EF_EFILE;");
-                                sw.WriteLine();
+                                   sw.Write($"  {convRelativeFilenameEnum} = {i},".PadRight(64) + $"/*!< @brief file: {scanFI.RelativeFilename}, size: {scanFI.FileInfo.Length} */");
+                                   sw.WriteLine();
+                               }
+                               sw.WriteLine($"  {NAMETOENUM("EF_EFILE", "COUNT")} = {scanFIs.Count}");
+                               sw.WriteLine("} EF_EFILE;");
+                               sw.WriteLine();
 
                                sw.WriteLine("/*! @brief Check if compressed flag is active */");
                                sw.WriteLine("#define EF_ISFILECOMPRESSED(x) ((x & EF_EFLAGS_GZip) == EF_EFLAGS_GZip)");
-                               sw.WriteLine();
-
-                               sw.WriteLine();
-                               sw.WriteLine("extern const EF_SFile EF_g_sFiles[EF_EFILE_COUNT];");
-                               sw.WriteLine("extern const uint8_t EF_g_u8Blobs[];");
                                sw.WriteLine();
 
                                // Image files
@@ -224,6 +223,14 @@ namespace res2code
                                    sw.WriteLine();
                                }
 
+                               sw.WriteLine("extern const EF_SFile EF_g_sFiles[EF_EFILE_COUNT];");
+                               sw.WriteLine("extern const uint8_t EF_g_u8Blobs[];");
+                               sw.WriteLine();
+
+                               sw.WriteLine("#ifdef __cplusplus");
+                               sw.WriteLine("}");
+                               sw.WriteLine("#endif");
+                               sw.WriteLine();
                                sw.WriteLine("#endif");
                            }
 

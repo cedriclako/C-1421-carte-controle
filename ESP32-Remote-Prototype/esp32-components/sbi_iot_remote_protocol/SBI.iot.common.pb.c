@@ -12,7 +12,7 @@ PB_BIND(SBI_iot_common_FanspeedSet, SBI_iot_common_FanspeedSet, AUTO)
 PB_BIND(SBI_iot_common_FanspeedBoundary, SBI_iot_common_FanspeedBoundary, AUTO)
 
 
-PB_BIND(SBI_iot_common_TemperatureSet, SBI_iot_common_TemperatureSet, AUTO)
+PB_BIND(SBI_iot_common_TemperatureSetPoint, SBI_iot_common_TemperatureSetPoint, AUTO)
 
 
 PB_BIND(SBI_iot_common_Date, SBI_iot_common_Date, AUTO)
@@ -25,6 +25,7 @@ PB_BIND(SBI_iot_common_DateTime, SBI_iot_common_DateTime, AUTO)
 
 
 PB_BIND(SBI_iot_common_Version, SBI_iot_common_Version, AUTO)
+
 
 
 
