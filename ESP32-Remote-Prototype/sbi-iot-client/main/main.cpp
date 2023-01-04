@@ -46,6 +46,8 @@ void setup()
     ESP_LOGI(TAG, "Initializing RTC");
     M5.RTC.begin();
 
+    M5.SHT30.UpdateData();
+
     M5.TP.SetRotation(90);
     M5.EPD.SetRotation(90);
 
@@ -55,7 +57,11 @@ void setup()
     if (M5.BtnP.isPressed())
     {
         m_isUserModeActive = true;
-        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_PoweringOn);
+        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainUsermode);
+    }
+    else
+    {
+        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
     }
 
     ESP_LOGI(TAG, "Init netif");
@@ -72,22 +78,15 @@ void setup()
 }
 
 void loop()
-{ 
-    static bool bIsNeedUpdate = true;
+{     
+    M5.SHT30.UpdateData();
 
     ESPNOWCOMM_Handler();
-    
-    M5.SHT30.UpdateData();
+
+    UIMANAGER_Process();
 
     if (m_isUserModeActive)
     {
-        if (bIsNeedUpdate)
-        {
-            bIsNeedUpdate = false;
-            // Update screen
-            UpdateScreen();
-        }
-
         if (M5.TP.available()) 
         {
             if (!M5.TP.isFingerUp()) 
@@ -102,9 +101,10 @@ void loop()
                     
                     m_ttProcTimeoutTicks = xTaskGetTickCount();
 
+                    UIMANAGER_OnTouch(sFinger.x, sFinger.y);
+
                     m_u16Finger0X = sFinger.x;
                     m_u16Finger0Y = sFinger.y;
-                    bIsNeedUpdate = true;
                 }
             }
         }

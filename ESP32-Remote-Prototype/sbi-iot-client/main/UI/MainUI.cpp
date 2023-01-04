@@ -14,7 +14,7 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y);
 
 static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar);
 
-static void RedrawUI(MAINUI_SHandle* pHandle);
+static void RedrawUI(COMMONUI_SContext* pContext);
 
 const COMMONUI_SConfig MAINUI_g_sConfig = 
 { 
@@ -43,9 +43,8 @@ static void Enter(COMMONUI_SContext* pContext)
     
     pHandle->bIsNeedClear = true;
     pHandle->u8CurrentFanSpeed = 1;
-    pHandle->isUserModeActive = true;
 
-    RedrawUI(pHandle);
+    RedrawUI(pContext);
 }
 
 static void Exit(COMMONUI_SContext* pContext)
@@ -55,7 +54,7 @@ static void Exit(COMMONUI_SContext* pContext)
 
 static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y)
 {
-
+    ESP_LOGI(TAG, "Touch x: %d, y: %d", s32X, s32Y);
 }
 
 static void Process(COMMONUI_SContext* pContext)
@@ -63,14 +62,16 @@ static void Process(COMMONUI_SContext* pContext)
 
 }
 
-static void RedrawUI(MAINUI_SHandle* pHandle)
+static void RedrawUI(COMMONUI_SContext* pContext)
 {
+    const MAINUI_SArgument* pArgument = (const MAINUI_SArgument*)pContext->pvdArgument;
+    MAINUI_SHandle* pHandle = (MAINUI_SHandle*)pContext->pHandle;
+
     if (pHandle->bIsNeedClear) 
     {
         ESP_LOGI(TAG, "Clear EPD");
         M5.EPD.Clear(true);
     }
-    
     // rtc_time_t RTCtime;
     // rtc_date_t RTCDate;
     // M5.RTC.getTime(&RTCtime);
@@ -119,7 +120,7 @@ static void RedrawUI(MAINUI_SHandle* pHandle)
         G_g_CanvasResult.setFreeFont(FF19);
         G_g_CanvasResult.setTextSize(1);
         G_g_CanvasResult.drawCentreString("Setpoint", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+92, GFXFF);
-        if (pHandle->isUserModeActive)
+        if (pArgument->bIsUserModeActive)
         {
             G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
             G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
@@ -141,7 +142,7 @@ static void RedrawUI(MAINUI_SHandle* pHandle)
         G_g_CanvasResult.setFreeFont(FF19);
         G_g_CanvasResult.setTextSize(1);
         G_g_CanvasResult.drawCentreString("Fan speed", 40+psMetaArrowUp->s32Width/2, s32CurrentTempY+92, GFXFF);
-        if (pHandle->isUserModeActive)
+        if (pArgument->bIsUserModeActive)
         {
             G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
             G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
@@ -151,7 +152,7 @@ static void RedrawUI(MAINUI_SHandle* pHandle)
         G_g_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }
 
-    if (pHandle->isUserModeActive)
+    if (pArgument->bIsUserModeActive)
     {
         G_g_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, 344, 760);
     }

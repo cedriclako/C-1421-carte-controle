@@ -24,11 +24,17 @@ typedef enum
 
 typedef struct
 {
+    bool bIsUserModeActive;
+} MAINUI_SArgument;
+
+typedef struct
+{
     COMMONUI_SRect sUIButtons[MAINUI_EBUTTONS_Count];
 
+    // State
     bool bIsNeedClear;
     uint8_t u8CurrentFanSpeed;
-    bool isUserModeActive;
+    const MAINUI_SArgument* pArgument;
 } MAINUI_SHandle;
 
 extern const COMMONUI_SConfig MAINUI_g_sConfig;

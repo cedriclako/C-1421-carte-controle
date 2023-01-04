@@ -20,6 +20,7 @@ typedef struct
 {
     void* pHandle;
     const COMMONUI_SConfig* psConfig;
+    void* pvdArgument;
 } COMMONUI_SContext;
 
 typedef void (*COMMONUI_InitFn)(COMMONUI_SContext* pContext);
