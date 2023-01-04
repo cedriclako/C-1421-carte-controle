@@ -11,10 +11,17 @@ typedef enum
 
 typedef struct
 {
+   int32_t s32Width;
+   int32_t s32Height;
+} EF_SImage;
+
+typedef struct
+{
    const char* strFilename;
    uint32_t u32Length;
    EF_EFLAGS eFlags;
    const uint8_t* pu8StartAddr;
+   const void* pMetaData;
 } EF_SFile;
 
 typedef enum
@@ -34,7 +41,18 @@ typedef enum
 /*! @brief Check if compressed flag is active */
 #define EF_ISFILECOMPRESSED(x) ((x & EF_EFLAGS_GZip) == EF_EFLAGS_GZip)
 
+
 extern const EF_SFile EF_g_sFiles[EF_EFILE_COUNT];
 extern const uint8_t EF_g_u8Blobs[];
+
+extern const EF_SImage EF_g_sIMAGES_CLOCK_64X64_PNG;
+extern const EF_SImage EF_g_sIMAGES_FAN_512X512_PNG;
+extern const EF_SImage EF_g_sIMAGES_FAN_72X72_PNG;
+extern const EF_SImage EF_g_sIMAGES_FLAME_56X72_PNG;
+extern const EF_SImage EF_g_sIMAGES_HOME_72X72_PNG;
+extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_DOWN_120X60_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_ARROW_UP_120X60_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_SBI_LOGO_152X112_JPG;
+extern const EF_SImage EF_g_sIMAGES_ICON_SETTING_160X160_JPG;
 
 #endif
