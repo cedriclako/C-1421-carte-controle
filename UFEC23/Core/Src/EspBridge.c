@@ -36,9 +36,11 @@ CR    | 2022/11/21 | -       | Creation
 #include "uart_protocol/uart_protocol_dec.h"
 #include "ufec23_protocol/ufec23_endec.h"
 #include "ufec23_protocol/ufec23_protocol.h"
+#include "ParamFile.h"
 
 #define MAX_RX_SIZE 1024
 
+extern PFL_SHandle PARAMFILE_g_sHandle;
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 // Callbacks
@@ -107,7 +109,11 @@ void EspManager(void const * argument) {
 		{
 			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UARTProtocolBuffers[last_DMA_count],(uint32_t)(MAX_RX_SIZE-last_DMA_count));
 
-			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UARTProtocolBuffers,(uint32_t)(DMA_count));
+			if(DMA_count != 0)
+			{
+				UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UARTProtocolBuffers,(uint32_t)(DMA_count));
+			}
+
 			last_DMA_count = DMA_count;
 		}
 
@@ -126,10 +132,39 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
-	//if(UFEC23ENDEC_C2SSetParameterDecode())
-	//{
+	UFEC23PROTOCOL_C2SSetParameter param;
+	const PFL_SParameterItem* dummy;
 
-	//}
+	dummy = PARAMFILE_GetParamEntryByIndex(12);
+
+	//UFEC23ENDEC_S2CReqParameterGetRespEncode();
+
+	switch((UFEC23PROTOCOL_FRAMEID)u8ID)
+	{
+	case UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive:
+		break;
+	case UFEC23PROTOCOL_FRAMEID_C2SReqVersion:
+		break;
+	case UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting:
+		break;
+	case UFEC23PROTOCOL_FRAMEID_C2SSetRunningSetting:
+		break;
+	case UFEC23PROTOCOL_FRAMEID_C2SGetParameter:
+		break;
+	case UFEC23PROTOCOL_FRAMEID_C2SSetParameter:
+
+
+		if(UFEC23ENDEC_C2SSetParameterDecode(&param, u8Payloads,(uint32_t) u16PayloadLen))
+		{
+			PFL_SetValueInt32(&PARAMFILE_g_sHandle, param.szKey,param.uValue.s32Value);
+		}
+		break;
+	case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:
+		break;
+	default:
+		// Not a valid protocol ID... Do something?
+		break;
+	}
 
 }
 
