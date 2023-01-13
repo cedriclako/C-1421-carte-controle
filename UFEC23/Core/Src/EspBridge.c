@@ -41,13 +41,10 @@ CR    | 2022/11/21 | -       | Creation
 typedef struct
 {
 	// GetParameter iterator data
-	uint32_t u32CurrentIndex;
+	uint32_t u32GetParameterCurrentIndex;
 } SBridgeState;
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
-
-
-osSemaphoreId ESP_UART_SemaphoreHandle;
 
 // =======
 // UART protocol encoder buffers
@@ -90,16 +87,18 @@ static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
 
+// --------
 // Bridge state
+osSemaphoreId ESP_UART_SemaphoreHandle;
 static SBridgeState m_sBridgeState;
 
 void ESPMANAGER_Init()
 {
 	// Initialize bridge ...
-	m_sBridgeState.u32CurrentIndex = 0;
-
+	m_sBridgeState.u32GetParameterCurrentIndex = 0;
 
 	m_last_DMA_count = 0;
+
     // Encoder
     UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
 
@@ -117,16 +116,14 @@ void ESPMANAGER_Task(void const * argument) {
 
 	for(;;) {
 
-		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CNDTR);
-		//const uint8_t u8DummyPayloads[] = { 'c', 'o', 'u', 'c', 'o', 'u' };
-		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
-		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
+		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CproNDTR);
 
 		if(u16DMA_count > m_last_DMA_count)
 		{
 			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint16_t)(u16DMA_count-m_last_DMA_count));
 			m_last_DMA_count = u16DMA_count;
-		}else if(u16DMA_count < m_last_DMA_count)
+		}
+		else if(u16DMA_count < m_last_DMA_count)
 		{
 			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint16_t)(MAX_RX_DMA_SIZE-m_last_DMA_count));
 
@@ -189,21 +186,21 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			// Restart the iterator
 			if (param.eIterateOp == UFEC23ENDEC_EITERATEOP_First)
 			{
-				m_sBridgeState.u32CurrentIndex = 0;
+				m_sBridgeState.u32GetParameterCurrentIndex = 0;
 			}
 			else if (param.eIterateOp == UFEC23ENDEC_EITERATEOP_Next)
 			{
-				m_sBridgeState.u32CurrentIndex++; // Next record ....
+				m_sBridgeState.u32GetParameterCurrentIndex++; // Next record ....
 			}
 
 			sResp.bHasRecord = false;
 			sResp.bIsEOF = true;
 
 			// Until EOF ...
-			if (m_sBridgeState.u32CurrentIndex < u32ParamEntryCount)
+			if (m_sBridgeState.u32GetParameterCurrentIndex < u32ParamEntryCount)
 			{
 				// Get record
-				const PFL_SParameterItem* pParamItem = PARAMFILE_GetParamEntryByIndex(m_sBridgeState.u32CurrentIndex);
+				const PFL_SParameterItem* pParamItem = PARAMFILE_GetParamEntryByIndex(m_sBridgeState.u32GetParameterCurrentIndex);
 				if (pParamItem != NULL && pParamItem->eType == PFL_TYPE_Int32)
 				{
 					sResp.bHasRecord = true;
