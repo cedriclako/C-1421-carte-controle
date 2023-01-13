@@ -27,8 +27,9 @@ typedef struct
     struct
     {
         // Temperature setpoint
-        bool has_tempC_sp;
-        float tempC_sp;
+        bool has_temp_sp;
+        SBI_iot_common_TemperatureSetPoint temp_sp;
+        
         bool has_tempC_current;
         float tempC_current;
     } sRemoteState;
@@ -141,32 +142,19 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     s2c_get_status_resp.stove_state.fan_speed_boundary.max = 5;
 
     s2c_get_status_resp.stove_state.is_open_air = false;
-    /*
-    if (pMB->s2CGetRunningSettingIsSet)
-    {
-        s2c_get_status_resp.has_stove_state = true;
-        s2c_get_status_resp.stove_state.has_fan_speed_set = true;
-        s2c_get_status_resp.stove_state.fan_speed_set.is_automatic = pMB->s2CGetRunningSetting.bIsFanModeAuto;
-        s2c_get_status_resp.stove_state.fan_speed_set.curr = pMB->s2CGetRunningSetting.u8FanSpeedCurr;
-
-        s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
-        s2c_get_status_resp.stove_state.fan_speed_boundary.min = 0; // TODO: Not sure if it's 0 or 1 the minimum ???
-        s2c_get_status_resp.stove_state.fan_speed_boundary.max = pMB->s2CGetRunningSetting.u8FanSpeedMax;
-
-        s2c_get_status_resp.stove_state.is_open_air = pMB->s2CGetRunningSetting.bIsAirOpen;
-    }*/
 
     // These values comes from the remote
-    if (m_sHandle.sRemoteState.has_tempC_sp)
+    if (m_sHandle.sRemoteState.has_temp_sp)
     {
-        s2c_get_status_resp.stove_state.has_remote_temperature_set = true;
-        s2c_get_status_resp.stove_state.remote_temperature_set.tempC_sp = m_sHandle.sRemoteState.tempC_sp;
+        s2c_get_status_resp.stove_state.has_remote_temperature_setp = true;
+        s2c_get_status_resp.stove_state.remote_temperature_setp.unit = m_sHandle.sRemoteState.temp_sp.unit;
+        s2c_get_status_resp.stove_state.remote_temperature_setp.temp = m_sHandle.sRemoteState.temp_sp.temp;
     }
 
     if (pMB->sS2CReqVersionRespIsSet)
     {
         s2c_get_status_resp.has_stove_info = true;
-        s2c_get_status_resp.stove_info.device_type = SBI_iot_EDEVICETYPE_EDEVICETYPE_Stove_V1;
+        s2c_get_status_resp.stove_info.device_type = SBI_iot_EDEVICETYPE_Stove_V1;
         s2c_get_status_resp.stove_info.has_sw_version = true;
         s2c_get_status_resp.stove_info.sw_version.major = pMB->sS2CReqVersionResp.sVersion.u8Major;
         s2c_get_status_resp.stove_info.sw_version.minor = pMB->sS2CReqVersionResp.sVersion.u8Minor;
@@ -194,10 +182,11 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 
 static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP)
 {
-    if (pC2SChangeSettingSP->has_temperature_set)
+    if (pC2SChangeSettingSP->has_temperature_setp)
     {
-        m_sHandle.sRemoteState.has_tempC_sp = true;
-        m_sHandle.sRemoteState.tempC_sp = pC2SChangeSettingSP->temperature_set.tempC_sp;
+        m_sHandle.sRemoteState.has_temp_sp = true;
+        m_sHandle.sRemoteState.temp_sp.temp = pC2SChangeSettingSP->temperature_setp.temp;
+        m_sHandle.sRemoteState.temp_sp.unit = pC2SChangeSettingSP->temperature_setp.unit;
     }
 }
 /*
