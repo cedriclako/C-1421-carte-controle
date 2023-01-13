@@ -11,11 +11,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-extern osSemaphoreId ESP_UART_SemaphoreHandle;
-
 void ESPMANAGER_Init();
 
-void EspManager(void const * argument);
+void ESPMANAGER_Task(void const * argument);
+
+extern osSemaphoreId ESP_UART_SemaphoreHandle;
 
 
 #endif /* SRC_ESPBRIDGE_H_ */

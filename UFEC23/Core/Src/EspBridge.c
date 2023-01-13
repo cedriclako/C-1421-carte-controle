@@ -38,45 +38,68 @@ CR    | 2022/11/21 | -       | Creation
 #include "ufec23_protocol/ufec23_protocol.h"
 #include "ParamFile.h"
 
-#define MAX_RX_SIZE 1024
+typedef struct
+{
+	// GetParameter iterator data
+	uint32_t u32CurrentIndex;
+} SBridgeState;
 
-extern PFL_SHandle PARAMFILE_g_sHandle;
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 
-// Callbacks
-static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
-static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
-static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 osSemaphoreId ESP_UART_SemaphoreHandle;
+
+// =======
+// UART protocol encoder buffers
+#define MAX_RX_DMA_SIZE 1024
+static uint8_t m_u8UART_RX_DMABuffers[MAX_RX_DMA_SIZE];
+static uint16_t m_last_DMA_count;
+
+// =======
+// UART protocol encoder buffers
+#define UART_OUTBUFFER_LEN (128)
+static uint8_t m_u8UARTOutputBuffers[UART_OUTBUFFER_LEN];
+
+static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
 {
     // Callbacks
     .fnWriteCb = EncWriteUART
 };
 
-static uint8_t m_u8UARTProtocolBuffers[MAX_RX_SIZE];
+// =======
+// UART protocol decoder buffers
+static uint8_t m_u8UARTProtocolBuffers2[UARTPROTOCOLCOMMON_MAXPAYLOAD];
+
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
+static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
+static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 {
-    .u8PayloadBuffers = m_u8UARTProtocolBuffers,
-    .u16PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers),
+    .u8PayloadBuffers = m_u8UARTProtocolBuffers2,
+    .u16PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers2),
 
     .u32FrameReceiveTimeOutMS = 50,
 
     // Callbacks
     .fnAcceptFrameCb = DecAcceptFrame,
     .fnDropFrameCb = DecDropFrame,
-    // .fnGetTimerCountMSCb = GetTimerCountMS
+    .fnGetTimerCountMSCb = GetTimerCountMS
 };
 
-static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
-static uint16_t last_DMA_count;
+
+// Bridge state
+static SBridgeState m_sBridgeState;
 
 void ESPMANAGER_Init()
 {
-	last_DMA_count = 0;
+	// Initialize bridge ...
+	m_sBridgeState.u32CurrentIndex = 0;
+
+
+	m_last_DMA_count = 0;
     // Encoder
     UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
 
@@ -84,40 +107,36 @@ void ESPMANAGER_Init()
     UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
 }
 
-void EspManager(void const * argument) {
+void ESPMANAGER_Task(void const * argument) {
 
 	osSemaphoreDef(ESP_UART_SemaphoreHandle);
 	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
-	uint16_t DMA_count = 0;
-	HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UARTProtocolBuffers, MAX_RX_SIZE);
+
+	HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
 
 	for(;;) {
 
-		DMA_count = (uint16_t)(MAX_RX_SIZE - hdma_usart2_rx.Instance->CNDTR);
-		osDelay(100);
-		const uint8_t u8DummyPayloads[] = { 'c', 'o', 'u', 'c', 'o', 'u' };
-		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
-		UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
+		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CNDTR);
+		//const uint8_t u8DummyPayloads[] = { 'c', 'o', 'u', 'c', 'o', 'u' };
+		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 66, u8DummyPayloads, sizeof(u8DummyPayloads));
+		//UARTPROTOCOLENC_Send(&m_sHandleEncoder, 67, NULL, 0);
 
-		if(DMA_count > last_DMA_count)
+		if(u16DMA_count > m_last_DMA_count)
 		{
-
-			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UARTProtocolBuffers[last_DMA_count],(uint32_t)(DMA_count-last_DMA_count));
-			last_DMA_count = DMA_count;
-		}else if(DMA_count < last_DMA_count)
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint16_t)(u16DMA_count-m_last_DMA_count));
+			m_last_DMA_count = u16DMA_count;
+		}else if(u16DMA_count < m_last_DMA_count)
 		{
-			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UARTProtocolBuffers[last_DMA_count],(uint32_t)(MAX_RX_SIZE-last_DMA_count));
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint16_t)(MAX_RX_DMA_SIZE-m_last_DMA_count));
 
-			if(DMA_count != 0)
-			{
-				UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UARTProtocolBuffers,(uint32_t)(DMA_count));
-			}
+			if(u16DMA_count != 0)
+				UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UART_RX_DMABuffers,(uint32_t)(u16DMA_count));
 
-			last_DMA_count = DMA_count;
+			m_last_DMA_count = u16DMA_count;
 		}
 
-
+		osDelay(1);
 	}
 
 }
@@ -126,44 +145,108 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 {
     //uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 	// Write byte into UART ...
-	HAL_UART_Transmit(&huart2, u8Datas, u32DataLen, 500);
+	HAL_UART_Transmit(&huart2, (uint8_t*)u8Datas, (uint16_t)u32DataLen, 500);
 }
 
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
 {
-	UFEC23PROTOCOL_C2SSetParameter param;
-	const PFL_SParameterItem* dummy;
-
-	dummy = PARAMFILE_GetParamEntryByIndex(12);
-
-	//UFEC23ENDEC_S2CReqParameterGetRespEncode();
-
 	switch((UFEC23PROTOCOL_FRAMEID)u8ID)
 	{
-	case UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive:
-		break;
-	case UFEC23PROTOCOL_FRAMEID_C2SReqVersion:
-		break;
-	case UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting:
-		break;
-	case UFEC23PROTOCOL_FRAMEID_C2SSetRunningSetting:
-		break;
-	case UFEC23PROTOCOL_FRAMEID_C2SGetParameter:
-		break;
-	case UFEC23PROTOCOL_FRAMEID_C2SSetParameter:
-
-
-		if(UFEC23ENDEC_C2SSetParameterDecode(&param, u8Payloads,(uint32_t) u16PayloadLen))
+		case UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive:
 		{
-			PFL_SetValueInt32(&PARAMFILE_g_sHandle, param.szKey,param.uValue.s32Value);
+			// Decode PING then send a response ...
+			UFEC23ENDEC_A2AReqPingAlive reqPing;
+			if (!UFEC23ENDEC_A2AReqPingAliveDecode(&reqPing, u8Payloads, u16PayloadLen))
+			{
+				// TODO: Throw something into logging UART?
+				break;
+			}
+
+			const uint16_t u16Len = (uint16_t)UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &reqPing);
+			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp, m_u8UARTOutputBuffers, u16Len);
+			break;
 		}
-		break;
-	case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:
-		break;
-	default:
-		// Not a valid protocol ID... Do something?
-		break;
+		//case UFEC23PROTOCOL_FRAMEID_C2SReqVersion:
+		//	break;
+		//case UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting:
+		//	break;
+		//case UFEC23PROTOCOL_FRAMEID_C2SSetRunningSetting:
+		//	break;
+		case UFEC23PROTOCOL_FRAMEID_C2SGetParameter:
+		{
+			UFEC23ENDEC_S2CReqParameterGetResp sResp;
+
+			UFEC23ENDEC_C2SGetParameter param;
+			if(!UFEC23ENDEC_C2SGetParameterDecode(&param, u8Payloads,(uint32_t) u16PayloadLen))
+			{
+				// TODO: Throw something into logging UART?
+				break;
+			}
+
+			const uint32_t u32ParamEntryCount = PARAMFILE_GetParamEntryCount();
+
+			// Restart the iterator
+			if (param.eIterateOp == UFEC23ENDEC_EITERATEOP_First)
+			{
+				m_sBridgeState.u32CurrentIndex = 0;
+			}
+			else if (param.eIterateOp == UFEC23ENDEC_EITERATEOP_Next)
+			{
+				m_sBridgeState.u32CurrentIndex++; // Next record ....
+			}
+
+			sResp.bHasRecord = false;
+			sResp.bIsEOF = true;
+
+			// Until EOF ...
+			if (m_sBridgeState.u32CurrentIndex < u32ParamEntryCount)
+			{
+				// Get record
+				const PFL_SParameterItem* pParamItem = PARAMFILE_GetParamEntryByIndex(m_sBridgeState.u32CurrentIndex);
+				if (pParamItem != NULL && pParamItem->eType == PFL_TYPE_Int32)
+				{
+					sResp.bHasRecord = true;
+					sResp.bIsEOF = false;
+
+					sResp.sEntry.eParamType = UFEC23ENDEC_EPARAMTYPE_Int32;
+					sResp.sEntry.uType.sInt32.s32Default = pParamItem->uType.sInt32.s32Default;
+					sResp.sEntry.uType.sInt32.s32Min = pParamItem->uType.sInt32.s32Min;
+					sResp.sEntry.uType.sInt32.s32Max = pParamItem->uType.sInt32.s32Max;
+					strcpy(sResp.sEntry.szKey, pParamItem->szKey);
+					int32_t s32Value;
+					PFL_GetValueInt32(&PARAMFILE_g_sHandle, pParamItem->szKey, &s32Value);
+					sResp.uValue.s32Value = s32Value;
+				}
+			}
+
+			const uint16_t u16Len = (uint16_t)UFEC23ENDEC_S2CGetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &sResp);
+			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp, m_u8UARTOutputBuffers, u16Len);
+			break;
+		}
+		case UFEC23PROTOCOL_FRAMEID_C2SSetParameter:
+		{
+			UFEC23PROTOCOL_C2SSetParameter param;
+			if(!UFEC23ENDEC_C2SSetParameterDecode(&param, u8Payloads,(uint32_t) u16PayloadLen))
+			{
+				// TODO: Throw something into logging UART?
+				break;
+			}
+
+			const PFL_ESETRET setRet = PFL_SetValueInt32(&PARAMFILE_g_sHandle, param.szKey, param.uValue.s32Value);
+			UFEC23PROTOCOL_S2CSetParameterResp s2cSetParameterResp =
+			{
+				// We don't give full precision ... ok or fail is enough for now.
+				.eResult = setRet == PFL_ESETRET_OK ? UFEC23PROTOCOL_ERESULT_Ok : UFEC23PROTOCOL_ERESULT_Fail
+			};
+			UFEC23ENDEC_S2CSetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &s2cSetParameterResp);
+			break;
+		}
+		//case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:
+		//	break;
+		default:
+			// TODO: Not a valid protocol ID... Do something? Throw into UART log?
+			break;
 	}
 
 }
@@ -171,5 +254,9 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
 {
     // Exists mostly for debug purpose
-    // ESP_LOGE(TAG, "Dropped frame: %s", szReason);
+}
+
+static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
+{
+	return xTaskGetTickCount() * portTICK_PERIOD_MS;
 }

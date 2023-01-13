@@ -161,40 +161,40 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     switch ((UFEC23PROTOCOL_FRAMEID)u8ID)
     {
-        case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
-        {
-            UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
-            if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionResp, u8Payloads, u16PayloadLen))
-            {
-                ESP_LOGE(TAG, "Error frame S2CReqVersionResp");
-                break;
-            }
-            pMemBlock->sS2CReqVersionResp = sS2CReqVersionResp;
-            pMemBlock->sS2CReqVersionRespIsSet = true;
-            break;
-        }
-        case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:
+        // case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
+        // {
+        //     UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
+        //     if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionResp, u8Payloads, u16PayloadLen))
+        //     {
+        //         ESP_LOGE(TAG, "Error frame S2CReqVersionResp");
+        //         break;
+        //     }
+        //     pMemBlock->sS2CReqVersionResp = sS2CReqVersionResp;
+        //     pMemBlock->sS2CReqVersionRespIsSet = true;
+        //     break;
+        // }
+        case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
         {
             ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
             // If it's connected, we accept any message as stay alive
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
         }
-        case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
-        {
-            UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSettingResp;
+        // case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
+        // {
+        //     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSettingResp;
 
-            // Receive settings ...
-            if (!UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u16PayloadLen))
-            {
-                ESP_LOGE(TAG, "Error frame S2CGetRunningSettingResp");
-                break;
-            }
-            pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
-            pMemBlock->s2CGetRunningSettingIsSet = true;
-            ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
-            break;
-        }
+        //     // Receive settings ...
+        //     if (!UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u16PayloadLen))
+        //     {
+        //         ESP_LOGE(TAG, "Error frame S2CGetRunningSettingResp");
+        //         break;
+        //     }
+        //     pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
+        //     pMemBlock->s2CGetRunningSettingIsSet = true;
+        //     ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
+        //     break;
+        // }
 
         case UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp:
         {
@@ -205,7 +205,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
             // Received (Get Parameter Resp)
             UFEC23ENDEC_S2CReqParameterGetResp s;
-            if (!UFEC23ENDEC_S2CReqParameterGetRespDecode(&s, u8Payloads, u16PayloadLen))
+            if (!UFEC23ENDEC_S2CGetParameterRespDecode(&s, u8Payloads, u16PayloadLen))
             {
                 ProcParameterAbort();
                 break;
@@ -242,11 +242,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 break;
             }
 
-            UFEC23ENDEC_C2SReqParameterGet sC2SReqParameterGet = 
+            UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
             {
                 .eIterateOp = UFEC23ENDEC_EITERATEOP_Next
             };
-            const int32_t n = UFEC23ENDEC_C2SReqParameterGetEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
+            const int32_t n = UFEC23ENDEC_C2SGetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
             UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
             break;
         }
@@ -343,8 +343,8 @@ static void ManageServerConnection()
     if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS) &&
         (xTaskGetTickCount() - m_sStateMachine.ttLastKeepAliveSent) > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))
     {
-        //ESP_LOGI(TAG, "UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive");
-        UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive, NULL, 0);
+        //ESP_LOGI(TAG, "UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive");
+        UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, NULL, 0);
         m_sStateMachine.ttLastKeepAliveSent = xTaskGetTickCount(); 
     }
 }
@@ -357,8 +357,8 @@ static void ServerConnected()
     STOVEMB_GetMemBlock()->bIsStoveConnectedAndReady = true;
 
     // Send some requests ...
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+    // UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
+    //UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
     
     // Start downloading parameters
     ProcParameterDownload();
@@ -420,13 +420,13 @@ static bool ProcParameterDownload()
     pMB->u32ParameterCount = 0;
     pMB->bIsParameterDownloadCompleted = false;
 
-    UFEC23ENDEC_C2SReqParameterGet sC2SReqParameterGet = 
+    UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
     {
         .eIterateOp = UFEC23ENDEC_EITERATEOP_First
     };
     STOVEMB_Give();
 
-    const int32_t n = UFEC23ENDEC_C2SReqParameterGetEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
+    const int32_t n = UFEC23ENDEC_C2SGetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
     UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
     return true;
 }

@@ -208,7 +208,7 @@ int main(void)
 #endif
 
 #if ESP32_ISACTIVE
-  osThreadDef(EspManagerT, EspManager, osPriorityNormal, 0, 128);
+  osThreadDef(EspManagerT, ESPMANAGER_Task, osPriorityNormal, 0, 128);
   EspManagerTHandle = osThreadCreate(osThread(EspManagerT), NULL);
 #endif
 

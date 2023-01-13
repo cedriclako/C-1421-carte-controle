@@ -45,13 +45,13 @@ struct _UARTPROTOCOLDEC_SHandle
 {
     // Current step
     UARTPROTOCOLDEC_ESTEP eStep;
-    uint32_t u32PayloadCount;
+    uint16_t u16PayloadCount;
 
     int64_t s64StartTimeMS;
 
     // Frame payload len. 
-    uint8_t u8FrameID;
-    uint16_t u16FramePayloadLen;
+    uint8_t u8CurrentFrameID;
+    uint16_t u16CurrentFramePayloadLen;
 
     // On the fly checksum calculation
     uint8_t u8ChecksumCalculation;
@@ -63,6 +63,6 @@ void UARTPROTOCOLDEC_Init(UARTPROTOCOLDEC_SHandle* psHandle, const UARTPROTOCOLD
 
 void UARTPROTOCOLDEC_Reset(UARTPROTOCOLDEC_SHandle* psHandle);
 
-void UARTPROTOCOLDEC_HandleIn(UARTPROTOCOLDEC_SHandle* psHandle, const uint8_t* u8Datas, uint32_t u32DataLen);
+void UARTPROTOCOLDEC_HandleIn(UARTPROTOCOLDEC_SHandle* psHandle, const uint8_t* u8Datas, uint16_t u16DataLen);
 
 #endif

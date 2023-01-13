@@ -16,17 +16,17 @@ void UARTPROTOCOLDEC_Init(UARTPROTOCOLDEC_SHandle* psHandle, const UARTPROTOCOLD
 void UARTPROTOCOLDEC_Reset(UARTPROTOCOLDEC_SHandle* psHandle)
 {
     psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingForStartByte;
-    psHandle->u32PayloadCount = 0;
+    psHandle->u16PayloadCount = 0;
 
     psHandle->s64StartTimeMS = 0;
-    psHandle->u8FrameID = 0;
+    psHandle->u8CurrentFrameID = 0;
 
     psHandle->u8ChecksumCalculation = 0;
 }
 
-void UARTPROTOCOLDEC_HandleIn(UARTPROTOCOLDEC_SHandle* psHandle, const uint8_t* u8Datas, uint32_t u32DataLen)
+void UARTPROTOCOLDEC_HandleIn(UARTPROTOCOLDEC_SHandle* psHandle, const uint8_t* u8Datas, uint16_t u16DataLen)
 {
-    for(uint32_t i = 0; i < u32DataLen; i++)
+    for(uint32_t i = 0; i < u16DataLen; i++)
         AddByte(psHandle, u8Datas[i]);
 }
 
@@ -54,7 +54,7 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
             // Wait until we get a start byte ...
             if (u8 == UARTPROTOCOLCOMMON_START_BYTE)
             {
-                psHandle->u16FramePayloadLen = 0;
+                psHandle->u16CurrentFramePayloadLen = 0;
                 psHandle->u8ChecksumCalculation = 0;
 
                 // IF we support timeout ...
@@ -70,14 +70,14 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
         case UARTPROTOCOLDEC_ESTEP_WaitingFrameID:
         {
             psHandle->u8ChecksumCalculation += u8;
-            psHandle->u8FrameID = u8;
+            psHandle->u8CurrentFrameID = u8;
             psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB0;
             break;
         }
         case UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB0:
         {
             psHandle->u8ChecksumCalculation += u8;
-            psHandle->u16FramePayloadLen = u8;
+            psHandle->u16CurrentFramePayloadLen = u8;
 
             psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingPayloadLengthB1;
             break;
@@ -86,16 +86,22 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
         {
             psHandle->u8ChecksumCalculation += u8;
             // Little endian ...
-            psHandle->u16FramePayloadLen |= (uint16_t)((uint16_t)u8 << 8);
+            psHandle->u16CurrentFramePayloadLen |= (uint16_t)((uint16_t)u8 << 8);
 
-            if (psHandle->u16FramePayloadLen > psHandle->psConfig->u16PayloadBufferLen)
+            if (psHandle->u16CurrentFramePayloadLen > UARTPROTOCOLCOMMON_MAXPAYLOAD)
+            {
+                DropFrame(psHandle, "Payload is too big for the protocol");
+                break;
+            }
+            
+            if (psHandle->u16CurrentFramePayloadLen > psHandle->psConfig->u16PayloadBufferLen)
             {
                 DropFrame(psHandle, "Payload is too big for the buffer");
                 break;
             }
 
             // 0 byte payload are supported
-            if (psHandle->u16FramePayloadLen == 0)
+            if (psHandle->u16CurrentFramePayloadLen == 0)
             	psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingChecksum;
             else
             	psHandle->eStep = UARTPROTOCOLDEC_ESTEP_GettingPayload;
@@ -103,18 +109,12 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
         }
         case UARTPROTOCOLDEC_ESTEP_GettingPayload:
         {
-            if (psHandle->u32PayloadCount + 1 >= (uint32_t)psHandle->psConfig->u16PayloadBufferLen)
-            {
-                DropFrame(psHandle, "Payload is too big for the buffer");
-                break;
-            }
-
-            psHandle->psConfig->u8PayloadBuffers[psHandle->u32PayloadCount] = u8;
+            psHandle->psConfig->u8PayloadBuffers[psHandle->u16PayloadCount] = u8;
             psHandle->u8ChecksumCalculation += u8;
-            psHandle->u32PayloadCount++;
+            psHandle->u16PayloadCount++;
 
             // Complete payload detected ...
-            if (psHandle->u32PayloadCount >= (uint32_t)psHandle->u16FramePayloadLen)
+            if (psHandle->u16PayloadCount >= (uint32_t)psHandle->u16CurrentFramePayloadLen)
                 psHandle->eStep = UARTPROTOCOLDEC_ESTEP_WaitingChecksum;
             break;
         }
@@ -156,7 +156,7 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
 static void AcceptFrame(UARTPROTOCOLDEC_SHandle* psHandle)
 {
     if (psHandle->psConfig->fnAcceptFrameCb != NULL)
-        psHandle->psConfig->fnAcceptFrameCb(psHandle, psHandle->u8FrameID, psHandle->psConfig->u8PayloadBuffers, (uint16_t)psHandle->u32PayloadCount);
+        psHandle->psConfig->fnAcceptFrameCb(psHandle, psHandle->u8CurrentFrameID, psHandle->psConfig->u8PayloadBuffers, psHandle->u16PayloadCount);
     UARTPROTOCOLDEC_Reset(psHandle);
 }
 

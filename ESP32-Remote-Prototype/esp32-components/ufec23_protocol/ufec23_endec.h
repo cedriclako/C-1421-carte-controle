@@ -15,12 +15,7 @@ typedef struct
 typedef struct 
 {
     uint32_t u32Ping;
-} UFEC23ENDEC_C2SReqPingAlive;
-
-typedef struct 
-{
-    uint32_t u32Ping;
-} UFEC23ENDEC_S2CReqPingAliveResp;
+} UFEC23ENDEC_A2AReqPingAlive;
 
 #define UFEC23ENDEC_SOFTWARENAME_LEN (12)
 #define UFEC23ENDEC_GITHASH_LEN (12)
@@ -74,7 +69,7 @@ typedef enum
 typedef struct 
 {
     UFEC23ENDEC_EITERATEOP eIterateOp;
-} UFEC23ENDEC_C2SReqParameterGet;
+} UFEC23ENDEC_C2SGetParameter;
 
 typedef enum
 {
@@ -129,7 +124,7 @@ typedef struct
 typedef enum
 {
     UFEC23PROTOCOL_ERESULT_Ok = 0,
-    UFEC23PROTOCOL_ERESULT_Fail = 0
+    UFEC23PROTOCOL_ERESULT_Fail = 1
 } UFEC23PROTOCOL_ERESULT;
 
 typedef struct 
@@ -140,14 +135,24 @@ typedef struct
 // Maximum size for messages
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT (2 + 1 + sizeof(UFEC23ENDEC_uType) + sizeof(UFEC23ENDEC_uValue) + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1)
 #define UFEC23ENDEC_S2CREQVERSIONRESP_COUNT (3 + 1 + UFEC23ENDEC_SOFTWARENAME_LEN + 1 + 1 + UFEC23ENDEC_GITHASH_LEN + 1)
+
 #define UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT (3)
 #define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
-#define UFEC23ENDEC_C2SREQPARAMETERGET_COUNT (1)
-#define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
+
+#define UFEC23ENDEC_C2SGETPARAMETER_COUNT (1)
+
+// #define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
+
 #define UFEC23ENDEC_C2SSETPARAMETER_COUNT ( 1 + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1 + sizeof(int32_t) )
 #define UFEC23ENDEC_S2CSETPARAMETERRESP_COUNT (1)
 
+#define UFEC23ENDEC_A2AREQPINGALIVE_COUNT (4)
+#define UFEC23ENDEC_S2CREQPINGALIVERESP_COUNT (4)
+
 void UFEC23ENDEC_Init();
+
+int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_A2AReqPingAlive* pSrc);
+bool UFEC23ENDEC_A2AReqPingAliveDecode(UFEC23ENDEC_A2AReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
 bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
@@ -160,12 +165,12 @@ bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pD
 
 // ========================================
 // Request one parameter
-int32_t UFEC23ENDEC_C2SReqParameterGetEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqParameterGet* pSrc);
-bool UFEC23ENDEC_C2SReqParameterGetDecode(UFEC23ENDEC_C2SReqParameterGet* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+int32_t UFEC23ENDEC_C2SGetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SGetParameter* pSrc);
+bool UFEC23ENDEC_C2SGetParameterDecode(UFEC23ENDEC_C2SGetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 
-int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc);
-bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+int32_t UFEC23ENDEC_S2CGetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc);
+bool UFEC23ENDEC_S2CGetParameterRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 
 int32_t UFEC23ENDEC_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_C2SSetParameter* pSrc);

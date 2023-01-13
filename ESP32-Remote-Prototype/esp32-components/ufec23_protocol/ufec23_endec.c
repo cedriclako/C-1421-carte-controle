@@ -5,103 +5,119 @@ void UFEC23ENDEC_Init()
     
 }
 
-int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc)
+int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_A2AReqPingAlive* pSrc)
 {
-    if (u32DstLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
+    if (u32DstLen < UFEC23ENDEC_A2AREQPINGALIVE_COUNT)
         return 0;
-
-    const uint8_t u32SWNameLen = (uint8_t)strlen(pSrc->szSoftwareName);
-    if (u32SWNameLen > UFEC23ENDEC_SOFTWARENAME_LEN)
-        return 0;
-    const uint8_t u32GitHashLen = (uint8_t)strlen(pSrc->szGitHash);
-    if (u32GitHashLen > UFEC23ENDEC_GITHASH_LEN)
-        return 0;
-    int32_t n = 0;
-    u8Dst[n++] = pSrc->sVersion.u8Major;
-    u8Dst[n++] = pSrc->sVersion.u8Minor;
-    u8Dst[n++] = pSrc->sVersion.u8Revision;
-
-    u8Dst[n++] = (uint8_t)u32SWNameLen;
-    memcpy(u8Dst+n, pSrc->szSoftwareName, u32SWNameLen);
-    n += u32SWNameLen;
-    u8Dst[n++] = (uint8_t)u32GitHashLen;
-    memcpy(u8Dst+n, pSrc->szGitHash, u32GitHashLen);
-    n += u32GitHashLen;
-    return n;
+    memcpy(u8Dst, &pSrc->u32Ping, sizeof(uint32_t));
+    return sizeof(uint32_t);
 }
 
-bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_A2AReqPingAliveDecode(UFEC23ENDEC_A2AReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
+    if (u32DataLen < UFEC23ENDEC_A2AREQPINGALIVE_COUNT)
         return false;
-    // Version
-	uint32_t n = 0;
-    pDst->sVersion.u8Major = u8Datas[n++];
-    pDst->sVersion.u8Minor = u8Datas[n++];
-    pDst->sVersion.u8Revision = u8Datas[n++];
-    const uint32_t swlen = u8Datas[n++];
-    if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN)
-        return false;
-    memcpy(pDst->szSoftwareName, &u8Datas[n], (size_t)swlen);
-    pDst->szSoftwareName[swlen] = 0;
-    n += swlen;
-    const uint32_t gitHashLen = u8Datas[n++];
-    if (gitHashLen > UFEC23ENDEC_GITHASH_LEN)
-        return false;
-    memcpy(pDst->szGitHash, &u8Datas[n], (size_t)gitHashLen);
-    pDst->szGitHash[gitHashLen] = 0;
-    n += gitHashLen;
+    memcpy(&pDst->u32Ping, u8Datas, sizeof(uint32_t));
     return true;
 }
 
-int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc)
-{
-    if (u32DstLen < UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT)
-        return 0;
-    int n = 0;
-    u8Dst[n++] = pSrc->u8FanSpeedCurr;
-    u8Dst[n++] = pSrc->u8FanSpeedMax;
-    u8Dst[n++] = (uint8_t)((pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00));
-    return n;
-}
+// int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc)
+// {
+//     if (u32DstLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
+//         return 0;
 
-bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSettingResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
-{
-    if (u32DataLen < UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT)
-        return false;
-    pDst->u8FanSpeedCurr = u8Datas[0];
-    pDst->u8FanSpeedMax = u8Datas[1];
-    pDst->bIsAirOpen = (u8Datas[2] & 0x01) != 0;
-    pDst->bIsFanModeAuto = (u8Datas[2] & 0x02) != 0;
-    return true;
-}
+//     const uint8_t u32SWNameLen = (uint8_t)strlen(pSrc->szSoftwareName);
+//     if (u32SWNameLen > UFEC23ENDEC_SOFTWARENAME_LEN)
+//         return 0;
+//     const uint8_t u32GitHashLen = (uint8_t)strlen(pSrc->szGitHash);
+//     if (u32GitHashLen > UFEC23ENDEC_GITHASH_LEN)
+//         return 0;
+//     int32_t n = 0;
+//     u8Dst[n++] = pSrc->sVersion.u8Major;
+//     u8Dst[n++] = pSrc->sVersion.u8Minor;
+//     u8Dst[n++] = pSrc->sVersion.u8Revision;
 
-int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SSetRunningSetting* pSrc)
-{
-    if (u32DstLen < UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT)
-        return 0;
-    int n = 0;
-    const uint16_t u16 = (uint16_t)pSrc->eRunningSettingFlags;
-    u8Dst[n++] = (uint8_t)((u16 >> 8) & 0xFF);
-    u8Dst[n++] = (uint8_t)(u16 & 0xFF);
+//     u8Dst[n++] = (uint8_t)u32SWNameLen;
+//     memcpy(u8Dst+n, pSrc->szSoftwareName, u32SWNameLen);
+//     n += u32SWNameLen;
+//     u8Dst[n++] = (uint8_t)u32GitHashLen;
+//     memcpy(u8Dst+n, pSrc->szGitHash, u32GitHashLen);
+//     n += u32GitHashLen;
+//     return n;
+// }
 
-    u8Dst[n++] = pSrc->u8FanSpeedCurr;
-    u8Dst[n++] = (uint8_t)((pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00));
-    return n;
-}
+// bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+// {
+//     if (u32DataLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
+//         return false;
+//     // Version
+// 	uint32_t n = 0;
+//     pDst->sVersion.u8Major = u8Datas[n++];
+//     pDst->sVersion.u8Minor = u8Datas[n++];
+//     pDst->sVersion.u8Revision = u8Datas[n++];
+//     const uint32_t swlen = u8Datas[n++];
+//     if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN)
+//         return false;
+//     memcpy(pDst->szSoftwareName, &u8Datas[n], (size_t)swlen);
+//     pDst->szSoftwareName[swlen] = 0;
+//     n += swlen;
+//     const uint32_t gitHashLen = u8Datas[n++];
+//     if (gitHashLen > UFEC23ENDEC_GITHASH_LEN)
+//         return false;
+//     memcpy(pDst->szGitHash, &u8Datas[n], (size_t)gitHashLen);
+//     pDst->szGitHash[gitHashLen] = 0;
+//     n += gitHashLen;
+//     return true;
+// }
 
-int32_t UFEC23ENDEC_C2SReqParameterGetEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqParameterGet* pSrc)
+// int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc)
+// {
+//     if (u32DstLen < UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT)
+//         return 0;
+//     int n = 0;
+//     u8Dst[n++] = pSrc->u8FanSpeedCurr;
+//     u8Dst[n++] = pSrc->u8FanSpeedMax;
+//     u8Dst[n++] = (uint8_t)((pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00));
+//     return n;
+// }
+
+// bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSettingResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+// {
+//     if (u32DataLen < UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT)
+//         return false;
+//     pDst->u8FanSpeedCurr = u8Datas[0];
+//     pDst->u8FanSpeedMax = u8Datas[1];
+//     pDst->bIsAirOpen = (u8Datas[2] & 0x01) != 0;
+//     pDst->bIsFanModeAuto = (u8Datas[2] & 0x02) != 0;
+//     return true;
+// }
+
+// int32_t UFEC23ENDEC_C2SSetRunningSettingEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SSetRunningSetting* pSrc)
+// {
+//     if (u32DstLen < UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT)
+//         return 0;
+//     int n = 0;
+//     const uint16_t u16 = (uint16_t)pSrc->eRunningSettingFlags;
+//     u8Dst[n++] = (uint8_t)((u16 >> 8) & 0xFF);
+//     u8Dst[n++] = (uint8_t)(u16 & 0xFF);
+
+//     u8Dst[n++] = pSrc->u8FanSpeedCurr;
+//     u8Dst[n++] = (uint8_t)((pSrc->bIsAirOpen ? 0x01 : 0x00) | (pSrc->bIsFanModeAuto ? 0x02 : 0x00));
+//     return n;
+// }
+
+int32_t UFEC23ENDEC_C2SGetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SGetParameter* pSrc)
 {
-    if (u32DstLen < UFEC23ENDEC_C2SREQPARAMETERGET_COUNT)
+    if (u32DstLen < UFEC23ENDEC_C2SGETPARAMETER_COUNT)
         return false;
     int n = 0;
     u8Dst[n++] = (uint8_t)pSrc->eIterateOp;
     return n;
 }
 
-bool UFEC23ENDEC_C2SReqParameterGetDecode(UFEC23ENDEC_C2SReqParameterGet* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_C2SGetParameterDecode(UFEC23ENDEC_C2SGetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < UFEC23ENDEC_C2SREQPARAMETERGET_COUNT)
+    if (u32DataLen < UFEC23ENDEC_C2SGETPARAMETER_COUNT)
         return false;
     pDst->eIterateOp = (UFEC23ENDEC_EITERATEOP)u8Datas[0];
     if (pDst->eIterateOp >= UFEC23ENDEC_EITERATEOP_Count)
@@ -122,16 +138,16 @@ bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pD
     return true;
 }
 
-int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)
+int32_t UFEC23ENDEC_S2CGetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)
 {
     if (u32DstLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
         return 0;
  
     const UFEC23ENDEC_SEntry* psEntry = &pSrc->sEntry;
 	int32_t n = 0;
-	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD : 0x00) | 
-                           (pSrc->bIsEOF ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00)) | 
-                           (pSrc->bIsFirstRecord ? UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD : 0x00);
+	u8Dst[n++] = (uint8_t)((pSrc->bHasRecord ? (uint8_t)UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD : 0x00) |
+                           (pSrc->bIsEOF ? (uint8_t)UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00)) |
+                           (pSrc->bIsFirstRecord ? (uint8_t)UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD : 0x00);
 	u8Dst[n++] = (uint8_t)psEntry->eParamType;
 	const uint8_t u8KeyLen = (uint8_t)strnlen(psEntry->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
 	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
@@ -158,12 +174,12 @@ int32_t UFEC23ENDEC_S2CReqParameterGetRespEncode(uint8_t u8Dst[], uint32_t u32Ds
 	return n;
 }
 
-bool UFEC23ENDEC_S2CReqParameterGetRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_S2CGetParameterRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
         return false;
 
-    int n = 0;
+    uint32_t n = 0;
     pDst->bHasRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_HASRECORD) != 0;
     pDst->bIsEOF = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF) != 0; // Flags
     pDst->bIsFirstRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD) != 0; // Flags
