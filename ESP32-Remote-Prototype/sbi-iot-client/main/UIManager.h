@@ -17,6 +17,8 @@ void UIMANAGER_SwitchTo(ESCREEN eScreen);
 
 COMMONUI_SContext* UIMANAGER_GetUI();
 
+void UIMANAGER_OnDataReceived();
+
 #ifdef __cplusplus
 }
 #endif

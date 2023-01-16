@@ -1,5 +1,6 @@
 #include "MainUI.h"
 #include "Global.h"
+#include "../MemBlock.h"
 #include "../UIManager.h"
 
 #define TAG "MainUI"
@@ -32,6 +33,8 @@ static void Process(COMMONUI_SContext* pContext);
 
 static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y);
 
+static void OnDataReceived(COMMONUI_SContext* pContext);
+
 static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar);
 static void DrawBar(int32_t s32X, int32_t s32Y, int32_t s32Level, bool bIsActive);
 
@@ -43,7 +46,8 @@ const COMMONUI_SConfig MAINUI_g_sConfig =
     .ptrEnter = Enter, 
     .ptrExit = Exit, 
     .ptrProcess = Process, 
-    .ptrOnTouch = OnTouch 
+    .ptrOnTouch = OnTouch,
+    .ptrOnDataReceived = OnDataReceived
 };
 
 static void Init(COMMONUI_SContext* pContext)
@@ -164,7 +168,7 @@ static void RedrawUI(COMMONUI_SContext* pContext)
 
         G_g_CanvasResult.setFreeFont(FSSB18);
         G_g_CanvasResult.setTextSize(3);
-        sprintf(tmp, "%.1f", pHandle->fSetPoint);
+        sprintf(tmp, "%.1f", tem);
         G_g_CanvasResult.drawString(String(tmp), 232, s32CurrentTempY+72);
         G_g_CanvasResult.setTextSize(1);
         G_g_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
@@ -187,10 +191,29 @@ static void RedrawUI(COMMONUI_SContext* pContext)
         }
         G_g_CanvasResult.setFreeFont(FSSB18);
         G_g_CanvasResult.setTextSize(3);
-        sprintf(tmp, "%.1f", pHandle->fSetPoint);
+
+        // S2C Get status response
+        const char* szTempUnitString = "";
+        
+        if (g_sMemblock.has_s2cGetStatusResp && 
+            g_sMemblock.s2cGetStatusResp.has_stove_state &&
+            g_sMemblock.s2cGetStatusResp.stove_state.has_remote_temperature_setp)
+        {
+            if (g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Celcius)
+                szTempUnitString = "C";
+            else if (g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit)
+                szTempUnitString = "F";
+
+            sprintf(tmp, "%.1f", g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp);
+        }
+        else
+        {
+            sprintf(tmp, "---"); 
+        }
+        
         G_g_CanvasResult.drawString(String(tmp), 232, ZONE_SETPOINT_START_Y+72);
         G_g_CanvasResult.setTextSize(1);
-        G_g_CanvasResult.drawString("C", 440, ZONE_SETPOINT_START_Y+72);
+        G_g_CanvasResult.drawString(szTempUnitString, 440, ZONE_SETPOINT_START_Y+72);
         
         G_g_CanvasResult.drawRect(40, ZONE_SETPOINT_START_Y + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }
@@ -243,4 +266,9 @@ static void DrawBar(int32_t s32X, int32_t s32Y, int32_t s32Level, bool bIsActive
     
     G_g_CanvasResult.fillRect(s32X, s32Y + BAR_TOP(s32Level), BAR_WIDTH, BAR_HEIGHT - BAR_TOP(s32Level), (bIsActive ? TFT_WHITE : TFT_BLACK));
     G_g_CanvasResult.drawRect(s32X, s32Y + BAR_TOP(s32Level), BAR_WIDTH, BAR_HEIGHT - BAR_TOP(s32Level), TFT_WHITE);
+}
+
+static void OnDataReceived(COMMONUI_SContext* pContext)
+{
+    RedrawUI((COMMONUI_SContext*)pContext);
 }

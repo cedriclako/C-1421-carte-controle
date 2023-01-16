@@ -82,6 +82,13 @@ void UIMANAGER_OnTouch(int32_t s32X, int32_t s32Y)
         pContext->psConfig->ptrOnTouch(pContext, s32X, s32Y);
 }
 
+void UIMANAGER_OnDataReceived()
+{
+    COMMONUI_SContext* pContext = UIMANAGER_GetUI();
+    if (pContext != NULL && pContext->psConfig->ptrOnDataReceived != NULL)
+        pContext->psConfig->ptrOnDataReceived(pContext);
+}
+
 static void SwitchUI(const COMMONUI_SContext* sContext, ESCREEN eScreen)
 {
     UIMANAGER_SwitchTo(eScreen);

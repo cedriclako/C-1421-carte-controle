@@ -104,8 +104,10 @@ static void wifi_init(uint8_t u8CurrentChannel)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP) );
     
     wifi_config_t wifi_configAP;
+    memset(&wifi_configAP, 0, sizeof(wifi_config_t));
     strcpy((char*)wifi_configAP.ap.ssid, "test");
     wifi_configAP.ap.ssid_len = 0;
+    wifi_configAP.ap.authmode = WIFI_AUTH_OPEN;
     wifi_configAP.ap.channel = u8CurrentChannel;
     wifi_configAP.ap.max_connection = 5;
 
@@ -201,7 +203,8 @@ void ESPNOWCOMM_Handler()
     }
     else
     {
-        if ( (xTaskGetTickCount() - m_sHandle.ttEstablishedConnectionTicks) > pdMS_TO_TICKS(500) )
+        if (m_sHandle.ttEstablishedConnectionTicks == 0 || 
+            (xTaskGetTickCount() - m_sHandle.ttEstablishedConnectionTicks) > pdMS_TO_TICKS(1500) )
         {
             m_sHandle.ttEstablishedConnectionTicks = xTaskGetTickCount();
             SendGetStatus();

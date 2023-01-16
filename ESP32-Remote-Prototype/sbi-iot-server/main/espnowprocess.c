@@ -1,6 +1,5 @@
 #include "espnowprocess.h"
 #include "esp_log.h"
-#include "Memblock.h"
 
 #include "SBI.iot.pb.h"
 #include "SBI.iot.common.pb.h"
@@ -19,21 +18,23 @@
 
 typedef struct
 {
+    // Temperature setpoint
+    bool has_temp_sp;
+    SBI_iot_common_TemperatureSetPoint temp_sp;
+    
+    bool has_tempC_current;
+    float tempC_current;
+} SRemoteState;
+
+typedef struct
+{
     ESPNOWPROCESS_ESPNowInfo sESPNowInfo;
 
     QueueHandle_t sQueueRXHandle;
     // QueueHandle_t sQueueTXHandle;
 
     // Related to the remote state
-    struct
-    {
-        // Temperature setpoint
-        bool has_temp_sp;
-        SBI_iot_common_TemperatureSetPoint temp_sp;
-        
-        bool has_tempC_current;
-        float tempC_current;
-    } sRemoteState;
+    SRemoteState sRemoteState;
 } SHandle;
 
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
@@ -57,6 +58,15 @@ static SHandle m_sHandle;
 
 void ESPNOWPROCESS_Init()
 {
+    // Default values
+    memset(&m_sHandle.sRemoteState, 0, sizeof(SRemoteState));
+
+    m_sHandle.sRemoteState.has_tempC_current = false;
+
+    m_sHandle.sRemoteState.has_temp_sp = false;
+    m_sHandle.sRemoteState.temp_sp.temp = 21.0f;
+    m_sHandle.sRemoteState.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
+
     memset(&m_sHandle.sESPNowInfo, 0, sizeof(ESPNOWPROCESS_ESPNowInfo));
 
     m_sHandle.sQueueRXHandle = xQueueCreate(ESPNOWPROCESS_QUEUERX, sizeof(ESPNOWPROCESS_SMsg));
@@ -140,7 +150,7 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 
     s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
     s2c_get_status_resp.stove_state.fan_speed_boundary.min = 1;
-    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 5;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 4;
 
     s2c_get_status_resp.stove_state.is_open_air = false;
 

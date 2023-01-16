@@ -214,6 +214,8 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
         g_sMemblock.has_s2cGetStatusResp = true;
         memcpy(&g_sMemblock.s2cGetStatusResp, pMsg, sizeof(SBI_iot_S2CGetStatusResp));
 
+        UIMANAGER_OnDataReceived();
+
         ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
             pMsg->stove_state.remote_temperature_setp.temp,
             ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),

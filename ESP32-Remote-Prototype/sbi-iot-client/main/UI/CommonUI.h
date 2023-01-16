@@ -36,6 +36,8 @@ typedef void (*COMMONUI_ExitFn)(COMMONUI_SContext* pContext);
 typedef void (*COMMONUI_ProcessFn)(COMMONUI_SContext* pContext);
 typedef void (*COMMONUI_OnTouchFn)(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32TouchY);
 
+typedef void (*COMMONUI_OnDataReceivedFn)(COMMONUI_SContext* pContext);
+
 // Core events
 typedef void (*COMMONUI_SwitchUIFn)(const COMMONUI_SContext* pContext, ESCREEN eScreen);
 
@@ -57,6 +59,8 @@ struct _COMMONUI_SConfig
 
     COMMONUI_ProcessFn ptrProcess;
     COMMONUI_OnTouchFn ptrOnTouch;
+
+    COMMONUI_OnDataReceivedFn ptrOnDataReceived;
 };
 
 struct _COMMONUI_SUIManagerContext
