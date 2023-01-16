@@ -22,6 +22,7 @@ static COMMONUI_SContext m_sUIs[UIMANAGER_ESCREEN_Count] =
 };
 
 static UIMANAGER_ESCREEN m_eScreen = UIMANAGER_ESCREEN_Invalid;
+static bool m_bIsFirstLoad = true;
 
 void UIMANAGER_Init()
 {
@@ -34,8 +35,13 @@ void UIMANAGER_SwitchTo(UIMANAGER_ESCREEN eScreen)
     // Already loaded in the right screen ...
     if (m_eScreen == eScreen)
         return;
+
     G_g_CanvasResult.fillCanvas(TFT_BLACK);
-    M5.EPD.Clear(true);
+    if (m_bIsFirstLoad) 
+    {
+        M5.EPD.Clear(true);
+        m_bIsFirstLoad = false;
+    }
 
     // Call exit on older process ...
     COMMONUI_SContext* pOldContext = UIMANAGER_GetUI();
