@@ -29,7 +29,7 @@ typedef void (*COMMONUI_EnterFn)(COMMONUI_SContext* pContext);
 typedef void (*COMMONUI_ExitFn)(COMMONUI_SContext* pContext);
 
 typedef void (*COMMONUI_ProcessFn)(COMMONUI_SContext* pContext);
-typedef void (*COMMONUI_OnTouchFn)(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y);
+typedef void (*COMMONUI_OnTouchFn)(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32TouchY);
 
 typedef struct
 {
@@ -53,6 +53,8 @@ struct _COMMONUI_SConfig
 
 const EF_SFile* COMMONUI_GetBtnArrowUp(bool bIsEnabled);
 const EF_SFile* COMMONUI_GetBtnArrowDown(bool bIsEnabled);
+
+bool COMMONUI_IsInCoordinate(int32_t s32X, int32_t s32Y, int32_t s32Width, int32_t s32Height, int32_t s32TouchX, int32_t s32TouchY);
 
 #ifdef __cplusplus
 }

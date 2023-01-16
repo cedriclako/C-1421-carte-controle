@@ -71,7 +71,7 @@ static void Exit(COMMONUI_SContext* pContext)
 
 }
 
-static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y)
+static void OnTouch(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32TouchY)
 {
     const MAINUI_SArgument* pArgument = (const MAINUI_SArgument*)pContext->pvdArgument;
     if (!pArgument->bIsUserModeActive)
@@ -87,15 +87,13 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y)
     // ==================================
     // Set point
     // Configs fan speed
-    if ( s32X >= ZONE_SETPOINT_BUTTONDOWN_X && s32X <= (ZONE_SETPOINT_BUTTONDOWN_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
-         s32Y >= ZONE_SETPOINT_BUTTONDOWN_Y && s32Y <= (ZONE_SETPOINT_BUTTONDOWN_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
+    if ( COMMONUI_IsInCoordinate(ZONE_SETPOINT_BUTTONDOWN_X, ZONE_SETPOINT_BUTTONDOWN_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
         if (m_fSetPoint - 0.5f >= 5.0f)
             m_fSetPoint -= 0.5f;
     }
-    else if ( s32X >= ZONE_SETPOINT_BUTTONUP_X && s32X <= (ZONE_SETPOINT_BUTTONUP_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
-              s32Y >= ZONE_SETPOINT_BUTTONUP_Y && s32Y <= (ZONE_SETPOINT_BUTTONUP_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
+    else if ( COMMONUI_IsInCoordinate(ZONE_SETPOINT_BUTTONUP_X, ZONE_SETPOINT_BUTTONUP_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
         if (m_fSetPoint + 0.5f <= 40.0f)
@@ -104,22 +102,20 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y)
 
     // ==================================
     // Configs fan speed
-    if ( s32X >= ZONE_FANSPEED_BUTTONDOWN_X && s32X <= (ZONE_FANSPEED_BUTTONDOWN_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
-         s32Y >= ZONE_FANSPEED_BUTTONDOWN_Y && s32Y <= (ZONE_FANSPEED_BUTTONDOWN_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
+    if ( COMMONUI_IsInCoordinate(ZONE_FANSPEED_BUTTONDOWN_X, ZONE_FANSPEED_BUTTONDOWN_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
         if (pHandle->u8CurrentFanSpeed - 1 >= 1)
             pHandle->u8CurrentFanSpeed--;
     }
-    else if ( s32X >= ZONE_FANSPEED_BUTTONUP_X && s32X <= (ZONE_FANSPEED_BUTTONUP_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
-              s32Y >= ZONE_FANSPEED_BUTTONUP_Y && s32Y <= (ZONE_FANSPEED_BUTTONUP_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
+    else if ( COMMONUI_IsInCoordinate(ZONE_FANSPEED_BUTTONUP_X, ZONE_FANSPEED_BUTTONUP_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
         if (pHandle->u8CurrentFanSpeed + 1 <= 4)
             pHandle->u8CurrentFanSpeed++;
     }
 
-    ESP_LOGI(TAG, "Touch x: %d, y: %d", s32X, s32Y);
+    ESP_LOGI(TAG, "Touch x: %d, y: %d", s32TouchX, s32TouchY);
 
     if (bNeedRedraw)
         RedrawUI(pContext);
