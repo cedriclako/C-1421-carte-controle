@@ -10,6 +10,7 @@
 #include "esp_sleep.h"
 
 #include "espnowcomm.h"
+#include "SleepData.h"
 #include "Global.h"
 #include "UIManager.h"
 #include "assets/EmbeddedFiles.h"
@@ -26,6 +27,9 @@ static uint16_t m_u16Finger0X = 0;
 static uint16_t m_u16Finger0Y = 0;
 
 static TickType_t m_ttProcTimeoutTicks = xTaskGetTickCount();
+
+// Last record
+static SLEEPDATA_URecord m_uLastRecord = { .sData = { .u8LastChannel = 0 } };
 
 void setup()
 {
@@ -49,6 +53,8 @@ void setup()
     M5.TP.SetRotation(90);
     M5.EPD.SetRotation(90);
 
+    SLEEPDATA_Init();
+
     UIMANAGER_Init();
 
     M5.update();
@@ -67,7 +73,15 @@ void setup()
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // Restore last channel
-    ESPNOWCOMM_Init(0);
+    if (SLEEPDATA_ReadLastRecord(&m_uLastRecord))
+    {
+        ESP_LOGI(TAG, "Last channel on record: %d", m_uLastRecord.sData.u8LastChannel);
+
+        if (m_uLastRecord.sData.u8LastChannel > 11)
+            m_uLastRecord.sData.u8LastChannel = 0;
+    }
+
+    ESPNOWCOMM_Init(m_uLastRecord.sData.u8LastChannel);
 
     ESPNOWCOMM_SetChannelFoundCallback(ENChannelFoundCallback);
     ESPNOWCOMM_SetS2CGetStatusRespCallback(ENS2CGetStatusRespCallback);
@@ -126,6 +140,7 @@ void loop()
         // Timeout
         if (!m_bDataReceived)
         {
+            m_uLastRecord.sData.u8LastChannel = 0;
             ESP_LOGE(TAG, "No communication, reset ESPNowChannel, next time it will scan");
         }
 
@@ -137,6 +152,9 @@ void loop()
             UIMANAGER_SwitchTo(ESCREEN_HomeReadOnly);
             vTaskDelay(pdMS_TO_TICKS(300));
         }
+
+        // Keep last channel into flash memory
+        SLEEPDATA_WriteRecord(&m_uLastRecord);
 
         ESP_LOGI(TAG, "Time to go to sleep, good night. time: %d", 
             (int)(esp_timer_get_time() / 1000));
@@ -177,6 +195,7 @@ static void ENChannelFoundCallback(uint8_t u8Channel)
 {
     // Keep last known channel
     ESP_LOGI(TAG, "Right channel found!, channel: %d", u8Channel);
+    m_uLastRecord.sData.u8LastChannel = u8Channel;
 }
 
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)

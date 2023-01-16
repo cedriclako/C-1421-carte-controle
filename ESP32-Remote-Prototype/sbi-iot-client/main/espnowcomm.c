@@ -104,7 +104,7 @@ static void wifi_init(uint8_t u8CurrentChannel)
     
     wifi_config_t wifi_configAP = {
         .ap = {
-            .ssid = "{0}",
+            .ssid = "test",
             .ssid_len = 0,
             .channel = u8CurrentChannel,
             .max_connection = 5,
@@ -125,7 +125,7 @@ static void wifi_init(uint8_t u8CurrentChannel)
     /* Add broadcast peer information to peer list. */
     esp_now_peer_info_t peer;
     memset(&peer, 0, sizeof(esp_now_peer_info_t));
-    peer.channel = 0;
+    peer.channel = u8CurrentChannel;
     peer.ifidx = ESP_IF_WIFI_AP;
     peer.encrypt = false;
     memcpy(peer.peer_addr, m_u8BroadcastAddr, ESP_NOW_ETH_ALEN);
@@ -300,5 +300,9 @@ static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int
     else if (event_id == WIFI_EVENT_AP_STOP)
     {
         ESP_LOGI(TAG, "event_id: %d [WIFI_EVENT_AP_STOP]", event_id);       
+    }
+    else
+    {
+        ESP_LOGI(TAG, "event_id: %d [WIFI_EVENT_AP_*]", event_id);   
     }
 }
