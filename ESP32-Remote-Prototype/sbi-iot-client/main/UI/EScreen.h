@@ -5,8 +5,8 @@ typedef enum
 {
     ESCREEN_Invalid = -1,  // Default value, nothing loaded yet.
 
-    ESCREEN_MainReadOnly = 0,
-    ESCREEN_MainUsermode,
+    ESCREEN_HomeReadOnly = 0,
+    ESCREEN_HomeUsermode,
     ESCREEN_PoweringOn,
 
     ESCREEN_Settings,

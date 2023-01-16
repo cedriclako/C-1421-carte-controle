@@ -17,8 +17,8 @@ static COMMONUI_SUIManagerContext m_sUIManagerCtx = { .ptrSwitchUI = SwitchUI };
 static COMMONUI_SContext m_sUIs[ESCREEN_Count] =
 {
     // Main
-    [ESCREEN_MainReadOnly] = { .szName = "MainReadOnly", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
-    [ESCREEN_MainUsermode] = { .szName = "MainUsermode", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    [ESCREEN_HomeReadOnly] = { .szName = "MainReadOnly", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
+    [ESCREEN_HomeUsermode] = { .szName = "MainUsermode", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
     // Powering on
     [ESCREEN_PoweringOn]   = { .szName = "PoweringOn", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
     // Settings
