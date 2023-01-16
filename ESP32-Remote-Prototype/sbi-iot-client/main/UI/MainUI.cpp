@@ -63,7 +63,7 @@ static void Enter(COMMONUI_SContext* pContext)
     MAINUI_SHandle* pHandle = (MAINUI_SHandle*)pContext->pHandle;
     
     pHandle->u8CurrentFanSpeed = 1;
-    pHandle->fSetPoint = 25.0;
+    pHandle->fSetPoint = 20.0;
 
     RedrawUI(pContext);
 }
@@ -142,13 +142,12 @@ static void RedrawUI(COMMONUI_SContext* pContext)
     // rtc_date_t RTCDate;
     // M5.RTC.getTime(&RTCtime);
     // M5.RTC.getDate(&RTCDate);
-
     float tem = M5.SHT30.GetTemperature();
-    float hum = M5.SHT30.GetRelHumidity();
-    char temStr[10];
-    char humStr[10];
-    dtostrf(tem, 2, 1, temStr);
-    dtostrf(hum, 2, 1, humStr);
+    //float hum = M5.SHT30.GetRelHumidity();
+    char tmp[40+1];
+    //char humStr[10];
+    //dtostrf(tem, 2, 1, temStr);
+    //dtostrf(hum, 2, 1, humStr);
 
     // Images
     const EF_SFile* pSFileSetting = &EF_g_sFiles[EF_EFILE_ICON_SETTING_160X160_JPG];
@@ -165,7 +164,8 @@ static void RedrawUI(COMMONUI_SContext* pContext)
 
         G_g_CanvasResult.setFreeFont(FSSB18);
         G_g_CanvasResult.setTextSize(3);
-        G_g_CanvasResult.drawString(String(temStr), 232, s32CurrentTempY+72);
+        sprintf(tmp, "%.1f", pHandle->fSetPoint);
+        G_g_CanvasResult.drawString(String(tmp), 232, s32CurrentTempY+72);
         G_g_CanvasResult.setTextSize(1);
         G_g_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
         
@@ -187,7 +187,6 @@ static void RedrawUI(COMMONUI_SContext* pContext)
         }
         G_g_CanvasResult.setFreeFont(FSSB18);
         G_g_CanvasResult.setTextSize(3);
-        char tmp[40+1];
         sprintf(tmp, "%.1f", pHandle->fSetPoint);
         G_g_CanvasResult.drawString(String(tmp), 232, ZONE_SETPOINT_START_Y+72);
         G_g_CanvasResult.setTextSize(1);

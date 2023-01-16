@@ -9,6 +9,7 @@
 #include "esp_wifi.h"
 #include "esp_sleep.h"
 
+#include "MemBlock.h"
 #include "espnowcomm.h"
 #include "SleepData.h"
 #include "Global.h"
@@ -94,6 +95,10 @@ void loop()
     M5.update();
     M5.SHT30.UpdateData();
 
+    // Update status memory block ...
+    g_sMemblock.sRemoteState.temperatureC_curr = M5.SHT30.GetTemperature();
+    g_sMemblock.has_sRemoteState = true;
+
     ESPNOWCOMM_Handler();
 
     UIMANAGER_Process();
@@ -132,8 +137,8 @@ void loop()
     }
 
     // 10s maximum, after that we go to sleep again
-    bool bIsExpired = (!m_isUserModeActive && ( (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(10*1000) || m_bDataReceived )) ||
-                      (m_isUserModeActive && (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(20*1000));
+    const bool bIsExpired = (!m_isUserModeActive && ( (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(10*1000) || m_bDataReceived )) ||
+                             (m_isUserModeActive && (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(20*1000));
 
     if (bIsExpired)
     {
@@ -205,6 +210,10 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
         pMsg->stove_state.has_fan_speed_boundary && 
         pMsg->stove_state.has_remote_temperature_setp)
     {
+        // Status received ...
+        g_sMemblock.has_s2cGetStatusResp = true;
+        memcpy(&g_sMemblock.s2cGetStatusResp, pMsg, sizeof(SBI_iot_S2CGetStatusResp));
+
         ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
             pMsg->stove_state.remote_temperature_setp.temp,
             ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),
@@ -219,6 +228,6 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
     {
         ESP_LOGE(TAG, "GetStatus received but no stove_state");
     }
-   m_bDataReceived = true;
+    m_bDataReceived = true;
 }
 

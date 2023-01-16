@@ -1,7 +1,10 @@
+#include <M5EPD.h>
+
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "esp_now.h"
 #include "espnowcomm.h"
+#include "MemBlock.h"
 
 #include "nanopb/pb_common.h"
 #include "nanopb/pb_decode.h"
@@ -22,7 +25,7 @@ static void wifi_init(uint8_t u8CurrentChannel);
 
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
-static void SendStatus();
+static void SendGetStatus();
 
 typedef struct
 {
@@ -46,7 +49,7 @@ typedef struct
 #define ESPNOW_PMK "pmk1234567890123"
 
 static const uint8_t m_u8BroadcastAddr[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-static SHandle m_sHandle = {0};
+static SHandle m_sHandle;
 
 static volatile bool m_bWaitInit = false;
 
@@ -100,14 +103,12 @@ static void wifi_init(uint8_t u8CurrentChannel)
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP) );
     
-    wifi_config_t wifi_configAP = {
-        .ap = {
-            .ssid = "test",
-            .ssid_len = 0,
-            .channel = u8CurrentChannel,
-            .max_connection = 5,
-        },
-    };
+    wifi_config_t wifi_configAP;
+    strcpy((char*)wifi_configAP.ap.ssid, "test");
+    wifi_configAP.ap.ssid_len = 0;
+    wifi_configAP.ap.channel = u8CurrentChannel;
+    wifi_configAP.ap.max_connection = 5;
+
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_configAP));
     ESP_LOGI(TAG, "esp_wifi_start()");
     ESP_ERROR_CHECK(esp_wifi_start());
@@ -125,7 +126,7 @@ static void wifi_init(uint8_t u8CurrentChannel)
     esp_now_peer_info_t peer;
     memset(&peer, 0, sizeof(esp_now_peer_info_t));
     peer.channel = u8CurrentChannel;
-    peer.ifidx = ESP_IF_WIFI_AP;
+    peer.ifidx = WIFI_IF_AP;
     peer.encrypt = false;
     memcpy(peer.peer_addr, m_u8BroadcastAddr, ESP_NOW_ETH_ALEN);
     ESP_ERROR_CHECK( esp_now_add_peer(&peer) );
@@ -194,27 +195,40 @@ void ESPNOWCOMM_Handler()
 
             ESP_LOGI(TAG, "Change channel for: %d", m_sHandle.u8CurrChannel);
 
-            SendStatus();
+            SendGetStatus();
             m_sHandle.ttChangeChannelTicks = xTaskGetTickCount();
         }
     }
     else
     {
-        SendStatus();
-        vTaskDelay(pdMS_TO_TICKS(500));
+        if ( (xTaskGetTickCount() - m_sHandle.ttEstablishedConnectionTicks) > pdMS_TO_TICKS(500) )
+        {
+            m_sHandle.ttEstablishedConnectionTicks = xTaskGetTickCount();
+            SendGetStatus();
+        }
     }
 }
 
-static void SendStatus()
+static void SendGetStatus()
 {
     SBI_iot_C2SGetStatus c2sGetStatus;
-    c2sGetStatus.has_remote_state = true;
-    c2sGetStatus.remote_state.temperatureC_curr = 25;
+
+    // Remote state
+    if (g_sMemblock.has_sRemoteState)
+    {
+        c2sGetStatus.has_remote_state = true;
+        memcpy(&c2sGetStatus.remote_state, &g_sMemblock.sRemoteState, sizeof(SBI_iot_RemoteState));
+    }
+    
     SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
 }
 
 static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus)
 {
+    // Keep status response into memory block
+    g_sMemblock.has_s2cGetStatusResp = true;
+    memcpy(&g_sMemblock.s2cGetStatusResp, pC2SGetStatus, sizeof(SBI_iot_S2CGetStatusResp));
+    
     if (!m_sHandle.bIsFrequencyFound)
     {
         m_sHandle.bIsFrequencyFound = true;
