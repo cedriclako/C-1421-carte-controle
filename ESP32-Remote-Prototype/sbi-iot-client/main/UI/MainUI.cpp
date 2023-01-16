@@ -7,11 +7,15 @@
 #define BAR_WIDTH 48
 #define BAR_MARGIN 16
 
-#define ZONE_FANSPEED_START_Y 500
+#define ZONE_SETPOINT_START_Y 250
+#define ZONE_SETPOINT_BUTTONUP_X (40)
+#define ZONE_SETPOINT_BUTTONUP_Y (ZONE_SETPOINT_START_Y+16)
+#define ZONE_SETPOINT_BUTTONDOWN_X (40)
+#define ZONE_SETPOINT_BUTTONDOWN_Y (ZONE_SETPOINT_START_Y+136)
 
+#define ZONE_FANSPEED_START_Y 500
 #define ZONE_FANSPEED_BUTTONUP_X (40)
 #define ZONE_FANSPEED_BUTTONUP_Y (ZONE_FANSPEED_START_Y+16)
-
 #define ZONE_FANSPEED_BUTTONDOWN_X (40)
 #define ZONE_FANSPEED_BUTTONDOWN_Y (ZONE_FANSPEED_START_Y+136)
 
@@ -37,6 +41,8 @@ const COMMONUI_SConfig MAINUI_g_sConfig =
     .ptrProcess = Process, 
     .ptrOnTouch = OnTouch 
 };
+
+static float m_fSetPoint = 25.0;
 
 static void Init(COMMONUI_SContext* pContext)
 {
@@ -78,7 +84,26 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32X, int32_t s32Y)
 
     bool bNeedRedraw = false;
 
-    // Configs
+    // ==================================
+    // Set point
+    // Configs fan speed
+    if ( s32X >= ZONE_SETPOINT_BUTTONDOWN_X && s32X <= (ZONE_SETPOINT_BUTTONDOWN_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
+         s32Y >= ZONE_SETPOINT_BUTTONDOWN_Y && s32Y <= (ZONE_SETPOINT_BUTTONDOWN_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
+    {
+        bNeedRedraw = true;
+        if (m_fSetPoint - 0.5f >= 5.0f)
+            m_fSetPoint -= 0.5f;
+    }
+    else if ( s32X >= ZONE_SETPOINT_BUTTONUP_X && s32X <= (ZONE_SETPOINT_BUTTONUP_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
+              s32Y >= ZONE_SETPOINT_BUTTONUP_Y && s32Y <= (ZONE_SETPOINT_BUTTONUP_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
+    {
+        bNeedRedraw = true;
+        if (m_fSetPoint + 0.5f <= 40.0f)
+            m_fSetPoint += 0.5f;
+    }
+
+    // ==================================
+    // Configs fan speed
     if ( s32X >= ZONE_FANSPEED_BUTTONDOWN_X && s32X <= (ZONE_FANSPEED_BUTTONDOWN_X + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width) && 
          s32Y >= ZONE_FANSPEED_BUTTONDOWN_Y && s32Y <= (ZONE_FANSPEED_BUTTONDOWN_Y + EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height) )
     {
@@ -152,25 +177,25 @@ static void RedrawUI(COMMONUI_SContext* pContext)
     // -----------------------------------
     // Current set point
     {
-        const int32_t s32CurrentTempY = 250;
-
         G_g_CanvasResult.setFreeFont(FF19);
         G_g_CanvasResult.setTextSize(1);
-        G_g_CanvasResult.drawCentreString("Setpoint", 40+EF_g_sIMAGES_ICON_ARROW_DOWN_EN_120X60_JPG.s32Width/2, s32CurrentTempY+92, GFXFF);
+        G_g_CanvasResult.drawCentreString("Setpoint", 40+EF_g_sIMAGES_ICON_ARROW_DOWN_EN_120X60_JPG.s32Width/2, ZONE_SETPOINT_START_Y+92, GFXFF);
         if (pArgument->bIsUserModeActive)
         {
             const EF_SFile* pSFileArrowUp = COMMONUI_GetBtnArrowUp(true);
-            G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, 40, s32CurrentTempY+16);
+            G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, ZONE_SETPOINT_BUTTONUP_X, ZONE_SETPOINT_BUTTONUP_Y);
             const EF_SFile* pSFileArrowDown = COMMONUI_GetBtnArrowDown(true);
-            G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, 40, s32CurrentTempY+136);
+            G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, ZONE_SETPOINT_BUTTONDOWN_X, ZONE_SETPOINT_BUTTONDOWN_Y);
         }
         G_g_CanvasResult.setFreeFont(FSSB18);
         G_g_CanvasResult.setTextSize(3);
-        G_g_CanvasResult.drawString(String(temStr), 232, s32CurrentTempY+72);
+        char tmp[40+1];
+        sprintf(tmp, "%.1f", m_fSetPoint);
+        G_g_CanvasResult.drawString(String(tmp), 232, ZONE_SETPOINT_START_Y+72);
         G_g_CanvasResult.setTextSize(1);
-        G_g_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
+        G_g_CanvasResult.drawString("C", 440, ZONE_SETPOINT_START_Y+72);
         
-        G_g_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
+        G_g_CanvasResult.drawRect(40, ZONE_SETPOINT_START_Y + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }
 
     // -----------------------------------

@@ -77,6 +77,7 @@ void setup()
 
 void loop()
 {     
+    M5.update();
     M5.SHT30.UpdateData();
 
     ESPNOWCOMM_Handler();
@@ -105,6 +106,15 @@ void loop()
             }
         }
     }
+    else
+    {
+        // Switch to edit mode
+        if (M5.BtnP.isPressed())
+        {
+            m_isUserModeActive = true;
+            UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainUsermode);
+        }
+    }
 
 
     // 10s maximum, after that we go to sleep again
@@ -120,9 +130,12 @@ void loop()
         }
 
         // Update screen
-        m_isUserModeActive = false;
-        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
-        vTaskDelay(pdMS_TO_TICKS(300));
+        if (m_isUserModeActive)
+        {
+            UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
+            m_isUserModeActive = false;
+            vTaskDelay(pdMS_TO_TICKS(300));
+        }
 
         ESP_LOGI(TAG, "Time to go to sleep, good night. time: %d", 
             (int)(esp_timer_get_time() / 1000));
