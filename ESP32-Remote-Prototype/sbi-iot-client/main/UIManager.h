@@ -16,6 +16,8 @@ typedef enum
     
     UIMANAGER_ESCREEN_PoweringOn,
 
+    UIMANAGER_ESCREEN_Settings,
+
     UIMANAGER_ESCREEN_Count
 } UIMANAGER_ESCREEN;
 

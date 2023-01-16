@@ -96,6 +96,7 @@ void loop()
 
                 if (m_u16Finger0X != sFinger.x || m_u16Finger0Y != sFinger.y)
                 {
+                    // Reset timeout
                     m_ttProcTimeoutTicks = xTaskGetTickCount();
 
                     UIMANAGER_OnTouch(sFinger.x, sFinger.y);
@@ -116,10 +117,9 @@ void loop()
         }
     }
 
-
     // 10s maximum, after that we go to sleep again
     bool bIsExpired = (!m_isUserModeActive && ( (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(10*1000) || m_bDataReceived )) ||
-                      (m_isUserModeActive && (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(60*1000));
+                      (m_isUserModeActive && (xTaskGetTickCount() - m_ttProcTimeoutTicks) > pdMS_TO_TICKS(20*1000));
 
     if (bIsExpired)
     {
@@ -132,8 +132,9 @@ void loop()
         // Update screen
         if (m_isUserModeActive)
         {
-            UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
+            ESP_LOGI(TAG, "User is done with change, time to switch to readonly mode and sleep");
             m_isUserModeActive = false;
+            UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
             vTaskDelay(pdMS_TO_TICKS(300));
         }
 
@@ -142,9 +143,10 @@ void loop()
         
         // Shutdown make deep sleep useless, except when the USB port keep the device alive
         // we can use deep sleep to simulate power loss.
-        M5.shutdown(10);
+        const int32_t s32SleepTimeS = 10;
+        M5.shutdown(s32SleepTimeS);
         TickType_t ttTicks = xTaskGetTickCount();
-        while( (xTaskGetTickCount() - ttTicks) <= pdMS_TO_TICKS(10*1000))
+        while( (xTaskGetTickCount() - ttTicks) <= pdMS_TO_TICKS(s32SleepTimeS*1000))
         {       
             M5.update();
             if (M5.BtnP.isPressed())

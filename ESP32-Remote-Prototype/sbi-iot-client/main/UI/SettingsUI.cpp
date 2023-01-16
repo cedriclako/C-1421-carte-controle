@@ -1,12 +1,12 @@
-#include "PoweringOnUI.h"
+#include "SettingsUI.h"
 
-#define TAG "PoweringOnUI"
+#define TAG "SettingsUI"
 
 static void Init(COMMONUI_SContext* pContext);
 static void Enter(COMMONUI_SContext* pContext);
 static void Exit(COMMONUI_SContext* pContext);
 
-const COMMONUI_SConfig POWERINGONUI_g_sConfig = 
+const COMMONUI_SConfig SETTINGSUI_g_sConfig = 
 { 
     .ptrInit = Init, 
     .ptrEnter = Enter, 
@@ -20,10 +20,10 @@ static void Init(COMMONUI_SContext* pContext)
 
 static void Enter(COMMONUI_SContext* pContext)
 {
-    ESP_LOGI(TAG, "Started using the button");
+    ESP_LOGI(TAG, "Settings mode ...");
     G_g_CanvasResult.setTextSize(2);
     G_g_CanvasResult.setFreeFont(FF19);
-    G_g_CanvasResult.drawCentreString("Powering on ...", SCREEN_WIDTH/2, 850, GFXFF);
+    G_g_CanvasResult.drawCentreString("Settings mode ...", SCREEN_WIDTH/2, 850, GFXFF);
     G_g_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_A2);
     G_g_CanvasResult.fillCanvas(0);
 }

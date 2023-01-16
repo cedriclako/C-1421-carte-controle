@@ -18,6 +18,7 @@ typedef struct _COMMONUI_SConfig COMMONUI_SConfig;
 
 typedef struct 
 {
+    const char* szName;
     void* pHandle;
     const COMMONUI_SConfig* psConfig;
     void* pvdArgument;

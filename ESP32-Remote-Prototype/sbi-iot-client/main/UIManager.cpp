@@ -2,6 +2,7 @@
 #include "Global.h"
 #include "UI/MainUI.h"
 #include "UI/PoweringOnUI.h"
+#include "UI/SettingsUI.h"
 
 #define TAG "UIManager"
 
@@ -12,10 +13,12 @@ static MAINUI_SArgument m_sMainUIArgumentUserMode   = { .bIsUserModeActive = tru
 static COMMONUI_SContext m_sUIs[UIMANAGER_ESCREEN_Count] =
 {
     // Main
-    [UIMANAGER_ESCREEN_MainReadOnly] = { .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
-    [UIMANAGER_ESCREEN_MainUsermode] = { .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    [UIMANAGER_ESCREEN_MainReadOnly] = { .szName = "MainReadOnly", .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
+    [UIMANAGER_ESCREEN_MainUsermode] = { .szName = "MainUsermode", .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
     // Powering on
-    [UIMANAGER_ESCREEN_PoweringOn] = { .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig }
+    [UIMANAGER_ESCREEN_PoweringOn]   = { .szName = "PoweringOn", .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
+    // Settings
+    [UIMANAGER_ESCREEN_Settings]     = { .szName = "Settings", .pHandle = NULL, .psConfig = &SETTINGSUI_g_sConfig }
 };
 
 static UIMANAGER_ESCREEN m_eScreen = UIMANAGER_ESCREEN_Invalid;
@@ -28,6 +31,12 @@ void UIMANAGER_Init()
 
 void UIMANAGER_SwitchTo(UIMANAGER_ESCREEN eScreen)
 {
+    // Already loaded in the right screen ...
+    if (m_eScreen == eScreen)
+        return;
+    G_g_CanvasResult.fillCanvas(TFT_BLACK);
+    M5.EPD.Clear(true);
+
     // Call exit on older process ...
     COMMONUI_SContext* pOldContext = UIMANAGER_GetUI();
     if (pOldContext != NULL && pOldContext->psConfig->ptrExit != NULL)
@@ -35,6 +44,9 @@ void UIMANAGER_SwitchTo(UIMANAGER_ESCREEN eScreen)
 
     m_eScreen = eScreen;
     COMMONUI_SContext* pContext = UIMANAGER_GetUI();
+
+    ESP_LOGI(TAG, "switch from %s to %s", (pOldContext != NULL ? pOldContext->szName : "None"), pContext->szName);
+
     if (pContext != NULL && pContext->psConfig->ptrEnter != NULL)
         pContext->psConfig->ptrEnter(pContext);
 }

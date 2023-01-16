@@ -1,5 +1,6 @@
 #include "MainUI.h"
 #include "Global.h"
+#include "../UIManager.h"
 
 #define TAG "MainUI"
 
@@ -18,6 +19,9 @@
 #define ZONE_FANSPEED_BUTTONUP_Y (ZONE_FANSPEED_START_Y+16)
 #define ZONE_FANSPEED_BUTTONDOWN_X (40)
 #define ZONE_FANSPEED_BUTTONDOWN_Y (ZONE_FANSPEED_START_Y+136)
+
+#define ZONE_BTSETTING_START_X 344
+#define ZONE_BTSETTING_START_Y 760
 
 static void Init(COMMONUI_SContext* pContext);
 
@@ -42,8 +46,6 @@ const COMMONUI_SConfig MAINUI_g_sConfig =
     .ptrOnTouch = OnTouch 
 };
 
-static float m_fSetPoint = 25.0;
-
 static void Init(COMMONUI_SContext* pContext)
 {
     MAINUI_SHandle* pHandle = (MAINUI_SHandle*)pContext->pHandle;
@@ -60,8 +62,8 @@ static void Enter(COMMONUI_SContext* pContext)
 {   
     MAINUI_SHandle* pHandle = (MAINUI_SHandle*)pContext->pHandle;
     
-    pHandle->bIsNeedClear = true;
     pHandle->u8CurrentFanSpeed = 1;
+    pHandle->fSetPoint = 25.0;
 
     RedrawUI(pContext);
 }
@@ -90,14 +92,14 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32T
     if ( COMMONUI_IsInCoordinate(ZONE_SETPOINT_BUTTONDOWN_X, ZONE_SETPOINT_BUTTONDOWN_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
-        if (m_fSetPoint - 0.5f >= 5.0f)
-            m_fSetPoint -= 0.5f;
+        if (pHandle->fSetPoint - 0.5f >= 5.0f)
+            pHandle->fSetPoint -= 0.5f;
     }
     else if ( COMMONUI_IsInCoordinate(ZONE_SETPOINT_BUTTONUP_X, ZONE_SETPOINT_BUTTONUP_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
-        if (m_fSetPoint + 0.5f <= 40.0f)
-            m_fSetPoint += 0.5f;
+        if (pHandle->fSetPoint + 0.5f <= 40.0f)
+            pHandle->fSetPoint += 0.5f;
     }
 
     // ==================================
@@ -113,6 +115,11 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32T
         bNeedRedraw = true;
         if (pHandle->u8CurrentFanSpeed + 1 <= 4)
             pHandle->u8CurrentFanSpeed++;
+    }
+
+    if ( COMMONUI_IsInCoordinate(ZONE_BTSETTING_START_X, ZONE_BTSETTING_START_Y, EF_g_sIMAGES_ICON_SETTING_160X160_JPG.s32Width, EF_g_sIMAGES_ICON_SETTING_160X160_JPG.s32Height, s32TouchX, s32TouchY) )
+    {
+        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_Settings);
     }
 
     ESP_LOGI(TAG, "Touch x: %d, y: %d", s32TouchX, s32TouchY);
@@ -131,11 +138,6 @@ static void RedrawUI(COMMONUI_SContext* pContext)
     const MAINUI_SArgument* pArgument = (const MAINUI_SArgument*)pContext->pvdArgument;
     MAINUI_SHandle* pHandle = (MAINUI_SHandle*)pContext->pHandle;
 
-    if (pHandle->bIsNeedClear) 
-    {
-        ESP_LOGI(TAG, "Clear EPD");
-        M5.EPD.Clear(true);
-    }
     // rtc_time_t RTCtime;
     // rtc_date_t RTCDate;
     // M5.RTC.getTime(&RTCtime);
@@ -186,7 +188,7 @@ static void RedrawUI(COMMONUI_SContext* pContext)
         G_g_CanvasResult.setFreeFont(FSSB18);
         G_g_CanvasResult.setTextSize(3);
         char tmp[40+1];
-        sprintf(tmp, "%.1f", m_fSetPoint);
+        sprintf(tmp, "%.1f", pHandle->fSetPoint);
         G_g_CanvasResult.drawString(String(tmp), 232, ZONE_SETPOINT_START_Y+72);
         G_g_CanvasResult.setTextSize(1);
         G_g_CanvasResult.drawString("C", 440, ZONE_SETPOINT_START_Y+72);
@@ -213,20 +215,17 @@ static void RedrawUI(COMMONUI_SContext* pContext)
         G_g_CanvasResult.drawRect(40, ZONE_FANSPEED_START_Y + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }
 
+    // -----------------------------------
+    // Settings
     if (pArgument->bIsUserModeActive)
     {
-        G_g_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, 344, 760);
+        G_g_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, ZONE_BTSETTING_START_X, ZONE_BTSETTING_START_Y);
     }
 
     G_g_CanvasResult.drawJpg(pSFileSBILogo->pu8StartAddr, pSFileSBILogo->u32Length, 16, 832);
 
     // Update screen
-    if (pHandle->bIsNeedClear)
-        G_g_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU);
-    else
-        G_g_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU4);
-
-    pHandle->bIsNeedClear = false;
+    G_g_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU4);
 }
 
 static void DrawAllBars(int32_t s32X, int32_t s32Y, uint32_t u32Bar)
