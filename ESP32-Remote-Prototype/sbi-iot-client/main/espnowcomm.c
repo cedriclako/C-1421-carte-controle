@@ -113,6 +113,7 @@ static void wifi_init(uint8_t u8CurrentChannel)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_configAP));
     ESP_LOGI(TAG, "esp_wifi_start()");
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_set_channel(u8CurrentChannel, WIFI_SECOND_CHAN_NONE));
     
     /* Initialize ESPNOW and register sending and receiving callback function. */
     ESP_ERROR_CHECK( esp_now_init() );
