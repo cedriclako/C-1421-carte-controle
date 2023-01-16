@@ -22,13 +22,13 @@ static void wifi_init(uint8_t u8CurrentChannel);
 
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
+static void SendStatus();
+
 typedef struct
 {
     bool bIsWiFiActive;
 
     // Timers
-    TickType_t ttLastPingTicks;
-    TickType_t ttScanTimeTicks;
     TickType_t ttChangeChannelTicks;
     TickType_t ttEstablishedConnectionTicks;
 
@@ -59,8 +59,6 @@ void ESPNOWCOMM_Init(uint8_t u8CurrChannel)
 
     m_sHandle.sQueueRXHandle = xQueueCreate(ESPNOWCOMM_QUEUERX, sizeof(ESPNOWCOMM_SMsg));
 
-    m_sHandle.ttLastPingTicks = xTaskGetTickCount();
-    m_sHandle.ttScanTimeTicks = xTaskGetTickCount();
     m_sHandle.ttChangeChannelTicks = xTaskGetTickCount();
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
@@ -196,14 +194,23 @@ void ESPNOWCOMM_Handler()
 
             ESP_LOGI(TAG, "Change channel for: %d", m_sHandle.u8CurrChannel);
 
-            SBI_iot_C2SGetStatus c2sGetStatus;
-            c2sGetStatus.has_remote_state = true;
-            c2sGetStatus.remote_state.temperatureC_curr = 25;
-            SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
-
+            SendStatus();
             m_sHandle.ttChangeChannelTicks = xTaskGetTickCount();
         }
     }
+    else
+    {
+        SendStatus();
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+static void SendStatus()
+{
+    SBI_iot_C2SGetStatus c2sGetStatus;
+    c2sGetStatus.has_remote_state = true;
+    c2sGetStatus.remote_state.temperatureC_curr = 25;
+    SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
 }
 
 static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus)
@@ -211,7 +218,6 @@ static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2
     if (!m_sHandle.bIsFrequencyFound)
     {
         m_sHandle.bIsFrequencyFound = true;
-        m_sHandle.ttLastPingTicks = 0;
 
         if (m_sHandle.fnChannelFoundCb != NULL)
             m_sHandle.fnChannelFoundCb(m_sHandle.u8CurrChannel);
