@@ -1,6 +1,7 @@
 #ifndef _COMMONUI_H_
 #define _COMMONUI_H_
 
+#include "EScreen.h"
 #include <M5EPD.h>
 #include <stdint.h>
 #include "../assets/EmbeddedFiles.h"
@@ -15,15 +16,18 @@ extern "C" {
 #define SCREEN_HEIGHT 960
 
 typedef struct _COMMONUI_SConfig COMMONUI_SConfig;
+typedef struct _COMMONUI_SUIManagerContext COMMONUI_SUIManagerContext;
 
 typedef struct 
 {
     const char* szName;
+    COMMONUI_SUIManagerContext* pUIManagerCtx;
     void* pHandle;
     const COMMONUI_SConfig* psConfig;
     void* pvdArgument;
 } COMMONUI_SContext;
 
+// Screen events
 typedef void (*COMMONUI_InitFn)(COMMONUI_SContext* pContext);
 
 typedef void (*COMMONUI_EnterFn)(COMMONUI_SContext* pContext);
@@ -31,6 +35,9 @@ typedef void (*COMMONUI_ExitFn)(COMMONUI_SContext* pContext);
 
 typedef void (*COMMONUI_ProcessFn)(COMMONUI_SContext* pContext);
 typedef void (*COMMONUI_OnTouchFn)(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32TouchY);
+
+// Core events
+typedef void (*COMMONUI_SwitchUIFn)(const COMMONUI_SContext* pContext, ESCREEN eScreen);
 
 typedef struct
 {
@@ -50,6 +57,11 @@ struct _COMMONUI_SConfig
 
     COMMONUI_ProcessFn ptrProcess;
     COMMONUI_OnTouchFn ptrOnTouch;
+};
+
+struct _COMMONUI_SUIManagerContext
+{
+    COMMONUI_SwitchUIFn ptrSwitchUI;
 };
 
 const EF_SFile* COMMONUI_GetBtnArrowUp(bool bIsEnabled);

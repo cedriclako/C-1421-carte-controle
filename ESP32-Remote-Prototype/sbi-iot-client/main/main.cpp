@@ -55,11 +55,11 @@ void setup()
     if (M5.BtnP.isPressed())
     {
         m_isUserModeActive = true;
-        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainUsermode);
+        UIMANAGER_SwitchTo(ESCREEN_MainUsermode);
     }
     else
     {
-        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
+        UIMANAGER_SwitchTo(ESCREEN_MainReadOnly);
     }
 
     ESP_LOGI(TAG, "Init netif");
@@ -113,7 +113,7 @@ void loop()
         if (M5.BtnP.isPressed())
         {
             m_isUserModeActive = true;
-            UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainUsermode);
+            UIMANAGER_SwitchTo(ESCREEN_MainUsermode);
         }
     }
 
@@ -134,7 +134,7 @@ void loop()
         {
             ESP_LOGI(TAG, "User is done with change, time to switch to readonly mode and sleep");
             m_isUserModeActive = false;
-            UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_MainReadOnly);
+            UIMANAGER_SwitchTo(ESCREEN_MainReadOnly);
             vTaskDelay(pdMS_TO_TICKS(300));
         }
 

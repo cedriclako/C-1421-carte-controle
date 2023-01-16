@@ -119,7 +119,7 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32T
 
     if ( COMMONUI_IsInCoordinate(ZONE_BTSETTING_START_X, ZONE_BTSETTING_START_Y, EF_g_sIMAGES_ICON_SETTING_160X160_JPG.s32Width, EF_g_sIMAGES_ICON_SETTING_160X160_JPG.s32Height, s32TouchX, s32TouchY) )
     {
-        UIMANAGER_SwitchTo(UIMANAGER_ESCREEN_Settings);
+        pContext->pUIManagerCtx->ptrSwitchUI(pContext, ESCREEN_Settings);
     }
 
     ESP_LOGI(TAG, "Touch x: %d, y: %d", s32TouchX, s32TouchY);

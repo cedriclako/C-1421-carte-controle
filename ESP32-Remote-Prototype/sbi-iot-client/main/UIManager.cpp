@@ -6,22 +6,26 @@
 
 #define TAG "UIManager"
 
+static void SwitchUI(const COMMONUI_SContext* sContext, ESCREEN eScreen);
+
 static MAINUI_SHandle m_sMainUIHandle; 
 static MAINUI_SArgument m_sMainUIArgumentRO         = { .bIsUserModeActive = false };
 static MAINUI_SArgument m_sMainUIArgumentUserMode   = { .bIsUserModeActive = true };
 
-static COMMONUI_SContext m_sUIs[UIMANAGER_ESCREEN_Count] =
+static COMMONUI_SUIManagerContext m_sUIManagerCtx = { .ptrSwitchUI = SwitchUI };
+
+static COMMONUI_SContext m_sUIs[ESCREEN_Count] =
 {
     // Main
-    [UIMANAGER_ESCREEN_MainReadOnly] = { .szName = "MainReadOnly", .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
-    [UIMANAGER_ESCREEN_MainUsermode] = { .szName = "MainUsermode", .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    [ESCREEN_MainReadOnly] = { .szName = "MainReadOnly", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
+    [ESCREEN_MainUsermode] = { .szName = "MainUsermode", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
     // Powering on
-    [UIMANAGER_ESCREEN_PoweringOn]   = { .szName = "PoweringOn", .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
+    [ESCREEN_PoweringOn]   = { .szName = "PoweringOn", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
     // Settings
-    [UIMANAGER_ESCREEN_Settings]     = { .szName = "Settings", .pHandle = NULL, .psConfig = &SETTINGSUI_g_sConfig }
+    [ESCREEN_Settings]     = { .szName = "Settings", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &SETTINGSUI_g_sConfig }
 };
 
-static UIMANAGER_ESCREEN m_eScreen = UIMANAGER_ESCREEN_Invalid;
+static ESCREEN m_eScreen = ESCREEN_Invalid;
 static bool m_bIsFirstLoad = true;
 
 void UIMANAGER_Init()
@@ -30,7 +34,7 @@ void UIMANAGER_Init()
     G_g_CanvasResult.createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-void UIMANAGER_SwitchTo(UIMANAGER_ESCREEN eScreen)
+void UIMANAGER_SwitchTo(ESCREEN eScreen)
 {
     // Already loaded in the right screen ...
     if (m_eScreen == eScreen)
@@ -59,7 +63,7 @@ void UIMANAGER_SwitchTo(UIMANAGER_ESCREEN eScreen)
 
 COMMONUI_SContext* UIMANAGER_GetUI()
 {
-    if (m_eScreen == UIMANAGER_ESCREEN_Invalid)
+    if (m_eScreen == ESCREEN_Invalid)
         return NULL;
     return &m_sUIs[(int)m_eScreen];
 }
@@ -76,4 +80,9 @@ void UIMANAGER_OnTouch(int32_t s32X, int32_t s32Y)
     COMMONUI_SContext* pContext = UIMANAGER_GetUI();
     if (pContext != NULL && pContext->psConfig->ptrOnTouch != NULL)
         pContext->psConfig->ptrOnTouch(pContext, s32X, s32Y);
+}
+
+static void SwitchUI(const COMMONUI_SContext* sContext, ESCREEN eScreen)
+{
+    UIMANAGER_SwitchTo(eScreen);
 }
