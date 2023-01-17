@@ -116,7 +116,7 @@ void ESPMANAGER_Task(void const * argument) {
 
 	for(;;) {
 
-		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CproNDTR);
+		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CNDTR);
 
 		if(u16DMA_count > m_last_DMA_count)
 		{
