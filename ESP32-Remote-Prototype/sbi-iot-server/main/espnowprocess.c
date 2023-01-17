@@ -63,7 +63,7 @@ void ESPNOWPROCESS_Init()
 
     m_sHandle.sRemoteState.has_tempC_current = false;
 
-    m_sHandle.sRemoteState.has_temp_sp = false;
+    m_sHandle.sRemoteState.has_temp_sp = true;
     m_sHandle.sRemoteState.temp_sp.temp = 21.0f;
     m_sHandle.sRemoteState.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
 
@@ -193,6 +193,10 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 
 static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP)
 {
+    ESP_LOGI(TAG, "C2SChangeSettingSP, has_temperature_setp: %s, temperature_setp: %.2f", 
+        (pC2SChangeSettingSP->has_temperature_setp ? "true" : "false"), 
+        pC2SChangeSettingSP->temperature_setp.temp);
+
     if (pC2SChangeSettingSP->has_temperature_setp)
     {
         m_sHandle.sRemoteState.has_temp_sp = true;

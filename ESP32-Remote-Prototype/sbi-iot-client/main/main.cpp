@@ -166,7 +166,7 @@ void loop()
         
         // Shutdown make deep sleep useless, except when the USB port keep the device alive
         // we can use deep sleep to simulate power loss.
-        const int32_t s32SleepTimeS = 10;
+        const int32_t s32SleepTimeS = 60;
         M5.shutdown(s32SleepTimeS);
         TickType_t ttTicks = xTaskGetTickCount();
         while( (xTaskGetTickCount() - ttTicks) <= pdMS_TO_TICKS(s32SleepTimeS*1000))
