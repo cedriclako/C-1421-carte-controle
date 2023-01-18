@@ -225,8 +225,8 @@ void app_main(void)
     static bool isActive = false;
     TickType_t ttLed = xTaskGetTickCount();
 
-    // Run main loop at 250 hz
-    const int loopPeriodMS = 1000/250;
+    // Run main loop at 150 hz
+    const int loopPeriodMS = 1000/150;
     const TickType_t xFrequency = loopPeriodMS / portTICK_PERIOD_MS;
 
     while (true)
