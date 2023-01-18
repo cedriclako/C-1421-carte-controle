@@ -220,12 +220,14 @@ void app_main(void)
     ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
     free(szAllTask);
 
-    const TickType_t xFrequency = pdMS_TO_TICKS( 200 );
-
     ESP_LOGI(TAG, "Starting ...");
 
     static bool isActive = false;
     TickType_t ttLed = xTaskGetTickCount();
+
+    // Run main loop at 250 hz
+    const int loopPeriodMS = 1000/250;
+    const TickType_t xFrequency = loopPeriodMS / portTICK_PERIOD_MS;
 
     while (true)
     {
@@ -243,8 +245,8 @@ void app_main(void)
             isActive = !isActive;
         }
 
-        esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 5 ));
-        vTaskDelayUntil( &xLastWakeTime, xFrequency );
+       esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 5 ));
+       vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   
 }
 

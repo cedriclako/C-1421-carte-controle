@@ -42,11 +42,13 @@ const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO()
 
 bool STOVEMB_Take(TickType_t xTicksToWait)
 {
+    //ESP_LOGI(TAG, "STOVEMB_Take");
     return xSemaphoreTakeRecursive( m_xSemaphoreExt, xTicksToWait) == pdTRUE;
 }
 
 void STOVEMB_Give()
 {
+    //ESP_LOGI(TAG, "STOVEMB_Give");
     xSemaphoreGiveRecursive( m_xSemaphoreExt);
 }
 
@@ -92,6 +94,7 @@ char* STOVEMB_ExportParamToJSON()
     szRet = cJSON_PrintUnformatted(pRoot);
     goto END;
     ERROR:
+    ESP_LOGE(TAG, "STOVEMB_ExportParamToJSON error");
     END:
     if (pRoot != NULL)
         cJSON_Delete(pRoot);

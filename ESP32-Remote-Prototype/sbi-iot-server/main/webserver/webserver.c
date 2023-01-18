@@ -100,7 +100,7 @@ void WEBSERVER_Init()
     config.stack_size = 7500;
     config.lru_purge_enable = true;
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_open_sockets = 3;
+    config.max_open_sockets = 13;
 
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -254,6 +254,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
     if (pExportJSON != NULL)
         free(pExportJSON);
 
+    httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
@@ -262,7 +263,27 @@ static esp_err_t api_post_handler(httpd_req_t *req)
 {
     char szError[128+1] = {0,};
 
-    int n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE-1);
+    const int total_len = req->content_len;
+
+    if (total_len >= HTTPSERVER_BUFFERSIZE-1)
+    {
+        /* Respond with 500 Internal Server Error */
+        ESP_LOGE(TAG, "content too long");
+        goto ERROR;
+    }
+
+    // Receive the complete payload.
+    int n = 0;
+    while (n < total_len)
+    {
+        const int received = httpd_req_recv(req, (char*)(m_u8Buffers + n), total_len);
+        if (received <= 0) {
+            /* Respond with 500 Internal Server Error */
+            ESP_LOGE(TAG, "Failed to post control value");
+            goto ERROR;
+        }
+        n += received;
+    }
     m_u8Buffers[n] = '\0';
 
     ESP_LOGI(TAG, "api_post_handler, url: %s", req->uri);
@@ -276,6 +297,8 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     }
     else if (strcmp(req->uri, API_POSTSERVERPARAMETERFILEJSON_URI) == 0)
     {
+        ESP_LOGI(TAG, "api_post_handler, url: %s, json len: %d", req->uri, n);
+
         if (!STOVEMB_InputParamFromJSON((const char*)m_u8Buffers, szError, sizeof(szError)))
         {
             goto ERROR;
@@ -464,7 +487,6 @@ static char* GetLiveData()
 {
     cJSON* pRoot = NULL;
 
-    char buff[100];
     pRoot = cJSON_CreateObject();
     if (pRoot == NULL)
         goto ERROR;

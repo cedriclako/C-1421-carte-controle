@@ -232,13 +232,17 @@ int32_t UFEC23ENDEC_C2SSetParameterEncode(uint8_t u8Dst[], uint32_t u32DstLen, c
 
 bool UFEC23ENDEC_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < UFEC23ENDEC_C2SSETPARAMETER_COUNT)
+    if (u32DataLen < 1)
         return false;
     int n = 0;
     const uint8_t u8KeyLen = u8Datas[n++];
+    if (u32DataLen < 1 + u8KeyLen)
+        return false;
     memcpy(pDst->szKey, &u8Datas[n], u8KeyLen);
     pDst->szKey[u8KeyLen] = 0;
     n += u8KeyLen;
+    if (u32DataLen < 1 + u8KeyLen + sizeof(UFEC23ENDEC_uValue))
+        return false;
     memcpy(&pDst->uValue, &u8Datas[n], sizeof(UFEC23ENDEC_uValue));
     n += sizeof(UFEC23ENDEC_uValue);
     return true;

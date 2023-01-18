@@ -160,7 +160,6 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
     }
 
-    ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     switch ((UFEC23PROTOCOL_FRAMEID)u8ID)
     {
@@ -178,7 +177,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         // }
         case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
         {
-            // ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
+            // ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
             // If it's connected, we accept any message as stay alive
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
@@ -302,7 +301,10 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             break;
         }
         default:
+        {
+            ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
             break;
+        }
     }
 
     STOVEMB_Give();
@@ -360,6 +362,7 @@ static void ManageServerConnection()
         const int32_t s32n = UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &a2aReqPinAlive);
         UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, m_u8UARTSendProtocols, s32n);
         m_sStateMachine.ttLastKeepAliveSent = xTaskGetTickCount(); 
+        // ESP_LOGI(TAG, "Sending frame A2AReqPingAlive");
     }
 }
 
