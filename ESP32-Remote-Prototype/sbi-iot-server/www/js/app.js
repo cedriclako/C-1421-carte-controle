@@ -93,7 +93,12 @@ var app = new Vue({
             this.configJSON = "";
             // Get system informations
             let isOK = false;
-            fetch(API_GETSERVERPARAMETERFILEJSON_URI)
+            fetch(API_GETSERVERPARAMETERFILEJSON_URI, {
+                method: 'GET', // or 'PUT'
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              })
                 .then((response) => 
                 {
                     isOK = response.ok;
