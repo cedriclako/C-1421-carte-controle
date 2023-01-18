@@ -206,7 +206,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 {
     char* szErrorString = NULL;
 
-    char* pExportJSON = "Error";
+    char* pExportJSON = NULL;
 
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {

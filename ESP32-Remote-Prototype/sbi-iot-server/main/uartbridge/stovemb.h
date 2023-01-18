@@ -6,7 +6,7 @@
 #include "ufec23_protocol.h"
 #include "ufec23_endec.h"
 
-#define STOVEMB_MAXIMUMSETTING_ENTRIES (100)
+#define STOVEMB_MAXIMUMSETTING_ENTRIES (150)
 
 typedef struct
 {

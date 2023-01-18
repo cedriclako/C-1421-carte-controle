@@ -106,8 +106,8 @@ void ESPMANAGER_Init()
     UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
 }
 
-void ESPMANAGER_Task(void const * argument) {
-
+void ESPMANAGER_Task(void const * argument)
+{
 	osSemaphoreDef(ESP_UART_SemaphoreHandle);
 	ESP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(ESP_UART_SemaphoreHandle), 1);
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
@@ -116,7 +116,7 @@ void ESPMANAGER_Task(void const * argument) {
 
 	for(;;) {
 
-		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CproNDTR);
+		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CNDTR);
 
 		if(u16DMA_count > m_last_DMA_count)
 		{

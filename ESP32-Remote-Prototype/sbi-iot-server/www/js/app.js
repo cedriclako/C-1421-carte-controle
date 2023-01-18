@@ -8,6 +8,8 @@ const API_POSTSETTINGSJSON_URI = "/api/setsettingsjson";
 const API_GETSERVERPARAMETERFILEJSON_URI = "/api/getserverparameterfile";
 const API_POSTSERVERPARAMETERFILEJSON_URI = "/api/setserverparameterfile";
 
+const API_ACTION_DOWNLOADCONFIG_URI = "/action/downloadconfig";
+
 let mData = 
 {
     sysinfos: [],
@@ -136,6 +138,32 @@ var app = new Vue({
                 alert("Error: " + error);
             });
             console.log("idSaveConfig_OnClick");
+        },
+        idForceDownloadConfig_Click(event)
+        {
+            let isOK = false;
+            fetch(API_ACTION_DOWNLOADCONFIG_URI, {
+                method: 'POST', // or 'PUT'
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: "",
+              })
+            .then((response) => 
+            {
+                isOK = response.ok;
+                return response.text();
+            })
+            .then((response) => {
+                if (!isOK)
+                    throw Error(response);
+                console.log("url: ", API_ACTION_DOWNLOADCONFIG_URI, " data: ", response);
+            })
+            .catch((error) => {
+                console.error("url: ", API_ACTION_DOWNLOADCONFIG_URI, " error: ", error);
+                alert("Error: " + error);
+            });
+            console.log("idForceDownloadConfig_Click");
         }
 	}
 })

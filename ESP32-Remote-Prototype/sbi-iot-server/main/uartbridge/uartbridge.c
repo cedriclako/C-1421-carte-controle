@@ -32,6 +32,9 @@ typedef struct
     EPARAMETERPROCESS eProcParameterProcess;
     TickType_t ttParameterStartDownTicks;
     int32_t s32WriteLastIndex;
+
+    // Ping
+    uint32_t u32PingCount;
 } SStateMachine;
 
 // UART Protocol decoder handle
@@ -175,7 +178,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         // }
         case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
         {
-            ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
+            // ESP_LOGI(TAG, "Received frame S2CReqPingAliveResp");
             // If it's connected, we accept any message as stay alive
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
@@ -197,7 +200,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         // }
 
         case UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp:
-        {
+        {                    
             if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_Downloading)
             {
                 break;  // We don't care when we aren't downloading.
@@ -207,6 +210,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             UFEC23ENDEC_S2CReqParameterGetResp s;
             if (!UFEC23ENDEC_S2CGetParameterRespDecode(&s, u8Payloads, u16PayloadLen))
             {
+                ESP_LOGE(TAG, "UFEC23ENDEC_S2CGetParameterRespDecode failed");
                 ProcParameterAbort();
                 break;
             }
@@ -220,16 +224,25 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 // Overflow detected ...
                 if (pMemBlock->u32ParameterCount + 1 > STOVEMB_MAXIMUMSETTING_ENTRIES)
                 {
-                    ESP_LOGW(TAG, "Overflow, too many parameter received from the device");
+                    ESP_LOGW(TAG, "S2CGetParameterResp: Overflow, too many parameter received from the device");
                     isOverflow = true;
                 }
                 else
                 {
-                    STOVEMB_SParameterEntry* psEntryChanged = &pMemBlock->arrParameterEntries[pMemBlock->u32ParameterCount];
+                    const uint32_t u32Index = pMemBlock->u32ParameterCount;
+                    STOVEMB_SParameterEntry* psEntryChanged = &pMemBlock->arrParameterEntries[u32Index];
                     memcpy(&psEntryChanged->sEntry, &s.sEntry, sizeof(UFEC23ENDEC_SEntry));
                     psEntryChanged->bIsNeedWrite = false;
                     psEntryChanged->sWriteValue = s.uValue;
                     pMemBlock->u32ParameterCount++;
+
+                    ESP_LOGI(TAG, "S2CGetParameterResp: [%d], key: %s, def: %d, min: %d, max: %d, value: %d", 
+                        u32Index,
+                        psEntryChanged->sEntry.szKey,
+                        psEntryChanged->sEntry.uType.sInt32.s32Default,
+                        psEntryChanged->sEntry.uType.sInt32.s32Min,
+                        psEntryChanged->sEntry.uType.sInt32.s32Max,
+                        psEntryChanged->sWriteValue.s32Value);
                 }
             }
 
@@ -238,7 +251,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             {
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 pMemBlock->bIsParameterDownloadCompleted = true;
-                ESP_LOGI(TAG, "Parameter download done, entries: %d", pMemBlock->u32ParameterCount);
+                ESP_LOGI(TAG, "S2CGetParameterResp: Parameter download done, entries: %d", pMemBlock->u32ParameterCount);
                 break;
             }
 
@@ -343,8 +356,9 @@ static void ManageServerConnection()
     if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS) &&
         (xTaskGetTickCount() - m_sStateMachine.ttLastKeepAliveSent) > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))
     {
-        //ESP_LOGI(TAG, "UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive");
-        UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, NULL, 0);
+        const UFEC23ENDEC_A2AReqPingAlive a2aReqPinAlive = { .u32Ping = m_sStateMachine.u32PingCount++ };
+        const int32_t s32n = UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &a2aReqPinAlive);
+        UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, m_u8UARTSendProtocols, s32n);
         m_sStateMachine.ttLastKeepAliveSent = xTaskGetTickCount(); 
     }
 }

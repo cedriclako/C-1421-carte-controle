@@ -140,7 +140,7 @@ bool UFEC23ENDEC_C2SSetRunningSettingDecode(UFEC23ENDEC_C2SSetRunningSetting* pD
 
 int32_t UFEC23ENDEC_S2CGetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqParameterGetResp* pSrc)
 {
-    if (u32DstLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
+    if (u32DstLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_MAX_COUNT)
         return 0;
  
     const UFEC23ENDEC_SEntry* psEntry = &pSrc->sEntry;
@@ -157,13 +157,13 @@ int32_t UFEC23ENDEC_S2CGetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLe
     n += u8KeyLen;
     if (psEntry->eParamType == UFEC23ENDEC_EPARAMTYPE_Int32)
     {
-        memcpy(&u8Dst[n], &pSrc->uValue.s32Value, sizeof(int32_t));
-        n += sizeof(int32_t);
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Default, sizeof(int32_t));
         n += sizeof(int32_t);
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Min, sizeof(int32_t));
         n += sizeof(int32_t);
         memcpy(&u8Dst[n], &psEntry->uType.sInt32.s32Max, sizeof(int32_t));
+        n += sizeof(int32_t);
+        memcpy(&u8Dst[n], &pSrc->uValue.s32Value, sizeof(int32_t));
         n += sizeof(int32_t);
     }
     else
@@ -176,7 +176,7 @@ int32_t UFEC23ENDEC_S2CGetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLe
 
 bool UFEC23ENDEC_S2CGetParameterRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (u32DataLen < UFEC23ENDEC_S2CREQPARAMETERGETRESP_COUNT)
+    if (u32DataLen < 3)
         return false;
 
     uint32_t n = 0;
@@ -188,6 +188,10 @@ bool UFEC23ENDEC_S2CGetParameterRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* p
     const uint8_t u8KeyLen = u8Datas[n++];
     if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
         return false;
+
+    if (u32DataLen < (3 + u8KeyLen + sizeof(int32_t) * 4))
+        return false;
+
     memcpy(pDst->sEntry.szKey, &u8Datas[n], u8KeyLen);
     pDst->sEntry.szKey[u8KeyLen] = 0;
     n += u8KeyLen;
