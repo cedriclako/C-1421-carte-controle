@@ -266,7 +266,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int R_flamelossR = 0;
 
 
-	  const uint32_t SEC_PER_STEP_TEMP_RISE = 3;
+	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
 	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
@@ -479,7 +479,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COMBUSTION_LOW:
     	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,RESET);//desactive le relai pour activer la carte 2 PLV 15/12/21
 		if(historyState != currentState){
-			if (TimeSinceEntryInCombLow == 0) {
+			if (TimeSinceEntryInCombLow == 0 || historyState != FLAME_LOSS) {
 				TimeSinceEntryInCombLow = currentTime_ms;
 			}
 
