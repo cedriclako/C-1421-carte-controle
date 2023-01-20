@@ -165,9 +165,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     default:
     case ZEROING_STEPPER:
-		AirInput_forceAperture(&primary, PrimaryMotorParam.MinWaiting);
-		AirInput_forceAperture(&grill, GrillMotorParam.MinWaiting);
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MinWaiting);
+		AirInput_forceAperture(&primary, pPrimaryMotorParam->MinWaiting);
+		AirInput_forceAperture(&grill, pGrillMotorParam->MinWaiting);
+		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MinWaiting);
 
 
 		AllMotorToZero(); //set all motors to zero
@@ -178,9 +178,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		break;
     case WAITING:
 
-    	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
-    	AirInput_forceAperture(&grill, GrillMotorParam.MaxWaiting);// GRILL_CLOSED);
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxWaiting);
+    	AirInput_forceAperture(&primary, pPrimaryMotorParam->MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
+    	AirInput_forceAperture(&grill, pGrillMotorParam->MaxWaiting);// GRILL_CLOSED);
+		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxWaiting);
 
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
@@ -200,11 +200,11 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     case RELOAD_IGNITION:
 
-		AirInput_forceAperture(&primary, PrimaryMotorParam.MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
-		AirInput_forceAperture(&grill, GrillMotorParam.MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxReload);
+		AirInput_forceAperture(&primary, pPrimaryMotorParam->MaxReload);// PRIMARY_SECONDARY_FULL_OPEN);
+		AirInput_forceAperture(&grill, pGrillMotorParam->MaxReload);// 39); //2020-03-20 28 //2020-03-18 100
+		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxReload);
 
-		if (((baffleTemperature > TemperatureParam.IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
+		if (((baffleTemperature > pTemperatureParam->IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
 		reloadingEvent = false;
 		AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
@@ -221,9 +221,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		targetTemperature = thermostatRequest ? pTemperatureParam->TriseTargetHigh : pTemperatureParam->TriseTargetLow;
 
 		if(historyState != currentState){
-		  AirInput_forceAperture(&primary, PrimaryMotorParam.MaxTempRise);
-		  AirInput_forceAperture(&grill, GrillMotorParam.MaxTempRise);
-		  AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxTempRise);
+		  AirInput_forceAperture(&primary, pPrimaryMotorParam->MaxTempRise);
+		  AirInput_forceAperture(&grill, pGrillMotorParam->MaxTempRise);
+		  AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxTempRise);
 
 		  historyState = currentState;
 		}
@@ -285,7 +285,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
             	AirInput_forceAperture(&primary,  AirInput_getAperture(&primary));  //Pier-Luc a ajouté ce paramètre le 2022-10-25
 				AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
-				AirInput_forceAperture(&secondary,  SecondaryMotorParam.MaxCombHigh);
+				AirInput_forceAperture(&secondary,  pSecondaryMotorParam->MaxCombHigh);
 
 				if(!fixed_sec)
 				{
@@ -355,7 +355,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 			AirInput_forceAperture(&primary,  AirInput_getAperture(&primary));
 			AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
-			AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCombLow);
+			AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCombLow);
 
 			if(!fixed_sec)
 			{
@@ -444,7 +444,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
       break;
     case COMBUSTION_SUPERLOW:
 
-		AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCombSuperLow);
+		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCombSuperLow);
     	if(!fixed_sec)
 		{
 			StateEntryControlAdjustment(pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
@@ -495,9 +495,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COAL_LOW: //remplacement de la logic du low pour la logic du high de la fournaise pour UFEC 23 2021-11-23
 
     	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,SET);//active le relai pour activer la carte 2 PLV 15/12/21
-    	AirInput_forceAperture(&primary, PrimaryMotorParam.MaxCoalLow);
-    	AirInput_forceAperture(&grill, GrillMotorParam.MaxCoalLow);
-    	AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalLow);
+    	AirInput_forceAperture(&primary, pPrimaryMotorParam->MaxCoalLow);
+    	AirInput_forceAperture(&grill, pGrillMotorParam->MaxCoalLow);
+    	AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCoalLow);
 
     	if (thermostatRequest) {
     	          nextState = COAL_HIGH;
@@ -536,8 +536,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	break;
 
     case FLAME_LOSS:
-    	AirInput_forceAperture(&grill, GRILL_FULL_OPEN);
-    	AirInput_forceAperture(&secondary, SECONDARY_FULL_OPEN);
+    	AirInput_forceAperture(&grill, PF_GRILL_FULL_OPEN);
+    	AirInput_forceAperture(&secondary, PF_SECONDARY_FULL_OPEN);
     	deltaTemperature = abs(rearTemperature - baffleTemperature);
     	//if( deltaTemperature > pTemperatureParam->FlameLossDelta && timeSinceStateEntry >= MINUTES(1))
     	if( rearTemperature > (pTemperatureParam->CoalCrossOverRearLow+400) && timeSinceStateEntry >= MINUTES(1)) // ajout + 20 deg GTF 2022-10-20
@@ -557,7 +557,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COAL_HIGH:
 		if(historyState != currentState){
 
-			AirInput_forceAperture(&secondary, SecondaryMotorParam.MaxCoalHigh);
+			AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCoalHigh);
 			if(!fixed_sec)
 			{
 				StateEntryControlAdjustment(pPrimaryMotorParam->MinCoalHigh, pPrimaryMotorParam->MaxCoalHigh,
