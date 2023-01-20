@@ -9,17 +9,25 @@
 #include "mdns.h"
 #include "lwip/apps/netbiosns.h"
 #include <esp_sntp.h>
-
 #include "fwconfig.h"
-#include "webserver.h"
+#include "webserver/webserver.h"
 #include "settings.h"
 #include "main.h"
 #include "espnowprocess.h"
+#include "hardwaregpio.h"
+#include "uartbridge/uartbridge.h"
+#include "fwconfig.h"
+#include "event.h"
 
 #define TAG "main"
 
+ESP_EVENT_DEFINE_BASE(MAINAPP_EVENT);
+
 static esp_netif_t* m_pWifiSoftAP;
 static esp_netif_t* m_pWifiSTA;
+
+static volatile bool m_bIsConnectedWiFi = false;
+static volatile int32_t m_s32ConnectWiFiCount = 0;
 
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -168,15 +176,29 @@ void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip)
 
 void app_main(void)
 {
+    // Set new priority for main task
+    vTaskPrioritySet( xTaskGetCurrentTaskHandle(), FWCONFIG_MAINTASK_PRIORITY);
+
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK( nvs_flash_erase() );
         ret = nvs_flash_init();
     }
+
     ESP_ERROR_CHECK( ret );
 
+    esp_event_loop_args_t loop_args = {
+        .queue_size = 20,
+        .task_name = NULL
+    };
+    esp_event_loop_create(&loop_args, &EVENT_g_LoopHandle);
+
+    HARDWAREGPIO_Init();
+
     SETTINGS_Init();
+
+    UARTBRIDGE_Init();
 
     WIFI_Init();
 
@@ -192,11 +214,39 @@ void app_main(void)
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_init();
     
+    // Just print task list
+    char* szAllTask = (char*)malloc(4096);
+    vTaskList(szAllTask);
+    ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
+    free(szAllTask);
+
+    ESP_LOGI(TAG, "Starting ...");
+
+    static bool isActive = false;
+    TickType_t ttLed = xTaskGetTickCount();
+
+    // Run main loop at 150 hz
+    const int loopPeriodMS = 1000/150;
+    const TickType_t xFrequency = loopPeriodMS / portTICK_PERIOD_MS;
+
     while (true)
     {
-        ESPNOWPROCESS_Handler();
+        TickType_t xLastWakeTime = xTaskGetTickCount();
 
-        vTaskDelay(1);
+        // Basic processes ...
+        ESPNOWPROCESS_Handler();
+        UARTBRIDGE_Handler();
+
+        // Sanity LED process
+        if ( (xTaskGetTickCount() - ttLed) > pdMS_TO_TICKS(m_bIsConnectedWiFi ? 150 : 500) )
+        {
+            ttLed = xTaskGetTickCount();
+            HARDWAREGPIO_SetSanity(isActive);
+            isActive = !isActive;
+        }
+
+       esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 5 ));
+       vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   
 }
 
@@ -218,15 +268,17 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();    
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        m_bIsConnectedWiFi = true;
         wifi_second_chan_t secondChan;
         uint8_t u8Primary;
         esp_wifi_get_channel(&u8Primary,  &secondChan);
         ESP_LOGI(TAG, "Wifi STA connected to station, channel: %d", (int)u8Primary);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        m_bIsConnectedWiFi = false;
+
         esp_wifi_connect();
-        ESP_LOGI(TAG, "retry to connect to the AP");
-        ESP_LOGI(TAG,"connect to the AP fail");
+        ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%d", ++m_s32ConnectWiFiCount);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));

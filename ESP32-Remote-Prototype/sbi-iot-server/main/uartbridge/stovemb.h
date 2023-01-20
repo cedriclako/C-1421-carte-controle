@@ -1,0 +1,59 @@
+#ifndef _STOVEMB_H_
+#define _STOVEMB_H_
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "ufec23_protocol.h"
+#include "ufec23_endec.h"
+
+#define STOVEMB_MAXIMUMSETTING_ENTRIES (150)
+
+typedef struct
+{
+    UFEC23ENDEC_SEntry sEntry;
+
+    // Value to write
+    UFEC23ENDEC_uValue sWriteValue;
+    bool bIsNeedWrite;
+} STOVEMB_SParameterEntry;
+
+typedef struct 
+{
+    // Settings
+    UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
+    bool s2CGetRunningSettingIsSet;
+
+    // Version infos
+    UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
+    bool sS2CReqVersionRespIsSet;
+
+    // Parameter JSON
+    volatile bool bIsParameterDownloadCompleted;
+    STOVEMB_SParameterEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
+    uint32_t u32ParameterCount;
+
+    bool bIsAnyUploadError;
+
+    // Is stove connected
+    bool bIsStoveConnectedAndReady;
+} STOVEMB_SMemBlock;
+
+void STOVEMB_Init();
+
+bool STOVEMB_Take(TickType_t xTicksToWait);
+
+void STOVEMB_Give();
+
+STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
+
+const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
+
+int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry* pEntry);
+
+void STOVEMB_ResetAllParameterWriteFlag();
+
+char* STOVEMB_ExportParamToJSON();
+
+bool STOVEMB_InputParamFromJSON(const char* szJSON, char* szDstError, uint32_t u32DstErrorLen);
+
+#endif

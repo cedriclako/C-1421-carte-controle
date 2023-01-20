@@ -2,7 +2,7 @@
   "profiles": {
     "embeddedgen": {
       "commandName": "Project",
-      "commandLineArgs": " -i \"D:\\git\\sbi\\c-1421_softwares\\Test-ESP-Now\\sbi-iot-server\\www\" -o \"D:\\git\\sbi\\c-1421_softwares\\Test-ESP-Now\\sbi-iot-server\\main\\assets\"\r\n"
+      "commandLineArgs": " -i \"D:\\git\\sbi\\c-1421-carte-controle\\ESP32-Remote-Prototype\\sbi-iot-client\\assets\" -o \"D:\\git\\sbi\\c-1421-carte-controle\\ESP32-Remote-Prototype\\sbi-iot-client\\main\\assets\""
     }
   }
 }

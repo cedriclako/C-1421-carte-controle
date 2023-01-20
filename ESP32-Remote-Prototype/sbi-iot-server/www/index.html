@@ -12,10 +12,12 @@
 <body>
     <div id="app">
         <button id="idStartPairing" @click="idStartPairing_Click">{{ livedata.state.is_pairing ? "Stop Pairing (esp-now)" : "Start Pairing (esp-now)" }}</button>
+        <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
+
         <div>
-            <span>{{ livedata.wireless.rx }} / {{ livedata.wireless.tx }}</span>
+            <span>wireless: rx: {{ livedata.wireless.rx }} / tx: {{ livedata.wireless.tx }}</span><br>
+            <span>stove, online: {{ livedata.stove.is_connected }}, parameter cnt: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}</span>
         </div>
-        <br>
         <br>
         <h1>System Informations</h1>
         <table>
@@ -33,6 +35,30 @@
                 </tr>
             </tbody>
         </table>
+        <br>
+        <h1>Stove Parameters</h1>
+        <div class="content">
+            <!-- Config file -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            Config file
+                            <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <textarea id="idConfigFileText" rows="40" cols="100" v-model="configJSON"></textarea>
+                            <br>
+                            <button id="idSaveConfig" @click="idSaveConfig_OnClick($event)">Save</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script type="text/javascript" src="js/vue.min.js"></script>

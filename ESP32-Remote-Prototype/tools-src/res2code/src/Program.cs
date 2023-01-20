@@ -70,8 +70,6 @@ namespace res2code
         {
             try
             {
-                int error = 0;
-
                 Parser.Default.ParseArguments<Options>(args)
                        .WithParsed<Options>(o =>
                        {
@@ -131,7 +129,7 @@ namespace res2code
                                    scanFI.IsGZipCompressed = fileConfigs.Any(p => p.RelativeFilename.Equals(scanFI.RelativeFilename, StringComparison.InvariantCultureIgnoreCase));
                            }
 
-                           string NAMETOENUM(string relativeFilename) => $"EF_EFILE_{ FORMATFILENAME(relativeFilename) }";
+                           string NAMETOENUM(string prefix, string relativeFilename) => $"{prefix}_{ FORMATFILENAME(relativeFilename) }";
 
                            if (o.IsOutListing)
                            {
@@ -144,6 +142,18 @@ namespace res2code
                                }
                            }
 
+                           // Find image related files
+                           List<ScanFI> scanFIImages = new List<ScanFI>();
+
+                           foreach (ScanFI scanFI in scanFIs)
+                           {
+                               if (scanFI.FileInfo.Extension.Equals(".jpg") || 
+                                   scanFI.FileInfo.Extension.Equals(".jpeg") ||
+                                   scanFI.FileInfo.Extension.Equals(".png"))
+                               {
+                                   scanFIImages.Add(scanFI);
+                               }
+                           }
 
                            byte[] bigBlobs = new byte[0];
 
@@ -151,12 +161,16 @@ namespace res2code
                            string fileHRelativeFilename = Path.ChangeExtension(assetName, ".h");
                            string fileFullNameH = System.IO.Path.Combine(o.OutputCodePath, fileHRelativeFilename);
                            Console.Error.WriteLine($"Generating file: { fileFullNameH }");
-                           using(StreamWriter sw = new StreamWriter(fileFullNameH, false, System.Text.Encoding.UTF8))
+                           using (StreamWriter sw = new StreamWriter(fileFullNameH, false, System.Text.Encoding.UTF8))
                            {
                                sw.WriteLine($"#ifndef _{assetName.ToUpper()}_");
                                sw.WriteLine($"#define _{assetName.ToUpper()}_");
                                sw.WriteLine();
                                sw.WriteLine("#include <stdint.h>");
+                               sw.WriteLine();
+                               sw.WriteLine("#ifdef __cplusplus");
+                               sw.WriteLine("extern \"C\" {");
+                               sw.WriteLine("#endif");
                                sw.WriteLine();
                                sw.WriteLine("typedef enum");
                                sw.WriteLine("{");
@@ -166,30 +180,56 @@ namespace res2code
                                sw.WriteLine();
                                sw.WriteLine("typedef struct");
                                sw.WriteLine("{");
+                               sw.WriteLine("   int32_t s32Width;");
+                               sw.WriteLine("   int32_t s32Height;");
+                               sw.WriteLine("} EF_SImage;");
+                               sw.WriteLine();
+                               sw.WriteLine("typedef struct");
+                               sw.WriteLine("{");
                                sw.WriteLine("   const char* strFilename;");
                                sw.WriteLine("   uint32_t u32Length;");
                                sw.WriteLine("   EF_EFLAGS eFlags;");
                                sw.WriteLine("   const uint8_t* pu8StartAddr;");
+                               sw.WriteLine("   const void* pMetaData;");
                                sw.WriteLine("} EF_SFile;");
                                sw.WriteLine();
+
                                sw.WriteLine("typedef enum");
                                sw.WriteLine("{");
                                for (int i = 0; i < scanFIs.Count; i++)
                                {
                                    ScanFI scanFI = scanFIs[i];
-                                   sw.Write($"  {NAMETOENUM(scanFI.RelativeFilename)} = {i},    /*!< @brief File: { scanFI.RelativeFilename } */");
-                                   //if (i + 1 < scanFIs.Count)
-                                   //    sw.Write(",");
+                                   string convRelativeFilenameEnum = NAMETOENUM("EF_EFILE", scanFI.RelativeFilename);
+
+                                   sw.Write($"  {convRelativeFilenameEnum} = {i},".PadRight(64) + $"/*!< @brief file: {scanFI.RelativeFilename}, size: {scanFI.FileInfo.Length} */");
                                    sw.WriteLine();
                                }
-                               sw.WriteLine($"  {NAMETOENUM("COUNT")} = {scanFIs.Count}");
+                               sw.WriteLine($"  {NAMETOENUM("EF_EFILE", "COUNT")} = {scanFIs.Count}");
                                sw.WriteLine("} EF_EFILE;");
                                sw.WriteLine();
+
                                sw.WriteLine("/*! @brief Check if compressed flag is active */");
                                sw.WriteLine("#define EF_ISFILECOMPRESSED(x) ((x & EF_EFLAGS_GZip) == EF_EFLAGS_GZip)");
                                sw.WriteLine();
+
+                               // Image files
+                               if (scanFIImages.Count > 0)
+                               {
+                                   for (int i = 0; i < scanFIImages.Count; i++)
+                                   {
+                                       ScanFI scanFI = scanFIImages[i];
+                                       sw.WriteLine($"extern const EF_SImage {NAMETOENUM("EF_g_sIMAGES", scanFI.RelativeFilename)};");
+                                   }
+                                   sw.WriteLine();
+                               }
+
                                sw.WriteLine("extern const EF_SFile EF_g_sFiles[EF_EFILE_COUNT];");
                                sw.WriteLine("extern const uint8_t EF_g_u8Blobs[];");
+                               sw.WriteLine();
+
+                               sw.WriteLine("#ifdef __cplusplus");
+                               sw.WriteLine("}");
+                               sw.WriteLine("#endif");
                                sw.WriteLine();
                                sw.WriteLine("#endif");
                            }
@@ -199,6 +239,7 @@ namespace res2code
                            using (StreamWriter sw = new StreamWriter(fileC, false, System.Text.Encoding.UTF8))
                            {
                                sw.WriteLine($"#include \"{fileHRelativeFilename}\"");
+                               sw.WriteLine($"#include <stddef.h>");
                                sw.WriteLine();
                                // Generate variables
                                // We also add one space to add trailing 0. Usefull for string files.
@@ -244,6 +285,19 @@ namespace res2code
                                        swBinBlob.Write(bigBlobs, 0, bigBlobs.Length);
                                }
 
+                               // Image files
+                               if (scanFIImages.Count > 0)
+                               {
+                                   for (int i = 0; i < scanFIImages.Count; i++)
+                                   {
+                                       ScanFI scanFI = scanFIImages[i];
+                                       System.Drawing.Image img = System.Drawing.Image.FromFile(scanFI.FileInfo.FullName);
+
+                                       sw.WriteLine($"const EF_SImage {NAMETOENUM("EF_g_sIMAGES", scanFI.RelativeFilename).PadRight(48)} = {{ .s32Width = {img.Width}, .s32Height = {img.Height}}};");
+                                   }
+                                   sw.WriteLine();
+                               }
+
                                sw.WriteLine();
                                sw.WriteLine($"/*! @brief Total size: { scanFIs.Sum(p => p.FileInfo.Length) }, total (including trailing 0s): { bigBlobs.Length } */");
                                sw.WriteLine("const EF_SFile EF_g_sFiles[EF_EFILE_COUNT] = ");
@@ -251,7 +305,12 @@ namespace res2code
                                for (int i = 0; i < scanFIs.Count; i++)
                                {
                                    ScanFI scanFI = scanFIs[i];
-                                   sw.Write($"   [{NAMETOENUM(scanFI.RelativeFilename)}] = {{ \"{ scanFI.RelativeFilename }\", { scanFI.FileInfo.Length }, { (scanFI.IsGZipCompressed ? "EF_EFLAGS_GZip" : "EF_EFLAGS_None") }, &EF_g_u8Blobs[{ scanFI.BlobAddress }] }}");
+
+                                   string ptrMetaDataValue = "NULL";
+                                   if (scanFIImages.Any(p => p == scanFI))
+                                       ptrMetaDataValue = $"&{NAMETOENUM("EF_g_sIMAGES", scanFI.RelativeFilename)}";
+
+                                   sw.Write($"   [{NAMETOENUM("EF_EFILE", scanFI.RelativeFilename)}] = {{ \"{ scanFI.RelativeFilename }\", { scanFI.FileInfo.Length }, { (scanFI.IsGZipCompressed ? "EF_EFLAGS_GZip" : "EF_EFLAGS_None") }, &EF_g_u8Blobs[{ scanFI.BlobAddress }], {ptrMetaDataValue} }}");
                                    if (i + 1 < scanFIs.Count)
                                         sw.Write(",");
                                    sw.Write($"/* size: { scanFI.Datas.Length }{ (scanFI.IsGZipCompressed ? $", size (original): { scanFI.FileInfo.Length }" : "") } */");
