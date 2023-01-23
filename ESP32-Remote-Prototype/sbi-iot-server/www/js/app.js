@@ -115,7 +115,7 @@ var app = new Vue({
                 {
                     console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
                     this.configJSON = error;
-                    alert("Error: " + error);
+                    // alert("Error: " + error);
                 });
         },
         idSaveConfig_OnClick(event)
