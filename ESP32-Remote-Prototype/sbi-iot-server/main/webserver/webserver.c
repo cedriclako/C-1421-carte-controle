@@ -203,7 +203,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
 static esp_err_t api_get_handler(httpd_req_t *req)
 {
-    ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
+ //   ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
 
     char* szErrorString = NULL;
 

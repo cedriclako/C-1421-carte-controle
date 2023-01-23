@@ -684,9 +684,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   				  }
   			  }
   		  }
-  		  if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
-  			  nextState = currentState;
-  		  }
+  		  //if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
+  			//  nextState = currentState;
+  		  //}
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
@@ -713,6 +713,7 @@ void Algo_task(uint32_t currentTime_ms) {
 
   manageStateMachine(currentTime_ms);
 //  managePlenumSpeed(Algo_getPlenumTemp(),Algo_getThermostatRequest(),currentTime_ms);
+  manageFans(Algo_getBaffleTemp());
 
   if(Algo_getState()!= PRODUCTION_TEST)
   {
