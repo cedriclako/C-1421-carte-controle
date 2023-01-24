@@ -245,7 +245,7 @@ void app_main(void)
             isActive = !isActive;
         }
 
-       esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 5 ));
+       esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 1 ));
        vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   
 }

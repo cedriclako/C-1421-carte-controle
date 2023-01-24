@@ -97,7 +97,7 @@ void WEBSERVER_Init()
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.task_priority = FWCONFIG_HTTPTASK_PRIORITY;
-    config.stack_size = 7500;
+    config.stack_size = 9500;
     config.lru_purge_enable = true;
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.max_open_sockets = 13;
@@ -207,24 +207,29 @@ static esp_err_t api_get_handler(httpd_req_t *req)
     char* szErrorString = NULL;
     char* pExportJSON = NULL;
 
+    bool bIsChunk = false;
+
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {
         pExportJSON = NVSJSON_ExportJSON(&g_sSettingHandle);
 
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
+        bIsChunk = true;
     }
     else if (strcmp(req->uri, API_GETSYSINFOJSON_URI) == 0)
     {
         pExportJSON = GetSysInfo();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
+        bIsChunk = true;
     }
     else if (strcmp(req->uri, API_GETLIVEDATAJSON_URI) == 0)
     {
         pExportJSON = GetLiveData();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
+        bIsChunk = true;
     }
     else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
     {
@@ -234,12 +239,14 @@ static esp_err_t api_get_handler(httpd_req_t *req)
             szErrorString = "Server parameter file is not available";
             goto ERROR;
         }
+        bIsChunk = true;
     }
     else
     {
         ESP_LOGE(TAG, "api_get_handler, url: %s", req->uri);
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
     }
+    
     goto END;
     ERROR:
     if (szErrorString != NULL)
@@ -254,12 +261,15 @@ static esp_err_t api_get_handler(httpd_req_t *req)
         free(pExportJSON);
 
     httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send_chunk(req, NULL, 0);
+    // REALLY IMPORTANT, only send this in chunk mode or the browser will hang
+    if (bIsChunk)
+        httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
 
 static esp_err_t api_post_handler(httpd_req_t *req)
 {
+    ESP_LOGI(TAG, "test");
     char szError[128+1] = {0,};
 
     const int total_len = req->content_len;
@@ -320,7 +330,7 @@ static esp_err_t api_post_handler(httpd_req_t *req)
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
     END:
     httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send_chunk(req, NULL, 0);
+    //httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
 
