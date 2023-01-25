@@ -56,23 +56,11 @@ void DebugManager(void const * argument)
   /* Infinite loop */
 
 	State TempAlgoState;
-	//uint8_t sec_aper = 0;
-	//uint8_t rx_buff[2];
-	//rx_buff[0] = 'a';
-	//HAL_UART_Receive_IT(&huart1, rx_buff, 2);
+
 
 	for(;;)
 	{
-		/*if(sec_input)
-		{
-			sec_input = false;
 
-			sec_aper = atoi(rx_buff);
-			algo_fixSecondary( sec_aper);
-
-			printf("New setting for secondary aperture: %u \r\n \r\n", sec_aper);
-			HAL_UART_Receive_IT(&huart1, rx_buff, 2);
-		}*/
 
 		osDelay(5000);
 		HAL_RTC_GetTime(&hrtc,&sTime,0);
