@@ -13,7 +13,29 @@ const API_ACTION_DOWNLOADCONFIG_URI = "/action/downloadconfig";
 let mData = 
 {
     sysinfos: [],
-    livedata: { state: { is_pairing: false}, wireless: { rx: 0,tx: 0, channel: 0}, stove: { is_connected: false, param_cnt: 0 } },
+    livedata: {
+        state:{
+           is_pairing: false
+        },
+        wireless:{
+           rx: 0,
+           tx: 0,
+           channel: 0
+        },
+        stove:{
+           is_connected: false,
+           param_cnt: 0,
+           is_param_upload_error: false,
+           is_param_download_error: false
+        },
+        remote:{
+           tempC_current: 0,
+           tempC_sp: 0,
+           fanspeed: 0,
+           lastcomm_ms: 0
+        },
+        datetime: ""
+    },
     // Config JSON
     configJSON: ""
 };
@@ -53,7 +75,7 @@ var app = new Vue({
                     (data) => 
                     {
                         this.livedata = data;
-                        console.log("livedata: ", data);
+                        // console.log("livedata: ", data);
                         setTimeout(this.automaticUpdate, 500);
                     })
                 .catch((ex) => 
@@ -114,13 +136,12 @@ var app = new Vue({
                     if (!isOK)
                         throw Error(response);
                     console.log("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " data: ", response);
-                    this.configJSON = response;
+                    this.configJSON = JSON.stringify(JSON.parse(response), null, 2);
                 })
                 .catch((error) => 
                 {
                     console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
                     this.configJSON = error;
-                    // alert("Error: " + error);
                 });
         },
         idSaveConfig_OnClick(event)
