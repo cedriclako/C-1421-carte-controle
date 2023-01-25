@@ -193,23 +193,26 @@ static esp_err_t file_post_handler(httpd_req_t *req)
         goto ERROR;
     }
  
-    httpd_resp_set_status(req, "ok");
+    ESP_LOGI(TAG, "file_post_handler, url: %s | #3", req->uri);
     httpd_resp_set_hdr(req, "Connection", "close");
+    ESP_LOGI(TAG, "file_post_handler, url: %s | #4", req->uri);
+    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
     ERROR:
     ESP_LOGE(TAG, "Invalid request");
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
     httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_FAIL;
 }
 
 static esp_err_t api_get_handler(httpd_req_t *req)
 {
-    //ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
-    char* szErrorString = NULL;
-    char* pExportJSON = NULL;
+    esp_err_t esperr = ESP_OK;
 
-    bool bIsChunk = false;
+    //ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
+    char szError[128+1] = {0,};
+    char* pExportJSON = NULL;
 
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {
@@ -217,61 +220,56 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
-        bIsChunk = true;
     }
     else if (strcmp(req->uri, API_GETSYSINFOJSON_URI) == 0)
     {
         pExportJSON = GetSysInfo();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
-        bIsChunk = true;
     }
     else if (strcmp(req->uri, API_GETLIVEDATAJSON_URI) == 0)
     {
         pExportJSON = GetLiveData();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
-        bIsChunk = true;
     }
     else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
     {
         pExportJSON = STOVEMB_ExportParamToJSON();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
         {
-            szErrorString = "Server parameter file is not available";
+            strcpy(szError, "Server parameter file is not available");
             goto ERROR;
         }
-        bIsChunk = true;
     }
     else
     {
         ESP_LOGE(TAG, "api_get_handler, url: %s", req->uri);
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
+        goto END;
     }
-    
+
     goto END;
     ERROR:
-    if (szErrorString != NULL)
+    esperr = ESP_FAIL;
+    if (strlen(szError) > 0)
     {
-        ESP_LOGE(TAG, "api_get_handler, url: %s, error: %s", req->uri, szErrorString);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, szErrorString);
+        ESP_LOGE(TAG, "api_post_handler, url: %s, error: %s", req->uri, szError);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, szError);
     }
     else
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "request processing error");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
     END:
     if (pExportJSON != NULL)
         free(pExportJSON);
-
     httpd_resp_set_hdr(req, "Connection", "close");
-    // REALLY IMPORTANT, only send this in chunk mode or the browser will hang
-    if (bIsChunk)
-        httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+    httpd_resp_send_chunk(req, NULL, 0);
+    return esperr;
 }
 
 static esp_err_t api_post_handler(httpd_req_t *req)
 {
-    ESP_LOGI(TAG, "test");
+    esp_err_t esperr = ESP_OK;
     char szError[128+1] = {0,};
 
     const int total_len = req->content_len;
@@ -316,13 +314,12 @@ static esp_err_t api_post_handler(httpd_req_t *req)
         }
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
     }
-    else
-    {
-        ESP_LOGE(TAG, "api_post_handler, url: %s", req->uri);
-        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
-    }
+
+    ESP_LOGE(TAG, "api_post_handler, url: %s", req->uri);
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
     goto END;
     ERROR:
+    esperr = ESP_FAIL;
     if (strlen(szError) > 0)
     {
         ESP_LOGE(TAG, "api_post_handler, url: %s, error: %s", req->uri, szError);
@@ -332,8 +329,9 @@ static esp_err_t api_post_handler(httpd_req_t *req)
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
     END:
     httpd_resp_set_hdr(req, "Connection", "close");
-    //httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+    httpd_resp_send_chunk(req, NULL, 0);
+    ESP_LOGI(TAG, "api_post_handler DONE");
+    return esperr;
 }
 
 #define IS_FILE_EXT(filename, ext) \

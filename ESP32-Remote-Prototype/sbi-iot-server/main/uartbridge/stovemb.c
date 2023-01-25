@@ -216,7 +216,7 @@ STOVEMB_SParameterEntry* STOVEMB_GetByIndex(int32_t s32Index)
     STOVEMB_Take(portMAX_DELAY);
 
     // Not ready
-    if (s32Index >= m_sMemBlock.u32ParameterCount || !m_sMemBlock.bIsParameterDownloadCompleted)
+    if (s32Index < 0 || s32Index >= m_sMemBlock.u32ParameterCount || !m_sMemBlock.bIsParameterDownloadCompleted)
     {
         goto END;
     }

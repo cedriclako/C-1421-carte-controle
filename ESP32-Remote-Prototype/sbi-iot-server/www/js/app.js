@@ -35,7 +35,11 @@ var app = new Vue({
                   'Content-Type': 'application/json'
                 },
                 body: data,
-                cache: 'default'
+                cache: 'default',
+                keepalive: false 
+              }).then((data) =>
+              {
+                console.log("postAction: ", data);
               })
               .catch((ex) => 
               {
@@ -43,7 +47,7 @@ var app = new Vue({
               });
         },
         automaticUpdate() {
-            fetch(API_GETLIVEDATA)
+            fetch(API_GETLIVEDATA, { keepalive: false })
                 .then((response) => response.json())
                 .then(
                     (data) => 
@@ -64,7 +68,7 @@ var app = new Vue({
         {
             console.log("page_loaded");
             // Get system informations
-            fetch(API_GETSYSINFO)
+            fetch(API_GETSYSINFO, { keepalive: false })
                 .then((response) => response.json())
                 .then((data) => this.sysinfos = data.infos)
                 .catch((ex) => 
@@ -97,7 +101,8 @@ var app = new Vue({
                 method: 'GET', // or 'PUT'
                 headers: {
                   'Content-Type': 'application/json',
-                }
+                },
+                keepalive: false 
               })
                 .then((response) => 
                 {
@@ -127,6 +132,7 @@ var app = new Vue({
                   'Content-Type': 'application/json',
                 },
                 body: this.configJSON,
+                keepalive: false 
               })
             .then((response) => 
             {
@@ -153,6 +159,7 @@ var app = new Vue({
                   'Content-Type': 'application/json',
                 },
                 body: "",
+                keepalive: false 
               })
             .then((response) => 
             {

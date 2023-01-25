@@ -283,9 +283,15 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
 
             STOVEMB_SParameterEntry* pLastWriteEntry = STOVEMB_GetByIndex(m_sStateMachine.s32WriteLastIndex);
-            if (pLastWriteEntry != NULL && s.eResult == UFEC23PROTOCOL_ERESULT_Ok)
+            if (pLastWriteEntry != NULL)
             {
-                ESP_LOGI(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+                if (!bIsError)
+                {
+                    ESP_LOGI(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+                    pLastWriteEntry->bIsNeedWrite = false;
+                }
+                else
+                    ESP_LOGE(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
             }
 
             STOVEMB_SParameterEntry sParamEntry;

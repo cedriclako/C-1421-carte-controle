@@ -72,6 +72,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
+static void UARTErrorCb(UART_HandleTypeDef *huart);
+
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 {
     .u8PayloadBuffers = m_u8UARTProtocolBuffers2,
@@ -86,6 +88,7 @@ static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 };
 
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
+static volatile bool m_bNeedRestartDMA = false;
 
 // --------
 // Bridge state
@@ -113,8 +116,15 @@ void ESPMANAGER_Task(void const * argument)
 	osSemaphoreWait(ESP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
 
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
+	HAL_UART_RegisterCallback(&huart2, HAL_UART_ERROR_CB_ID, UARTErrorCb);
 
-	for(;;) {
+	for(;;)
+	{
+		if (m_bNeedRestartDMA)
+		{
+			m_bNeedRestartDMA = false;
+			HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
+		}
 
 		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CNDTR);
 
@@ -136,6 +146,13 @@ void ESPMANAGER_Task(void const * argument)
 		osDelay(1);
 	}
 
+}
+
+static void UARTErrorCb(UART_HandleTypeDef *huart)
+{
+	// If there is not enough activity it seems to trigger an error
+	// in that case we need to restart the DMA
+	m_bNeedRestartDMA = true;
 }
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen)
