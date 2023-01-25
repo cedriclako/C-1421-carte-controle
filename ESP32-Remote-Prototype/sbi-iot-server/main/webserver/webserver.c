@@ -316,7 +316,6 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     }
 
     ESP_LOGE(TAG, "api_post_handler, url: %s", req->uri);
-    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
     goto END;
     ERROR:
     esperr = ESP_FAIL;
