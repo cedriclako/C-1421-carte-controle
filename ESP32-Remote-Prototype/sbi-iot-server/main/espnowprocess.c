@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "espnowprocess.h"
 #include "esp_log.h"
 
@@ -153,6 +155,22 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     }
 
     pMB->sRemoteData.ttLastCommunicationTicks = xTaskGetTickCount();
+
+    // Date time
+    time_t now = 0;
+    struct tm timeinfo = { 0 };
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    
+    resp.stove_state.has_datetime = true;
+    resp.stove_state.datetime.has_date = true;
+    resp.stove_state.datetime.date.year = 1900+timeinfo.tm_year;
+    resp.stove_state.datetime.date.month = timeinfo.tm_mon+1;
+    resp.stove_state.datetime.date.day = timeinfo.tm_mday;
+    resp.stove_state.datetime.has_time = true;
+    resp.stove_state.datetime.time.hour = timeinfo.tm_hour;
+    resp.stove_state.datetime.time.min = timeinfo.tm_min;
+    resp.stove_state.datetime.time.sec = timeinfo.tm_sec;
 
     STOVEMB_Give();
 
