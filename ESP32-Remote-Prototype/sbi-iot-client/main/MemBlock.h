@@ -17,7 +17,6 @@ extern "C" {
 
 typedef struct 
 {
-    bool has_sRemoteState;
     SBI_iot_RemoteState sRemoteState;
 
     bool has_s2cGetStatusResp;

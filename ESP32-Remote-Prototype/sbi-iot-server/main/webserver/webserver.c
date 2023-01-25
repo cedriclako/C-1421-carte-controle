@@ -516,14 +516,21 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pRoot, "wireless", pWireless);
 
     STOVEMB_Take(portMAX_DELAY);
+    // Stove
     cJSON* pStove = cJSON_CreateObject();
-    
     const STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlockRO();
     cJSON_AddItemToObject(pStove, "is_connected", cJSON_CreateBool(pMemBlock->bIsStoveConnectedAndReady));
     cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
     cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
     cJSON_AddItemToObject(pStove, "is_param_download_error", cJSON_CreateBool(pMemBlock->bIsAnyDownloadError));
     cJSON_AddItemToObject(pRoot, "stove", pStove);
+    // Remote
+    cJSON* pRemote = cJSON_CreateObject();
+    cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.tempC_current));
+    cJSON_AddItemToObject(pRemote, "tempC_sp", cJSON_CreateNumber(pMemBlock->sRemoteData.temp_sp.temp));
+    cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber(pMemBlock->sRemoteData.u8FanSpeed));
+    cJSON_AddItemToObject(pRoot, "remote", pRemote);
+
     STOVEMB_Give();
 
     char* pStr =  cJSON_PrintUnformatted(pRoot);

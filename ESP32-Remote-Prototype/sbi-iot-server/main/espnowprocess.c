@@ -18,23 +18,10 @@
 
 typedef struct
 {
-    // Temperature setpoint
-    bool has_temp_sp;
-    SBI_iot_common_TemperatureSetPoint temp_sp;
-    
-    bool has_tempC_current;
-    float tempC_current;
-} SRemoteState;
-
-typedef struct
-{
     ESPNOWPROCESS_ESPNowInfo sESPNowInfo;
 
     QueueHandle_t sQueueRXHandle;
     // QueueHandle_t sQueueTXHandle;
-
-    // Related to the remote state
-    SRemoteState sRemoteState;
 } SHandle;
 
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
@@ -59,14 +46,6 @@ static SHandle m_sHandle;
 void ESPNOWPROCESS_Init()
 {
     // Default values
-    memset(&m_sHandle.sRemoteState, 0, sizeof(SRemoteState));
-
-    m_sHandle.sRemoteState.has_tempC_current = false;
-
-    m_sHandle.sRemoteState.has_temp_sp = true;
-    m_sHandle.sRemoteState.temp_sp.temp = 21.0f;
-    m_sHandle.sRemoteState.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
-
     memset(&m_sHandle.sESPNowInfo, 0, sizeof(ESPNOWPROCESS_ESPNowInfo));
 
     m_sHandle.sQueueRXHandle = xQueueCreate(ESPNOWPROCESS_QUEUERX, sizeof(ESPNOWPROCESS_SMsg));
@@ -129,80 +108,72 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 {
     STOVEMB_Take(portMAX_DELAY);
 
-    const STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlockRO();
+    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
 
     // -------------------------------------
     // Decode remote and record state
     if (pC2SGetStatus->has_remote_state)
     {
-        m_sHandle.sRemoteState.has_tempC_current = true;
-        m_sHandle.sRemoteState.tempC_current = pC2SGetStatus->remote_state.temperatureC_curr;
+        pMB->sRemoteData.has_tempC_current = true;
+        pMB->sRemoteData.tempC_current = pC2SGetStatus->remote_state.temperatureC_curr;
         ESP_LOGI(TAG, "remote temperatureC_curr: %.2f", pC2SGetStatus->remote_state.temperatureC_curr);
     }
 
     // -------------------------------------
     // Return a response
-    SBI_iot_S2CGetStatusResp s2c_get_status_resp;
-    s2c_get_status_resp.has_stove_state = true;
-    s2c_get_status_resp.stove_state.has_fan_speed_set = true;
-    s2c_get_status_resp.stove_state.fan_speed_set.is_automatic = true;
-    s2c_get_status_resp.stove_state.fan_speed_set.curr = 1;
+    SBI_iot_S2CGetStatusResp resp;
+    resp.has_stove_state = true;
+    resp.stove_state.has_fan_speed_set = true;
+    resp.stove_state.fan_speed_set.is_automatic = true;
+    resp.stove_state.fan_speed_set.curr = 1;
 
-    s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
-    s2c_get_status_resp.stove_state.fan_speed_boundary.min = 1;
-    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 4;
+    resp.stove_state.has_fan_speed_boundary = true;
+    resp.stove_state.fan_speed_boundary.min = 1;
+    resp.stove_state.fan_speed_boundary.max = 4;
 
-    s2c_get_status_resp.stove_state.is_open_air = false;
+    resp.stove_state.is_open_air = false;
 
     // These values comes from the remote
-    if (m_sHandle.sRemoteState.has_temp_sp)
+    if (pMB->sRemoteData.has_temp_sp)
     {
-        s2c_get_status_resp.stove_state.has_remote_temperature_setp = true;
-        s2c_get_status_resp.stove_state.remote_temperature_setp.unit = m_sHandle.sRemoteState.temp_sp.unit;
-        s2c_get_status_resp.stove_state.remote_temperature_setp.temp = m_sHandle.sRemoteState.temp_sp.temp;
+        resp.stove_state.has_remote_temperature_setp = true;
+        resp.stove_state.remote_temperature_setp.unit = pMB->sRemoteData.temp_sp.unit;
+        resp.stove_state.remote_temperature_setp.temp = pMB->sRemoteData.temp_sp.temp;
     }
 
+    // Return stove related informations
     if (pMB->sS2CReqVersionRespIsSet)
     {
-        s2c_get_status_resp.has_stove_info = true;
-        s2c_get_status_resp.stove_info.device_type = SBI_iot_EDEVICETYPE_Stove_V1;
-        s2c_get_status_resp.stove_info.has_sw_version = true;
-        s2c_get_status_resp.stove_info.sw_version.major = pMB->sS2CReqVersionResp.sVersion.u8Major;
-        s2c_get_status_resp.stove_info.sw_version.minor = pMB->sS2CReqVersionResp.sVersion.u8Minor;
-        s2c_get_status_resp.stove_info.sw_version.revision = pMB->sS2CReqVersionResp.sVersion.u8Revision;
+        resp.has_stove_info = true;
+        resp.stove_info.device_type = SBI_iot_EDEVICETYPE_Stove_V1;
+        resp.stove_info.has_sw_version = true;
+        resp.stove_info.sw_version.major = pMB->sS2CReqVersionResp.sVersion.u8Major;
+        resp.stove_info.sw_version.minor = pMB->sS2CReqVersionResp.sVersion.u8Minor;
+        resp.stove_info.sw_version.revision = pMB->sS2CReqVersionResp.sVersion.u8Revision;
     }
 
-    //if (FillBridgeInfo(&s2c_get_status_resp.bridge_info))
-    //    s2c_get_status_resp.has_bridge_info = true;
-
-    // Date time
-    s2c_get_status_resp.stove_state.has_datetime = true;
-    s2c_get_status_resp.stove_state.datetime.has_date = true;
-    s2c_get_status_resp.stove_state.datetime.date.year = 2022;
-    s2c_get_status_resp.stove_state.datetime.date.month = 6;
-    s2c_get_status_resp.stove_state.datetime.date.day = 21;
-    s2c_get_status_resp.stove_state.datetime.has_time = true;
-    s2c_get_status_resp.stove_state.datetime.time.hour = 17;
-    s2c_get_status_resp.stove_state.datetime.time.hour = 30;
-    s2c_get_status_resp.stove_state.datetime.time.hour = 21;
-
-    SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, &s2c_get_status_resp, sizeof(SBI_iot_S2CGetStatusResp));
+    SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, &resp, sizeof(SBI_iot_S2CGetStatusResp));
 
     STOVEMB_Give();
 }
 
 static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP)
 {
+    STOVEMB_Take(portMAX_DELAY);
+    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+
     ESP_LOGI(TAG, "C2SChangeSettingSP, has_temperature_setp: %s, temperature_setp: %.2f", 
         (pC2SChangeSettingSP->has_temperature_setp ? "true" : "false"), 
         pC2SChangeSettingSP->temperature_setp.temp);
 
     if (pC2SChangeSettingSP->has_temperature_setp)
     {
-        m_sHandle.sRemoteState.has_temp_sp = true;
-        m_sHandle.sRemoteState.temp_sp.temp = pC2SChangeSettingSP->temperature_setp.temp;
-        m_sHandle.sRemoteState.temp_sp.unit = pC2SChangeSettingSP->temperature_setp.unit;
+        pMB->sRemoteData.has_temp_sp = true;
+        pMB->sRemoteData.temp_sp.temp = pC2SChangeSettingSP->temperature_setp.temp;
+        pMB->sRemoteData.temp_sp.unit = pC2SChangeSettingSP->temperature_setp.unit;
     }
+
+    STOVEMB_Give();
 }
 /*
 static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo)

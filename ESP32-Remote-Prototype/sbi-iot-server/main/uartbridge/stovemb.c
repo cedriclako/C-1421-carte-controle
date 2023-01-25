@@ -28,6 +28,12 @@ void STOVEMB_Init()
     assert(m_xSemaphoreExt != NULL);
 
     memset(&m_sMemBlock, 0, sizeof(STOVEMB_SMemBlock));
+    
+    m_sMemBlock.sRemoteData.has_tempC_current = false;
+
+    m_sMemBlock.sRemoteData.has_temp_sp = true;
+    m_sMemBlock.sRemoteData.temp_sp.temp = 21.0f;
+    m_sMemBlock.sRemoteData.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
 }
 
 STOVEMB_SMemBlock* STOVEMB_GetMemBlock()
