@@ -210,6 +210,22 @@ int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry*
     return s32Ret;
 }
 
+STOVEMB_SParameterEntry* STOVEMB_GetByIndex(int32_t s32Index)
+{
+    STOVEMB_SParameterEntry* pEntryRet = NULL;
+    STOVEMB_Take(portMAX_DELAY);
+
+    // Not ready
+    if (s32Index >= m_sMemBlock.u32ParameterCount || !m_sMemBlock.bIsParameterDownloadCompleted)
+    {
+        goto END;
+    }
+    pEntryRet = &m_sMemBlock.arrParameterEntries[s32Index];
+    END:
+    STOVEMB_Give();
+    return pEntryRet;
+}
+
 void STOVEMB_ResetAllParameterWriteFlag()
 {
     STOVEMB_Take(portMAX_DELAY);

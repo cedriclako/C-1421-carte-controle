@@ -51,6 +51,8 @@ const STOVEMB_SMemBlock* STOVEMB_GetMemBlockRO();
 
 int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry* pEntry);
 
+STOVEMB_SParameterEntry* STOVEMB_GetByIndex(int32_t s32Index);
+
 void STOVEMB_ResetAllParameterWriteFlag();
 
 char* STOVEMB_ExportParamToJSON();

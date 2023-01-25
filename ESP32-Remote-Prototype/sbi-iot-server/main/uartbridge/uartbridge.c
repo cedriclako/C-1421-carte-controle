@@ -281,20 +281,19 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             pMemBlock->bIsAnyUploadError |= bIsError;
 
             m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
-            
+
+            STOVEMB_SParameterEntry* pLastWriteEntry = STOVEMB_GetByIndex(m_sStateMachine.s32WriteLastIndex);
+            if (pLastWriteEntry != NULL && s.eResult == UFEC23PROTOCOL_ERESULT_Ok)
+            {
+                ESP_LOGI(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+            }
+
             STOVEMB_SParameterEntry sParamEntry;
             const int32_t s32NextWritableIndex = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
-
-            if (bIsError)
-                ESP_LOGW(TAG, "S2CSetParameterResp | old: %d, new: %d, result [based on old: %d]", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex, s.eResult);
-            else
-                ESP_LOGI(TAG, "S2CSetParameterResp | old: %d, new: %d, result [based on old: %d]", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex, s.eResult);
 
             // The last one has been uploaded ...
             if (s32NextWritableIndex < 0)
             {
-                // Upload completed.
-                STOVEMB_ResetAllParameterWriteFlag();
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 ESP_LOGI(TAG, "Parameter upload process done");
             }
@@ -452,6 +451,8 @@ static bool ProcParameterDownload()
     pMB->u32ParameterCount = 0;
     pMB->bIsParameterDownloadCompleted = false;
     pMB->bIsAnyDownloadError = false;
+
+    STOVEMB_ResetAllParameterWriteFlag();
 
     UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
     {

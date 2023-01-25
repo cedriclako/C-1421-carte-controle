@@ -52,7 +52,7 @@
                 <tbody>
                     <tr>
                         <td>
-                            <textarea id="idConfigFileText" rows="40" cols="100" v-model="configJSON"></textarea>
+                            <textarea id="idConfigFileText" rows="40" cols="100" :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" v-model="configJSON"></textarea>
                             <br>
                             <button id="idSaveConfig" @click="idSaveConfig_OnClick($event)">Save</button>
                         </td>
