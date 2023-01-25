@@ -2,6 +2,7 @@
 #include "Global.h"
 #include "../MemBlock.h"
 #include "../UIManager.h"
+#include "espnowcomm.h"
 
 #define TAG "MainUI"
 
@@ -66,9 +67,6 @@ static void Enter(COMMONUI_SContext* pContext)
 {   
     MAINUI_SHandle* pHandle = (MAINUI_SHandle*)pContext->pHandle;
     
-    pHandle->u8CurrentFanSpeed = 1;
-    pHandle->fSetPoint = 20.0;
-
     RedrawUI(pContext);
 }
 
@@ -96,29 +94,37 @@ static void OnTouch(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32T
     if ( COMMONUI_IsInCoordinate(ZONE_SETPOINT_BUTTONDOWN_X, ZONE_SETPOINT_BUTTONDOWN_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
-        if (pHandle->fSetPoint - 0.5f >= 5.0f)
-            pHandle->fSetPoint -= 0.5f;
+        if (g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp - 0.5f >= 5.0f)
+            g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp -= 0.5f;
+        g_sMemblock.isTemperatureSetPointChanged = true;
+        ESPNOWCOMM_SendChangeSetting();
     }
     else if ( COMMONUI_IsInCoordinate(ZONE_SETPOINT_BUTTONUP_X, ZONE_SETPOINT_BUTTONUP_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
-        if (pHandle->fSetPoint + 0.5f <= 40.0f)
-            pHandle->fSetPoint += 0.5f;
+        if (g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp + 0.5f <= 40.0f)
+            g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp += 0.5f;
+        g_sMemblock.isTemperatureSetPointChanged = true;
+        ESPNOWCOMM_SendChangeSetting();
     }
 
     // ==================================
     // Configs fan speed
     if ( COMMONUI_IsInCoordinate(ZONE_FANSPEED_BUTTONDOWN_X, ZONE_FANSPEED_BUTTONDOWN_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
-        bNeedRedraw = true;
-        if (pHandle->u8CurrentFanSpeed - 1 >= 1)
-            pHandle->u8CurrentFanSpeed--;
+        bNeedRedraw = true;   
+        if (g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr - 1 >= 1)
+            g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr--;
+        g_sMemblock.isFanSpeedSetPointChanged = true;
+        ESPNOWCOMM_SendChangeSetting();
     }
     else if ( COMMONUI_IsInCoordinate(ZONE_FANSPEED_BUTTONUP_X, ZONE_FANSPEED_BUTTONUP_Y, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Width, EF_g_sIMAGES_ICON_ARROW_UP_EN_120X60_JPG.s32Height, s32TouchX, s32TouchY) )
     {
         bNeedRedraw = true;
-        if (pHandle->u8CurrentFanSpeed + 1 <= 4)
-            pHandle->u8CurrentFanSpeed++;
+        if (g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr + 1 <= 4)
+            g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr++;
+        g_sMemblock.isFanSpeedSetPointChanged = true;
+        ESPNOWCOMM_SendChangeSetting();
     }
 
     if ( COMMONUI_IsInCoordinate(ZONE_BTSETTING_START_X, ZONE_BTSETTING_START_Y, EF_g_sIMAGES_ICON_SETTING_160X160_JPG.s32Width, EF_g_sIMAGES_ICON_SETTING_160X160_JPG.s32Height, s32TouchX, s32TouchY) )
@@ -224,15 +230,18 @@ static void RedrawUI(COMMONUI_SContext* pContext)
         G_g_CanvasResult.setFreeFont(FF19);
         G_g_CanvasResult.setTextSize(1);
         G_g_CanvasResult.drawCentreString("Fan speed", 40+EF_g_sIMAGES_ICON_ARROW_DOWN_EN_120X60_JPG.s32Width/2, ZONE_FANSPEED_START_Y+92, GFXFF);
+
+        const uint8_t u8CurrentFanSpeed = (uint8_t)g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr;
+
         if (pArgument->bIsUserModeActive)
         {
-            const EF_SFile* pSFileArrowUp = COMMONUI_GetBtnArrowUp(pHandle->u8CurrentFanSpeed != 4);
+            const EF_SFile* pSFileArrowUp = COMMONUI_GetBtnArrowUp(u8CurrentFanSpeed != 4);
             G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, ZONE_FANSPEED_BUTTONUP_X, ZONE_FANSPEED_BUTTONUP_Y);
 
-            const EF_SFile* pSFileArrowDown = COMMONUI_GetBtnArrowDown(pHandle->u8CurrentFanSpeed != 1);
+            const EF_SFile* pSFileArrowDown = COMMONUI_GetBtnArrowDown(u8CurrentFanSpeed != 1);
             G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, ZONE_FANSPEED_BUTTONDOWN_X, ZONE_FANSPEED_BUTTONDOWN_Y);
         }
-        DrawAllBars(232, ZONE_FANSPEED_START_Y, pHandle->u8CurrentFanSpeed);
+        DrawAllBars(232, ZONE_FANSPEED_START_Y, u8CurrentFanSpeed);
 
         G_g_CanvasResult.drawRect(40, ZONE_FANSPEED_START_Y + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
     }

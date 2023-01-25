@@ -267,6 +267,27 @@ static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32
     esp_now_send(m_u8BroadcastAddr, u8OutBuffers, len);
 }
 
+void ESPNOWCOMM_SendChangeSetting()
+{
+    SBI_iot_C2SChangeSettingSP sp;
+    if (g_sMemblock.isTemperatureSetPointChanged)
+    {
+        g_sMemblock.isTemperatureSetPointChanged = false;
+        sp.has_temperature_setp = true;
+        sp.temperature_setp.temp = g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp;
+        sp.temperature_setp.unit = g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.unit;
+    }
+
+    if (g_sMemblock.isFanSpeedSetPointChanged)
+    {
+        g_sMemblock.isFanSpeedSetPointChanged = false;
+        sp.has_fan_speed_set = true;
+        sp.fan_speed_set = g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set;
+    }
+    
+    SendESPNow(SBI_iot_Cmd_c2s_change_settingsp_tag, &sp, sizeof(SBI_iot_C2SChangeSettingSP));
+}
+
 /* ESPNOW sending or receiving callback function is called in WiFi task.
  * Users should not do lengthy operations from this task. Instead, post
  * necessary data to a queue and handle it from a lower priority task. */

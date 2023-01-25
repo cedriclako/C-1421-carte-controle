@@ -17,10 +17,14 @@ extern "C" {
 
 typedef struct 
 {
+    bool has_sRemoteState;
     SBI_iot_RemoteState sRemoteState;
 
     bool has_s2cGetStatusResp;
     SBI_iot_S2CGetStatusResp s2cGetStatusResp;
+
+    bool isTemperatureSetPointChanged;
+    bool isFanSpeedSetPointChanged;
 } MEMBLOCK_SMemBlock;
 
 extern MEMBLOCK_SMemBlock g_sMemblock;
