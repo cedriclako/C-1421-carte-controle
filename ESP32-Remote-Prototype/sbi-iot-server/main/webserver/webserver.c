@@ -9,6 +9,7 @@
 #include "assets/EmbeddedFiles.h"
 #include "esp_ota_ops.h"
 #include "cJSON.h"
+#include "freertos/FreeRTOS.h"
 
 #include "event.h"
 #include "webserver.h"
@@ -529,6 +530,8 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.tempC_current));
     cJSON_AddItemToObject(pRemote, "tempC_sp", cJSON_CreateNumber(pMemBlock->sRemoteData.temp_sp.temp));
     cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber(pMemBlock->sRemoteData.u8FanSpeed));
+    const TickType_t ttLastCommTicks = xTaskGetTickCount() - pMemBlock->sRemoteData.ttLastCommunicationTicks;
+    cJSON_AddItemToObject(pRemote, "lastcomm_ms", cJSON_CreateNumber(pdTICKS_TO_MS(ttLastCommTicks)));
     cJSON_AddItemToObject(pRoot, "remote", pRemote);
 
     STOVEMB_Give();

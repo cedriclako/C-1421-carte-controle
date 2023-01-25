@@ -33,6 +33,9 @@ typedef struct
 
     // Fan 
     uint8_t u8FanSpeed;
+
+    // Last communication ticks
+    TickType_t ttLastCommunicationTicks; 
 } STOVEMB_SRemoteData;
 
 typedef struct 

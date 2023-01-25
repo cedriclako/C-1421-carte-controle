@@ -31,9 +31,12 @@ void STOVEMB_Init()
     
     m_sMemBlock.sRemoteData.has_tempC_current = false;
 
+    // Default values ...
     m_sMemBlock.sRemoteData.has_temp_sp = true;
     m_sMemBlock.sRemoteData.temp_sp.temp = 21.0f;
     m_sMemBlock.sRemoteData.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
+
+    m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
 }
 
 STOVEMB_SMemBlock* STOVEMB_GetMemBlock()

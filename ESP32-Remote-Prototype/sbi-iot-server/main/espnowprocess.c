@@ -152,9 +152,11 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
         resp.stove_info.sw_version.revision = pMB->sS2CReqVersionResp.sVersion.u8Revision;
     }
 
-    SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, &resp, sizeof(SBI_iot_S2CGetStatusResp));
+    pMB->sRemoteData.ttLastCommunicationTicks = xTaskGetTickCount();
 
     STOVEMB_Give();
+
+    SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, &resp, sizeof(SBI_iot_S2CGetStatusResp));
 }
 
 static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP)
