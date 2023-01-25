@@ -33,6 +33,7 @@ typedef struct
     uint32_t u32ParameterCount;
 
     bool bIsAnyUploadError;
+    bool bIsAnyDownloadError;
 
     // Is stove connected
     bool bIsStoveConnectedAndReady;

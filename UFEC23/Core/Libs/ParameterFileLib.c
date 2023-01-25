@@ -73,9 +73,8 @@ PFL_ESETRET PFL_SetValueInt32(const PFL_SHandle* pHandle, const char* szName, in
 	const PFL_SParameterItem* pEnt = GetParameterEntryByKey(pHandle, szName);
 	if (pEnt == NULL || pEnt->eType != PFL_TYPE_Int32 || pEnt->vdVar == NULL)
 		return PFL_ESETRET_EntryNoFound;
-
 	int32_t* ps32Value = ((int32_t*)pEnt->vdVar);
-	const PFL_ESETRET eValidateRet = ValidateValueInt32(pHandle, pEnt, *ps32Value);
+	const PFL_ESETRET eValidateRet = ValidateValueInt32(pHandle, pEnt, s32NewValue);
 	if (eValidateRet != PFL_ESETRET_OK)
 		return eValidateRet;
 	// We can record if it pass validation step

@@ -234,7 +234,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			UFEC23PROTOCOL_S2CSetParameterResp s2cSetParameterResp =
 			{
 				// We don't give full precision ... ok or fail is enough for now.
-				.eResult = setRet == PFL_ESETRET_OK ? UFEC23PROTOCOL_ERESULT_Ok : UFEC23PROTOCOL_ERESULT_Fail
+				.eResult = (setRet == PFL_ESETRET_OK) ? UFEC23PROTOCOL_ERESULT_Ok : UFEC23PROTOCOL_ERESULT_Fail
 			};
 			const uint16_t u16Len = (uint16_t)UFEC23ENDEC_S2CSetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &s2cSetParameterResp);
 			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CSetParameterResp, m_u8UARTOutputBuffers, u16Len);

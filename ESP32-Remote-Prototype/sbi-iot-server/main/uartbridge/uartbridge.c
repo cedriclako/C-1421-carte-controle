@@ -286,9 +286,9 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             const int32_t s32NextWritableIndex = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
 
             if (bIsError)
-                ESP_LOGW(TAG, "S2CSetParameterResp | old: %d, new: %d", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex);
+                ESP_LOGW(TAG, "S2CSetParameterResp | old: %d, new: %d, result [based on old: %d]", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex, s.eResult);
             else
-                ESP_LOGI(TAG, "S2CSetParameterResp | old: %d, new: %d", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex);
+                ESP_LOGI(TAG, "S2CSetParameterResp | old: %d, new: %d, result [based on old: %d]", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex, s.eResult);
 
             // The last one has been uploaded ...
             if (s32NextWritableIndex < 0)
@@ -414,11 +414,20 @@ static void ProcParameterAbort()
 {
     if (m_sStateMachine.eProcParameterProcess == EPARAMETERPROCESS_Downloading)
     {
-        ESP_LOGE(TAG, "Unable to download process aborted");
+        ESP_LOGE(TAG, "Unable to download, process aborted");
         STOVEMB_Take(portMAX_DELAY);
         STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
         pMB->bIsParameterDownloadCompleted = false;
         pMB->u32ParameterCount = 0;
+        pMB->bIsAnyDownloadError = true;
+        STOVEMB_Give();
+    }
+    else if (m_sStateMachine.eProcParameterProcess == EPARAMETERPROCESS_Uploading)
+    {
+        ESP_LOGE(TAG, "Unable to upload, process aborted");
+        STOVEMB_Take(portMAX_DELAY);
+        STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+        pMB->bIsAnyUploadError = true;
         STOVEMB_Give();
     }
 
@@ -442,6 +451,7 @@ static bool ProcParameterDownload()
 
     pMB->u32ParameterCount = 0;
     pMB->bIsParameterDownloadCompleted = false;
+    pMB->bIsAnyDownloadError = false;
 
     UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
     {
@@ -462,8 +472,6 @@ static bool ProcParameterUpload()
         return false;
     }
 
-    m_sStateMachine.s32WriteLastIndex = 0;
-    
     STOVEMB_Take(portMAX_DELAY);
     // Upload
     STOVEMB_GetMemBlock()->bIsAnyUploadError = false;
@@ -471,6 +479,8 @@ static bool ProcParameterUpload()
     const int32_t s32Index = STOVEMB_FindNextWritable(0, &sParamEntry);
     STOVEMB_Give();
 
+    m_sStateMachine.s32WriteLastIndex = s32Index;
+    
     // Return true because it's a normal usecase to not have anything to upload
     if (s32Index < 0)
         return true;
