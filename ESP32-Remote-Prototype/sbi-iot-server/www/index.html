@@ -12,11 +12,10 @@
 <body>
     <div id="app">
         <button id="idStartPairing" @click="idStartPairing_Click">{{ livedata.state.is_pairing ? "Stop Pairing (esp-now)" : "Start Pairing (esp-now)" }}</button>
-        <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
 
         <div>
             <span>wireless: rx: {{ livedata.wireless.rx }} / tx: {{ livedata.wireless.tx }}</span><br>
-            <span>stove, online: {{ livedata.stove.is_connected }}, parameter cnt: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }}</span><br>
+            <span>stove, online: {{ livedata.stove.is_connected }}</span><br>
             <span>remote, current: {{ livedata.remote.tempC_current.toFixed(2) }} C, set point: {{ livedata.remote.tempC_sp.toFixed(2) }} C, fan: {{ livedata.remote.fanspeed }} C, lastcomm (s): {{ (livedata.remote.lastcomm_ms/1000).toFixed(2) }}</span><br>
             <span>datetime: {{ livedata.datetime }}</span>
         </div>
@@ -45,7 +44,8 @@
                 <thead>
                     <tr>
                         <th>
-                            Config file
+                            Config file (count: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }})<br>
+                            <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
                             <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
                         </th>
                     </tr>

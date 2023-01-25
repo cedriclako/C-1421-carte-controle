@@ -532,6 +532,7 @@ static char* GetLiveData()
 
     cJSON_AddItemToObject(pRoot, "remote", pRemote);
 
+    // Date time
     time_t now = 0;
     struct tm timeinfo = { 0 };
     time(&now);
@@ -545,7 +546,6 @@ static char* GetLiveData()
         /* 3*/timeinfo.tm_hour,
         /* 4*/timeinfo.tm_min,
         /* 5*/timeinfo.tm_sec);
-
     cJSON_AddItemToObject(pRoot, "datetime", cJSON_CreateString(text));
 
     STOVEMB_Give();
