@@ -236,7 +236,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 				// We don't give full precision ... ok or fail is enough for now.
 				.eResult = setRet == PFL_ESETRET_OK ? UFEC23PROTOCOL_ERESULT_Ok : UFEC23PROTOCOL_ERESULT_Fail
 			};
-			UFEC23ENDEC_S2CSetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &s2cSetParameterResp);
+			const uint16_t u16Len = (uint16_t)UFEC23ENDEC_S2CSetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &s2cSetParameterResp);
+			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CSetParameterResp, m_u8UARTOutputBuffers, u16Len);
 			break;
 		}
 		//case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:

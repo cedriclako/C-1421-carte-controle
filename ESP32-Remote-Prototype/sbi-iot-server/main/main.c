@@ -225,8 +225,8 @@ void app_main(void)
     static bool isActive = false;
     TickType_t ttLed = xTaskGetTickCount();
 
-    // Run main loop at 150 hz
-    const int loopPeriodMS = 1000/150;
+    // Run main loop at 100 hz
+    const int loopPeriodMS = 1000/100;
     const TickType_t xFrequency = loopPeriodMS / portTICK_PERIOD_MS;
 
     while (true)
@@ -245,6 +245,7 @@ void app_main(void)
             isActive = !isActive;
         }
 
+       //vTaskDelay(10);
        esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 1 ));
        vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   

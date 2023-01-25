@@ -161,8 +161,12 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON, char* szDstError, uint32_t u
         }
 
         // Buffer changes
-        pParamEntry->sWriteValue.s32Value = (int32_t)pValueJSON->valueint;
-        pParamEntry->bIsNeedWrite = true;
+        if (pParamEntry->sWriteValue.s32Value != (int32_t)pValueJSON->valueint)
+        {
+            ESP_LOGI(TAG, "Need write: '%s', value: %d => %d", pParamEntry->sEntry.szKey, pParamEntry->sWriteValue.s32Value, (int32_t)pValueJSON->valueint);
+            pParamEntry->sWriteValue.s32Value = (int32_t)pValueJSON->valueint;
+            pParamEntry->bIsNeedWrite = true;
+        }
     }
 
     bRet = true;
@@ -199,10 +203,9 @@ int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry*
         {
             *pEntry = *pEntryParam;
             s32Ret = i;
-            goto END;
+            break;
         }
     }
-    END:
     STOVEMB_Give();
     return s32Ret;
 }

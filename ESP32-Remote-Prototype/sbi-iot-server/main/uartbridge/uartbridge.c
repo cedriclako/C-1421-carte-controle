@@ -177,7 +177,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         // }
         case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
         {
-            // ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
+            //ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
             // If it's connected, we accept any message as stay alive
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
@@ -277,25 +277,31 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
 
             // The stove can refuse to set parameter.
-            pMemBlock->bIsAnyUploadError |= (s.eResult != UFEC23PROTOCOL_ERESULT_Ok);
+            const bool bIsError = (s.eResult != UFEC23PROTOCOL_ERESULT_Ok);
+            pMemBlock->bIsAnyUploadError |= bIsError;
 
             m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
             
             STOVEMB_SParameterEntry sParamEntry;
-            const int32_t s32Index = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
+            const int32_t s32NextWritableIndex = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
+
+            if (bIsError)
+                ESP_LOGW(TAG, "S2CSetParameterResp | old: %d, new: %d", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex);
+            else
+                ESP_LOGI(TAG, "S2CSetParameterResp | old: %d, new: %d", m_sStateMachine.s32WriteLastIndex, s32NextWritableIndex);
 
             // The last one has been uploaded ...
-            if (s32Index < 0)
+            if (s32NextWritableIndex < 0)
             {
                 // Upload completed.
                 STOVEMB_ResetAllParameterWriteFlag();
-
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 ESP_LOGI(TAG, "Parameter upload process done");
             }
             else
             {
-                m_sStateMachine.s32WriteLastIndex = s32Index;               
+                ESP_LOGI(TAG, "SendSetParameter | %s", sParamEntry.sEntry.szKey);
+                m_sStateMachine.s32WriteLastIndex = s32NextWritableIndex;               
                 SendSetParameter(&sParamEntry);
             }
             break;

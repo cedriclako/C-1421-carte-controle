@@ -192,12 +192,14 @@ static esp_err_t file_post_handler(httpd_req_t *req)
         ESP_LOGE(TAG, "Unknown request for url: %s", req->uri);
         goto ERROR;
     }
+ 
+    httpd_resp_set_status(req, "ok");
+    httpd_resp_set_hdr(req, "Connection", "close");
     return ESP_OK;
     ERROR:
     ESP_LOGE(TAG, "Invalid request");
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
     httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_FAIL;
 }
 
