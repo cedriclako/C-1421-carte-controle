@@ -456,7 +456,9 @@ static bool ProcParameterDownload()
 
     pMB->u32ParameterCount = 0;
     pMB->bIsParameterDownloadCompleted = false;
+    
     pMB->bIsAnyDownloadError = false;
+    pMB->bIsAnyUploadError = false;
 
     STOVEMB_ResetAllParameterWriteFlag();
 
@@ -480,8 +482,11 @@ static bool ProcParameterUpload()
     }
 
     STOVEMB_Take(portMAX_DELAY);
-    // Upload
-    STOVEMB_GetMemBlock()->bIsAnyUploadError = false;
+    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+    // Upload   
+    pMB->bIsAnyDownloadError = false;
+    pMB->bIsAnyUploadError = false;
+
     STOVEMB_SParameterEntry sParamEntry;
     const int32_t s32Index = STOVEMB_FindNextWritable(0, &sParamEntry);
     STOVEMB_Give();
