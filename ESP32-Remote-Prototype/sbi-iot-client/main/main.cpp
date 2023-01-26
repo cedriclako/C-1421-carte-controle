@@ -155,8 +155,9 @@ void loop()
             ESP_LOGI(TAG, "User is done with change, time to switch to readonly mode and sleep");
             m_isUserModeActive = false;
             UIMANAGER_SwitchTo(ESCREEN_HomeReadOnly);
-            vTaskDelay(pdMS_TO_TICKS(300));
         }
+
+        vTaskDelay(pdMS_TO_TICKS(200));
 
         // Keep last channel into flash memory
         SLEEPDATA_WriteRecord(&m_uLastRecord);

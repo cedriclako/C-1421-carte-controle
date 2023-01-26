@@ -214,7 +214,7 @@ void ESPNOWCOMM_Handler()
 
 static void SendGetStatus()
 {
-    SBI_iot_C2SGetStatus c2sGetStatus;
+    SBI_iot_C2SGetStatus c2sGetStatus = {0};
 
     // Remote state
     if (g_sMemblock.has_sRemoteState)

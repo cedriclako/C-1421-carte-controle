@@ -123,7 +123,7 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 
     // -------------------------------------
     // Return a response
-    SBI_iot_S2CGetStatusResp resp;
+    SBI_iot_S2CGetStatusResp resp = {0};
     resp.has_stove_state = true;
 
     resp.stove_state.has_fan_speed_boundary = true;
@@ -198,9 +198,14 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
     {
         pMB->sRemoteData.bHasFanSpeed = true;
         pMB->sRemoteData.bIsFanSpeedAutomatic = pC2SChangeSettingSP->fan_speed_set.is_automatic;
-        pMB->sRemoteData.u8FanSpeedCurr = (uint8_t)pC2SChangeSettingSP->fan_speed_set.curr;
-        ESP_LOGI(TAG, "C2SChangeSettingSP, u8FanSpeedCurr: %d", 
-            pMB->sRemoteData.u8FanSpeedCurr);
+        uint8_t u8NewFanSpeedValue = (uint8_t)pC2SChangeSettingSP->fan_speed_set.curr;
+        if (u8NewFanSpeedValue < 1)
+            u8NewFanSpeedValue = 1;
+        else if (u8NewFanSpeedValue > 4)
+            u8NewFanSpeedValue = 4;
+
+        pMB->sRemoteData.u8FanSpeedCurr = u8NewFanSpeedValue;
+        ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %d, set: %d", pC2SChangeSettingSP->fan_speed_set.curr, u8NewFanSpeedValue);
     }
 
     STOVEMB_Give();
