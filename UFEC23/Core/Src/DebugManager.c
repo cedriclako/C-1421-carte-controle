@@ -151,7 +151,7 @@ void DebugManager(void const * argument)
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
 		printf("PartTime:%lu ", Particle_getTime());
-		printf("GlobalStatus:FORMAT_TBD" );
+		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

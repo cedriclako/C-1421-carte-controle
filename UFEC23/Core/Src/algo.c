@@ -369,15 +369,23 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 				{
 
 					timeRefAutoMode = currentTime_ms;
+					//if(!particle_adjust || current_time_ms > time_since_part_adjust + MINUTES(2))
+					//{
+						adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
+						//particle_adjust = false;
 
-					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
+					//}
 					if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
 						nextState = COMBUSTION_SUPERLOW;
 					}
 
-					//if(abs(adjustement) < 2)
+					//static bool particle_adjust = false;
+					//static int time_since_part_adjust = 0;
+					//if(abs(adjustement) == 0)
 					//{
 					//	adjustement = computeParticleAdjustment(Particle_getCH0(), Particle_getVariance(), Particle_getSlope());
+					//particle_adjust = true;
+					//time_since_part_adjust = current_time_ms;
 					//}
 					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
 								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
@@ -568,7 +576,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	break;
   }
 
-	if((GPIO_PIN_SET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
+	if((GPIO_PIN_RESET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
 	{
 		uint32_t kerneltime = osKernelSysTick();
 		if ((Safetydebounce_ms+100) < kerneltime)
@@ -815,7 +823,8 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
 
 static int computeParticleAdjustment(uint16_t ch0, uint16_t stdev, int slope)
 {
-	int out[] = {-2, -1, 0, 2, 4};
+	int aperture[] = {-2, -1, 0, 2, 4};
+	int Sec_per_step = {10, 6, 3, 1};
 	uint8_t index = 0;
 	float crit, alpha;
 	alpha = 0.2;
@@ -829,7 +838,7 @@ static int computeParticleAdjustment(uint16_t ch0, uint16_t stdev, int slope)
 
 
 
-	return out[index];
+	return aperture[index];
 
 
 }
