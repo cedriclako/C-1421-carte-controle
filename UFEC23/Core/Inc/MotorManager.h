@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "cmsis_os.h"
 #include "air_input.h"
+#include "../Src/ParamFile.h"
 
 #ifdef	__cplusplus
 extern "C" {
@@ -74,17 +75,8 @@ typedef struct FanSpeedKipKopParam{
 #define RANGE(min,val,max) MAX(min,MIN(val,max))
 #define UNUSED_PARAM(param)  (void)(param)
 
-#define GRILL_CLOSED                   		0
-#define GRILL_MINIMUM_OPENING 				GRILL_CLOSED
-#define GRILL_FULL_OPEN                     200
-#define PRIMARY_MINIMUM_OPENING				6 //5.4 degres @ 0.9 deg/pas
-#define PRIMARY_CLOSED  					PRIMARY_MINIMUM_OPENING
-#define PRIMARY_FULL_OPEN			   		200
-#define SECONDARY_MINIMUM_OPENING			6
-#define SECONDARY_CLOSED					SECONDARY_MINIMUM_OPENING
-#define SECONDARY_FULL_OPEN				    200
-#define STEP_RANGE_PRIMARY   (PRIMARY_FULL_OPEN - PRIMARY_MINIMUM_OPENING)
-#define STEP_RANGE_GRILL   (GRILL_FULL_OPEN - GRILL_CLOSED)
+#define STEP_RANGE_PRIMARY   (PF_PRIMARY_FULL_OPEN - PF_PRIMARY_MINIMUM_OPENING)
+#define STEP_RANGE_GRILL   (PF_GRILL_FULL_OPEN - PF_GRILL_CLOSED)
 
 //#private functions
 void vFullOpen(void);
@@ -104,6 +96,7 @@ bool Mot_InPosition( AirInput * self,motor_t Motorid);
 //public function
 extern Mot_FanSpeed Mot_getFanSpeed();
 extern void StepperMotorProdTest(motor_t MotorId);
+void manageFans(int baffleTemp);
 
 #ifdef	__cplusplus // Provide C++ Compatibility
 }

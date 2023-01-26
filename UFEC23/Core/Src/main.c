@@ -32,6 +32,7 @@
 #include "Hmi.h"
 #include "ParticlesManager.h"
 #include "EspBridge.h"
+#include "ParamFile.h"
 #include <stdio.h>
 /* USER CODE END Includes */
 
@@ -46,7 +47,7 @@
 #define MINOR_VER 0
 #define REVISION_VER 8
 
-#define ESP32_ISACTIVE (0)
+#define ESP32_ISACTIVE (1)
 #define MEASURE_PARTICLES_ISACTIVE (1)
 /* USER CODE END PD */
 
@@ -63,9 +64,10 @@ RTC_HandleTypeDef hrtc;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart2_rx;
 
-static osThreadId defaultTaskHandle;
-static osTimerId TimerHandle;
+osThreadId defaultTaskHandle;
+osTimerId TimerHandle;
 /* USER CODE BEGIN PV */
 static osThreadId TemperatureMeasHandle;
 static osThreadId StepperManagerTHandle;
@@ -87,6 +89,7 @@ RTC_TimeTypeDef sTime;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_RTC_Init(void);
 static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void const * argument);
@@ -131,12 +134,30 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_RTC_Init();
   MX_USART1_UART_Init();
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  ESPMANAGER_Init();
+
+  PARAMFILE_Init(); // Initialize param file reader before main process
+  // Print all parameters into the debug file
+  for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
+  {
+	  const PFL_SParameterItem* pParamItem = PARAMFILE_GetParamEntryByIndex(ix);
+	  if (pParamItem == NULL)
+		  continue;
+
+	  char tmp[128+1];
+	  int32_t s32Value;
+	  PFL_GetValueInt32(&PARAMFILE_g_sHandle, pParamItem->szKey, &s32Value);
+	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)", pParamItem->szKey, (int)s32Value, (int)pParamItem->uType.sInt32.s32Default, (int)pParamItem->uType.sInt32.s32Min, (int)pParamItem->uType.sInt32.s32Max);
+	  printf(tmp);
+  }
 
   /* USER CODE END 2 */
 
@@ -187,7 +208,7 @@ int main(void)
 #endif
 
 #if ESP32_ISACTIVE
-  osThreadDef(EspManagerT, EspManager, osPriorityNormal, 0, 128);
+  osThreadDef(EspManagerT, ESPMANAGER_Task, osPriorityNormal, 0, 128);
   EspManagerTHandle = osThreadCreate(osThread(EspManagerT), NULL);
 #endif
 
@@ -451,6 +472,22 @@ void MX_USART3_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -621,9 +658,8 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
 
-
+	  osDelay(1);
   }
   /* USER CODE END 5 */
 }

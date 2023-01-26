@@ -9,9 +9,22 @@
 #include "nanopb/pb_decode.h"
 #include "nanopb/pb_encode.h"
 
+#include "uartbridge/stovemb.h"
+#include "version.h"
+
 #define TAG "espnowprocess"
 
 #define CONFIG_ESPNOW_PMK "pmk1234567890123"
+
+typedef struct
+{
+    // Temperature setpoint
+    bool has_temp_sp;
+    SBI_iot_common_TemperatureSetPoint temp_sp;
+    
+    bool has_tempC_current;
+    float tempC_current;
+} SRemoteState;
 
 typedef struct
 {
@@ -19,6 +32,9 @@ typedef struct
 
     QueueHandle_t sQueueRXHandle;
     // QueueHandle_t sQueueTXHandle;
+
+    // Related to the remote state
+    SRemoteState sRemoteState;
 } SHandle;
 
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
@@ -29,11 +45,11 @@ static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPR
 
 static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayloadData, uint32_t u32PayloadDataLen);
 
-static void FillDeviceInfo(SBI_iot_DeviceInfo* pDeviceInfo);
+// static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo);
 
 // Receivers
-static void RecvC2SScanHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SScan* pC2SScan);
 static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2SGetStatus);
+static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP);
 
 // =====================
 // ESP-NOW
@@ -42,6 +58,15 @@ static SHandle m_sHandle;
 
 void ESPNOWPROCESS_Init()
 {
+    // Default values
+    memset(&m_sHandle.sRemoteState, 0, sizeof(SRemoteState));
+
+    m_sHandle.sRemoteState.has_tempC_current = false;
+
+    m_sHandle.sRemoteState.has_temp_sp = true;
+    m_sHandle.sRemoteState.temp_sp.temp = 21.0f;
+    m_sHandle.sRemoteState.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
+
     memset(&m_sHandle.sESPNowInfo, 0, sizeof(ESPNOWPROCESS_ESPNowInfo));
 
     m_sHandle.sQueueRXHandle = xQueueCreate(ESPNOWPROCESS_QUEUERX, sizeof(ESPNOWPROCESS_SMsg));
@@ -64,9 +89,6 @@ void ESPNOWPROCESS_Init()
     ESP_ERROR_CHECK( esp_now_add_peer(&sPeer) );
 
     // Add encrypted clients
-    
-
-    return ESP_OK;
 }
 
 void ESPNOWPROCESS_Handler()
@@ -83,17 +105,17 @@ void ESPNOWPROCESS_Handler()
             return;
         }
 
-        ESP_LOGI(TAG, "<== which_payload: %d (%s), seq_number: %d, len: %d", 
-            inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload), 
+        ESP_LOGI(TAG, "<== which_payload: %d (%s), seq_number: %d, len: %d",
+            inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload),
             inCmd.seq_number, msg.u8BufferCount);
 
         switch(inCmd.which_payload)
         {
-            case SBI_iot_Cmd_c2s_scan_tag:
-                RecvC2SScanHandler(&inCmd, &inCmd.payload.c2s_scan);
-                break;
             case SBI_iot_Cmd_c2s_get_status_tag:
                 RecvC2SStatusHandler(&inCmd, &inCmd.payload.c2s_get_status);
+                break;
+            case SBI_iot_Cmd_c2s_change_settingsp_tag:
+                RecvC2SChangeSettingSPHandler(&inCmd, &inCmd.payload.c2s_change_settingsp);
                 break;
             default:
                 ESP_LOGW(TAG, "Receiving transmission, seq: %d, which: %d, len: %d", inCmd.seq_number, inCmd.which_payload, msg.u8BufferCount);
@@ -103,53 +125,55 @@ void ESPNOWPROCESS_Handler()
     }
 }
 
-static void RecvC2SScanHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SScan* pC2SScan)
-{
-    SBI_iot_S2CScanResp s2c_scan_resp;
-
-    FillDeviceInfo(&s2c_scan_resp.device_info);
-
-    SendESPNow(SBI_iot_Cmd_s2c_scan_resp_tag, pInCmd->seq_number, &s2c_scan_resp, sizeof(SBI_iot_S2CScanResp));
-}
-
 static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2SGetStatus)
 {
-    SBI_iot_S2CGetStatusResp s2c_get_status_resp;
+    STOVEMB_Take(portMAX_DELAY);
 
+    const STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlockRO();
+
+    // -------------------------------------
+    // Decode remote and record state
+    if (pC2SGetStatus->has_remote_state)
+    {
+        m_sHandle.sRemoteState.has_tempC_current = true;
+        m_sHandle.sRemoteState.tempC_current = pC2SGetStatus->remote_state.temperatureC_curr;
+        ESP_LOGI(TAG, "remote temperatureC_curr: %.2f", pC2SGetStatus->remote_state.temperatureC_curr);
+    }
+
+    // -------------------------------------
+    // Return a response
+    SBI_iot_S2CGetStatusResp s2c_get_status_resp;
     s2c_get_status_resp.has_stove_state = true;
-    
     s2c_get_status_resp.stove_state.has_fan_speed_set = true;
-    s2c_get_status_resp.stove_state.fan_speed_set.fan_mode = SBI_iot_common_EFanMode_Manual;
+    s2c_get_status_resp.stove_state.fan_speed_set.is_automatic = true;
     s2c_get_status_resp.stove_state.fan_speed_set.curr = 1;
 
-    s2c_get_status_resp.stove_state.has_temperature_set = true;
-    s2c_get_status_resp.stove_state.temperature_set.tempC_sp = 25.5f;
+    s2c_get_status_resp.stove_state.has_fan_speed_boundary = true;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.min = 1;
+    s2c_get_status_resp.stove_state.fan_speed_boundary.max = 4;
 
-    FillDeviceInfo(&s2c_get_status_resp.device_info);
+    s2c_get_status_resp.stove_state.is_open_air = false;
 
-    s2c_get_status_resp.has_misc_stove_state = true;
-    s2c_get_status_resp.misc_stove_state.TavantF = 500;
-    s2c_get_status_resp.misc_stove_state.TArriereF = 500;
-    s2c_get_status_resp.misc_stove_state.PlenumF = 200;
-    s2c_get_status_resp.misc_stove_state.state = SBI_iot_ESTOVESTATE_ESTOVESTATE_COMBUSTION_HIGH;
-    s2c_get_status_resp.misc_stove_state.tStat = true;
-    s2c_get_status_resp.misc_stove_state.dTav = 200;
-    s2c_get_status_resp.misc_stove_state.FanSpeed = 5;
-    s2c_get_status_resp.misc_stove_state.Grille = 800;
-    s2c_get_status_resp.misc_stove_state.PIDPos = 800;
-    s2c_get_status_resp.misc_stove_state.Prim = 200;
-    s2c_get_status_resp.misc_stove_state.Sec = 200;
-    s2c_get_status_resp.misc_stove_state.TboardF = 200;
-    s2c_get_status_resp.misc_stove_state.Door = true;
-    s2c_get_status_resp.misc_stove_state.PartCH0 = 200;
-    s2c_get_status_resp.misc_stove_state.PartCH1 = 200;
-    s2c_get_status_resp.misc_stove_state.PartVar = 200;
-    s2c_get_status_resp.misc_stove_state.PartSlope = 200;
-    s2c_get_status_resp.misc_stove_state.TPartF = 200;
-    s2c_get_status_resp.misc_stove_state.PartCurr = 200;
-    s2c_get_status_resp.misc_stove_state.PartLuxON = 200;
-    s2c_get_status_resp.misc_stove_state.PartLuxOFF = 200;
-    s2c_get_status_resp.misc_stove_state.PartTime = 200;
+    // These values comes from the remote
+    if (m_sHandle.sRemoteState.has_temp_sp)
+    {
+        s2c_get_status_resp.stove_state.has_remote_temperature_setp = true;
+        s2c_get_status_resp.stove_state.remote_temperature_setp.unit = m_sHandle.sRemoteState.temp_sp.unit;
+        s2c_get_status_resp.stove_state.remote_temperature_setp.temp = m_sHandle.sRemoteState.temp_sp.temp;
+    }
+
+    if (pMB->sS2CReqVersionRespIsSet)
+    {
+        s2c_get_status_resp.has_stove_info = true;
+        s2c_get_status_resp.stove_info.device_type = SBI_iot_EDEVICETYPE_Stove_V1;
+        s2c_get_status_resp.stove_info.has_sw_version = true;
+        s2c_get_status_resp.stove_info.sw_version.major = pMB->sS2CReqVersionResp.sVersion.u8Major;
+        s2c_get_status_resp.stove_info.sw_version.minor = pMB->sS2CReqVersionResp.sVersion.u8Minor;
+        s2c_get_status_resp.stove_info.sw_version.revision = pMB->sS2CReqVersionResp.sVersion.u8Revision;
+    }
+
+    //if (FillBridgeInfo(&s2c_get_status_resp.bridge_info))
+    //    s2c_get_status_resp.has_bridge_info = true;
 
     // Date time
     s2c_get_status_resp.stove_state.has_datetime = true;
@@ -163,16 +187,33 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     s2c_get_status_resp.stove_state.datetime.time.hour = 21;
 
     SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, &s2c_get_status_resp, sizeof(SBI_iot_S2CGetStatusResp));
+
+    STOVEMB_Give();
 }
 
-static void FillDeviceInfo(SBI_iot_DeviceInfo* pDeviceInfo)
-{   
+static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP)
+{
+    ESP_LOGI(TAG, "C2SChangeSettingSP, has_temperature_setp: %s, temperature_setp: %.2f", 
+        (pC2SChangeSettingSP->has_temperature_setp ? "true" : "false"), 
+        pC2SChangeSettingSP->temperature_setp.temp);
+
+    if (pC2SChangeSettingSP->has_temperature_setp)
+    {
+        m_sHandle.sRemoteState.has_temp_sp = true;
+        m_sHandle.sRemoteState.temp_sp.temp = pC2SChangeSettingSP->temperature_setp.temp;
+        m_sHandle.sRemoteState.temp_sp.unit = pC2SChangeSettingSP->temperature_setp.unit;
+    }
+}
+/*
+static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo)
+{
     pDeviceInfo->device_type = SBI_iot_EDEVICETYPE_EDEVICETYPE_IoTServer_V1;
     pDeviceInfo->has_sw_version = true;
-    pDeviceInfo->sw_version.major = 6;
-    pDeviceInfo->sw_version.minor = 6;
-    pDeviceInfo->sw_version.revision = 6;
-}
+    pDeviceInfo->sw_version.major = VERSION_MAJOR;
+    pDeviceInfo->sw_version.minor = VERSION_MINOR;
+    pDeviceInfo->sw_version.revision = VERSION_REVISION;
+    return true;
+}*/
 
 ESPNOWPROCESS_ESPNowInfo ESPNOWPROCESS_GetESPNowInfo()
 {
@@ -194,8 +235,8 @@ static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayl
     pb_encode(&outputStream, SBI_iot_Cmd_fields, &cmdResp);
     const int len = SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN + outputStream.bytes_written;
 
-    ESP_LOGI(TAG, "==> which_payload: %d (%s), seq_number: %d, len: %d", 
-        which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(which_payload), 
+    ESP_LOGI(TAG, "==> which_payload: %d (%s), seq_number: %d, len: %d",
+        which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(which_payload),
         seq_number, len);
 
     esp_now_send(m_u8BroadcastAddr, u8OutBuffers, len);
@@ -212,7 +253,7 @@ static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_
     }
 
     m_sHandle.sESPNowInfo.u32TX++;
-}   
+}
 
 static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
@@ -224,20 +265,20 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     if (len > SBIIOTBASEPROTOCOL_MAXPAYLOADLEN)
     {
         ESP_LOGE(TAG, "dropped RX, too big payload, len: %d", len);
-        return;    
+        return;
     }
 
     if (len < SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN)
     {
         ESP_LOGE(TAG, "dropped RX, no magic");
-        return;    
+        return;
     }
 
     const uint8_t u8MagicComps[] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
     if (memcmp(data, u8MagicComps, SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN) != 0)
     {
         ESP_LOGE(TAG, "dropped RX, invalid magic");
-        return;    
+        return;
     }
 
     m_sHandle.sESPNowInfo.u32RX++;
@@ -247,5 +288,5 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     msg.u8BufferCount = len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
     memcpy(msg.u8SrcMACs, mac_addr, ESP_NOW_ETH_ALEN);
     memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
-    xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0); 
+    xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
 }
