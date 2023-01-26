@@ -269,7 +269,8 @@ static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32
 
 void ESPNOWCOMM_SendChangeSetting()
 {
-    SBI_iot_C2SChangeSettingSP sp;
+    SBI_iot_C2SChangeSettingSP sp = {0};
+    
     if (g_sMemblock.isTemperatureSetPointChanged)
     {
         g_sMemblock.isTemperatureSetPointChanged = false;

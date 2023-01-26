@@ -28,13 +28,13 @@ void STOVEMB_Init()
     assert(m_xSemaphoreExt != NULL);
 
     memset(&m_sMemBlock, 0, sizeof(STOVEMB_SMemBlock));
-    
-    m_sMemBlock.sRemoteData.has_tempC_current = false;
 
     // Default values ...
-    m_sMemBlock.sRemoteData.has_temp_sp = true;
-    m_sMemBlock.sRemoteData.temp_sp.temp = 21.0f;
-    m_sMemBlock.sRemoteData.temp_sp.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
+    m_sMemBlock.sRemoteData.bHasTempCurrentC = false;
+
+    m_sMemBlock.sRemoteData.bHasTempSetPoint = true;
+    m_sMemBlock.sRemoteData.sTempSetpoint.temp = 21.0f;
+    m_sMemBlock.sRemoteData.sTempSetpoint.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
 
     m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
 }

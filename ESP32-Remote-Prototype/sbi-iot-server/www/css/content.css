@@ -1,3 +1,10 @@
+body {
+    font-family: system-ui;
+}
+
+h1 {
+    font-size: 20px;
+}
 .error_text {
     background-color: lightcoral;
 }

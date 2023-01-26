@@ -116,8 +116,8 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     // Decode remote and record state
     if (pC2SGetStatus->has_remote_state)
     {
-        pMB->sRemoteData.has_tempC_current = true;
-        pMB->sRemoteData.tempC_current = pC2SGetStatus->remote_state.temperatureC_curr;
+        pMB->sRemoteData.bHasTempCurrentC = true;
+        pMB->sRemoteData.fTempCurrentC = pC2SGetStatus->remote_state.temperatureC_curr;
         ESP_LOGI(TAG, "remote temperatureC_curr: %.2f", pC2SGetStatus->remote_state.temperatureC_curr);
     }
 
@@ -125,25 +125,24 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     // Return a response
     SBI_iot_S2CGetStatusResp resp;
     resp.has_stove_state = true;
-    if (pMB->sRemoteData.hasFanSpeed)
-    {
-        resp.stove_state.has_fan_speed_set = true;
-        resp.stove_state.fan_speed_set.is_automatic = pMB->sRemoteData.isFanSpeedAutomatic;
-        resp.stove_state.fan_speed_set.curr = pMB->sRemoteData.u8FanSpeedCurr;
-    }
 
     resp.stove_state.has_fan_speed_boundary = true;
     resp.stove_state.fan_speed_boundary.min = 1;
     resp.stove_state.fan_speed_boundary.max = 4;
 
-    resp.stove_state.is_open_air = false;
+    if (pMB->sRemoteData.bHasFanSpeed)
+    {
+        resp.stove_state.has_fan_speed_set = true;
+        resp.stove_state.fan_speed_set.is_automatic = pMB->sRemoteData.bIsFanSpeedAutomatic;
+        resp.stove_state.fan_speed_set.curr = pMB->sRemoteData.u8FanSpeedCurr;
+    }
 
     // These values comes from the remote
-    if (pMB->sRemoteData.has_temp_sp)
+    if (pMB->sRemoteData.bHasTempSetPoint)
     {
         resp.stove_state.has_remote_temperature_setp = true;
-        resp.stove_state.remote_temperature_setp.unit = pMB->sRemoteData.temp_sp.unit;
-        resp.stove_state.remote_temperature_setp.temp = pMB->sRemoteData.temp_sp.temp;
+        resp.stove_state.remote_temperature_setp.unit = pMB->sRemoteData.sTempSetpoint.unit;
+        resp.stove_state.remote_temperature_setp.temp = pMB->sRemoteData.sTempSetpoint.temp;
     }
 
     // Return stove related informations
@@ -187,9 +186,9 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 
     if (pC2SChangeSettingSP->has_temperature_setp)
     {
-        pMB->sRemoteData.has_temp_sp = true;
-        pMB->sRemoteData.temp_sp.temp = pC2SChangeSettingSP->temperature_setp.temp;
-        pMB->sRemoteData.temp_sp.unit = pC2SChangeSettingSP->temperature_setp.unit;
+        pMB->sRemoteData.bHasTempSetPoint = true;
+        pMB->sRemoteData.sTempSetpoint.temp = pC2SChangeSettingSP->temperature_setp.temp;
+        pMB->sRemoteData.sTempSetpoint.unit = pC2SChangeSettingSP->temperature_setp.unit;
         
         ESP_LOGI(TAG, "C2SChangeSettingSP, temperature_setp: %.2f", 
             pC2SChangeSettingSP->temperature_setp.temp);
@@ -197,8 +196,8 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 
     if (pC2SChangeSettingSP->has_fan_speed_set)
     {
-        pMB->sRemoteData.hasFanSpeed = true;
-        pMB->sRemoteData.isFanSpeedAutomatic = pC2SChangeSettingSP->fan_speed_set.is_automatic;
+        pMB->sRemoteData.bHasFanSpeed = true;
+        pMB->sRemoteData.bIsFanSpeedAutomatic = pC2SChangeSettingSP->fan_speed_set.is_automatic;
         pMB->sRemoteData.u8FanSpeedCurr = (uint8_t)pC2SChangeSettingSP->fan_speed_set.curr;
         ESP_LOGI(TAG, "C2SChangeSettingSP, u8FanSpeedCurr: %d", 
             pMB->sRemoteData.u8FanSpeedCurr);
@@ -206,16 +205,6 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 
     STOVEMB_Give();
 }
-/*
-static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo)
-{
-    pDeviceInfo->device_type = SBI_iot_EDEVICETYPE_EDEVICETYPE_IoTServer_V1;
-    pDeviceInfo->has_sw_version = true;
-    pDeviceInfo->sw_version.major = VERSION_MAJOR;
-    pDeviceInfo->sw_version.minor = VERSION_MINOR;
-    pDeviceInfo->sw_version.revision = VERSION_REVISION;
-    return true;
-}*/
 
 ESPNOWPROCESS_ESPNowInfo ESPNOWPROCESS_GetESPNowInfo()
 {

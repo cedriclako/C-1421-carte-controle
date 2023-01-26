@@ -24,16 +24,16 @@ typedef struct
 typedef struct 
 {
     // Temperature setpoint
-    bool has_temp_sp;
-    SBI_iot_common_TemperatureSetPoint temp_sp;
+    bool bHasTempSetPoint;
+    SBI_iot_common_TemperatureSetPoint sTempSetpoint;
     
     // Last current (C)
-    bool has_tempC_current;
-    float tempC_current;
+    bool bHasTempCurrentC;
+    float fTempCurrentC;
 
     // Fan
-    bool hasFanSpeed;
-    bool isFanSpeedAutomatic;
+    bool bHasFanSpeed;
+    bool bIsFanSpeedAutomatic;
     uint8_t u8FanSpeedCurr;
 
     // Last communication ticks

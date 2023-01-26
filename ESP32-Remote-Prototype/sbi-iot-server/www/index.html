@@ -32,7 +32,7 @@
                     <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
                 </tr>
                 <tr v-if="!sysinfos">
-                    <td>Information is not yet loaded</td>
+                    <td colspan="2">Information is not yet loaded</td>
                 </tr>
             </tbody>
         </table>
@@ -44,7 +44,7 @@
                 <thead>
                     <tr>
                         <th>
-                            Config file (count: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }})<br>
+                            Config file (count: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }})<br><br>
                             <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
                             <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
                         </th>
