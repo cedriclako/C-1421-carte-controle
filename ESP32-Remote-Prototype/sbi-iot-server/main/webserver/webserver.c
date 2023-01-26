@@ -9,6 +9,7 @@
 #include "assets/EmbeddedFiles.h"
 #include "esp_ota_ops.h"
 #include "cJSON.h"
+#include "freertos/FreeRTOS.h"
 
 #include "event.h"
 #include "webserver.h"
@@ -97,7 +98,7 @@ void WEBSERVER_Init()
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.task_priority = FWCONFIG_HTTPTASK_PRIORITY;
-    config.stack_size = 7500;
+    config.stack_size = 9500;
     config.lru_purge_enable = true;
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.max_open_sockets = 13;
@@ -192,6 +193,11 @@ static esp_err_t file_post_handler(httpd_req_t *req)
         ESP_LOGE(TAG, "Unknown request for url: %s", req->uri);
         goto ERROR;
     }
+ 
+    ESP_LOGI(TAG, "file_post_handler, url: %s | #3", req->uri);
+    httpd_resp_set_hdr(req, "Connection", "close");
+    ESP_LOGI(TAG, "file_post_handler, url: %s | #4", req->uri);
+    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
     ERROR:
     ESP_LOGE(TAG, "Invalid request");
@@ -203,10 +209,10 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
 static esp_err_t api_get_handler(httpd_req_t *req)
 {
- //   ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
+    esp_err_t esperr = ESP_OK;
 
-    char* szErrorString = NULL;
-
+    //ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
+    char szError[128+1] = {0,};
     char* pExportJSON = NULL;
 
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
@@ -233,7 +239,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
         pExportJSON = STOVEMB_ExportParamToJSON();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
         {
-            szErrorString = "Server parameter file is not available";
+            strcpy(szError, "Server parameter file is not available");
             goto ERROR;
         }
     }
@@ -241,27 +247,30 @@ static esp_err_t api_get_handler(httpd_req_t *req)
     {
         ESP_LOGE(TAG, "api_get_handler, url: %s", req->uri);
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
+        goto END;
     }
+
     goto END;
     ERROR:
-    if (szErrorString != NULL)
+    esperr = ESP_FAIL;
+    if (strlen(szError) > 0)
     {
-        ESP_LOGE(TAG, "api_get_handler, url: %s, error: %s", req->uri, szErrorString);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, szErrorString);
+        ESP_LOGE(TAG, "api_post_handler, url: %s, error: %s", req->uri, szError);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, szError);
     }
     else
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "request processing error");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
     END:
     if (pExportJSON != NULL)
         free(pExportJSON);
-
     httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+    return esperr;
 }
 
 static esp_err_t api_post_handler(httpd_req_t *req)
 {
+    esp_err_t esperr = ESP_OK;
     char szError[128+1] = {0,};
 
     const int total_len = req->content_len;
@@ -306,13 +315,9 @@ static esp_err_t api_post_handler(httpd_req_t *req)
         }
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
     }
-    else
-    {
-        ESP_LOGE(TAG, "api_post_handler, url: %s", req->uri);
-        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
-    }
     goto END;
     ERROR:
+    esperr = ESP_FAIL;
     if (strlen(szError) > 0)
     {
         ESP_LOGE(TAG, "api_post_handler, url: %s, error: %s", req->uri, szError);
@@ -323,7 +328,7 @@ static esp_err_t api_post_handler(httpd_req_t *req)
     END:
     httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+    return esperr;
 }
 
 #define IS_FILE_EXT(filename, ext) \
@@ -509,13 +514,40 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pRoot, "wireless", pWireless);
 
     STOVEMB_Take(portMAX_DELAY);
+    // Stove
     cJSON* pStove = cJSON_CreateObject();
-    
     const STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlockRO();
     cJSON_AddItemToObject(pStove, "is_connected", cJSON_CreateBool(pMemBlock->bIsStoveConnectedAndReady));
     cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
     cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
+    cJSON_AddItemToObject(pStove, "is_param_download_error", cJSON_CreateBool(pMemBlock->bIsAnyDownloadError));
     cJSON_AddItemToObject(pRoot, "stove", pStove);
+    // Remote
+    cJSON* pRemote = cJSON_CreateObject();
+    cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.fTempCurrentC));
+    cJSON_AddItemToObject(pRemote, "tempC_sp", cJSON_CreateNumber(pMemBlock->sRemoteData.sTempSetpoint.temp));
+    cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber(pMemBlock->sRemoteData.u8FanSpeedCurr));
+    const TickType_t ttLastCommTicks = xTaskGetTickCount() - pMemBlock->sRemoteData.ttLastCommunicationTicks;
+    cJSON_AddItemToObject(pRemote, "lastcomm_ms", cJSON_CreateNumber(pdTICKS_TO_MS(ttLastCommTicks)));
+
+    cJSON_AddItemToObject(pRoot, "remote", pRemote);
+
+    // Date time
+    time_t now = 0;
+    struct tm timeinfo = { 0 };
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    
+    char text[80+1];
+    sprintf(text, "%4d-%2d-%2d %2d:%2d:%2d",
+        /* 0*/1900+timeinfo.tm_year,
+        /* 1*/timeinfo.tm_mon+1,
+        /* 2*/timeinfo.tm_mday,
+        /* 3*/timeinfo.tm_hour,
+        /* 4*/timeinfo.tm_min,
+        /* 5*/timeinfo.tm_sec);
+    cJSON_AddItemToObject(pRoot, "datetime", cJSON_CreateString(text));
+
     STOVEMB_Give();
 
     char* pStr =  cJSON_PrintUnformatted(pRoot);

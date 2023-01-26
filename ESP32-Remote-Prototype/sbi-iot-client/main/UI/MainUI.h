@@ -32,8 +32,6 @@ typedef struct
     COMMONUI_SRect sUIButtons[MAINUI_EBUTTONS_Count];
 
     // State
-    uint8_t u8CurrentFanSpeed;
-    float fSetPoint;
     const MAINUI_SArgument* pArgument;
 } MAINUI_SHandle;
 

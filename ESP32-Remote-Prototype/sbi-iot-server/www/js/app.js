@@ -13,7 +13,29 @@ const API_ACTION_DOWNLOADCONFIG_URI = "/action/downloadconfig";
 let mData = 
 {
     sysinfos: [],
-    livedata: { state: { is_pairing: false}, wireless: { rx: 0,tx: 0, channel: 0}, stove: { is_connected: false, param_cnt: 0 } },
+    livedata: {
+        state:{
+           is_pairing: false
+        },
+        wireless:{
+           rx: 0,
+           tx: 0,
+           channel: 0
+        },
+        stove:{
+           is_connected: false,
+           param_cnt: 0,
+           is_param_upload_error: false,
+           is_param_download_error: false
+        },
+        remote:{
+           tempC_current: 0,
+           tempC_sp: 0,
+           fanspeed: 0,
+           lastcomm_ms: 0
+        },
+        datetime: ""
+    },
     // Config JSON
     configJSON: ""
 };
@@ -35,7 +57,11 @@ var app = new Vue({
                   'Content-Type': 'application/json'
                 },
                 body: data,
-                cache: 'default'
+                cache: 'default',
+                keepalive: false 
+              }).then((data) =>
+              {
+                console.log("postAction: ", data);
               })
               .catch((ex) => 
               {
@@ -43,13 +69,13 @@ var app = new Vue({
               });
         },
         automaticUpdate() {
-            fetch(API_GETLIVEDATA)
+            fetch(API_GETLIVEDATA, { keepalive: false })
                 .then((response) => response.json())
                 .then(
                     (data) => 
                     {
                         this.livedata = data;
-                        console.log("livedata: ", data);
+                        // console.log("livedata: ", data);
                         setTimeout(this.automaticUpdate, 500);
                     })
                 .catch((ex) => 
@@ -64,7 +90,7 @@ var app = new Vue({
         {
             console.log("page_loaded");
             // Get system informations
-            fetch(API_GETSYSINFO)
+            fetch(API_GETSYSINFO, { keepalive: false })
                 .then((response) => response.json())
                 .then((data) => this.sysinfos = data.infos)
                 .catch((ex) => 
@@ -97,7 +123,8 @@ var app = new Vue({
                 method: 'GET', // or 'PUT'
                 headers: {
                   'Content-Type': 'application/json',
-                }
+                },
+                keepalive: false 
               })
                 .then((response) => 
                 {
@@ -109,13 +136,12 @@ var app = new Vue({
                     if (!isOK)
                         throw Error(response);
                     console.log("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " data: ", response);
-                    this.configJSON = response;
+                    this.configJSON = JSON.stringify(JSON.parse(response), null, 2);
                 })
                 .catch((error) => 
                 {
                     console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
                     this.configJSON = error;
-                    alert("Error: " + error);
                 });
         },
         idSaveConfig_OnClick(event)
@@ -127,6 +153,7 @@ var app = new Vue({
                   'Content-Type': 'application/json',
                 },
                 body: this.configJSON,
+                keepalive: false 
               })
             .then((response) => 
             {
@@ -153,6 +180,7 @@ var app = new Vue({
                   'Content-Type': 'application/json',
                 },
                 body: "",
+                keepalive: false 
               })
             .then((response) => 
             {

@@ -28,6 +28,15 @@ void STOVEMB_Init()
     assert(m_xSemaphoreExt != NULL);
 
     memset(&m_sMemBlock, 0, sizeof(STOVEMB_SMemBlock));
+
+    // Default values ...
+    m_sMemBlock.sRemoteData.bHasTempCurrentC = false;
+
+    m_sMemBlock.sRemoteData.bHasTempSetPoint = true;
+    m_sMemBlock.sRemoteData.sTempSetpoint.temp = 21.0f;
+    m_sMemBlock.sRemoteData.sTempSetpoint.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
+
+    m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
 }
 
 STOVEMB_SMemBlock* STOVEMB_GetMemBlock()
@@ -161,8 +170,12 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON, char* szDstError, uint32_t u
         }
 
         // Buffer changes
-        pParamEntry->sWriteValue.s32Value = (int32_t)pValueJSON->valueint;
-        pParamEntry->bIsNeedWrite = true;
+        if (pParamEntry->sWriteValue.s32Value != (int32_t)pValueJSON->valueint)
+        {
+            ESP_LOGI(TAG, "Need write: '%s', value: %d => %d", pParamEntry->sEntry.szKey, pParamEntry->sWriteValue.s32Value, (int32_t)pValueJSON->valueint);
+            pParamEntry->sWriteValue.s32Value = (int32_t)pValueJSON->valueint;
+            pParamEntry->bIsNeedWrite = true;
+        }
     }
 
     bRet = true;
@@ -199,12 +212,27 @@ int32_t STOVEMB_FindNextWritable(int32_t s32IndexStart, STOVEMB_SParameterEntry*
         {
             *pEntry = *pEntryParam;
             s32Ret = i;
-            goto END;
+            break;
         }
     }
-    END:
     STOVEMB_Give();
     return s32Ret;
+}
+
+STOVEMB_SParameterEntry* STOVEMB_GetByIndex(int32_t s32Index)
+{
+    STOVEMB_SParameterEntry* pEntryRet = NULL;
+    STOVEMB_Take(portMAX_DELAY);
+
+    // Not ready
+    if (s32Index < 0 || s32Index >= m_sMemBlock.u32ParameterCount || !m_sMemBlock.bIsParameterDownloadCompleted)
+    {
+        goto END;
+    }
+    pEntryRet = &m_sMemBlock.arrParameterEntries[s32Index];
+    END:
+    STOVEMB_Give();
+    return pEntryRet;
 }
 
 void STOVEMB_ResetAllParameterWriteFlag()

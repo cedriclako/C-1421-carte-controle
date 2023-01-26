@@ -12,15 +12,16 @@
 <body>
     <div id="app">
         <button id="idStartPairing" @click="idStartPairing_Click">{{ livedata.state.is_pairing ? "Stop Pairing (esp-now)" : "Start Pairing (esp-now)" }}</button>
-        <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
 
         <div>
             <span>wireless: rx: {{ livedata.wireless.rx }} / tx: {{ livedata.wireless.tx }}</span><br>
-            <span>stove, online: {{ livedata.stove.is_connected }}, parameter cnt: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}</span>
+            <span>stove, online: {{ livedata.stove.is_connected }}</span><br>
+            <span>remote, current: {{ livedata.remote.tempC_current.toFixed(2) }} C, set point: {{ livedata.remote.tempC_sp.toFixed(2) }} C, fan: {{ livedata.remote.fanspeed }} C, lastcomm (s): {{ (livedata.remote.lastcomm_ms/1000).toFixed(2) }}</span><br>
+            <span>datetime: {{ livedata.datetime }}</span>
         </div>
         <br>
         <h1>System Informations</h1>
-        <table>
+        <table class="table1">
             <thead>
                 <th>Name</th>
                 <th>Value</th>
@@ -31,7 +32,7 @@
                     <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
                 </tr>
                 <tr v-if="!sysinfos">
-                    <td>Information is not yet loaded</td>
+                    <td colspan="2">Information is not yet loaded</td>
                 </tr>
             </tbody>
         </table>
@@ -43,7 +44,8 @@
                 <thead>
                     <tr>
                         <th>
-                            Config file
+                            Config file (count: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }})<br><br>
+                            <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
                             <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
                         </th>
                     </tr>
@@ -51,7 +53,7 @@
                 <tbody>
                     <tr>
                         <td>
-                            <textarea id="idConfigFileText" rows="40" cols="100" v-model="configJSON"></textarea>
+                            <textarea id="idConfigFileText" rows="40" cols="100" :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" v-model="configJSON"></textarea>
                             <br>
                             <button id="idSaveConfig" @click="idSaveConfig_OnClick($event)">Save</button>
                         </td>

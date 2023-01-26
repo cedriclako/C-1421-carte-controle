@@ -37,6 +37,8 @@ void ESPNOWCOMM_SetChannelFoundCallback(fnChannelFound fnChannelFoundCb);
 
 void ESPNOWCOMM_SetS2CGetStatusRespCallback(fnS2CGetStatusResp fnS2CGetStatusRespCb);
 
+void ESPNOWCOMM_SendChangeSetting();
+
 #ifdef __cplusplus
 }
 #endif
