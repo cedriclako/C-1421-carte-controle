@@ -75,8 +75,8 @@ static const FanSpeedKipKopParam_t FanSpeedParameters =
 {
 	.KipSpeed1 = 1300,
 	.KopSpeed1 = 1050,
-	.KipSpeed2 = 1400,
-	.KopSpeed2 = 1250,
+	.KipSpeed2 = 6000,
+	.KopSpeed2 = 3500,
 	.KipSpeed3 = 1500,
 	.KopSpeed3 = 1450,
 	.KipSpeed4 = 1600,
@@ -475,6 +475,19 @@ void vSetSpeed(Mot_FanSpeed RequestedSpeed)
 
 Mot_FanSpeed Mot_getFanSpeed() {
   return plenumSpeed;
+}
+
+void manageFans(int baffleTemp)
+{
+	if(baffleTemp > FanSpeedParameters.KipSpeed2)
+	{
+		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,SET);
+		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,SET);
+	}else if(baffleTemp < FanSpeedParameters.KopSpeed2)
+	{
+		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
+		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
+	}
 }
 
 void managePlenumSpeed(int plenumTemp, bool thermostatRequest,uint32_t Time_ms) {
