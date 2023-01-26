@@ -31,8 +31,10 @@ typedef struct
     bool has_tempC_current;
     float tempC_current;
 
-    // Fan 
-    uint8_t u8FanSpeed;
+    // Fan
+    bool hasFanSpeed;
+    bool isFanSpeedAutomatic;
+    uint8_t u8FanSpeedCurr;
 
     // Last communication ticks
     TickType_t ttLastCommunicationTicks; 

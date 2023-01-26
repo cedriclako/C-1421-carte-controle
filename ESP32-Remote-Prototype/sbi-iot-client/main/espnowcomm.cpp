@@ -282,7 +282,7 @@ void ESPNOWCOMM_SendChangeSetting()
     {
         g_sMemblock.isFanSpeedSetPointChanged = false;
         sp.has_fan_speed_set = true;
-        sp.fan_speed_set = g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set;
+        sp.fan_speed_set.curr = g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr;
     }
     
     SendESPNow(SBI_iot_Cmd_c2s_change_settingsp_tag, &sp, sizeof(SBI_iot_C2SChangeSettingSP));

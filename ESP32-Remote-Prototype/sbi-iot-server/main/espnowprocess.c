@@ -125,9 +125,12 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     // Return a response
     SBI_iot_S2CGetStatusResp resp;
     resp.has_stove_state = true;
-    resp.stove_state.has_fan_speed_set = true;
-    resp.stove_state.fan_speed_set.is_automatic = true;
-    resp.stove_state.fan_speed_set.curr = 1;
+    if (pMB->sRemoteData.hasFanSpeed)
+    {
+        resp.stove_state.has_fan_speed_set = true;
+        resp.stove_state.fan_speed_set.is_automatic = pMB->sRemoteData.isFanSpeedAutomatic;
+        resp.stove_state.fan_speed_set.curr = pMB->sRemoteData.u8FanSpeedCurr;
+    }
 
     resp.stove_state.has_fan_speed_boundary = true;
     resp.stove_state.fan_speed_boundary.min = 1;
@@ -182,15 +185,23 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
 
-    ESP_LOGI(TAG, "C2SChangeSettingSP, has_temperature_setp: %s, temperature_setp: %.2f", 
-        (pC2SChangeSettingSP->has_temperature_setp ? "true" : "false"), 
-        pC2SChangeSettingSP->temperature_setp.temp);
-
     if (pC2SChangeSettingSP->has_temperature_setp)
     {
         pMB->sRemoteData.has_temp_sp = true;
         pMB->sRemoteData.temp_sp.temp = pC2SChangeSettingSP->temperature_setp.temp;
         pMB->sRemoteData.temp_sp.unit = pC2SChangeSettingSP->temperature_setp.unit;
+        
+        ESP_LOGI(TAG, "C2SChangeSettingSP, temperature_setp: %.2f", 
+            pC2SChangeSettingSP->temperature_setp.temp);
+    }
+
+    if (pC2SChangeSettingSP->has_fan_speed_set)
+    {
+        pMB->sRemoteData.hasFanSpeed = true;
+        pMB->sRemoteData.isFanSpeedAutomatic = pC2SChangeSettingSP->fan_speed_set.is_automatic;
+        pMB->sRemoteData.u8FanSpeedCurr = (uint8_t)pC2SChangeSettingSP->fan_speed_set.curr;
+        ESP_LOGI(TAG, "C2SChangeSettingSP, u8FanSpeedCurr: %d", 
+            pMB->sRemoteData.u8FanSpeedCurr);
     }
 
     STOVEMB_Give();
