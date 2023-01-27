@@ -56,23 +56,11 @@ void DebugManager(void const * argument)
   /* Infinite loop */
 
 	State TempAlgoState;
-	//uint8_t sec_aper = 0;
-	//uint8_t rx_buff[2];
-	//rx_buff[0] = 'a';
-	//HAL_UART_Receive_IT(&huart1, rx_buff, 2);
+
 
 	for(;;)
 	{
-		/*if(sec_input)
-		{
-			sec_input = false;
 
-			sec_aper = atoi(rx_buff);
-			algo_fixSecondary( sec_aper);
-
-			printf("New setting for secondary aperture: %u \r\n \r\n", sec_aper);
-			HAL_UART_Receive_IT(&huart1, rx_buff, 2);
-		}*/
 
 		osDelay(5000);
 		HAL_RTC_GetTime(&hrtc,&sTime,0);
@@ -163,7 +151,7 @@ void DebugManager(void const * argument)
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
 		printf("PartTime:%lu ", Particle_getTime());
-		printf("GlobalStatus:FORMAT_TBD" );
+		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

@@ -453,13 +453,14 @@ void updateCalculatedValues(void)
     static float mean = 0;
     float var = 0;
     float vtemp;
+    float alpha = 0.2;
     
     if(!first_loop)
     {
         
         mean += ((float)bOBJ.CH0_ON - (float)bOBJ.CH0_BUFFER[mem_index])/(float)DATA_MEMORY_DEPTH;
         bOBJ.CH0_BUFFER[mem_index] = bOBJ.CH0_ON;
-        bOBJ.slope = (int)(1000*(bOBJ.CH0_ON-mean)/mean);
+        bOBJ.slope = (1-alpha*bOBJ.slope) + (int)(alpha*(1000*(bOBJ.CH0_ON-mean)/mean));
         
         for(uint8_t i = 0;i < DATA_MEMORY_DEPTH;i++)
         {
