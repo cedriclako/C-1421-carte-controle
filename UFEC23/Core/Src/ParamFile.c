@@ -190,7 +190,8 @@ const PFL_SConfig m_sConfig = { .ptrLoadAll = LoadAllCallback, .ptrCommitAll = C
 void PARAMFILE_Init()
 {
 	PFL_Init(&PARAMFILE_g_sHandle,  m_sParameterItems, PARAMETERITEM_COUNT, &m_sConfig);
-	PFL_LoadAll(&PARAMFILE_g_sHandle);
+	//PFL_LoadAll(&PARAMFILE_g_sHandle);
+	PFL_LoadAllDefault(&PARAMFILE_g_sHandle);
 }
 
 uint32_t PARAMFILE_GetParamEntryCount()
