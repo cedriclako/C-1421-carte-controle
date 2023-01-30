@@ -9,6 +9,7 @@
 #include "Pid.h"
 #include "ProdTest.h"
 #include "MotorManager.h"
+#include "ParticlesManager.h"
 #include "Hmi.h"
 #include "ParamFile.h"
 
@@ -90,7 +91,7 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static int computeParticleAdjustment(uint16_t ch0, uint16_t variance, int slope);
+static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms);
 
 void Algo_init() {
 
@@ -139,6 +140,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int TFlameLossArrayR[4] = {0};
 	  static int R_flamelossB = 0;
 	  static int R_flamelossR = 0;
+
+	  static int part_delta = 0;
+	  static int part_speed = 0;
 
 
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
@@ -226,7 +230,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  AirInput_forceAperture(&grill, pGrillMotorParam->MaxTempRise);
 		  AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxTempRise);
 
-		  historyState = currentState;
+		  //historyState = currentState;
 		}
 #if PID_CONTROL_ON
 		if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
@@ -283,7 +287,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 											pGrillMotorParam->MinCombHigh,pGrillMotorParam->MaxCombHigh,
 											pSecondaryMotorParam->MinCombHigh,pSecondaryMotorParam->MaxCombHigh);
 
-				historyState = currentState;
+				//historyState = currentState;
 			}
 #if PID_CONTROL_ON
             if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
@@ -337,7 +341,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 										pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 										pSecondaryMotorParam->MinCombLow,pSecondaryMotorParam->MaxCombLow);
 
-		    historyState = currentState;
+		    //historyState = currentState;
 		}
 #if PID_CONTROL_ON
         if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
@@ -369,25 +373,17 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 				{
 
 					timeRefAutoMode = currentTime_ms;
-					//if(!particle_adjust || current_time_ms > time_since_part_adjust + MINUTES(2))
-					//{
-						adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
-						//particle_adjust = false;
 
-					//}
+					computeParticleAdjustment(&part_delta,&part_speed, currentTime_ms);
+
+					adjustement = computeAjustement(pTemperatureParam->CombLowTarget+part_delta, dTavant);
+
 					if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
 						nextState = COMBUSTION_SUPERLOW;
 					}
 
-					//static bool particle_adjust = false;
-					//static int time_since_part_adjust = 0;
-					//if(abs(adjustement) == 0)
-					//{
-					//	adjustement = computeParticleAdjustment(Particle_getCH0(), Particle_getVariance(), Particle_getSlope());
-					//particle_adjust = true;
-					//time_since_part_adjust = current_time_ms;
-					//}
-					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+
+					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW+part_speed,
 								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
 								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
@@ -518,7 +514,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 										PF_GRILL_CLOSED, PF_GRILL_CLOSED,
 										pSecondaryMotorParam->MinCoalHigh, pSecondaryMotorParam->MaxCoalHigh);
 
-		    historyState = currentState;
+		    //historyState = currentState;
 		}
         /* Since the control algo (i.e. computeAjustement) is limited
            to +/- 3 steps, it whould take 3 * sec per step to complete
@@ -821,27 +817,80 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-static int computeParticleAdjustment(uint16_t ch0, uint16_t stdev, int slope)
+static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms)
 {
-	int aperture[] = {-2, -1, 0, 2, 4};
-	int Sec_per_step = {10, 6, 3, 1};
-	uint8_t index = 0;
-	float crit, alpha;
-	alpha = 0.2;
+	const int aperture[] = {-20, -10, 0, 20, 40};
+	const int Sec_per_step[] = {0, -3, -6, -8};
+	static uint8_t i = 2;
+	static uint8_t j = 0;
+	static uint32_t lastTimeInFunc = 0;
+	static uint32_t TimeOfCorrection = 0;
+
+	////////////////////////////////////////////
+	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
+	{
+		return;
+	}
+	///////////////////////////////////////////
+
+	int ch0 = (int)Particle_getCH0();
+	int slope = Particle_getSlope();
+	int stdev = (int)Particle_getVariance();
+	int std,slp;
+	int crit = 0;
+
+
+	std = stdev < 80? stdev:80;
 
 	if(slope > 0){
-		crit = (alpha*slope+(1-alpha)*stdev);
+		slp = slope < 20? slope:20;
+		crit = std+slp;
 	}else
 	{
-		crit = (alpha*slope-(1-alpha)*stdev)*(-1);
+		slp = abs(slope) < 20? slope:-20;
+		crit = (std-slp)*(-1);
 	}
 
+	if((Time_ms - TimeOfCorrection) > MINUTES(2) && i > 2)
+	{
+		if(crit < 50)
+		{
+			i--;
+			j = 0;
+			TimeOfCorrection = Time_ms;
+		}
 
+	}
+	else if(i == 2)
+	{
+		if(stdev > 200)
+		{
+			i += 2;
+			j = 2;
+			TimeOfCorrection = Time_ms;
+		}else if(stdev > 100)
+		{
+			i++;
+			j = 1;
+			TimeOfCorrection = Time_ms;
+		}
+	}
+	else if(i == 3)
+	{
+		if(stdev > 200)
+		{
+			i++;
+			j = 2;
+			TimeOfCorrection = Time_ms;
+		}
+	}
 
-	return aperture[index];
-
+	lastTimeInFunc = Time_ms;
+	*delta = aperture[i];
+	*speed = Sec_per_step[j];
 
 }
+
 
 static void AirAdjustment(int adjustement, uint32_t secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
 		uint8_t MinPrimary, uint8_t MaxPrimary,
