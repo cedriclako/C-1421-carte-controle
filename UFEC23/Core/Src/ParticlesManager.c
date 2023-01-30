@@ -44,6 +44,8 @@ CR    | 2022/10/12 | -       | Creation
 #define RX_BUFFER_LENGTH 30
 #define TX_BUFFER_LENGTH 20
 
+extern UART_HandleTypeDef huart3;
+
 static osSemaphoreId MP_UART_SemaphoreHandle;
 
 static uint8_t RX_BUFFER[RX_BUFFER_LENGTH];
@@ -155,7 +157,7 @@ void ParticlesManager(void const * argument) {
 						uartErrorCount++;
 						if(uartErrorCount > 10)
 						{
-							particleBoardAbsent = true;
+							//particleBoardAbsent = true;
 						}
 
 					}

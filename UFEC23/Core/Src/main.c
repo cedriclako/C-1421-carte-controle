@@ -47,7 +47,7 @@
 #define MINOR_VER 0
 #define REVISION_VER 8
 
-#define ESP32_ISACTIVE (1)
+#define ESP32_ISACTIVE (0)
 #define MEASURE_PARTICLES_ISACTIVE (1)
 /* USER CODE END PD */
 
