@@ -81,6 +81,7 @@ message C2SPairingReqResp
 message Cmd
 {
 	uint32 seq_number = 1;
+	uint32 transaction_id = 2;
 	oneof payload
 	{
 		C2SGetStatus c2s_get_status = 0x22;

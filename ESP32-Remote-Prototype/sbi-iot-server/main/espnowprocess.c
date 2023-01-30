@@ -22,6 +22,13 @@ typedef struct
 {
     ESPNOWPROCESS_ESPNowInfo sESPNowInfo;
 
+    // Sequence number
+    uint32_t u32SequenceNumber;
+
+    // Ignore duplicated ...
+    int32_t s32LastTransactionWhichPayload;
+    uint32_t u32LastTransactionId;
+
     QueueHandle_t sQueueRXHandle;
     // QueueHandle_t sQueueTXHandle;
 } SHandle;
@@ -32,7 +39,7 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
 static uint8_t m_u8BroadcastAddr[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
 
-static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayloadData, uint32_t u32PayloadDataLen);
+static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, uint32_t transation_id, void* pPayloadData, uint32_t u32PayloadDataLen);
 
 // static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo);
 
@@ -89,6 +96,21 @@ void ESPNOWPROCESS_Handler()
         ESP_LOGI(TAG, "<== which_payload: %d (%s), seq_number: %d, len: %d",
             inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload),
             inCmd.seq_number, msg.u8BufferCount);
+
+        // Last transaction ID to discriminate against packet sent multiple time.
+        // If the number is 0, we ignore it.
+        if (inCmd.transaction_id != 0)
+        {
+            if (m_sHandle.s32LastTransactionWhichPayload == inCmd.which_payload &&
+                m_sHandle.u32LastTransactionId == inCmd.transaction_id)
+            {
+                ESP_LOGW(TAG, "Frame recv dropped [duplicated], payloadid: %d, transactionid: %d", 
+                    inCmd.which_payload, inCmd.transaction_id);
+                return;
+            }
+            m_sHandle.s32LastTransactionWhichPayload = inCmd.which_payload;
+            m_sHandle.u32LastTransactionId = inCmd.transaction_id;
+        }
 
         switch(inCmd.which_payload)
         {
@@ -176,7 +198,7 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
 
     STOVEMB_Give();
 
-    SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, &resp, sizeof(SBI_iot_S2CGetStatusResp));
+    SendESPNow(SBI_iot_Cmd_s2c_get_status_resp_tag, pInCmd->seq_number, pInCmd->transaction_id, &resp, sizeof(SBI_iot_S2CGetStatusResp));
 }
 
 static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChangeSettingSP* pC2SChangeSettingSP)
@@ -207,6 +229,10 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
         ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %d, set: %d", pC2SChangeSettingSP->fan_speed_set.curr, u8NewFanSpeedValue);
     }
 
+    SBI_iot_S2CChangeSettingSPResp resp;
+    
+    SendESPNow(SBI_iot_Cmd_s2c_change_settingsp_resp_tag, pInCmd->seq_number, pInCmd->transaction_id, &resp, sizeof(SBI_iot_S2CChangeSettingSPResp));
+
     STOVEMB_Give();
 }
 
@@ -215,7 +241,7 @@ ESPNOWPROCESS_ESPNowInfo ESPNOWPROCESS_GetESPNowInfo()
     return m_sHandle.sESPNowInfo;
 }
 
-static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayloadData, uint32_t u32PayloadDataLen)
+static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, uint32_t transation_id, void* pPayloadData, uint32_t u32PayloadDataLen)
 {
     // Send a few probe message
     uint8_t u8OutBuffers[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN + SBIIOTBASEPROTOCOL_MAXPAYLOADLEN];
@@ -223,7 +249,7 @@ static void SendESPNow(pb_size_t which_payload, uint32_t seq_number, void* pPayl
     memcpy(u8OutBuffers, m_u8Magics, SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN);
 
     SBI_iot_Cmd cmdResp = SBI_iot_Cmd_init_default;
-    cmdResp.seq_number = 1;
+    cmdResp.seq_number = ++m_sHandle.u32SequenceNumber;
     cmdResp.which_payload = which_payload;
     memcpy(&cmdResp.payload, pPayloadData, u32PayloadDataLen);
 
