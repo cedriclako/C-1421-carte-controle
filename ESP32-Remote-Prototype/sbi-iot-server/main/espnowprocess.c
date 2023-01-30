@@ -203,7 +203,6 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
             u8NewFanSpeedValue = 1;
         else if (u8NewFanSpeedValue > 4)
             u8NewFanSpeedValue = 4;
-
         pMB->sRemoteData.u8FanSpeedCurr = u8NewFanSpeedValue;
         ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %d, set: %d", pC2SChangeSettingSP->fan_speed_set.curr, u8NewFanSpeedValue);
     }
