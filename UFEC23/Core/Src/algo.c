@@ -572,7 +572,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	break;
   }
 
-	if((GPIO_PIN_RESET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
+	if((GPIO_PIN_SET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
 	{
 		uint32_t kerneltime = osKernelSysTick();
 		if ((Safetydebounce_ms+100) < kerneltime)
