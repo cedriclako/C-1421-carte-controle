@@ -142,6 +142,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  MEMBLOCK_Init();
+
   PARAMFILE_Init(); // Initialize param file reader before main process
 
   ESPMANAGER_Init();
