@@ -143,7 +143,7 @@ void ESPMANAGER_Task(void const * argument)
 			m_last_DMA_count = u16DMA_count;
 		}
 
-		osDelay(1);
+		osDelay(50);
 	}
 
 }

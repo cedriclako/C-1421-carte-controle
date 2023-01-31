@@ -76,6 +76,8 @@ void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries,
 
 void PFL_LoadAll(PFL_SHandle* pHandle);
 
+void PFL_LoadAllDefault(PFL_SHandle* pHandle);
+
 void PFL_CommitAll(PFL_SHandle* pHandle);
 
 PFL_ESETRET PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t* psOut32Value);

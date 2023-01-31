@@ -85,6 +85,7 @@ typedef struct _SBI_iot_S2CGetStatusResp {
 
 typedef struct _SBI_iot_Cmd { 
     uint32_t seq_number;
+    uint32_t transaction_id;
     pb_size_t which_payload;
     union {
         SBI_iot_C2SGetStatus c2s_get_status;
@@ -119,7 +120,7 @@ extern "C" {
 #define SBI_iot_S2CChangeSettingSPResp_init_default {0}
 #define SBI_iot_C2SPairingReq_init_default       {false, SBI_iot_DeviceInfo_init_default, {{NULL}, NULL}}
 #define SBI_iot_C2SPairingReqResp_init_default   {false, SBI_iot_DeviceInfo_init_default, _SBI_iot_C2SPairingReqResp_EResponse_MIN}
-#define SBI_iot_Cmd_init_default                 {0, 0, {SBI_iot_C2SGetStatus_init_default}}
+#define SBI_iot_Cmd_init_default                 {0, 0, 0, {SBI_iot_C2SGetStatus_init_default}}
 #define SBI_iot_DeviceInfo_init_zero             {_SBI_iot_EDEVICETYPE_MIN, false, SBI_iot_common_Version_init_zero}
 #define SBI_iot_RemoteState_init_zero            {0}
 #define SBI_iot_C2SGetStatus_init_zero           {false, SBI_iot_RemoteState_init_zero}
@@ -129,7 +130,7 @@ extern "C" {
 #define SBI_iot_S2CChangeSettingSPResp_init_zero {0}
 #define SBI_iot_C2SPairingReq_init_zero          {false, SBI_iot_DeviceInfo_init_zero, {{NULL}, NULL}}
 #define SBI_iot_C2SPairingReqResp_init_zero      {false, SBI_iot_DeviceInfo_init_zero, _SBI_iot_C2SPairingReqResp_EResponse_MIN}
-#define SBI_iot_Cmd_init_zero                    {0, 0, {SBI_iot_C2SGetStatus_init_zero}}
+#define SBI_iot_Cmd_init_zero                    {0, 0, 0, {SBI_iot_C2SGetStatus_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define SBI_iot_C2SChangeSettingSP_fan_speed_set_tag 1
@@ -149,6 +150,7 @@ extern "C" {
 #define SBI_iot_S2CGetStatusResp_stove_info_tag  1
 #define SBI_iot_S2CGetStatusResp_stove_state_tag 3
 #define SBI_iot_Cmd_seq_number_tag               1
+#define SBI_iot_Cmd_transaction_id_tag           2
 #define SBI_iot_Cmd_c2s_get_status_tag           34
 #define SBI_iot_Cmd_s2c_get_status_resp_tag      35
 #define SBI_iot_Cmd_c2s_change_settingsp_tag     36
@@ -222,6 +224,7 @@ X(a, STATIC,   SINGULAR, UENUM,    response,          3)
 
 #define SBI_iot_Cmd_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   seq_number,        1) \
+X(a, STATIC,   SINGULAR, UINT32,   transaction_id,    2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,c2s_get_status,payload.c2s_get_status),  34) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,s2c_get_status_resp,payload.s2c_get_status_resp),  35) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,c2s_change_settingsp,payload.c2s_change_settingsp),  36) \
@@ -261,7 +264,7 @@ extern const pb_msgdesc_t SBI_iot_Cmd_msg;
 #define SBI_iot_C2SChangeSettingSP_size          19
 #define SBI_iot_C2SGetStatus_size                7
 #define SBI_iot_C2SPairingReqResp_size           26
-#define SBI_iot_Cmd_size                         116
+#define SBI_iot_Cmd_size                         122
 #define SBI_iot_DeviceInfo_size                  22
 #define SBI_iot_RemoteState_size                 5
 #define SBI_iot_S2CChangeSettingSPResp_size      0

@@ -54,7 +54,7 @@ void SLEEPDATA_Init()
             esp_partition_read(m_pPartition, i * SLEEPDATA_RECORD_SIZE, sRecord.u8Datas, SLEEPDATA_RECORD_SIZE);
             if (sRecord.sData.u8MagicByte == SLEEPDATA_RECORD_MAGICBYTE)
             {
-                ESP_LOGI(TAG, "[%d] Record is present, channel: %d", i, sRecord.sData.u8LastChannel);
+                //ESP_LOGI(TAG, "[%d] Record is present, channel: %d", i, sRecord.sData.u8LastChannel);
                 m_s32LastRecordIndex = i;
             }
         }
