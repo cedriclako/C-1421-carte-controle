@@ -341,7 +341,20 @@ uint8_t fillBuffer(void)
     
 //    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.variance,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
     //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
-
+    printf("#");	
+    printf("PartCH0ON:%u ", bOBJ.CH0_ON);
+		printf("PartCH1ON:%u ", bOBJ.CH1_ON);
+		printf("PartCH0OFF:%u ",bOBJ.CH0_OFF);
+		printf("PartCH1OFF:%u ",bOBJ.CH1_OFF);
+		printf("PartVar:%u ",bOBJ.variance);
+		printf("PartSlope:%i ",bOBJ.slope);
+		printf("TPart:%u ",bOBJ.temperature);
+		printf("PartCurr:%u ",bOBJ.LED_current_meas);
+		printf("PartLuxON:%u ", bOBJ.Lux_ON);
+		printf("PartLuxOFF:%u ", bOBJ.Lux_OFF);
+		printf("PartTime:%lu ", bOBJ.time_since_beginning);
+		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
+		printf("*\n\r");
     return 24;
 }
 

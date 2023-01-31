@@ -321,7 +321,8 @@ void measureParticlesPrintData(void)
         lux_net = gs_sMeasPartObject.m_fLuxLighted - gs_sMeasPartObject.m_fLuxZero;
         timeInSeconds = (float) gs_sMeasPartObject.m_uMillisCounter/1000;
         // Print light data and temperature
-        printf("%.3f\t%u\t%u\t%.3f\t%u\t%u\t%.3f\t%.1f\t%.3f\r\n", gs_sMeasPartObject.m_fLuxLighted,gs_sMeasPartObject.m_uFullLighted, gs_sMeasPartObject.m_uIrLighted, gs_sMeasPartObject.m_fLuxDark,gs_sMeasPartObject.m_uFullDark, gs_sMeasPartObject.m_uIrDark, gs_sMeasPartObject.m_fTemperatureCelcius,(float)(.33*gs_sMeasPartObject.adcValue/4.096), timeInSeconds);
+        //printf("%.3f\t%u\t%u\t%.3f\t%u\t%u\t%.3f\t%.1f\t%.3f\r\n", gs_sMeasPartObject.m_fLuxLighted,gs_sMeasPartObject.m_uFullLighted, gs_sMeasPartObject.m_uIrLighted, gs_sMeasPartObject.m_fLuxDark,gs_sMeasPartObject.m_uFullDark, gs_sMeasPartObject.m_uIrDark, gs_sMeasPartObject.m_fTemperatureCelcius,(float)(.33*gs_sMeasPartObject.adcValue/4.096), timeInSeconds);
+
     }
 
      

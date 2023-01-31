@@ -233,6 +233,8 @@
         <property key="memories.programmemory.ranges" value="0-ffff"/>
         <property key="memories.rww" value="true"/>
         <property key="poweroptions.powerenable" value="false"/>
+        <property key="programmerToGoFilePath"
+                  value="D:/Projets/SBI/c-1421-carte-controle/C-1333_-_Mesures_emissions.X/debug/default/C-1333 - Mesures emissions_ptg"/>
         <property key="programmerToGoImageName" value="C-1333 - Mesures emissions_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
