@@ -219,6 +219,12 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
         return;
     }
 
+    if (m_bDataReceived)
+    {
+        ESP_LOGI(TAG, "Already received ...");
+        return;
+    }
+
     // Status received ...
     g_sMemblock.has_s2cGetStatusResp = true;
     memcpy(&g_sMemblock.s2cGetStatusResp, pMsg, sizeof(SBI_iot_S2CGetStatusResp));
