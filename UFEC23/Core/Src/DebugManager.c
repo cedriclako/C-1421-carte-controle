@@ -56,7 +56,7 @@ void DebugManager(void const * argument)
   /* Infinite loop */
 
 	State TempAlgoState;
-
+	int* mod;
 
 	for(;;)
 	{
@@ -128,7 +128,7 @@ void DebugManager(void const * argument)
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
-		printf("Sec:%i ",Algo_getSecondary()*9/10);
+		printf("Sec:%i ",Algo_getSecondary()*45/100);
 		printf("Tboard:%i ",get_BoardTemp());
 		printf("Door:");
 		if(IsDoorOpen())
@@ -151,7 +151,8 @@ void DebugManager(void const * argument)
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
 		printf("PartTime:%lu ", Particle_getTime());
-		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
+		mod = get_algomod();
+		printf("GlobalStatus:%i,%i,%i",mod[0],mod[1],mod[2] ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */
