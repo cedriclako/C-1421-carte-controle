@@ -16,7 +16,7 @@
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
 
-static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32PayloadDataLen);
+static void SendESPNow(pb_size_t which_payload, uint32_t transaction_id, void* pPayloadData, uint32_t u32PayloadDataLen);
 
 static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus);
 
@@ -214,7 +214,7 @@ void ESPNOWCOMM_Handler()
 
 static void SendGetStatus()
 {
-    SBI_iot_C2SGetStatus c2sGetStatus;
+    SBI_iot_C2SGetStatus c2sGetStatus = {0};
 
     // Remote state
     if (g_sMemblock.has_sRemoteState)
@@ -223,7 +223,7 @@ static void SendGetStatus()
         memcpy(&c2sGetStatus.remote_state, &g_sMemblock.sRemoteState, sizeof(SBI_iot_RemoteState));
     }
     
-    SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
+    SendESPNow(SBI_iot_Cmd_c2s_get_status_tag, 0, &c2sGetStatus, sizeof(SBI_iot_C2SGetStatus));
 }
 
 static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2CGetStatusResp* pC2SGetStatus)
@@ -244,7 +244,7 @@ static void RecvC2SStatusRespHandler(const SBI_iot_Cmd* pInCmd, const SBI_iot_S2
         m_sHandle.fnS2CGetStatusRespCb(pC2SGetStatus);
 }
 
-static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32PayloadDataLen)
+static void SendESPNow(pb_size_t which_payload, uint32_t transaction_id, void* pPayloadData, uint32_t u32PayloadDataLen)
 {
     // Send a few probe message
     uint8_t u8OutBuffers[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN + SBIIOTBASEPROTOCOL_MAXPAYLOADLEN];
@@ -254,6 +254,7 @@ static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32
     SBI_iot_Cmd cmdResp = SBI_iot_Cmd_init_default;
     static uint32_t seq_number = 1;
     cmdResp.seq_number = seq_number++;
+    cmdResp.transaction_id = transaction_id;
     cmdResp.which_payload = which_payload;
     memcpy(&cmdResp.payload, pPayloadData, u32PayloadDataLen);
 
@@ -265,6 +266,36 @@ static void SendESPNow(pb_size_t which_payload, void* pPayloadData, uint32_t u32
         cmdResp.seq_number, len);
 
     esp_now_send(m_u8BroadcastAddr, u8OutBuffers, len);
+}
+
+void ESPNOWCOMM_SendChangeSetting()
+{
+    SBI_iot_C2SChangeSettingSP sp = {0};
+    
+    if (g_sMemblock.isTemperatureSetPointChanged)
+    {
+        g_sMemblock.isTemperatureSetPointChanged = false;
+        sp.has_temperature_setp = true;
+        sp.temperature_setp.temp = g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp;
+        sp.temperature_setp.unit = g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.unit;
+    }
+
+    if (g_sMemblock.isFanSpeedSetPointChanged)
+    {
+        g_sMemblock.isFanSpeedSetPointChanged = false;
+        sp.has_fan_speed_set = true;
+        sp.fan_speed_set.curr = g_sMemblock.s2cGetStatusResp.stove_state.fan_speed_set.curr;
+    }
+    
+    static uint32_t transaction_id = esp_random();
+    // Send many time to give it a fighting change to reach destination
+    for(int i = 0; i < 5; i++)
+    {
+        SendESPNow(SBI_iot_Cmd_c2s_change_settingsp_tag, transaction_id, &sp, sizeof(SBI_iot_C2SChangeSettingSP));
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+    transaction_id++;
 }
 
 /* ESPNOW sending or receiving callback function is called in WiFi task.

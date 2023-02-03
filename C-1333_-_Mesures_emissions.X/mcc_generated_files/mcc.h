@@ -57,13 +57,13 @@
 #include "tmr1.h"
 #include "tmr0.h"
 #include "adcc.h"
-#include "dac1.h"
 #include "memory.h"
+#include "dac1.h"
 #include "uart2.h"
 #include "uart1.h"
 
 
-#pragma warning disable 520,1510,2053
+
 /**
  * @Param
     none

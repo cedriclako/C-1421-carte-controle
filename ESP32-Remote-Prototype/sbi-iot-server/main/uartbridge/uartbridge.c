@@ -177,7 +177,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         // }
         case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
         {
-            // ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
+            //ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
             // If it's connected, we accept any message as stay alive
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
@@ -277,25 +277,36 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
 
             // The stove can refuse to set parameter.
-            pMemBlock->bIsAnyUploadError |= (s.eResult != UFEC23PROTOCOL_ERESULT_Ok);
+            const bool bIsError = (s.eResult != UFEC23PROTOCOL_ERESULT_Ok);
+            pMemBlock->bIsAnyUploadError |= bIsError;
 
             m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
-            
+
+            STOVEMB_SParameterEntry* pLastWriteEntry = STOVEMB_GetByIndex(m_sStateMachine.s32WriteLastIndex);
+            if (pLastWriteEntry != NULL)
+            {
+                if (!bIsError)
+                {
+                    ESP_LOGI(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+                    pLastWriteEntry->bIsNeedWrite = false;
+                }
+                else
+                    ESP_LOGE(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+            }
+
             STOVEMB_SParameterEntry sParamEntry;
-            const int32_t s32Index = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
+            const int32_t s32NextWritableIndex = STOVEMB_FindNextWritable(m_sStateMachine.s32WriteLastIndex+1, &sParamEntry);
 
             // The last one has been uploaded ...
-            if (s32Index < 0)
+            if (s32NextWritableIndex < 0)
             {
-                // Upload completed.
-                STOVEMB_ResetAllParameterWriteFlag();
-
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 ESP_LOGI(TAG, "Parameter upload process done");
             }
             else
             {
-                m_sStateMachine.s32WriteLastIndex = s32Index;               
+                ESP_LOGI(TAG, "SendSetParameter | %s", sParamEntry.sEntry.szKey);
+                m_sStateMachine.s32WriteLastIndex = s32NextWritableIndex;               
                 SendSetParameter(&sParamEntry);
             }
             break;
@@ -408,11 +419,20 @@ static void ProcParameterAbort()
 {
     if (m_sStateMachine.eProcParameterProcess == EPARAMETERPROCESS_Downloading)
     {
-        ESP_LOGE(TAG, "Unable to download process aborted");
+        ESP_LOGE(TAG, "Unable to download, process aborted");
         STOVEMB_Take(portMAX_DELAY);
         STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
         pMB->bIsParameterDownloadCompleted = false;
         pMB->u32ParameterCount = 0;
+        pMB->bIsAnyDownloadError = true;
+        STOVEMB_Give();
+    }
+    else if (m_sStateMachine.eProcParameterProcess == EPARAMETERPROCESS_Uploading)
+    {
+        ESP_LOGE(TAG, "Unable to upload, process aborted");
+        STOVEMB_Take(portMAX_DELAY);
+        STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+        pMB->bIsAnyUploadError = true;
         STOVEMB_Give();
     }
 
@@ -436,6 +456,11 @@ static bool ProcParameterDownload()
 
     pMB->u32ParameterCount = 0;
     pMB->bIsParameterDownloadCompleted = false;
+    
+    pMB->bIsAnyDownloadError = false;
+    pMB->bIsAnyUploadError = false;
+
+    STOVEMB_ResetAllParameterWriteFlag();
 
     UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
     {
@@ -456,15 +481,18 @@ static bool ProcParameterUpload()
         return false;
     }
 
-    m_sStateMachine.s32WriteLastIndex = 0;
-    
     STOVEMB_Take(portMAX_DELAY);
-    // Upload
-    STOVEMB_GetMemBlock()->bIsAnyUploadError = false;
+    STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+    // Upload   
+    pMB->bIsAnyDownloadError = false;
+    pMB->bIsAnyUploadError = false;
+
     STOVEMB_SParameterEntry sParamEntry;
     const int32_t s32Index = STOVEMB_FindNextWritable(0, &sParamEntry);
     STOVEMB_Give();
 
+    m_sStateMachine.s32WriteLastIndex = s32Index;
+    
     // Return true because it's a normal usecase to not have anything to upload
     if (s32Index < 0)
         return true;

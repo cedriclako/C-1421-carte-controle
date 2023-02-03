@@ -35,6 +35,7 @@ CR    | 2022/10/12 | -       | Creation
 #include "EspBridge.h"
 #include "DebugManager.h"
 #include "ParticlesManager.h"
+#include "MemBlock.h"
 
 #define START_BYTE 0xCC
 #define READ_CMD 0x00
@@ -43,6 +44,8 @@ CR    | 2022/10/12 | -       | Creation
 
 #define RX_BUFFER_LENGTH 30
 #define TX_BUFFER_LENGTH 20
+
+extern UART_HandleTypeDef huart3;
 
 static osSemaphoreId MP_UART_SemaphoreHandle;
 
@@ -81,7 +84,7 @@ void ParticlesManager(void const * argument) {
 			rx_success = false;
 			particleBoardAbsent = false;
 			uartErrorCount = 0;
-			osDelay(5000);
+			osDelay(2000);
 		}
 		if(particleBoardAbsent)
 		{
@@ -169,6 +172,8 @@ void ParticlesManager(void const * argument) {
 
 		if(Rx_complete)
 		{
+			g_MEMBLOCK_sInstance.u32SensorParticleRXCount++;
+
 			int sign = 1;
 			rx_checksum = RX_BUFFER[1];
 			for(uint8_t i = 2;i <= rx_payload_size+1;i++)

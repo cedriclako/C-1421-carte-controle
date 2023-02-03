@@ -74,6 +74,10 @@ typedef struct
 #define PFD_TSLINT 			"TSLint"
 #define PFD_DACCMD 			"DACcmd"
 #define PFD_TIMEINTERVAL 	"TimeInterval"
+#define PFD_SECPERSTEP		"SecondsPerStepOffset"
+#define PFD_MAXAPERTURE		"MaxApertureOffset"
+#define PFD_MINAPERTURE		"MinApertureOffset"
+#define PFD_APERTUREOFFSET	"ApertureOffset"
 
 // Temperature
 #define PFD_WAITINGTOIGNITION     "temp_WaitingToIgnition"
@@ -163,6 +167,8 @@ const PF_MotorOpeningsParam_t* PB_GetPrimaryMotorParam();
 const PF_MotorOpeningsParam_t* PB_GetSecondaryMotorParam();
 
 const PF_MotorOpeningsParam_t* PB_GetGrillMotorParam();
+
+const PF_UsrParam* PB_GetParticlesParam();
 
 #endif
 

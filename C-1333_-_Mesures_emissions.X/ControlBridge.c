@@ -340,8 +340,21 @@ uint8_t fillBuffer(void)
     TX_BUFFER[23] = (uint8_t)(bOBJ.time_since_beginning & 0x000000FF);
     
 //    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.variance,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
-    printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
-
+    //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
+    printf("#");	
+    printf("PartCH0ON:%u ", bOBJ.CH0_ON);
+		printf("PartCH1ON:%u ", bOBJ.CH1_ON);
+		printf("PartCH0OFF:%u ",bOBJ.CH0_OFF);
+		printf("PartCH1OFF:%u ",bOBJ.CH1_OFF);
+		printf("PartVar:%u ",bOBJ.variance);
+		printf("PartSlope:%i ",bOBJ.slope);
+		printf("TPart:%u ",bOBJ.temperature);
+		printf("PartCurr:%u ",bOBJ.LED_current_meas);
+		printf("PartLuxON:%u ", bOBJ.Lux_ON);
+		printf("PartLuxOFF:%u ", bOBJ.Lux_OFF);
+		printf("PartTime:%lu ", bOBJ.time_since_beginning);
+		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
+		printf("*\n\r");
     return 24;
 }
 
@@ -440,6 +453,7 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
+    //printf("DAC set to: %u\r\n", mOBJ->dacValue);
     
     DRDY = false;
     
@@ -452,13 +466,14 @@ void updateCalculatedValues(void)
     static float mean = 0;
     float var = 0;
     float vtemp;
+    float alpha = 0.2;
     
     if(!first_loop)
     {
         
         mean += ((float)bOBJ.CH0_ON - (float)bOBJ.CH0_BUFFER[mem_index])/(float)DATA_MEMORY_DEPTH;
         bOBJ.CH0_BUFFER[mem_index] = bOBJ.CH0_ON;
-        bOBJ.slope = (int)(1000*(bOBJ.CH0_ON-mean)/mean);
+        bOBJ.slope = (1-alpha*bOBJ.slope) + (int)(alpha*(1000*(bOBJ.CH0_ON-mean)/mean));
         
         for(uint8_t i = 0;i < DATA_MEMORY_DEPTH;i++)
         {

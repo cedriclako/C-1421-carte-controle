@@ -155,8 +155,9 @@ void loop()
             ESP_LOGI(TAG, "User is done with change, time to switch to readonly mode and sleep");
             m_isUserModeActive = false;
             UIMANAGER_SwitchTo(ESCREEN_HomeReadOnly);
-            vTaskDelay(pdMS_TO_TICKS(300));
         }
+
+        vTaskDelay(pdMS_TO_TICKS(200));
 
         // Keep last channel into flash memory
         SLEEPDATA_WriteRecord(&m_uLastRecord);
@@ -205,31 +206,41 @@ static void ENChannelFoundCallback(uint8_t u8Channel)
 
 static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 {
-    if (pMsg->has_stove_state && 
-        pMsg->stove_state.has_fan_speed_set && 
-        pMsg->stove_state.has_fan_speed_boundary && 
-        pMsg->stove_state.has_remote_temperature_setp)
+    if (!pMsg->has_stove_state ||
+        !pMsg->stove_state.has_fan_speed_set ||
+        !pMsg->stove_state.has_fan_speed_boundary ||
+        !pMsg->stove_state.has_remote_temperature_setp)
     {
-        // Status received ...
-        g_sMemblock.has_s2cGetStatusResp = true;
-        memcpy(&g_sMemblock.s2cGetStatusResp, pMsg, sizeof(SBI_iot_S2CGetStatusResp));
-
-        UIMANAGER_OnDataReceived();
-
-        ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
-            pMsg->stove_state.remote_temperature_setp.temp,
-            ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),
-
-            (pMsg->stove_state.fan_speed_set.is_automatic ? "AUTO" : "MANUAL"),
-
-            (int)pMsg->stove_state.fan_speed_set.curr,
-            (int)pMsg->stove_state.fan_speed_boundary.min,
-            (int)pMsg->stove_state.fan_speed_boundary.max);
+        ESP_LOGE(TAG, "GetStatus received but no stove_state, has_stove_state: %d, has_fan_speed_set: %d, has_fan_speed_boundary: %d, has_remote_temperature_setp: %d",
+            pMsg->has_stove_state,
+            pMsg->stove_state.has_fan_speed_set,
+            pMsg->stove_state.has_fan_speed_boundary,
+            pMsg->stove_state.has_remote_temperature_setp);
+        return;
     }
-    else
+
+    if (m_bDataReceived)
     {
-        ESP_LOGE(TAG, "GetStatus received but no stove_state");
+        ESP_LOGI(TAG, "Already received ...");
+        return;
     }
+
+    // Status received ...
+    g_sMemblock.has_s2cGetStatusResp = true;
+    memcpy(&g_sMemblock.s2cGetStatusResp, pMsg, sizeof(SBI_iot_S2CGetStatusResp));
+
+    UIMANAGER_OnDataReceived();
+
+    ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
+        pMsg->stove_state.remote_temperature_setp.temp,
+        ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),
+
+        (pMsg->stove_state.fan_speed_set.is_automatic ? "AUTO" : "MANUAL"),
+
+        (int)pMsg->stove_state.fan_speed_set.curr,
+        (int)pMsg->stove_state.fan_speed_boundary.min,
+        (int)pMsg->stove_state.fan_speed_boundary.max);
+
     m_bDataReceived = true;
 }
 

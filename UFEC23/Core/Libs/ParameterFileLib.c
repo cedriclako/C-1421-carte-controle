@@ -44,6 +44,24 @@ void PFL_LoadAll(PFL_SHandle* pHandle)
 	}
 }
 
+void PFL_LoadAllDefault(PFL_SHandle* pHandle)
+{
+	if (pHandle->psConfig->ptrLoadAll != NULL)
+		pHandle->psConfig->ptrLoadAll(pHandle);
+
+	// Verify variables and load default value if necessary
+	for(int i = 0; i < pHandle->u32ParameterEntryCount; i++)
+	{
+		const PFL_SParameterItem* pEnt = &pHandle->pParameterEntries[i];
+
+		if (pEnt->eType == PFL_TYPE_Int32)
+		{
+			int32_t* ps32Value = ((int32_t*)pEnt->vdVar);
+			*ps32Value = pEnt->uType.sInt32.s32Default;
+		}
+	}
+}
+
 void PFL_CommitAll(PFL_SHandle* pHandle)
 {
 	if (pHandle->psConfig->ptrCommitAll != NULL)
@@ -73,9 +91,8 @@ PFL_ESETRET PFL_SetValueInt32(const PFL_SHandle* pHandle, const char* szName, in
 	const PFL_SParameterItem* pEnt = GetParameterEntryByKey(pHandle, szName);
 	if (pEnt == NULL || pEnt->eType != PFL_TYPE_Int32 || pEnt->vdVar == NULL)
 		return PFL_ESETRET_EntryNoFound;
-
 	int32_t* ps32Value = ((int32_t*)pEnt->vdVar);
-	const PFL_ESETRET eValidateRet = ValidateValueInt32(pHandle, pEnt, *ps32Value);
+	const PFL_ESETRET eValidateRet = ValidateValueInt32(pHandle, pEnt, s32NewValue);
 	if (eValidateRet != PFL_ESETRET_OK)
 		return eValidateRet;
 	// We can record if it pass validation step
