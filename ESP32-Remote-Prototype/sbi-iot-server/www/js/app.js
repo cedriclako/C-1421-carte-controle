@@ -37,7 +37,9 @@ let mData =
         datetime: ""
     },
     // Config JSON
-    configJSON: ""
+    configJSON: "",
+    isStringMode: false,
+    configJSONObj: null
 };
 
 var app = new Vue({
@@ -117,6 +119,7 @@ var app = new Vue({
         {
             console.log("idLoadConfig_OnClick");
             this.configJSON = "";
+            this.configJSONObj = null;
             // Get system informations
             let isOK = false;
             fetch(API_GETSERVERPARAMETERFILEJSON_URI, {
@@ -137,15 +140,27 @@ var app = new Vue({
                         throw Error(response);
                     console.log("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " data: ", response);
                     this.configJSON = JSON.stringify(JSON.parse(response), null, 2);
+                    this.configJSONObj = JSON.parse(response);
                 })
                 .catch((error) => 
                 {
                     console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
                     this.configJSON = error;
+                    this.configJSONObj = null;
                 });
         },
-        idSaveConfig_OnClick(event)
+        idSaveConfig_OnClick(event, bIsTableMode)
         {
+            // Table mode
+            if (bIsTableMode == 1) {
+                this.configJSON = JSON.stringify(this.configJSONObj);
+            }
+            else {
+                this.configJSONObj = JSON.parse(this.configJSON);
+            }
+
+            console.log("idSaveConfig_OnClick tablemode: ", bIsTableMode, "config: ", this.configJSON);
+            
             let isOK = false;
             fetch(API_POSTSERVERPARAMETERFILEJSON_URI, {
                 method: 'POST', // or 'PUT'
