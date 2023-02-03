@@ -20,7 +20,7 @@ h1 {
 
 .table1 td, .table1 th {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 4px;
 }
 
 .table1 tr:nth-child(even){
@@ -32,8 +32,8 @@ h1 {
 }
 
 .table1 th {
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding-top: 8px;
+    padding-bottom: 8px;
     text-align: left;
     background-color: #FF0000;
     color: white;

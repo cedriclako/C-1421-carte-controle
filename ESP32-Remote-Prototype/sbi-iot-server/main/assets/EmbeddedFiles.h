@@ -30,9 +30,9 @@ typedef struct
 
 typedef enum
 {
-  EF_EFILE_INDEX_HTML = 0,                                      /*!< @brief file: index.html, size: 4521 */
+  EF_EFILE_INDEX_HTML = 0,                                      /*!< @brief file: index.html, size: 4528 */
   EF_EFILE_OTA_HTML = 1,                                        /*!< @brief file: ota.html, size: 769 */
-  EF_EFILE_CSS_CONTENT_CSS = 2,                                 /*!< @brief file: css/content.css, size: 943 */
+  EF_EFILE_CSS_CONTENT_CSS = 2,                                 /*!< @brief file: css/content.css, size: 941 */
   EF_EFILE_JS_APP_JS = 3,                                       /*!< @brief file: js/app.js, size: 7163 */
   EF_EFILE_JS_OTA_JS = 4,                                       /*!< @brief file: js/ota.js, size: 1026 */
   EF_EFILE_JS_VUE_MIN_JS = 5,                                   /*!< @brief file: js/vue.min.js, size: 107165 */
