@@ -122,6 +122,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	const PF_MotorOpeningsParam_t* pPrimaryMotorParam = PB_GetPrimaryMotorParam();
 	const PF_MotorOpeningsParam_t* pSecondaryMotorParam = PB_GetSecondaryMotorParam();
 	const PF_CombTempParam_t* pTemperatureParam = PB_GetTemperatureParam();
+	const PF_UsrParam* pParticlesParam = PB_GetParticlesParam();
 
 	  State nextState = currentState;
 	  float dTavant;
@@ -140,9 +141,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int TFlameLossArrayR[4] = {0};
 	  static int R_flamelossB = 0;
 	  static int R_flamelossR = 0;
-
-	  static int part_delta = 0;
-	  static int part_speed = 0;
 
 
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
@@ -187,7 +185,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	AirInput_forceAperture(&grill, pGrillMotorParam->MaxWaiting);// GRILL_CLOSED);
 		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxWaiting);
 		osDelay(10);
-/*
+
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
 
@@ -201,7 +199,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  reloadingEvent = false;
 		  //initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
 		}
-*/
+
 		break;
 
     case RELOAD_IGNITION:
@@ -258,7 +256,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 						  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
 						  (uint8_t)pSecondaryMotorParam->MinTempRise, (uint8_t)pSecondaryMotorParam->MaxTempRise);
 			}
-			timeInTemperatureRise = thermostatRequest ? MINUTES(1):MINUTES(1);
+			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
 			{
 			  nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
@@ -377,16 +375,15 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 					timeRefAutoMode = currentTime_ms;
 
-					computeParticleAdjustment(&part_delta,&part_speed, currentTime_ms);
 
-					adjustement = computeAjustement(pTemperatureParam->CombLowTarget+part_delta, dTavant);
+					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
 
 					if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
 						nextState = COMBUSTION_SUPERLOW;
 					}
 
 
-					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW+part_speed,
+					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
 								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
 								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
