@@ -74,11 +74,6 @@
       <itemPath>Makefile</itemPath>
       <itemPath>C-1333_-_Mesures_emissions.mc3</itemPath>
     </logicalFolder>
-    <itemPath>uart_protocol_common.h</itemPath>
-    <itemPath>uart_protocol_dec.c</itemPath>
-    <itemPath>uart_protocol_dec.h</itemPath>
-    <itemPath>uart_protocol_enc.c</itemPath>
-    <itemPath>uart_protocol_enc.h</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>.</Elem>

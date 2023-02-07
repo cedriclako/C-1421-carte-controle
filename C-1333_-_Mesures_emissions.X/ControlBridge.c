@@ -32,8 +32,6 @@ CR    | 2022/10/14 | 0.1      | Creation
 #include <stdio.h>
 #include <math.h>
 #include "ParameterFile.h"
-#include "uart_protocol_dec.h"
-#include "uart_protocol_enc.h"
 #include "mcc_generated_files/uart2.h"
 #include "mcc_generated_files/tmr1.h"
 #include "TSL2591.h"

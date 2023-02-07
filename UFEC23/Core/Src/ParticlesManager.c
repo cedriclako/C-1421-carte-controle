@@ -40,6 +40,8 @@ CR    | 2022/10/12 | -       | Creation
 #define START_BYTE 0xCC
 #define READ_CMD 0x00
 #define WRITE_CMD 0xC0
+#define FIRECNT_CMD 0x80
+#define SETZERO_CMD 0x40
 #define STOP_BYTE 0x99
 
 #define RX_BUFFER_LENGTH 64
@@ -55,6 +57,7 @@ static MeasureParticles_t ParticleDevice;
 static uint16_t uartErrorCount = 0;
 static bool particleBoardAbsent = false;
 static bool config_mode = false;
+static bool setZero = false;
 
 bool validateRxChecksum(uint8_t buffer_index);
 
@@ -108,6 +111,15 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[8] = STOP_BYTE;
 			tx_size = 9;
+		}else if(setZero)
+		{
+			TX_BUFFER[0] = START_BYTE;
+			TX_BUFFER[1] = SETZERO_CMD;
+			tx_checksum = SETZERO_CMD;
+			TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
+			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
+			TX_BUFFER[4] = STOP_BYTE;
+			tx_size = 5;
 		}else
 		{
 			TX_BUFFER[0] = START_BYTE;
