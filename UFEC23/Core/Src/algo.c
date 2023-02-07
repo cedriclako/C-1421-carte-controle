@@ -91,7 +91,7 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms);
+static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t Time_ms);
 
 void Algo_init() {
 
@@ -259,7 +259,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
 			{
-			  nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
+				TimeSinceEntryInCombLow = 0;
+				nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
 			}
 
 
@@ -270,6 +271,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		else if(timeSinceStateEntry > MINUTES(30))
 
 		{
+			TimeSinceEntryInCombLow = 0;
 			nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		}
 
@@ -570,6 +572,13 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	TestRunner();
 		nextState = currentState;  //assign the current state in the runner
     	break;
+
+    case MANUAL_CONTROL:
+        AirInput_forceAperture(&primary, pParticlesParam->s32ManualPrimary);
+        AirInput_forceAperture(&secondary, pParticlesParam->s32ManualSecondary);
+        AirInput_forceAperture(&grill, pParticlesParam->s32ManualGrill);
+
+    	break;
   }
 
 	if((GPIO_PIN_SET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
@@ -623,11 +632,18 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   		  //if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
   			//  nextState = currentState;
   		  //}
+
+  		computeParticleAdjustment(&pParticlesParam->s32APERTURE_OFFSET,&pParticlesParam->s32SEC_PER_STEP,currentTime_ms);
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
   {
   		nextState = WAITING;
+  }
+
+  if(pParticlesParam->s32ManualOverride == 1)
+  {
+	  nextState = MANUAL_CONTROL;
   }
 
   if (nextState != currentState) {
@@ -817,14 +833,11 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms)
+static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t Time_ms)
 {
-	const int aperture[] = {-20, -10, 0, 500, 1000};
-	const int Sec_per_step[] = {0, -3, -6, -8};
-	static uint8_t i = 2;
-	static uint8_t j = 0;
 	static uint32_t lastTimeInFunc = 0;
 	static uint32_t TimeOfCorrection = 0;
+	static int ch0_zero = 0;
 
 	////////////////////////////////////////////
 	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
@@ -839,58 +852,23 @@ static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms)
 	int std,slp;
 	int crit = 0;
 
-
-	std = stdev < 80? stdev:80;
-
-	if(slope > 0){
-		slp = slope < 20? slope:20;
-		crit = std+slp;
-	}else
+	if(ch0 - ch0_zero > 100)
 	{
-		slp = abs(slope) < 20? slope:-20;
-		crit = (std-slp)*(-1);
-	}
+		std = stdev < 80? stdev:80;
 
-	if((Time_ms - TimeOfCorrection) > MINUTES(2) && i > 2)
-	{
-		if(crit < 50)
+		if(slope > 0){
+			slp = slope < 20? slope:20;
+			crit = std+slp;
+		}else
 		{
-			i--;
-			j = 0;
-			TimeOfCorrection = Time_ms;
+			slp = abs(slope) < 20? slope:-20;
+			crit = (std-slp)*(-1);
 		}
 
 	}
-	else if(i == 2)
-	{
-		if(stdev > 200)
-		{
-			i += 2;
-			j = 2;
-			TimeOfCorrection = Time_ms;
-		}else if(stdev > 100)
-		{
-			i++;
-			j = 1;
-			TimeOfCorrection = Time_ms;
-		}
-	}
-	else if(i == 3)
-	{
-		if(stdev > 200)
-		{
-			i++;
-			j = 2;
-			TimeOfCorrection = Time_ms;
-		}
-	}
-
-	algo_mod[0] = aperture[i];
-	algo_mod[1] = Sec_per_step[j];
-	algo_mod[2] = crit;
 	lastTimeInFunc = Time_ms;
-	*delta = aperture[i];
-	*speed = Sec_per_step[j];
+	*delta = round(crit/100);
+	*speed = crit;
 
 }
 

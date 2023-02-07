@@ -42,7 +42,7 @@ CR    | 2022/10/12 | -       | Creation
 #define WRITE_CMD 0xC0
 #define STOP_BYTE 0x99
 
-#define RX_BUFFER_LENGTH 30
+#define RX_BUFFER_LENGTH 64
 #define TX_BUFFER_LENGTH 20
 
 extern UART_HandleTypeDef huart3;
@@ -91,16 +91,7 @@ void ParticlesManager(void const * argument) {
 			//osDelay(30000); //Ping every 30 sec... see if back on line
 		}
 
-		if(!config_mode)
-		{
-			TX_BUFFER[0] = START_BYTE;
-			TX_BUFFER[1] = READ_CMD;
-			tx_checksum = READ_CMD;
-			TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
-			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
-			TX_BUFFER[4] = STOP_BYTE;
-			tx_size = 5;
-		}else
+		if(config_mode)
 		{
 			TX_BUFFER[0] = START_BYTE;
 			TX_BUFFER[1] = WRITE_CMD | 0x04;
@@ -117,6 +108,15 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[8] = STOP_BYTE;
 			tx_size = 9;
+		}else
+		{
+			TX_BUFFER[0] = START_BYTE;
+			TX_BUFFER[1] = READ_CMD;
+			tx_checksum = READ_CMD;
+			TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
+			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
+			TX_BUFFER[4] = STOP_BYTE;
+			tx_size = 5;
 
 
 
@@ -203,6 +203,7 @@ void ParticlesManager(void const * argument) {
 					ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
 					ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 					ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
+					ParticleDevice.zero = (uint16_t)(RX_BUFFER[26] << 8) + (uint16_t)RX_BUFFER[27];
 
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{

@@ -31,13 +31,13 @@ CR    | 2022/10/14 | 0.1     | Functional prototype (incorporates many changes)
 ===========================================================================
 */ 
 #include <stdio.h>
+#include "ParameterFile.h"
 #include "TSL2591.h"
 #include "DS1775.h"
 #include "GPIO.h"
 #include "mcc_generated_files/tmr0.h"
 #include "mcc_generated_files/dac1.h"
 #include "mcc_generated_files/adcc.h"
-#include "mcc_generated_files/memory.h"
 #include "ControlBridge.h"
 #include "MeasureParticles.h"
 
@@ -45,23 +45,12 @@ CR    | 2022/10/14 | 0.1     | Functional prototype (incorporates many changes)
 #define LED_ON 1
 #define LED_OFF 0
 
-#define EE_FIRST_CONF_ADDR 0x00
-#define EE_DAC_ADDR 0x10
-#define EE_CH0_ADDR 0x20
-#define EE_CH1_ADDR 0x30
-#define EE_FIRE_COUNTER_ADDR 0x40
-
 static SMeasureParticlesObject gs_sMeasPartObject;
-static bool gs_bPrintEnabled;
-static bool gs_bacqEnabled;
-static bool gs_bEvalCurrent;
-static bool gs_bReconfigure;
-static uint8_t gs_uCurrentIndex;
 
 void measureParticlesSenseCompleteCallback(void);
 void measureParticlesPrintData(void);
 void MeasureTimerInterrupt(void);
-void measureSetLED(float currentSetting);
+void measureSetLED(const gs_Parameters* Param);
 
 void measureParticlesInitialize(void)
 {
@@ -80,55 +69,34 @@ void measureParticlesInitialize(void)
     gs_sMeasPartObject.m_fLuxLighted = 0;
     
     gs_sMeasPartObject.m_fLuxZero = 0;
-    gs_sMeasPartObject.integrationTime = TSLgetIntegrationTime()+1;
-    gs_sMeasPartObject.m_uLastRead = 0;
-    gs_sMeasPartObject.m_uMeasureInterval = 2000;
-
-    gs_sMeasPartObject.dacValue = 130;
-    gs_sMeasPartObject.dacArray[0] = 130;
-    gs_sMeasPartObject.dacArray[1] = 134;
-    gs_sMeasPartObject.dacArray[2] = 136;
-    gs_sMeasPartObject.dacArray[3] = 137;
-    gs_bEvalCurrent = false;
-    gs_uCurrentIndex = 3;
-    
-    DAC1_SetOutput(gs_sMeasPartObject.dacValue);
-    
+    gs_sMeasPartObject.m_uLastRead = 0;    
 
     gs_sMeasPartObject.adcValue = 0;
-    gs_sMeasPartObject.currentCmd = 5.2; //mA
-    //measureSetLED(gs_sMeasPartObject.currentCmd);
     
     TMR0_SetInterruptHandler(MeasureTimerInterrupt);
     TMR0_StartTimer();
     
-    gs_bPrintEnabled = true;
-    gs_bacqEnabled = true;
-    gs_bReconfigure = false;
 }
 
 void measureParticlesProcess(void)
 {
+    const gs_Parameters* MP_Param = PF_getCBParamAddr();
     switch (gs_sMeasPartObject.m_eState)
     {
         case eMEASURE_PARTICLES_NOT_STARTED:
         {
             if (tsl2591IsStarted() && ds1775IsStarted()) // give time to drivers to configure the ICs at startup
             {
-                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
+                DAC1_SetOutput(MP_Param->DAC_value);
+                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_SET_ZERO;
             }
             break;
         }
         case eMEASURE_PARTICLES_REQUEST_NOT_SENT:
         {
-            if(gs_bReconfigure)
+            if(MP_Param->AcqEnable)
             {
-                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_RECONFIGURE;
-                break;
-            }
-            if(gs_bacqEnabled)
-            {
-                if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_DARK && (gs_sMeasPartObject.m_uMillisCounter - gs_sMeasPartObject.m_uLastRead) > (gs_sMeasPartObject.m_uMeasureInterval))
+                if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_DARK && (gs_sMeasPartObject.m_uMillisCounter - gs_sMeasPartObject.m_uLastRead) > (MP_Param->MeasureInterval))
                 {
                     ds1775RequestRead();                
                     // Request light sensing without activating LED
@@ -150,6 +118,9 @@ void measureParticlesProcess(void)
                         gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_SENT;
                     }
                 }
+            }else
+            {
+                DAC1_Disable();
             }
             break;
         }
@@ -172,14 +143,6 @@ void measureParticlesProcess(void)
                 //GpioWritePin(eGPIO_LED_ON, LED_ON);
                 //Measure_Set_Current();
                 
-            if(gs_bEvalCurrent)
-            {
-                if(gs_uCurrentIndex++ >= 3)
-                {
-                    gs_uCurrentIndex = 0;
-                }
-                DAC1_SetOutput(gs_sMeasPartObject.dacArray[gs_uCurrentIndex]);
-            }
                 
                 DAC1_Enable();
                 
@@ -199,7 +162,12 @@ void measureParticlesProcess(void)
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_UPDATE_BRIDGE;
                 bridgeDataRDY();
                 // print data in console if it is enabled
-                measureParticlesPrintData();
+                gs_sMeasPartObject.m_uLastRead = gs_sMeasPartObject.m_uMillisCounter;
+                if (MP_Param->PrintEnable)
+                {    
+                    measureParticlesPrintData();
+                }
+                
             }
             else if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_ZERO)
             {
@@ -208,7 +176,9 @@ void measureParticlesProcess(void)
                 DAC1_Disable();
                 gs_sMeasPartObject.m_fLuxZero = gs_sMeasPartObject.m_fLuxLighted;
                 
-                if (gs_bPrintEnabled)
+                PF_Update_MemParams(gs_sMeasPartObject.m_fLuxZero,(uint16_t)(0.33*gs_sMeasPartObject.adcValue/4.096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
+                
+                if (MP_Param->PrintEnable)
                 {
                     printf("ZERO SET TO: %.3f lux \r\n",gs_sMeasPartObject.m_fLuxZero);
                 }
@@ -221,7 +191,6 @@ void measureParticlesProcess(void)
         case eMEASURE_PARTICLES_SET_ZERO:
         {
             // activate LED
-            //GpioWritePin(eGPIO_LED_ON, LED_ON);
             DAC1_Enable();
                 
             // Change state and sub state
@@ -243,13 +212,13 @@ void measureParticlesProcess(void)
             }
             break;
         case eMEASURE_PARTICLES_RECONFIGURE:
-            if(!gs_bReconfigure && tsl2591IsStarted())
+            if(tsl2591IsReadyForRequest())
             {
-                gs_sMeasPartObject.integrationTime = TSLgetIntegrationTime()+1;
-                DAC1_SetOutput(gs_sMeasPartObject.dacValue);
+                TSLreset();
+                ds1775Reset();
+                DAC1_SetOutput(MP_Param->DAC_value);
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             }
-
             break;
         default:
         {
@@ -266,39 +235,12 @@ void measureParticlesSenseCompleteCallback(void)
 
 bool measureParticlesReadyForConfig(void)
 {
-    return gs_sMeasPartObject.m_eState == eMEASURE_PARTICLES_RECONFIGURE;
+    return gs_sMeasPartObject.m_eState == eMEASURE_PARTICLES_REQUEST_NOT_SENT;
 }
 
-void measureParticlesRequestReconfigure(void)
+void measureReset(void)
 {
-    gs_bReconfigure = true;    
-}
-
-void measureParticlesSetParameters(uint8_t DAC, uint16_t time_window)
-{
-    gs_sMeasPartObject.dacValue = DAC;
-    gs_sMeasPartObject.m_uMeasureInterval = time_window;
-    gs_bReconfigure = false;
-}
-void measureParticlesTogglePrintEnable(void)
-{
-    gs_bPrintEnabled = !gs_bPrintEnabled;
-}
-
-void measureParticlesToggleAcqEnable(void)
-{
-    gs_bacqEnabled = !gs_bacqEnabled;
-    
-    if(gs_bacqEnabled)
-    {
-        printf("Starting acquisition\r\n");
-        DAC1_Enable();
-    }
-    else
-    {
-        printf("Acquisition paused\r\n");
-        DAC1_Disable();
-    }
+    gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_RECONFIGURE;
 }
 
 void measureParticlesSetZero(void)
@@ -314,29 +256,20 @@ void measureParticlesPrintData(void)
     float lux_net;
     float timeInSeconds;
     
-    gs_sMeasPartObject.m_uLastRead = gs_sMeasPartObject.m_uMillisCounter;
-    
-    if (gs_bPrintEnabled)
-    {
-        lux_net = gs_sMeasPartObject.m_fLuxLighted - gs_sMeasPartObject.m_fLuxZero;
-        timeInSeconds = (float) gs_sMeasPartObject.m_uMillisCounter/1000;
-        // Print light data and temperature
-        //printf("%.3f\t%u\t%u\t%.3f\t%u\t%u\t%.3f\t%.1f\t%.3f\r\n", gs_sMeasPartObject.m_fLuxLighted,gs_sMeasPartObject.m_uFullLighted, gs_sMeasPartObject.m_uIrLighted, gs_sMeasPartObject.m_fLuxDark,gs_sMeasPartObject.m_uFullDark, gs_sMeasPartObject.m_uIrDark, gs_sMeasPartObject.m_fTemperatureCelcius,(float)(.33*gs_sMeasPartObject.adcValue/4.096), timeInSeconds);
-
-    }
-
-     
+    lux_net = gs_sMeasPartObject.m_fLuxLighted - gs_sMeasPartObject.m_fLuxZero;
+    timeInSeconds = (float) gs_sMeasPartObject.m_uMillisCounter/1000;
+    // Print light data and temperature
+    printf("%.3f\t%u\t%u\t%.3f\t%u\t%u\t%.3f\t%.1f\t%.3f\r\n",
+            gs_sMeasPartObject.m_fLuxLighted,gs_sMeasPartObject.m_uFullLighted,
+            gs_sMeasPartObject.m_uIrLighted, gs_sMeasPartObject.m_fLuxDark,
+            gs_sMeasPartObject.m_uFullDark, gs_sMeasPartObject.m_uIrDark,
+            gs_sMeasPartObject.m_fTemperatureCelcius,(float)(.33*gs_sMeasPartObject.adcValue/4.096),
+            timeInSeconds);
 }
 
-uint8_t measureParticlesGetDacValue(void)
+void measureParticlesSetDacValue(const gs_Parameters* Param)
 {
-    return gs_sMeasPartObject.dacValue;
-}
-
-void measureParticlesSetDacValue(uint8_t value)
-{
-    gs_sMeasPartObject.dacValue = value;
-    DAC1_SetOutput(gs_sMeasPartObject.dacValue);
+    DAC1_SetOutput(Param->DAC_value);
 }
 
 void MeasureTimerInterrupt(void)
@@ -344,7 +277,7 @@ void MeasureTimerInterrupt(void)
     gs_sMeasPartObject.m_uMillisCounter++;
 }
 
-void measureSetLED(float currentSetting)
+void measureSetLED(const gs_Parameters* Param)
 {
     uint16_t adcRequest;
     adc_result_t shunt;
@@ -353,9 +286,11 @@ void measureSetLED(float currentSetting)
     bool upMotion = false;
     uint16_t N,i;
     
+    uint8_t DAC = Param->DAC_value;
+    
     DAC1_Enable();
     
-    adcRequest = (uint16_t) (4096*currentSetting/3.3);
+    adcRequest = (uint16_t) (4096*Param->Current_cmd/3.3);
     //shunt = ADCC_GetSingleConversion(channel_ANB7);
     
     while(adcMeasured != adcRequest)
@@ -387,8 +322,8 @@ void measureSetLED(float currentSetting)
 
                 adc_memory = adcMeasured;
                 //printf("down %u \r\n", adcMeasured);
-                gs_sMeasPartObject.dacValue = gs_sMeasPartObject.dacValue - 1;
-                DAC1_SetOutput(gs_sMeasPartObject.dacValue);    
+                DAC -= 1;
+                DAC1_SetOutput(DAC);    
             }
             else
             {
@@ -407,8 +342,8 @@ void measureSetLED(float currentSetting)
                 adc_memory = adcMeasured;
                 //printf("up %u \r\n", adcMeasured);
 
-                gs_sMeasPartObject.dacValue = gs_sMeasPartObject.dacValue - 1;
-                DAC1_SetOutput(gs_sMeasPartObject.dacValue);
+                DAC += 1;
+                DAC1_SetOutput(DAC);
             }
             else
             {
@@ -417,6 +352,7 @@ void measureSetLED(float currentSetting)
         }
         //shunt = ADCC_GetSingleConversion(channel_ANB7);
     }
+    PF_setDAC(DAC);
     gs_sMeasPartObject.adcValue = (uint16_t) shunt;
     DAC1_Disable();
 }

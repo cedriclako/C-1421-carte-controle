@@ -31,18 +31,23 @@ CR    | 2022/10/14 | 0.1      | Creation
 #include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
+#include "ParameterFile.h"
+#include "uart_protocol_dec.h"
+#include "uart_protocol_enc.h"
 #include "mcc_generated_files/uart2.h"
 #include "mcc_generated_files/tmr1.h"
 #include "TSL2591.h"
 #include "ControlBridge.h"
 
 
-#define MAX_BUFFER_SIZE 30
+#define MAX_BUFFER_SIZE 64
 
 #define START_BYTE 0xCC
 #define STOP_BYTE 0x99
 
 #define WRITE_CMD 0xC0
+#define FIRECNT_CMD 0x80
+#define SETZERO_CMD 0x40
 #define READ_CMD 0x00
 
 #define DATA_MEMORY_DEPTH 10
@@ -81,13 +86,7 @@ typedef struct {
 	uint16_t temperature;
     uint32_t time_since_beginning;
 	int slope;
-    uint16_t LED_current_meas;
-
-	uint16_t time_window;
-	uint8_t TSL_gain;
-	uint8_t TSL_integration_time;
-    uint8_t DacCommand;
-	
+    uint16_t LED_current_meas;	
     
 }EControlBridgeObject;
 
@@ -97,12 +96,12 @@ void updateCalculatedValues(void);
 static EControlBridgeStates BridgeState;
 static EControlBridgeObject bOBJ;
 static bool DRDY = false;
-static bool CTRL_REQ = false;
 static uint8_t TX_BUFFER[MAX_BUFFER_SIZE];
-void sendData(uint8_t packet_size);
-void sendConfig(uint8_t packet_size);
-uint8_t fillBuffer(void);
-bool bridgeValidateConfig(uint8_t* payload,uint8_t payload_size);
+
+void sendData(uint8_t packet_size, uint8_t command);
+void sendConfig(const gs_Parameters* Param);
+uint8_t fillDataBuffer(const gs_MemoryParams* Param);
+uint8_t fillEEBuffer(const gs_MemoryParams* Param);
 
 void ControlBridgeInitialize(void)
 {
@@ -117,28 +116,17 @@ void ControlBridgeInitialize(void)
     bOBJ.temperature = 0;
 
     bOBJ.LED_current_meas = 0;
-    bOBJ.time_window = 0;
     bOBJ.slope = 0;
     
     bOBJ.Lux_ON = 0;
     bOBJ.Lux_OFF = 0;
-    
-    /*
-    bOBJ.CH0_ON = 0x1234;
-    bOBJ.CH0_OFF = 0x5678;
-    bOBJ.CH1_ON = 0x9ABC;
-    bOBJ.CH1_OFF = 0xDEF1;
-    bOBJ.variance = 0x2345;
-    bOBJ.temperature = 0x6789;
-
-    bOBJ.LED_current_meas = 0xABCD;
-    bOBJ.time_window = 0xEF12;
-    */
 }
 
     
 void ControlBridgeProcess(void)
 {
+    const gs_Parameters* CB_Param = PF_getCBParamAddr();
+    const gs_MemoryParams* EE_Param = PF_getEEParamAddr();
     static uint8_t command, payload_size, i, sum_LSB, sum_MSB;
     static uint8_t payload[MAX_BUFFER_SIZE], tx_size;
     static uint16_t rx_checksum, temp_sum;
@@ -180,7 +168,7 @@ void ControlBridgeProcess(void)
                 command = UART2_Read();
                 temp_sum = command;
                 
-                if((command & 0xC0) == READ_CMD)
+                if((command & 0xC0) == READ_CMD || (command & 0xC0) == FIRECNT_CMD || (command & 0xC0) == SETZERO_CMD)
                 {
                     entry_state = eBridge_RECEIVE_CMD;
                     BridgeState = eBridge_RECEIVE_CHECKSUM;
@@ -248,8 +236,27 @@ void ControlBridgeProcess(void)
                 switch(entry_state)
                 {
                     case eBridge_RECEIVE_CMD:
-                        //printf("Transmitting data\r\n");
-                        BridgeState = eBridge_TRANSMIT_DATA;
+                        switch(command & 0xC0)
+                        {
+                            case READ_CMD:
+                                BridgeState = eBridge_TRANSMIT_DATA;
+                                break;
+                            case FIRECNT_CMD:
+                                PF_IncrementFireCount();
+                                BridgeState = eBridge_IDLE;
+                                break;
+                            case SETZERO_CMD:
+                                PF_requestReconfigure();
+                                if(measureParticlesReadyForConfig())
+                                {
+                                    measureParticlesSetZero();
+                                    PF_ToggleAcqEnable();
+                                }
+                                
+                                BridgeState = eBridge_TRANSMIT_DATA;
+                                break;
+                        }
+                        
                         break;
                     case eBridge_RECEIVE_PAYLOAD:
                         BridgeState = eBridge_VERIFY_PAYLOAD;
@@ -264,19 +271,32 @@ void ControlBridgeProcess(void)
             }
             break;
         case eBridge_TRANSMIT_DATA:
-            tx_size = fillBuffer();
-            sendData(tx_size);
+            switch(command & 0xC0)
+            {
+                case READ_CMD:
+                    tx_size = fillDataBuffer(EE_Param);
+                    sendData(tx_size, (uint8_t)READ_CMD);
+                    break;
+                case FIRECNT_CMD:
+                case SETZERO_CMD:
+                    tx_size = fillEEBuffer(EE_Param);
+                    sendData(tx_size, (uint8_t)SETZERO_CMD);
+                    break;
+            }
+            
             BridgeState = eBridge_IDLE;
             break;
         case eBridge_VERIFY_PAYLOAD:
             printf("Verifiyng payload\r\n");
-            if(bridgeValidateConfig(payload, payload_size))
+            if(command == WRITE_CMD)
             {
-                BridgeState = eBridge_SET_CONFIG;
-                printf("Payload verified\r\n");
-                measureParticlesRequestReconfigure();
-            }
-            else
+                if(PF_validateConfig(payload, payload_size))
+                {
+                    BridgeState = eBridge_SET_CONFIG;
+                    printf("Payload verified\r\n");
+                    PF_requestReconfigure();
+                }
+            }else
             {
                 BridgeState = eBridge_COMM_ERROR;
             }
@@ -285,14 +305,11 @@ void ControlBridgeProcess(void)
     
             if(measureParticlesReadyForConfig())
             {
-                measureParticlesSetParameters(bOBJ.DacCommand,(uint16_t)bOBJ.time_window*1000);
-                TSLset_parameters(bOBJ.TSL_gain,bOBJ.TSL_integration_time);
                 BridgeState = eBridge_TRANSMIT_CONFIG;
             }
             break;
         case eBridge_TRANSMIT_CONFIG:
-            tx_size = 4;
-            sendConfig(tx_size);
+            sendConfig(CB_Param);
             BridgeState = eBridge_IDLE;
             break;
         case eBridge_COMM_ERROR: // Can add some diagnosis if wanted
@@ -305,7 +322,19 @@ void ControlBridgeProcess(void)
     }
 }
 
-uint8_t fillBuffer(void)
+uint8_t fillEEBuffer(const gs_MemoryParams* Param)
+{
+    TX_BUFFER[0] = (uint8_t)(Param->fireCounter >> 8);
+    TX_BUFFER[1] = (uint8_t)(Param->fireCounter & 0x00FF);
+    TX_BUFFER[2] = (uint8_t)(Param->lastZeroValue >> 8);
+    TX_BUFFER[3] = (uint8_t)(Param->lastZeroValue & 0x00FF);
+    TX_BUFFER[4] = Param->lastZeroDac;
+    TX_BUFFER[5] = Param->lastZeroCurrent;
+    TX_BUFFER[6] = Param->lastZeroTemp;
+    return 7;
+}
+
+uint8_t fillDataBuffer(const gs_MemoryParams* Param)
 {
     int s_sign = 1;
     int slope_cont = 0;
@@ -338,7 +367,8 @@ uint8_t fillBuffer(void)
     TX_BUFFER[21] = (uint8_t)(bOBJ.time_since_beginning >> 16);
     TX_BUFFER[22] = (uint8_t)(bOBJ.time_since_beginning >> 8);
     TX_BUFFER[23] = (uint8_t)(bOBJ.time_since_beginning & 0x000000FF);
-    
+    TX_BUFFER[24] = (uint8_t)(Param->lastZeroValue >> 8);
+    TX_BUFFER[25] = (uint8_t)(Param->lastZeroValue & 0x00FF);
 //    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.variance,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
     //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
     printf("#");	
@@ -355,16 +385,16 @@ uint8_t fillBuffer(void)
 		printf("PartTime:%lu ", bOBJ.time_since_beginning);
 		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
-    return 24;
+    return 26;
 }
 
 
-void sendData(uint8_t packet_size)
+void sendData(uint8_t packet_size, uint8_t command)
 {
     uint16_t checksum;
     uint8_t command_line;
     
-    command_line = (uint8_t) (READ_CMD ^ packet_size);
+    command_line = (uint8_t) (command ^ packet_size);
     checksum = command_line;
 
     UART2_Write((uint8_t)START_BYTE);
@@ -382,48 +412,26 @@ void sendData(uint8_t packet_size)
     
 }
 
-void sendConfig(uint8_t packet_size)
+void sendConfig(const gs_Parameters* Param)
 {
     uint16_t checksum;
     uint8_t command_line;
+    uint8_t packet_size = 4;
     
     command_line = (uint8_t) (WRITE_CMD ^ packet_size);
 
     UART2_Write((uint8_t)START_BYTE);
     UART2_Write(command_line);
     
-    UART2_Write(bOBJ.TSL_gain);
-    UART2_Write(bOBJ.TSL_integration_time);
-    UART2_Write(bOBJ.DacCommand);
-    UART2_Write((uint8_t)bOBJ.time_window);
-    checksum = command_line + bOBJ.TSL_gain + bOBJ.TSL_integration_time + bOBJ.DacCommand + bOBJ.time_window;
+    UART2_Write((uint8_t)Param->TSL_gain);
+    UART2_Write((uint8_t)Param->TSL_integrationTime);
+    UART2_Write(Param->DAC_value);
+    UART2_Write((uint8_t)Param->MeasureInterval);
+    checksum = command_line + Param->TSL_gain + Param->TSL_integrationTime + Param->DAC_value + Param->MeasureInterval;
     
     UART2_Write((uint8_t)(checksum >> 8));
     UART2_Write((uint8_t)(checksum & 0x00FF));  
     UART2_Write((uint8_t)STOP_BYTE);
-    
-}
-
-bool bridgeValidateConfig(uint8_t* payload,uint8_t payload_size)
-{
-    if(payload_size == 4) // Hard coded value, if more parameters are needed, put theme in the loop and update the size
-    {
-        if(payload[0] < 4)
-        {
-            if(payload[1] < 6)
-            {
-                if(payload[3] < 11)
-                {
-                    bOBJ.TSL_gain = payload[0];
-                    bOBJ.TSL_integration_time = payload[1];
-                    bOBJ.DacCommand = payload[2];
-                    bOBJ.time_window = payload[3];
-                    return true;
-                }
-            }
-        } 
-    }
-    return false;
     
 }
 
@@ -449,7 +457,6 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
     bOBJ.CH1_OFF = mOBJ->m_uIrDark;
     bOBJ.LED_current_meas = (uint16_t)(0.33*mOBJ->adcValue/4.096);
-    bOBJ.time_window = mOBJ->m_uMeasureInterval;
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
@@ -473,7 +480,7 @@ void updateCalculatedValues(void)
         
         mean += ((float)bOBJ.CH0_ON - (float)bOBJ.CH0_BUFFER[mem_index])/(float)DATA_MEMORY_DEPTH;
         bOBJ.CH0_BUFFER[mem_index] = bOBJ.CH0_ON;
-        bOBJ.slope = (1-alpha*bOBJ.slope) + (int)(alpha*(1000*(bOBJ.CH0_ON-mean)/mean));
+        bOBJ.slope = (int)((1-alpha*bOBJ.slope) + (alpha*(1000*(bOBJ.CH0_ON-mean)/mean)));
         
         for(uint8_t i = 0;i < DATA_MEMORY_DEPTH;i++)
         {
