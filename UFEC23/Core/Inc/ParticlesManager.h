@@ -20,6 +20,7 @@ typedef struct MeasureParticles
 	uint16_t particles;
 	uint16_t variance;
 	uint16_t temperature;
+	uint16_t zero;
 	int slope;
 	uint16_t LED_current_meas;
 	uint16_t Lux_ON;

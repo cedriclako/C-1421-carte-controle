@@ -29,7 +29,7 @@ CS    | 2021/06/21 | -       | Creation
 CR    | 2022/10/14 | 0.1     | Corrections and addition of interactions
 ===========================================================================
 */
-
+#include "ParameterFile.h"
 #include "DebugInterface.h"
 #include "MeasureParticles.h"
 
@@ -60,7 +60,6 @@ typedef struct
 static SRxObject gs_sRxObject;
 static STxObject gs_sTxObject;
 
-static uint8_t DACOUT;
 static adc_result_t gs_Curr;
 
 void DebugPrintProjectInfo(void);
@@ -81,13 +80,13 @@ void DebugInitialize(void)
     
     gs_Curr = 0;
     
-    DACOUT = measureParticlesGetDacValue();
     DebugPrintProjectInfo();
     DebugPrintMenu();
 }
 
 void DebugProcess(void)
 {
+    const gs_Parameters* dbgParam = PF_getCBParamAddr();
     uint8_t uKey;
     static uint8_t uKeyFunct = 0;
     static uint32_t uKeyNum = 0;
@@ -139,35 +138,7 @@ void DebugProcess(void)
         if (uKey == ASCII_CARRIAGE_RETURN)
         {
             switch (uKeyFunct)
-            {
-                case 'A':
-                {
-                    DACOUT++;
-                    measureParticlesSetDacValue(DACOUT);
-                    printf("DAC set to: %u\r\n",DACOUT);
-                    break;
-                }
-                case 'B':
-                {
-                    DACOUT--;
-                    measureParticlesSetDacValue(DACOUT);
-                    printf("DAC set to: %u\r\n",DACOUT);
-                    break;
-                }                
-                case 'C':
-                {
-                    DACOUT+= 10;
-                    measureParticlesSetDacValue(DACOUT);
-                    printf("DAC set to: %u\r\n",DACOUT);
-                    break;
-                }
-                case 'D':
-                {
-                    DACOUT -= 10;
-                    measureParticlesSetDacValue(DACOUT);
-                    printf("DAC set to: %u\r\n",DACOUT);
-                    break;
-                }                
+            {             
                 case 'H':
                 {
                     // printf("H --> Print this help menu\r\n");
@@ -177,7 +148,7 @@ void DebugProcess(void)
                 }
                 case 'P':
                 {
-                    printf("DAC set to: %u\r\n", measureParticlesGetDacValue());
+                    printf("DAC set to: %u\r\n", dbgParam->DAC_value);
                     break;
                 }
                 case'Z':
@@ -187,7 +158,7 @@ void DebugProcess(void)
                 }
                 case'S':
                 {
-                    measureParticlesToggleAcqEnable();
+                    PF_ToggleAcqEnable();
                     break;
                 }
                 case 'L':

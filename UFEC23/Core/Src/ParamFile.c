@@ -101,6 +101,10 @@ static PF_UsrParam m_sMemBlock = { 0xFF }; // Simulate a flash memory
 static const PFL_SParameterItem m_sParameterItems[] =
 {
 	// KEY										    VARIABLE POINTER								DEFAULT, MIN, MAX
+	PFL_INIT_SINT32(PFD_MANUALBOOL, 			"", &m_sMemBlock.s32ManualOverride, 		                0, 0, 1),
+	PFL_INIT_SINT32(PFD_MANUALPRIM, 			"", &m_sMemBlock.s32ManualPrimary, 			                0, 0, 100),
+	PFL_INIT_SINT32(PFD_MANUALSEC,		 		"", &m_sMemBlock.s32ManualSecondary, 		                0, 0, 100),
+	PFL_INIT_SINT32(PFD_MANUALGRILL, 			"", &m_sMemBlock.s32ManualGrill, 		    	            0, 0, 100),
 	PFL_INIT_SINT32(PFD_TSLGAIN, 				"", &m_sMemBlock.s32TLSGain, 				                0, 0, 3),
 	PFL_INIT_SINT32(PFD_TSLINT,  				"", &m_sMemBlock.s32TSLINT, 					    	    0, 0, 5),
 	PFL_INIT_SINT32(PFD_DACCMD,  				"", &m_sMemBlock.s32DACCMD, 							  0, 0, 255),
@@ -109,6 +113,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_MAXAPERTURE, 			"", &m_sMemBlock.s32MAX_APERTURE, 					       0, 0, 100),
 	PFL_INIT_SINT32(PFD_MINAPERTURE, 			"", &m_sMemBlock.s32MIN_APERTURE, 					       0, 0, 100),
 	PFL_INIT_SINT32(PFD_APERTUREOFFSET, 		"", &m_sMemBlock.s32APERTURE_OFFSET, 					   0, 0, 100),
+	PFL_INIT_SINT32(PFD_FANKIP,			 		"", &m_sMemBlock.s32FAN_KIP,   	 					   3500, 0, 20000),
+	PFL_INIT_SINT32(PFD_FANKOP,			 		"", &m_sMemBlock.s32FAN_KOP,		 				   6500, 0, 20000),
 
 	// Temperature parameters
 	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &m_sTemperatureParam.WaitingToIgnition, 	  	1000, 0, 20000),

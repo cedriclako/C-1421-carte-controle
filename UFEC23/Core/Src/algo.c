@@ -91,7 +91,7 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms);
+static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t Time_ms);
 
 void Algo_init() {
 
@@ -259,7 +259,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
 			{
-			  nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
+				TimeSinceEntryInCombLow = 0;
+				nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
 			}
 
 
@@ -270,6 +271,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		else if(timeSinceStateEntry > MINUTES(30))
 
 		{
+			TimeSinceEntryInCombLow = 0;
 			nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		}
 
@@ -570,6 +572,13 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	TestRunner();
 		nextState = currentState;  //assign the current state in the runner
     	break;
+
+    case MANUAL_CONTROL:
+        AirInput_forceAperture(&primary, pParticlesParam->s32ManualPrimary);
+        AirInput_forceAperture(&secondary, pParticlesParam->s32ManualSecondary);
+        AirInput_forceAperture(&grill, pParticlesParam->s32ManualGrill);
+
+    	break;
   }
 
 	if((GPIO_PIN_SET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
@@ -623,11 +632,18 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   		  //if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
   			//  nextState = currentState;
   		  //}
+
+  		computeParticleAdjustment(&pParticlesParam->s32APERTURE_OFFSET,&pParticlesParam->s32SEC_PER_STEP,currentTime_ms);
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
   {
   		nextState = WAITING;
+  }
+
+  if(pParticlesParam->s32ManualOverride == 1)
+  {
+	  nextState = MANUAL_CONTROL;
   }
 
   if (nextState != currentState) {

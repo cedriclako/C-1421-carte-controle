@@ -110,6 +110,9 @@ void DebugManager(void const * argument)
 			case PRODUCTION_TEST:
 				printf("PRODTEST");
 				break;
+			case MANUAL_CONTROL:
+				printf("MANUAL");
+				break;
 			default:
 				printf("UNKNOWN");
 				break;
