@@ -833,7 +833,7 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms)
+static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t Time_ms)
 {
 	const int aperture[] = {-20, -10, 0, 500, 1000};
 	const int Sec_per_step[] = {0, -3, -6, -8};

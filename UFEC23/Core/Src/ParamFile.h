@@ -9,9 +9,9 @@
 
 #include "../Libs/ParameterFileLib.h"
 
-#define PF_PRIMARY_MINIMUM_OPENING				6 //5.4 degres @ 0.9 deg/pas
+#define PF_PRIMARY_MINIMUM_OPENING				0 //5.4 degres @ 0.9 deg/pas
 #define PF_PRIMARY_CLOSED  						PF_PRIMARY_MINIMUM_OPENING
-#define PF_PRIMARY_FULL_OPEN			   		100
+#define PF_PRIMARY_FULL_OPEN			   		200
 
 #define PF_SECONDARY_MINIMUM_OPENING			0
 #define PF_SECONDARY_CLOSED						PF_SECONDARY_MINIMUM_OPENING
@@ -19,7 +19,7 @@
 
 #define PF_GRILL_CLOSED                   		0
 #define PF_GRILL_MINIMUM_OPENING 				PF_GRILL_CLOSED
-#define PF_GRILL_FULL_OPEN                      100
+#define PF_GRILL_FULL_OPEN                      200
 
 typedef struct
 {

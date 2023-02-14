@@ -102,9 +102,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 {
 	// KEY										    VARIABLE POINTER								DEFAULT, MIN, MAX
 	PFL_INIT_SINT32(PFD_MANUALBOOL, 			"", &m_sMemBlock.s32ManualOverride, 		                0, 0, 1),
-	PFL_INIT_SINT32(PFD_MANUALPRIM, 			"", &m_sMemBlock.s32ManualPrimary, 			                0, 0, 100),
-	PFL_INIT_SINT32(PFD_MANUALSEC,		 		"", &m_sMemBlock.s32ManualSecondary, 		                0, 0, 100),
-	PFL_INIT_SINT32(PFD_MANUALGRILL, 			"", &m_sMemBlock.s32ManualGrill, 		    	            0, 0, 100),
+	PFL_INIT_SINT32(PFD_MANUALPRIM, 			"", &m_sMemBlock.s32ManualPrimary, 			                100, 0, 200),
+	PFL_INIT_SINT32(PFD_MANUALSEC,		 		"", &m_sMemBlock.s32ManualSecondary, 		                100, 0, 200),
+	PFL_INIT_SINT32(PFD_MANUALGRILL, 			"", &m_sMemBlock.s32ManualGrill, 		    	            100, 0, 200),
 	PFL_INIT_SINT32(PFD_TSLGAIN, 				"", &m_sMemBlock.s32TLSGain, 				                0, 0, 3),
 	PFL_INIT_SINT32(PFD_TSLINT,  				"", &m_sMemBlock.s32TSLINT, 					    	    0, 0, 5),
 	PFL_INIT_SINT32(PFD_DACCMD,  				"", &m_sMemBlock.s32DACCMD, 							  0, 0, 255),
