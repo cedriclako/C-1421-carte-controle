@@ -654,6 +654,10 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	}
 	else
 	{
+		if(currentState == MANUAL_CONTROL)
+		{
+			nextState = COMBUSTION_HIGH;
+		}
 	    stateChangeTimeRef = currentTime_ms;
 	}
 	  historyState = currentState;
