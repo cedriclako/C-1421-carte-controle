@@ -6,6 +6,7 @@
 #include "DebugPort.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "Pid.h"
 #include "ProdTest.h"
 #include "MotorManager.h"
@@ -30,7 +31,7 @@ typedef struct ParticlesParam{
 
 //Maximum Primary and grate opening by state
 //all values are express in step 0.9degrees.
-int algo_mod[3] = {0,0,0};
+int algo_mod[4] = {0,0,0,0};
 
 //state machine variable and initial values
 static State currentState = ZEROING_STEPPER;
@@ -91,7 +92,7 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t Time_ms);
+static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms);
 
 void Algo_init() {
 
@@ -306,7 +307,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			  
             adjustement = computeAjustement(pTemperatureParam->CombHighTarget, dTavant);
 
-			AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
+			AirAdjustment((int32_t)(adjustement + pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(SEC_PER_STEP_COMB_HIGH/pParticlesParam->s32SEC_PER_STEP),
 							pPrimaryMotorParam->MinCombHigh, pPrimaryMotorParam->MaxCombHigh,
 							pGrillMotorParam->MinCombHigh,pGrillMotorParam->MaxCombHigh,
 							pSecondaryMotorParam->MinCombHigh,pSecondaryMotorParam->MaxCombHigh);
@@ -385,7 +386,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 					}
 
 
-					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
+					AirAdjustment((int32_t)(adjustement + pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(SEC_PER_STEP_COMB_LOW/pParticlesParam->s32SEC_PER_STEP),
 								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
 								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
@@ -457,35 +458,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	}else if (reloadingEvent) {
             nextState = ZEROING_STEPPER;
         }
-    //	if(historyState != currentState){
-    	//				StateEntryControlAdjustment(&primary,pPrimaryMotorParam->MinCoalLow, pPrimaryMotorParam->MaxCoalLow,
-    	//											&grill,GRILL_CLOSED,GRILL_CLOSED);
-    		//	    historyState = currentState;
-    		//	}
-    	      //  /* Since the control algo (i.e. computeAjustement) is limited
-    	     //      to +/- 3 steps, it whould take 3 * sec per step to complete
-    	       //    the mouvement. Reevaluate the control at that maximum period. */
-    	      //  if (TimeForStep >= (3 * SEC_PER_STEP_COAL_HIGH * 1000)) {
-    	      //  	if(rearTemperature > 8000) // tentative à 800 2021-11-26
-    	      //  	{
-    	       // 		adjustement = -1; //Si T > 800, on ferme. Sinon on suit le tableau d'ajustement
-    	        //	}
-    	        //	else
-    	        //	{
-    	        //		adjustement = computeAjustement( pTemperatureParam->CombHighTarget, dTavant);
-    	        //	}
-    	        //    AirAdjustment(adjustement, SEC_PER_STEP_COMB_HIGH,
-    			//			  	  	  &primary, pPrimaryMotorParam->MinCoalLow, pPrimaryMotorParam->MaxCoalLow,
-    			//					  &grill, pGrillMotorParam->MinCoalLow, pGrillMotorParam->MaxCoalLow);
-    	        //}
 
-    	    	//if (thermostatRequest) {
-    	    	  //        nextState = COAL_HIGH;
-    	    	//}else if (reloadingEvent) {
-    	          //  nextState = ZEROING_STEPPER;
-    	        //}else if (baffleTemperature > pTemperatureParam->CombLowTarget){
-    	        	//nextState = COMBUSTION_LOW;
-    	        //}
     	break;
 
     case FLAME_LOSS:
@@ -633,7 +606,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   			//  nextState = currentState;
   		  //}
 
-  		computeParticleAdjustment(&pParticlesParam->s32APERTURE_OFFSET,&pParticlesParam->s32SEC_PER_STEP,currentTime_ms);
+  		computeParticleAdjustment(adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
@@ -833,14 +806,12 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t Time_ms)
+static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms)
 {
-	const int aperture[] = {-20, -10, 0, 500, 1000};
-	const int Sec_per_step[] = {0, -3, -6, -8};
-	static uint8_t i = 2;
-	static uint8_t j = 0;
 	static uint32_t lastTimeInFunc = 0;
 	static uint32_t TimeOfCorrection = 0;
+	int32_t aperture;
+	int32_t Sec_per_step;
 
 	////////////////////////////////////////////
 	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
@@ -867,46 +838,32 @@ static void computeParticleAdjustment(int32_t* delta, int32_t* speed, uint32_t T
 		crit = (std-slp)*(-1);
 	}
 
-	if((Time_ms - TimeOfCorrection) > MINUTES(2) && i > 2)
-	{
-		if(crit < 50)
-		{
-			i--;
-			j = 0;
-			TimeOfCorrection = Time_ms;
-		}
-
-	}
-	else if(i == 2)
-	{
-		if(stdev > 200)
-		{
-			i += 2;
-			j = 2;
-			TimeOfCorrection = Time_ms;
-		}else if(stdev > 100)
-		{
-			i++;
-			j = 1;
-			TimeOfCorrection = Time_ms;
-		}
-	}
-	else if(i == 3)
-	{
-		if(stdev > 200)
-		{
-			i++;
-			j = 2;
-			TimeOfCorrection = Time_ms;
-		}
-	}
-
-	algo_mod[0] = aperture[i];
-	algo_mod[1] = Sec_per_step[j];
 	algo_mod[2] = crit;
+
+	crit = crit/100;
+
+	if(crit > 0)
+	{
+		aperture = (int32_t)round(4*crit);
+		Sec_per_step = aperture;
+	}else
+	{
+		aperture = (int32_t)round(2*crit);
+		Sec_per_step = 0;
+	}
+
+	if(adjustment < 0)
+	{
+		aperture = -1*aperture;
+	}
+
+	algo_mod[0] = aperture;
+	algo_mod[1] = Sec_per_step;
+	algo_mod[3] = adjustment;
+
 	lastTimeInFunc = Time_ms;
-	*delta = aperture[i];
-	*speed = Sec_per_step[j];
+	*delta = aperture;
+	*speed = Sec_per_step;
 
 }
 
@@ -923,18 +880,25 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep, /////////////
 {
 	if (adjustement > 0)
 	{
-		if (AirInput_getAperture(&primary) >= MaxPrimary)
+		if (AirInput_getAperture(&secondary) >= MaxSecondary)
 		{
-			if (AirInput_getAperture(&grill) < MaxGrill)
+			if (AirInput_getAperture(&primary) >= MaxPrimary)
 			{
-				AirInput_setAjustement(&grill, adjustement, secondPerStep);
+				if (AirInput_getAperture(&grill) < MaxGrill)
+				{
+					AirInput_setAjustement(&grill, adjustement, secondPerStep);
+				}
 			}
-		}
-		else
-		{
-			AirInput_setAjustement(&primary, adjustement, secondPerStep);
+			else
+			{
+				AirInput_setAjustement(&primary, adjustement, secondPerStep);
 
+			}
+		}else
+		{
+			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 		}
+
 	}
 	else if (adjustement < 0)
 	{
@@ -942,12 +906,12 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep, /////////////
 		{
 			AirInput_setAjustement(&grill, adjustement, secondPerStep);
 
+		}else if(AirInput_getAperture(&primary) > MinPrimary)
+		{
+			AirInput_setAjustement(&primary, adjustement, secondPerStep);
 		}else
 		{
-			if(AirInput_getAperture(&primary) > MinPrimary)
-			{
-				AirInput_setAjustement(&primary, adjustement, secondPerStep);
-			}
+			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
 		}
 	}
 	/*else{do nothing} air setting doesn't need further adjustment*/
