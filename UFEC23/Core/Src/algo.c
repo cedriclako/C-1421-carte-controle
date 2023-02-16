@@ -148,6 +148,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
 	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
 
+	  manageFans(Algo_getBaffleTemp(),pParticlesParam);
+
 
 	  //calculate time used in the state transition.
 	  timeSinceStateEntry = currentTime_ms - stateChangeTimeRef;
@@ -670,7 +672,6 @@ void Algo_task(uint32_t currentTime_ms) {
 
   manageStateMachine(currentTime_ms);
 //  managePlenumSpeed(Algo_getPlenumTemp(),Algo_getThermostatRequest(),currentTime_ms);
-  manageFans(Algo_getBaffleTemp());
 
   if(Algo_getState()!= PRODUCTION_TEST)
   {
