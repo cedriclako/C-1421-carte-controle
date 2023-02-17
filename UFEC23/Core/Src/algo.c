@@ -646,6 +646,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   if(pParticlesParam->s32ManualOverride == 1)
   {
 	  nextState = MANUAL_CONTROL;
+  }else if(currentState == MANUAL_CONTROL)
+  {
+	  nextState = COMBUSTION_HIGH;
   }
 
   if (nextState != currentState) {
@@ -656,10 +659,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	}
 	else
 	{
-		if(currentState == MANUAL_CONTROL)
-		{
-			nextState = COMBUSTION_HIGH;
-		}
 	    stateChangeTimeRef = currentTime_ms;
 	}
 	  historyState = currentState;
