@@ -617,7 +617,10 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   if(pParticlesParam->s32ManualOverride == 1)
   {
 	  nextState = MANUAL_CONTROL;
-  }
+  }	else if(currentState == MANUAL_CONTROL)
+	{
+		nextState = COMBUSTION_HIGH;
+	}
 
   if (nextState != currentState) {
 
@@ -627,6 +630,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	}
 	else
 	{
+
 	    stateChangeTimeRef = currentTime_ms;
 	}
 	  historyState = currentState;
@@ -813,13 +817,6 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 	int32_t aperture;
 	int32_t Sec_per_step;
 
-	////////////////////////////////////////////
-	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
-	{
-		return;
-	}
-	///////////////////////////////////////////
-
 	int ch0 = (int)Particle_getCH0();
 	int slope = Particle_getSlope();
 	int stdev = (int)Particle_getVariance();
@@ -838,7 +835,6 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 		crit = (std-slp)*(-1);
 	}
 
-	algo_mod[2] = crit;
 
 	crit = crit/100;
 
@@ -857,13 +853,21 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 		aperture = -1*aperture;
 	}
 
-	algo_mod[0] = aperture;
-	algo_mod[1] = Sec_per_step;
-	algo_mod[3] = adjustment;
+
 
 	lastTimeInFunc = Time_ms;
 	*delta = aperture;
 	*speed = Sec_per_step;
+
+	////////////////////////////////////////////
+	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
+	{
+		algo_mod[0] = aperture;
+		algo_mod[1] = Sec_per_step;
+		algo_mod[2] = 100*crit;
+		algo_mod[3] = adjustment;
+	}
+	///////////////////////////////////////////
 
 }
 
@@ -896,7 +900,10 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep, /////////////
 			}
 		}else
 		{
-			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+			if (AirInput_getAperture(&secondary) < MaxSecondary)
+			{
+				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+			}
 		}
 
 	}
