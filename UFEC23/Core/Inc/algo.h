@@ -87,7 +87,7 @@ extern int Algo_getGrill();
 uint32_t Algo_getTimeOfReloadRequest();
 
 bool IsDoorOpen(void);
-int* get_algomod(void);
+float* get_algomod(void);
 
 
 extern float Algo_getBaffleTempSlope();

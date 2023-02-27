@@ -31,7 +31,7 @@ typedef struct ParticlesParam{
 
 //Maximum Primary and grate opening by state
 //all values are express in step 0.9degrees.
-int algo_mod[4] = {0,0,0,0};
+float algo_mod[4] = {0.0,0.0,0.0,0.0};
 
 //state machine variable and initial values
 static State currentState = ZEROING_STEPPER;
@@ -127,7 +127,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  State nextState = currentState;
 	  float dTavant;
-	  int adjustement;
+	  static int adjustement = 0;
 
 	  static State historyState = ZEROING_STEPPER;
 
@@ -838,13 +838,16 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 
 	crit = crit/100;
 
+	algo_mod[2] = .8*algo_mod[2]+ .2*crit;
+
+
 	if(crit > 0)
 	{
-		aperture = (int32_t)round(4*crit);
+		aperture = (int32_t)round(4*algo_mod[2]);
 		Sec_per_step = aperture;
 	}else
 	{
-		aperture = (int32_t)round(2*crit);
+		aperture = (int32_t)round(2*algo_mod[2]);
 		Sec_per_step = 0;
 	}
 
@@ -862,16 +865,15 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 	////////////////////////////////////////////
 	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
 	{
-		algo_mod[0] = aperture;
-		algo_mod[1] = Sec_per_step;
-		algo_mod[2] = 100*crit;
-		algo_mod[3] = adjustment;
+		algo_mod[0] = .8*algo_mod[0] + .2*aperture;
+		algo_mod[1] = .8*algo_mod[1] + .2*Sec_per_step;
+		algo_mod[3] = (float)adjustment;
 	}
 	///////////////////////////////////////////
 
 }
 
-int* get_algomod(void)
+float* get_algomod(void)
 {
 	return algo_mod;
 }

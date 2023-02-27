@@ -56,7 +56,7 @@ void DebugManager(void const * argument)
   /* Infinite loop */
 
 	State TempAlgoState;
-	int* mod;
+	float* mod;
 
 	for(;;)
 	{
@@ -155,10 +155,10 @@ void DebugManager(void const * argument)
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
 		printf("PartTime:%lu ", Particle_getTime());
 		mod = get_algomod();
-		printf("Crit:%i ",mod[2]);
-		printf("AdjOffset:%i ",mod[0]);
-		printf("SpeedDivider:%i ",mod[1]);
-		printf("AlgoAdjustment:%i",mod[3]);
+		printf("Crit:%f ",mod[2]);
+		printf("AdjOffset:%f ",mod[0]);
+		printf("SpeedDivider:%f ",mod[1]);
+		printf("AlgoAdjustment:%f",mod[3]);
 		//printf("GlobalStatus:%i,%i,%i",mod[0],mod[1],mod[2] ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
   }
