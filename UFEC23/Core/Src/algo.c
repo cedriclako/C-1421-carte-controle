@@ -161,7 +161,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  // TODO: la periode utilisée pour le calcule de la pente n'est pas définie
   //       dans le document
-  dTavant = computeSlopeBaffleTemp(2); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
+  dTavant = computeSlopeBaffleTemp(50); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
   	  	  	  	  	  	  	  	  	  // la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
   int deltaTemperature = 0;
   /* Perform state's actions. */
@@ -357,41 +357,29 @@ static void manageStateMachine(uint32_t currentTime_ms) {
         }
 		AirInput_forceAperture(&primary,PIDTrapPosition);
 #else
-		if((timeSinceStateEntry >= MINUTES(3)) ||  (baffleTemperature < 7500)) //Si Tbaffle est plus petite que 750, on attent 3 in avant de commencer à réguler GTF 2022-10-20
-		{ //  GTF pas certain
+
+			if (TimeForStep >= (1 * SEC_PER_STEP_COMB_LOW * 1000)
+					&& AirInput_InPosition(&grill)
+					&& AirInput_InPosition(&primary)
+					&& AirInput_InPosition(&secondary)
+				  /*&& (timeSinceStateEntry >=MINUTES(2))*/ )
+			{
+
+				timeRefAutoMode = currentTime_ms;
 
 
-			deltaTemperature = abs(rearTemperature - baffleTemperature);
+				adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
 
-			if (rearTemperature < pTemperatureParam->FlameLoss && ( deltaTemperature < pTemperatureParam->FlameLossDelta)) { //changement de reartemp pour le flameloss au lieu de baffletemp GTF 2022-08-30
-				//nextState = FLAME_LOSS;
-				//AirInput_forceAperture(&grill, PF_GRILL_FULL_OPEN);
-			}
-		else{
-				//we loss the flamme but we are not in coal yet, we reopen the grill
-				if (TimeForStep >= (1 * SEC_PER_STEP_COMB_LOW * 1000)
-						&& AirInput_InPosition(&grill)
-						&& AirInput_InPosition(&primary)
-						&& AirInput_InPosition(&secondary)
-				  	  /*&& (timeSinceStateEntry >=MINUTES(2))*/ )
-				{
-
-					timeRefAutoMode = currentTime_ms;
-
-
-					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
-
-					if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
-						nextState = COMBUSTION_SUPERLOW;
-					}
-
-
-					AirAdjustment((int32_t)(adjustement + pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(SEC_PER_STEP_COMB_LOW/pParticlesParam->s32SEC_PER_STEP),
-								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
-								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
-								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+				if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
+					nextState = COMBUSTION_SUPERLOW;
 				}
-		}
+
+
+				AirAdjustment((int32_t)(adjustement + pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(SEC_PER_STEP_COMB_LOW/pParticlesParam->s32SEC_PER_STEP),
+							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
+							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
+							pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+			}
 
 #endif
 		if ( ((baffleTemperature) >= (rearTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
@@ -410,7 +398,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
         } else if (reloadingEvent) {
           nextState = ZEROING_STEPPER;
         }
-		}
       break;
     case COMBUSTION_SUPERLOW:
 
@@ -791,17 +778,17 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   unsigned int line;
   unsigned int column;
 
-  if (baffleTemperature > (tempTarget_tenthF + 50)) {
+  if (baffleTemperature > (tempTarget_tenthF + 500)) {
     line = 0;
-  } else if (baffleTemperature >= (tempTarget_tenthF - 50)) {
+  } else if (baffleTemperature >= (tempTarget_tenthF - 500)) {
     line = 1;
   } else {
     line = 2;
   }
 
-  if (dTempAvant_FperS < -6.0) {
+  if (dTempAvant_FperS < -0.6) {
     column = 0;
-  } else if (dTempAvant_FperS <= 6.0) {
+  } else if (dTempAvant_FperS <= 0.6) {
     column = 1;
   } else {
     column = 2;

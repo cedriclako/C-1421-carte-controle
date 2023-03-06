@@ -126,7 +126,7 @@ void DebugManager(void const * argument)
 		{
 			printf("OFF ");
 		}
-		printf("dTav:%i",(int)Algo_getBaffleTempSlope());
+		printf("dTav:%f",Algo_getBaffleTempSlope());
 		printf(" FanSpeed:%i ",Mot_getFanSpeed());
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
