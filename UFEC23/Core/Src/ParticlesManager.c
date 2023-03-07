@@ -231,7 +231,7 @@ void ParticlesManager(void const * argument) {
 					setZero = true;
 					ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
 					ParticleDevice.LED_current_meas = RX_BUFFER[7];
-					ParticleDevice.normalized_zero = 10*ParticleDevice.zero/ParticleDevice.LED_current_meas;
+					ParticleDevice.normalized_zero = (float)(10*ParticleDevice.zero/ParticleDevice.LED_current_meas);
 
 
 				}
@@ -271,7 +271,7 @@ int Particle_getSlope(void)
 	return ParticleDevice.slope;
 }
 
-uint16_t Particle_getZeroNorm(void)
+float Particle_getZeroNorm(void)
 {
 	return ParticleDevice.normalized_zero;
 }

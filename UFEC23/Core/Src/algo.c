@@ -424,7 +424,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
         } else if (reloadingEvent) {
           nextState = ZEROING_STEPPER;
         }
-		}
+
       break;
     case COMBUSTION_SUPERLOW:
 
@@ -854,7 +854,7 @@ static void computeParticleAdjustment(int* adjustment, int32_t* delta, int32_t* 
 {
 	static uint32_t lastTimeInFunc = 0;
 	static uint32_t TimeOfMajorCorrection = 0;
-	static float previous_diffs[5] = {};
+	//static float previous_diffs[5] = {};
 	int32_t aperture;
 	int32_t Sec_per_step;
 	const int MajorCorrectionInterval = 1e4;
@@ -869,8 +869,8 @@ static void computeParticleAdjustment(int* adjustment, int32_t* delta, int32_t* 
 
 	int ch0 = (int)Particle_getCH0();
 	int I = (int)Particle_getCurrent();
-	//int zero_norm = (int)Particle_getZeroNorm();
-	float zero_norm = 393/3.9;
+	float zero_norm = (float)Particle_getZeroNorm();
+	//float zero_norm = 393/3.9;
 	int slope = Particle_getSlope();
 	int stdev = (int)Particle_getVariance();
 	int std,slp;
