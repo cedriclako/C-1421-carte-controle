@@ -40,26 +40,55 @@
         <h1>Stove Parameters</h1>
         <div class="content">
             <!-- Config file -->
-            <table>
-                <thead>
-                    <tr>
-                        <th>
-                            Config file (count: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }})<br><br>
-                            <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
-                            <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <textarea id="idConfigFileText" rows="40" cols="100" :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" v-model="configJSON"></textarea>
-                            <br>
-                            <button id="idSaveConfig" @click="idSaveConfig_OnClick($event)">Save</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <span>
+                Config file (count: {{ livedata.stove.param_cnt }}, is_param_upload_error: {{ livedata.stove.is_param_upload_error }}, is_param_download_error: {{ livedata.stove.is_param_download_error }})<br><br>
+                <button id="idForceDownloadConfig" @click="idForceDownloadConfig_Click">Force download config</button>
+                <button id="idLoadConfig" @click="idLoadConfig_OnClick($event)">Load</button>
+            </span>
+
+            <label>
+                String mode
+                <input type="checkbox" v-model="isStringMode">String mode</input>
+            </label><br>
+
+            <!-- Table mode config -->
+            <div v-show="!isStringMode">
+
+                <table class="table1">
+                    <thead>
+                        <th>Key</th>
+                        <th>Min</th>
+                        <th>Default</th>
+                        <th>Max</th>
+                        <th>Value</th>
+                        <th><button id="idSaveConfig" @click="idSaveConfig_OnClick($event, 1)">Save (table)</button></th>
+                    </thead>
+                    <tbody>
+                        <tr v-if="configJSONObj"
+                            :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" 
+                            v-for="item in configJSONObj?.entries">
+                            <td>{{ item.key }}</td>
+                            <td>{{ item.min }}</td>
+                            <td>{{ item.def }}</td>
+                            <td>{{ item.max }}</td>
+                            <td colspan="2"><input type="number" :min="item.min" :max="item.max" 
+                                :value="item.value"
+                                @input="(event) => item.value = parseInt(event.target.value)"></td>
+                        </tr>
+                        <tr v-if="!configJSONObj">
+                            <td colspan="6">Parameter are not yet downloaded</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- String mode config -->
+            <div v-show="isStringMode">
+                <textarea id="idConfigFileText" rows="40" cols="100" :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" 
+                    v-model="configJSON"></textarea>
+                <br>
+                <button id="idSaveConfig" @click="idSaveConfig_OnClick($event, 0)">Save (string)</button>
+            </div>
         </div>
     </div>
 
