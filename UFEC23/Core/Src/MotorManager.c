@@ -15,6 +15,7 @@
 
 #include <MotorManager.h>
 #include "main.h"
+#include "ParamFile.h"
 #include "cmsis_os.h"
 #include "task.h"
 #include "algo.h"
@@ -477,13 +478,22 @@ Mot_FanSpeed Mot_getFanSpeed() {
   return plenumSpeed;
 }
 
-void manageFans(int baffleTemp)
+void manageFans(int baffleTemp, const PF_UsrParam* Param)
 {
-	if(baffleTemp > FanSpeedParameters.KipSpeed2)
+	if(IsDoorOpen())
+	{
+		HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
+		if(baffleTemp < Param->s32FAN_KOP)
+		{
+			HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
+		}
+		return;
+	}
+	if(baffleTemp > Param->s32FAN_KIP)
 	{
 		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,SET);
 		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,SET);
-	}else if(baffleTemp < FanSpeedParameters.KopSpeed2)
+	}else if(baffleTemp < Param->s32FAN_KOP)
 	{
 		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
 		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);

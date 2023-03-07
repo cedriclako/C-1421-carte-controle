@@ -31,18 +31,14 @@ CR    | 2022/10/14 | 0.1     | Corrections
 ===========================================================================
 */ 
 
+#include "ParameterFile.h"
 #include "DS1775.h"
 #include "I2CEngine.h"
 
 
 #define DS1775_ADDR 0x4C
 
-#define DS1775_9BITS_MODE 0x00      // Conversion time: 125ms typ. 187.5ms max
-#define DS1775_10BITS_MODE 0x20     // Conversion time: 250ms typ. 375ms max
-#define DS1775_11BITS_MODE 0x40     // Conversion time: 500ms typ. 750ms max
-#define DS1775_12BITS_MODE 0x60     // Conversion time: 1000ms typ. 1500ms max
-
-#define DS1775_CONFIGURATION_VALUE DS1775_11BITS_MODE
+//static gs_Parameters* tempParam;
 
 
 enum{
@@ -148,6 +144,7 @@ void ds1775ConvertToCelcius(void)
 
 void ds1775Process(void)
 {
+    const gs_Parameters* tempParam = PF_getCBParamAddr();
   
     switch (gs_sDS1775Object.m_eState)
     {
@@ -155,7 +152,7 @@ void ds1775Process(void)
         {
             if (i2cIsBusIdle())
             {
-                gs_uWriteBufferDS1775 = DS1775_CONFIGURATION_VALUE;
+                gs_uWriteBufferDS1775 = tempParam->DS1775_resolution;
                 gs_uRegDS1775 = DS1775_CONFIGURATION_ADDRESS;
                 
                 i2cWrite(&gs_uWriteBufferDS1775, 1, DS1775_ADDR, gs_uRegDS1775, ds1775SuccessCallback, ds1775ErrorCallback);
@@ -314,4 +311,9 @@ void ds1775PointerToTempSuccess(void)
 void ds1775RequestRead(void)
 {
     gs_sDS1775Object.m_eState = eDS1775_READ_REQUIRED;
+}
+
+void ds1775Reset(void)
+{
+    gs_sDS1775Object.m_eState = eDS1775_NOT_CONFIGURED;
 }

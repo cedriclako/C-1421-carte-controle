@@ -27,6 +27,16 @@ typedef struct
 	int32_t s32TSLINT;
 	int32_t s32DACCMD;
 	int32_t s32TIMEINTERVAL;
+	int32_t s32SEC_PER_STEP;
+	int32_t s32MAX_APERTURE;
+	int32_t s32MIN_APERTURE;
+	int32_t s32APERTURE_OFFSET;
+	int32_t s32FAN_KIP;
+	int32_t s32FAN_KOP;
+	int32_t s32ManualOverride;
+	int32_t s32ManualPrimary;
+	int32_t s32ManualSecondary;
+	int32_t s32ManualGrill;
 } PF_UsrParam;
 
 typedef struct
@@ -75,9 +85,15 @@ typedef struct
 #define PFD_DACCMD 			"DACcmd"
 #define PFD_TIMEINTERVAL 	"TimeInterval"
 #define PFD_SECPERSTEP		"SecondsPerStepOffset"
-#define PFD_MAXAPERTURE		"MaxApertureOffset"
-#define PFD_MINAPERTURE		"MinApertureOffset"
+#define PFD_MAXAPERTURE		"MaxApertureOverride"
+#define PFD_MINAPERTURE		"MinApertureOverride"
 #define PFD_APERTUREOFFSET	"ApertureOffset"
+#define PFD_FANKIP			"FansKickInPoint"
+#define PFD_FANKOP			"FansKickOutPoint"
+#define PFD_MANUALBOOL		"ManualOverride"
+#define PFD_MANUALPRIM		"PrimaryOverrideValue"
+#define PFD_MANUALSEC		"SecondaryOverrideValue"
+#define PFD_MANUALGRILL		"GrillOverrideValue"
 
 // Temperature
 #define PFD_WAITINGTOIGNITION     "temp_WaitingToIgnition"

@@ -30,9 +30,11 @@ CR    | 2022/10/14 | 0.1     | Corrections
 ===========================================================================
 */ 
 
+#include "ParameterFile.h"
 #include "TSL2591.h"
 #include "I2CEngine.h"
 #include "mcc_generated_files/mcc.h"
+
 // =============================================================================
 //  From Adafruit
 // =============================================================================
@@ -91,16 +93,6 @@ enum {
   TSL2591_REGISTER_CHAN1_HIGH = 0x17,     // Channel 1 data, high byte
 };
 
-/// Enumeration for the sensor integration timing
-typedef enum {
-  TSL2591_INTEGRATIONTIME_100MS = 0x00, // 100 millis
-  TSL2591_INTEGRATIONTIME_200MS = 0x01, // 200 millis
-  TSL2591_INTEGRATIONTIME_300MS = 0x02, // 300 millis
-  TSL2591_INTEGRATIONTIME_400MS = 0x03, // 400 millis
-  TSL2591_INTEGRATIONTIME_500MS = 0x04, // 500 millis
-  TSL2591_INTEGRATIONTIME_600MS = 0x05, // 600 millis
-} tsl2591IntegrationTime_t;
-
 /// Enumeration for the persistance filter (for interrupts)
 typedef enum {
   //  bit 7:4: 0
@@ -122,13 +114,7 @@ typedef enum {
   TSL2591_PERSIST_60 = 0x0F,    // 60 consecutive values out of range
 } tsl2591Persist_t;
 
-/// Enumeration for the sensor gain
-typedef enum {
-  TSL2591_GAIN_LOW = 0x00,  /// low gain (1x)
-  TSL2591_GAIN_MED = 0x10,  /// medium gain (25x)
-  TSL2591_GAIN_HIGH = 0x20, /// medium gain (428x)
-  TSL2591_GAIN_MAX = 0x30,  /// max gain (9876x)
-} tsl2591Gain_t;
+
 
 // =============================================================================
 //  Adapted code to PIC MCU below
@@ -141,8 +127,8 @@ void tsl2591RegisterPointerSuccess(void);
 void tsl2591SuccessCallback(void);
 void tsl2591ErrorCallback(void);
 
-void tsl2591ReturnValues(void);
-void tsl2591CalculateLux(void);
+void tsl2591ReturnValues(const gs_Parameters* param);
+void tsl2591CalculateLux(const gs_Parameters* Param);
 
 typedef enum
 {
@@ -202,6 +188,7 @@ void tsl2591Initialize(void)
 
 void tsl2591Process(void)
 {
+    const gs_Parameters* tslParam = PF_getCBParamAddr();
     switch (gs_sTSL2591Object.m_eState)
     {
         case eTSL2591_NOT_CONFIGURED:
@@ -210,7 +197,7 @@ void tsl2591Process(void)
             if (i2cIsBusIdle())
             {
 
-                gs_uWriteBuffer = (gs_sTSL2591Object.m_eGain | gs_sTSL2591Object.m_eTime);
+                gs_uWriteBuffer = (tslParam->TSL_gain | tslParam->TSL_integrationTime);
                 gs_uReg = (TSL2591_COMMAND_BIT | TSL2591_REGISTER_CONTROL);
                 
                 i2cWrite(&gs_uWriteBuffer, 1, TSL2591_ADDR, gs_uReg, tsl2591SuccessCallback, tsl2591ErrorCallback);
@@ -302,7 +289,7 @@ void tsl2591Process(void)
             gs_sTSL2591Object.m_uRawFull16 = (uint16_t)gs_uReadBuffer[0] + ((uint16_t) gs_uReadBuffer[1] << 8);
             gs_sTSL2591Object.m_uRawIr16 = (uint16_t) gs_uReadBuffer[2] + ((uint16_t) gs_uReadBuffer[3] << 8);
             
-            tsl2591ReturnValues();  // Return values and call user callback
+            tsl2591ReturnValues(tslParam);  // Return values and call user callback
             
             gs_sTSL2591Object.m_eState = eTLS2591_DISABLE_ALS;
             break;
@@ -363,10 +350,10 @@ bool tsl2591IsReadyForRequest(void)
     return (gs_sTSL2591Object.m_eState == eTSL2591_ALS_IDLE);
 }
 
-void tsl2591ReturnValues(void)
+void tsl2591ReturnValues(const gs_Parameters* Param)
 {
     // Calculate Lux
-    tsl2591CalculateLux();  
+    tsl2591CalculateLux(Param);  
     
     // Copy results in the output variables specified by the user
     *gs_sTSL2591Object.m_pFullOutputVal = gs_sTSL2591Object.m_uRawFull16;
@@ -388,7 +375,7 @@ void tsl2591ReturnValues(void)
     }
 }
 
-void tsl2591CalculateLux(void)
+void tsl2591CalculateLux(const gs_Parameters* Param)
 {
     float atime, again, cpl, lux;
     uint16_t ch0 = gs_sTSL2591Object.m_uRawFull16;
@@ -396,7 +383,7 @@ void tsl2591CalculateLux(void)
     
     if ((ch0 != 0) && (ch1 != 0))
     {
-        switch (gs_sTSL2591Object.m_eTime) 
+        switch (Param->TSL_integrationTime) 
         {
         case TSL2591_INTEGRATIONTIME_100MS:
           atime = 100.0F;
@@ -421,7 +408,7 @@ void tsl2591CalculateLux(void)
           break;
         }
 
-      switch (gs_sTSL2591Object.m_eGain) 
+      switch (Param->TSL_gain) 
       {
             case TSL2591_GAIN_LOW:
               again = 1.0F;
@@ -599,18 +586,9 @@ void tsl2591ErrorCallback(void)
     }
 }
 
-uint8_t TSLgetIntegrationTime(void)
-{
-    return gs_sTSL2591Object.m_eTime;
-}
-
-void TSLset_parameters(uint8_t gain, uint8_t integ)
-{
-    gs_sTSL2591Object.m_eTime = (tsl2591IntegrationTime_t)integ;
-    gs_sTSL2591Object.m_eGain = (tsl2591Gain_t) (gain << 4);
-    
+void TSLreset(void)
+{    
     gs_sTSL2591Object.m_eState = eTSL2591_NOT_CONFIGURED;
-    
 }
 
 void tsl2591SetRegisterPointer(uint8_t reg)
