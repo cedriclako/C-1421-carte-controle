@@ -73,7 +73,7 @@ typedef struct
     uint16_t m_uIrLighted;
     float m_fLuxLighted;
     
-    float m_fLuxZero;
+    uint16_t m_fullZero;
     uint32_t m_uMillisCounter;
     uint32_t m_uLastRead;
    

@@ -95,11 +95,13 @@ static EControlBridgeStates BridgeState;
 static EControlBridgeObject bOBJ;
 static bool DRDY = false;
 static uint8_t TX_BUFFER[MAX_BUFFER_SIZE];
+static bool set_zero_complete = false;
 
 void sendData(uint8_t packet_size, uint8_t command);
 void sendConfig(const gs_Parameters* Param);
 uint8_t fillDataBuffer(const gs_MemoryParams* Param);
 uint8_t fillEEBuffer(const gs_MemoryParams* Param);
+
 
 void ControlBridgeInitialize(void)
 {
@@ -245,13 +247,20 @@ void ControlBridgeProcess(void)
                                 break;
                             case SETZERO_CMD:
                                 PF_requestReconfigure();
+                                
+                                
                                 if(measureParticlesReadyForConfig())
                                 {
                                     measureParticlesSetZero();
                                     PF_ToggleAcqEnable();
                                 }
                                 
-                                BridgeState = eBridge_TRANSMIT_DATA;
+                                if(set_zero_complete)
+                                {
+                                    BridgeState = eBridge_TRANSMIT_DATA;
+                                    set_zero_complete = false;
+                                }
+                                
                                 break;
                         }
                         
@@ -445,6 +454,11 @@ void bridgeTimerElapsed(void)
 void bridgeDataRDY(void)
 {
     DRDY = true;
+}
+
+void bridgeZeroComplete(void)
+{
+    set_zero_complete = true;
 }
 
 void controlBridge_update(SMeasureParticlesObject* mOBJ)

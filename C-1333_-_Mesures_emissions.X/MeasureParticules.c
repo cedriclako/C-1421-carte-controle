@@ -68,7 +68,7 @@ void measureParticlesInitialize(void)
     gs_sMeasPartObject.m_uIrLighted = 0;
     gs_sMeasPartObject.m_fLuxLighted = 0;
     
-    gs_sMeasPartObject.m_fLuxZero = 0;
+    gs_sMeasPartObject.m_fullZero = 0;
     gs_sMeasPartObject.m_uLastRead = 0;    
 
     gs_sMeasPartObject.adcValue = 0;
@@ -88,7 +88,8 @@ void measureParticlesProcess(void)
             if (tsl2591IsStarted() && ds1775IsStarted()) // give time to drivers to configure the ICs at startup
             {
                 DAC1_SetOutput(MP_Param->DAC_value);
-                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_SET_ZERO;
+                ds1775RequestRead(); 
+                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             }
             break;
         }
@@ -173,15 +174,13 @@ void measureParticlesProcess(void)
             {
                 // De-activate LED
                 //GpioWritePin(eGPIO_LED_ON, LED_OFF);
+                gs_sMeasPartObject.adcValue = (uint16_t) ADCC_GetSingleConversion(channel_ANB7);
                 DAC1_Disable();
-                gs_sMeasPartObject.m_fLuxZero = gs_sMeasPartObject.m_fLuxLighted;
+                //gs_sMeasPartObject.m_fLuxZero = gs_sMeasPartObject.m_fLuxLighted;
                 
-                PF_Update_MemParams(gs_sMeasPartObject.m_fLuxZero,(uint16_t)(0.33*gs_sMeasPartObject.adcValue/4.096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
-                
-                if (MP_Param->PrintEnable)
-                {
-                    printf("ZERO SET TO: %.3f lux \r\n",gs_sMeasPartObject.m_fLuxZero);
-                }
+                PF_Update_MemParams(gs_sMeasPartObject.m_fullZero,(uint8_t)(0.33*gs_sMeasPartObject.adcValue/4.096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
+                bridgeZeroComplete();
+
                 // Change state and sub state
                 gs_sMeasPartObject.m_eSubState = eSUB_STATE_DARK;
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
@@ -192,13 +191,14 @@ void measureParticlesProcess(void)
         {
             // activate LED
             DAC1_Enable();
+            ds1775RequestRead(); 
                 
             // Change state and sub state
             gs_sMeasPartObject.m_eSubState = eSUB_STATE_ZERO;
 
             if (tsl2591IsReadyForRequest())
             {
-                tsl2591SenseLight(&gs_sMeasPartObject.m_uFullLighted, &gs_sMeasPartObject.m_uIrLighted, &gs_sMeasPartObject.m_fLuxLighted, measureParticlesSenseCompleteCallback);
+                tsl2591SenseLight(&gs_sMeasPartObject.m_fullZero, &gs_sMeasPartObject.m_uIrLighted, &gs_sMeasPartObject.m_fLuxLighted, measureParticlesSenseCompleteCallback);
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_SENT;
             }
                 
@@ -253,10 +253,8 @@ void measureParticlesSetZero(void)
 
 void measureParticlesPrintData(void)
 {
-    float lux_net;
     float timeInSeconds;
     
-    lux_net = gs_sMeasPartObject.m_fLuxLighted - gs_sMeasPartObject.m_fLuxZero;
     timeInSeconds = (float) gs_sMeasPartObject.m_uMillisCounter/1000;
     // Print light data and temperature
     printf("%.3f\t%u\t%u\t%.3f\t%u\t%u\t%.3f\t%.1f\t%.3f\r\n",
