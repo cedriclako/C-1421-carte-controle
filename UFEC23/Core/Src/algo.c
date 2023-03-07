@@ -92,7 +92,7 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms);
+static void computeParticleAdjustment(int* adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms);
 
 void Algo_init() {
 
@@ -178,6 +178,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
 		};
+		//Particle_requestZero();
 		nextState = WAITING;
 		break;
     case WAITING:
@@ -195,10 +196,15 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  nextState = TEMPERATURE_RISE; //the only way this can happen is if we lost power we don't want to go back in reload/temprise
 		  reloadingEvent = false;
 		}
-		else if ((baffleTemperature > pTemperatureParam->WaitingToIgnition || reloadingEvent) && (!Algo_getInterlockRequest()) ) { //at 95F, someone is starting a fire
+		else if ((baffleTemperature > pTemperatureParam->WaitingToIgnition) && (!Algo_getInterlockRequest()) ) { //at 95F, someone is starting a fire
 		  nextState = RELOAD_IGNITION;
 		  reloadingEvent = false;
 		  //initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
+		}else if(reloadingEvent && (!Algo_getInterlockRequest()))
+		{
+			Particle_requestZero();
+			nextState = RELOAD_IGNITION;
+			reloadingEvent = false;
 		}
 
 		break;
@@ -307,7 +313,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			  
             adjustement = computeAjustement(pTemperatureParam->CombHighTarget, dTavant);
 
-			AirAdjustment((int32_t)(adjustement + pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(SEC_PER_STEP_COMB_HIGH/pParticlesParam->s32SEC_PER_STEP),
+			AirAdjustment((int32_t)(adjustement), (uint32_t)(SEC_PER_STEP_COMB_HIGH),
 							pPrimaryMotorParam->MinCombHigh, pPrimaryMotorParam->MaxCombHigh,
 							pGrillMotorParam->MinCombHigh,pGrillMotorParam->MaxCombHigh,
 							pSecondaryMotorParam->MinCombHigh,pSecondaryMotorParam->MaxCombHigh);
@@ -370,12 +376,14 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 				adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
 
+				computeParticleAdjustment(&adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
+
 				if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
 					nextState = COMBUSTION_SUPERLOW;
 				}
 
 
-				AirAdjustment((int32_t)(adjustement + pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(SEC_PER_STEP_COMB_LOW/pParticlesParam->s32SEC_PER_STEP),
+				AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(pParticlesParam->s32SEC_PER_STEP),
 							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
 							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 							pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
@@ -593,7 +601,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   			//  nextState = currentState;
   		  //}
 
-  		computeParticleAdjustment(adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
+  		//computeParticleAdjustment(adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
@@ -797,29 +805,35 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms)
+static void computeParticleAdjustment(int* adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms)
 {
 	static uint32_t lastTimeInFunc = 0;
-	static uint32_t TimeOfCorrection = 0;
+	static uint32_t TimeOfMajorCorrection = 0;
+	static float previous_diffs[5] = {};
 	int32_t aperture;
 	int32_t Sec_per_step;
+	const int MajorCorrectionInterval = 1e4;
+	static int MajorCorrection_counter = 0;
 
 	int ch0 = (int)Particle_getCH0();
+	int I = (int)Particle_getCurrent();
+	//int zero_norm = (int)Particle_getZeroNorm();
+	float zero_norm = 393/3.9;
 	int slope = Particle_getSlope();
 	int stdev = (int)Particle_getVariance();
 	int std,slp;
-	int crit = 0;
-
+	float crit = 0;
+	float diff = abs(zero_norm - (float)10*ch0/I);
 
 	std = stdev < 80? stdev:80;
 
 	if(slope > 0){
 		slp = slope < 20? slope:20;
-		crit = std+slp;
+		crit = (float)std+slp;
 	}else
 	{
 		slp = abs(slope) < 20? slope:-20;
-		crit = (std-slp)*(-1);
+		crit = (float)(std-slp)*(-1);
 	}
 
 
@@ -827,21 +841,58 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 
 	algo_mod[2] = .8*algo_mod[2]+ .2*crit;
 
+	if(Time_ms - TimeOfMajorCorrection > MajorCorrectionInterval)
+	{
+		if(*adjustment % 2 > 0) // On descend rapidement en température
+		{
+			aperture = 20;
+			Sec_per_step = 0;
+			TimeOfMajorCorrection = Time_ms;
+			MajorCorrection_counter++;
 
-	if(crit > 0)
-	{
-		aperture = (int32_t)round(4*algo_mod[2]);
-		Sec_per_step = aperture;
-	}else
-	{
-		aperture = (int32_t)round(2*algo_mod[2]);
-		Sec_per_step = 0;
+		}else if (*adjustment > 0) // On est très en dessous du target de température
+		{
+			aperture = 20;
+			Sec_per_step = 1;
+			TimeOfMajorCorrection = Time_ms;
+			MajorCorrection_counter++;
+		}else
+		{
+			MajorCorrection_counter = 0;
+		}
+
 	}
 
-	if(adjustment < 0)
+
+	if(*adjustment == 0)
 	{
-		aperture = -1*aperture;
+		if(crit > .4)
+		{
+			aperture = 2;
+			Sec_per_step = 0;
+		}else
+		{
+			if(diff > 30)
+			{
+				aperture = -10;
+				Sec_per_step = 1;
+			}
+
+
+		}
+	}else if(*adjustment < 0)
+	{
+		if(diff > 70)
+		{
+			aperture = -10;
+			Sec_per_step = 0;
+		}else
+		{
+			aperture = -2;
+			Sec_per_step = 2;
+		}
 	}
+
 
 
 
@@ -854,7 +905,7 @@ static void computeParticleAdjustment(int adjustment, int32_t* delta, int32_t* s
 	{
 		algo_mod[0] = .8*algo_mod[0] + .2*aperture;
 		algo_mod[1] = .8*algo_mod[1] + .2*Sec_per_step;
-		algo_mod[3] = (float)adjustment;
+		algo_mod[3] = (float)*adjustment;
 	}
 	///////////////////////////////////////////
 

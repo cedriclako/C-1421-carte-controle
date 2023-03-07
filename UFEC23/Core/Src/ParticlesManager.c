@@ -225,6 +225,14 @@ void ParticlesManager(void const * argument) {
 						config_mode = false;
 					}
 
+				}else if((RX_BUFFER[1] & 0xC0) == SETZERO_CMD)
+				{
+					setZero = true;
+					ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
+					ParticleDevice.LED_current_meas = RX_BUFFER[7];
+					ParticleDevice.normalized_zero = 10*ParticleDevice.zero/ParticleDevice.LED_current_meas;
+
+
 				}
 			}
 		}
@@ -260,6 +268,11 @@ uint16_t Particle_getVariance(void)
 int Particle_getSlope(void)
 {
 	return ParticleDevice.slope;
+}
+
+uint16_t Particle_getZeroNorm(void)
+{
+	return ParticleDevice.normalized_zero;
 }
 
 uint16_t Particle_getTemperature(void)
@@ -345,4 +358,9 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 void Particle_setConfig(void)
 {
 	config_mode = true;
+}
+
+void Particle_requestZero(void)
+{
+	setZero = true;
 }
