@@ -96,7 +96,7 @@ bool Mot_InPosition( AirInput * self,motor_t Motorid);
 //public function
 extern Mot_FanSpeed Mot_getFanSpeed();
 extern void StepperMotorProdTest(motor_t MotorId);
-void manageFans(int baffleTemp);
+void manageFans(int baffleTemp, const PF_UsrParam* Param);
 
 #ifdef	__cplusplus // Provide C++ Compatibility
 }

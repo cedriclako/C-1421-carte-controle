@@ -14,6 +14,7 @@ extern "C" {
     #include "MeasureParticles.h"
 
     void bridgeDataRDY(void);
+    void bridgeZeroComplete(void);
     void ControlBridgeInitialize(void);
     void ControlBridgeProcess(void);
     void controlBridge_update(SMeasureParticlesObject* mOBJ);

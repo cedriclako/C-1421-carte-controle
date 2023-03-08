@@ -29,6 +29,7 @@ typedef enum {
   OVERTEMP,
   SAFETY,
   PRODUCTION_TEST,
+  MANUAL_CONTROL,
 #ifdef DEMO_MODE
   COMBUSTION_HIGH_OPEN,
   COMBUSTION_HIGH_CLOSE,
@@ -86,6 +87,7 @@ extern int Algo_getGrill();
 uint32_t Algo_getTimeOfReloadRequest();
 
 bool IsDoorOpen(void);
+int* get_algomod(void);
 
 
 extern float Algo_getBaffleTempSlope();

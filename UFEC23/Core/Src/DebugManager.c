@@ -57,7 +57,6 @@ void DebugManager(void const * argument)
 
 	State TempAlgoState;
 
-
 	for(;;)
 	{
 
@@ -109,6 +108,9 @@ void DebugManager(void const * argument)
 				break;
 			case PRODUCTION_TEST:
 				printf("PRODTEST");
+				break;
+			case MANUAL_CONTROL:
+				printf("MANUAL");
 				break;
 			default:
 				printf("UNKNOWN");

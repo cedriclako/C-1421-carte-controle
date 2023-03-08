@@ -1,4 +1,4 @@
-﻿#include "EmbeddedFiles.h"
+#include "EmbeddedFiles.h"
 #include <stddef.h>
 
 const EF_SImage EF_g_sIMAGES_IMG_LOGO_SBI_350X256_PNG            = { .s32Width = 350, .s32Height = 256};

@@ -47,5 +47,7 @@ void ds1775SetPointerToTemp(void);
 
 void ds1775RequestRead(void);
 
+void ds1775Reset(void);
+
 #endif	/* DS1775_H */
 

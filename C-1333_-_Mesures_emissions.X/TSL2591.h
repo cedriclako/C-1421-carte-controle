@@ -39,9 +39,8 @@ void tsl2591Process(void);
 bool tsl2591SenseLight(uint16_t* pFull, uint16_t* pIr, float* pLux, void (*senseCompleteHandler)());
 bool tsl2591IsStarted(void);
 bool tsl2591IsReadyForRequest(void);
-void TSLset_parameters(uint8_t gain, uint8_t integ);
+void TSLreset(void);
 
-uint8_t TSLgetIntegrationTime(void);
 
 
 #endif	/* TSL2591_H */

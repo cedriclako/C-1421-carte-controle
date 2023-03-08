@@ -30,7 +30,7 @@ typedef struct ParticlesParam{
 
 //Maximum Primary and grate opening by state
 //all values are express in step 0.9degrees.
-
+int algo_mod[3] = {0,0,0};
 
 //state machine variable and initial values
 static State currentState = ZEROING_STEPPER;
@@ -91,7 +91,7 @@ static void AirAdjustment(int adjustement, uint32_t secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms);
+static void computeParticleAdjustment(int* adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms);
 
 void Algo_init() {
 
@@ -122,6 +122,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	const PF_MotorOpeningsParam_t* pPrimaryMotorParam = PB_GetPrimaryMotorParam();
 	const PF_MotorOpeningsParam_t* pSecondaryMotorParam = PB_GetSecondaryMotorParam();
 	const PF_CombTempParam_t* pTemperatureParam = PB_GetTemperatureParam();
+	const PF_UsrParam* pParticlesParam = PB_GetParticlesParam();
 
 	  State nextState = currentState;
 	  float dTavant;
@@ -149,6 +150,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
 	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
+
+	  manageFans(Algo_getBaffleTemp(),pParticlesParam);
 
 
 	  //calculate time used in the state transition.
@@ -179,6 +182,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
 		};
+		//Particle_requestZero();
 		nextState = WAITING;
 		break;
     case WAITING:
@@ -186,6 +190,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	AirInput_forceAperture(&primary, pPrimaryMotorParam->MaxWaiting);// PRIMARY_CLOSED_SECONDARY_FULL_OPEN);
     	AirInput_forceAperture(&grill, pGrillMotorParam->MaxWaiting);// GRILL_CLOSED);
 		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxWaiting);
+		osDelay(10);
 
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
@@ -195,10 +200,15 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  nextState = TEMPERATURE_RISE; //the only way this can happen is if we lost power we don't want to go back in reload/temprise
 		  reloadingEvent = false;
 		}
-		else if ((baffleTemperature > pTemperatureParam->WaitingToIgnition || reloadingEvent) && (!Algo_getInterlockRequest()) ) { //at 95F, someone is starting a fire
+		else if ((baffleTemperature > pTemperatureParam->WaitingToIgnition) && (!Algo_getInterlockRequest()) ) { //at 95F, someone is starting a fire
 		  nextState = RELOAD_IGNITION;
 		  reloadingEvent = false;
 		  //initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
+		}else if(reloadingEvent && (!Algo_getInterlockRequest()))
+		{
+			Particle_requestZero();
+			nextState = RELOAD_IGNITION;
+			reloadingEvent = false;
 		}
 
 		break;
@@ -260,7 +270,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
 			{
-			  nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
+				TimeSinceEntryInCombLow = 0;
+				nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
 			}
 
 
@@ -271,6 +282,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		else if(timeSinceStateEntry > MINUTES(30))
 
 		{
+			TimeSinceEntryInCombLow = 0;
 			nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		}
 
@@ -287,7 +299,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 											pGrillMotorParam->MinCombHigh,pGrillMotorParam->MaxCombHigh,
 											pSecondaryMotorParam->MinCombHigh,pSecondaryMotorParam->MaxCombHigh);
 
-				//historyState = currentState;
+				historyState = currentState;
 			}
 #if PID_CONTROL_ON
             if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
@@ -328,10 +340,12 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
     case COMBUSTION_LOW:
     	//HAL_GPIO_WritePin(SPEED1_COIL_GPIO_Port,SPEED1_COIL_Pin,RESET);//desactive le relai pour activer la carte 2 PLV 15/12/21
-		if(historyState != currentState){
-			if (TimeSinceEntryInCombLow == 0 || historyState != FLAME_LOSS) {
-				TimeSinceEntryInCombLow = currentTime_ms;
-			}
+		if (TimeSinceEntryInCombLow == 0 || historyState != FLAME_LOSS) {
+			TimeSinceEntryInCombLow = currentTime_ms;
+		}
+
+    	if(historyState != currentState){
+
 
 			AirInput_forceAperture(&primary,  AirInput_getAperture(&primary));
 			AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
@@ -374,16 +388,22 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 					timeRefAutoMode = currentTime_ms;
 
-					computeParticleAdjustment(&part_delta,&part_speed, currentTime_ms);
+				computeParticleAdjustment(&adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
 
-					adjustement = computeAjustement(pTemperatureParam->CombLowTarget+part_delta, dTavant);
+				if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
+					nextState = COMBUSTION_SUPERLOW;
+				}
 
-					if ((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))){
-						nextState = COMBUSTION_SUPERLOW;
-					}
+					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
+
+				AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (uint32_t)(pParticlesParam->s32SEC_PER_STEP),
+							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
+							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
+							pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+			}
 
 
-					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW+part_speed,
+					AirAdjustment(adjustement, SEC_PER_STEP_COMB_LOW,
 								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
 								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
@@ -407,7 +427,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
         } else if (reloadingEvent) {
           nextState = ZEROING_STEPPER;
         }
-		}
+
       break;
     case COMBUSTION_SUPERLOW:
 
@@ -514,6 +534,10 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 										PF_GRILL_CLOSED, PF_GRILL_CLOSED,
 										pSecondaryMotorParam->MinCoalHigh, pSecondaryMotorParam->MaxCoalHigh);
 
+			StateEntryControlAdjustment(pPrimaryMotorParam->MinCoalHigh, pPrimaryMotorParam->MaxCoalHigh,
+										PF_GRILL_CLOSED, PF_GRILL_CLOSED,
+										pSecondaryMotorParam->MinCoalHigh, pSecondaryMotorParam->MaxCoalHigh);
+
 		    //historyState = currentState;
 		}
         /* Since the control algo (i.e. computeAjustement) is limited
@@ -570,6 +594,13 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	TestRunner();
 		nextState = currentState;  //assign the current state in the runner
     	break;
+
+    case MANUAL_CONTROL:
+        AirInput_forceAperture(&primary, pParticlesParam->s32ManualPrimary);
+        AirInput_forceAperture(&secondary, pParticlesParam->s32ManualSecondary);
+        AirInput_forceAperture(&grill, pParticlesParam->s32ManualGrill);
+
+    	break;
   }
 
 	if((GPIO_PIN_SET==HAL_GPIO_ReadPin(Safety_ON_GPIO_Port,Safety_ON_Pin)) && (currentState !=PRODUCTION_TEST))
@@ -623,11 +654,21 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   		  //if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
   			//  nextState = currentState;
   		  //}
+
+  		//computeParticleAdjustment(adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
   {
   		nextState = WAITING;
+  }
+
+  if(pParticlesParam->s32ManualOverride == 1)
+  {
+	  nextState = MANUAL_CONTROL;
+  }else if(currentState == MANUAL_CONTROL)
+  {
+	  nextState = COMBUSTION_HIGH;
   }
 
   if (nextState != currentState) {
@@ -640,17 +681,16 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	{
 	    stateChangeTimeRef = currentTime_ms;
 	}
-
+	  historyState = currentState;
+	  currentState = nextState;
   }
-  historyState = currentState;
-  currentState = nextState;
+
 }
 
 void Algo_task(uint32_t currentTime_ms) {
 
   manageStateMachine(currentTime_ms);
 //  managePlenumSpeed(Algo_getPlenumTemp(),Algo_getThermostatRequest(),currentTime_ms);
-  manageFans(Algo_getBaffleTemp());
 
   if(Algo_getState()!= PRODUCTION_TEST)
   {
@@ -817,14 +857,15 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms)
+static void computeParticleAdjustment(int* adjustment, int32_t* delta, int32_t* speed, uint32_t Time_ms)
 {
-	const int aperture[] = {-20, -10, 0, 20, 40};
-	const int Sec_per_step[] = {0, -3, -6, -8};
-	static uint8_t i = 2;
-	static uint8_t j = 0;
 	static uint32_t lastTimeInFunc = 0;
-	static uint32_t TimeOfCorrection = 0;
+	static uint32_t TimeOfMajorCorrection = 0;
+	//static float previous_diffs[5] = {};
+	int32_t aperture;
+	int32_t Sec_per_step;
+	const int MajorCorrectionInterval = 1e4;
+	static int MajorCorrection_counter = 0;
 
 	////////////////////////////////////////////
 	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
@@ -834,61 +875,112 @@ static void computeParticleAdjustment(int* delta, int* speed, uint32_t Time_ms)
 	///////////////////////////////////////////
 
 	int ch0 = (int)Particle_getCH0();
+	int I = (int)Particle_getCurrent();
+	float zero_norm = (float)Particle_getZeroNorm();
+	//float zero_norm = 393/3.9;
 	int slope = Particle_getSlope();
 	int stdev = (int)Particle_getVariance();
 	int std,slp;
-	int crit = 0;
-
+	float crit = 0;
+	float diff = abs(zero_norm - (float)10*ch0/I);
 
 	std = stdev < 80? stdev:80;
 
 	if(slope > 0){
 		slp = slope < 20? slope:20;
-		crit = std+slp;
+		crit = (float)std+slp;
 	}else
 	{
 		slp = abs(slope) < 20? slope:-20;
-		crit = (std-slp)*(-1);
+		crit = (float)(std-slp)*(-1);
 	}
 
-	if((Time_ms - TimeOfCorrection) > MINUTES(2) && i > 2)
-	{
-		if(crit < 50)
+		if(slope > 0){
+			slp = slope < 20? slope:20;
+			crit = std+slp;
+		}else
 		{
-			i--;
-			j = 0;
-			TimeOfCorrection = Time_ms;
+			slp = abs(slope) < 20? slope:-20;
+			crit = (std-slp)*(-1);
+		}
+
+	crit = crit/100;
+
+	algo_mod[2] = .8*algo_mod[2]+ .2*crit;
+
+	if(Time_ms - TimeOfMajorCorrection > MajorCorrectionInterval)
+	{
+		if(*adjustment % 2 > 0) // On descend rapidement en température
+		{
+			aperture = 20;
+			Sec_per_step = 0;
+			TimeOfMajorCorrection = Time_ms;
+			MajorCorrection_counter++;
+
+		}else if (*adjustment > 0) // On est très en dessous du target de température
+		{
+			aperture = 20;
+			Sec_per_step = 1;
+			TimeOfMajorCorrection = Time_ms;
+			MajorCorrection_counter++;
+		}else
+		{
+			MajorCorrection_counter = 0;
 		}
 
 	}
-	else if(i == 2)
+
+
+	if(*adjustment == 0)
 	{
-		if(stdev > 200)
+		if(crit > .4)
 		{
-			i += 2;
-			j = 2;
-			TimeOfCorrection = Time_ms;
-		}else if(stdev > 100)
+			aperture = 2;
+			Sec_per_step = 0;
+		}else
 		{
-			i++;
-			j = 1;
-			TimeOfCorrection = Time_ms;
+			if(diff > 30)
+			{
+				aperture = -10;
+				Sec_per_step = 1;
+			}
+
+
+		}
+	}else if(*adjustment < 0)
+	{
+		if(diff > 70)
+		{
+			aperture = -10;
+			Sec_per_step = 0;
+		}else
+		{
+			aperture = -2;
+			Sec_per_step = 2;
 		}
 	}
-	else if(i == 3)
-	{
-		if(stdev > 200)
-		{
-			i++;
-			j = 2;
-			TimeOfCorrection = Time_ms;
-		}
-	}
+
+
+
 
 	lastTimeInFunc = Time_ms;
-	*delta = aperture[i];
-	*speed = Sec_per_step[j];
+	*delta = round(crit/100);
+	*speed = crit;
 
+	////////////////////////////////////////////
+	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
+	{
+		algo_mod[0] = .8*algo_mod[0] + .2*aperture;
+		algo_mod[1] = .8*algo_mod[1] + .2*Sec_per_step;
+		algo_mod[3] = (float)*adjustment;
+	}
+	///////////////////////////////////////////
+
+}
+
+int* get_algomod(void)
+{
+	return algo_mod;
 }
 
 

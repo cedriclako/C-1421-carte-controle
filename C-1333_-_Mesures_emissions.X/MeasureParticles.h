@@ -73,43 +73,24 @@ typedef struct
     uint16_t m_uIrLighted;
     float m_fLuxLighted;
     
-    float m_fLuxZero;
+    uint16_t m_fullZero;
     uint32_t m_uMillisCounter;
     uint32_t m_uLastRead;
-    uint16_t m_uMeasureInterval;
-    
-    uint8_t integrationTime;
-    
-    uint8_t dacValue;
-    uint8_t dacArray[4];
-    uint16_t adcValue;
-    float currentCmd;
-    
+   
+    uint16_t adcValue;  
 }SMeasureParticlesObject;
 
 void measureParticlesInitialize(void);
 
 void measureParticlesProcess(void);
 
-void measureParticlesTogglePrintEnable(void);
-
-void measureParticlesToggleAcqEnable(void);
-
 void measureParticlesSetZero(void);
 
-uint8_t measureParticlesGetDacValue(void);
-
-void measureParticlesSetDacValue(uint8_t value);
-
-void measureParticlesRequestReconfigure(void);
+void measureParticlesSetDacValue(const gs_Parameters* Param);
 
 bool measureParticlesReadyForConfig(void);
 
-void measureParticlesRequestReconfigure(void);
-
-void measureParticlesSetParameters(uint8_t DAC, uint16_t time_window);
-
-//void Measure_Set_Current(void);
+void measureReset(void);
 
 
 #endif	/* MEASUREPARTICLES_H */

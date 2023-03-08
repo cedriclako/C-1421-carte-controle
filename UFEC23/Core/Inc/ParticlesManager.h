@@ -20,6 +20,8 @@ typedef struct MeasureParticles
 	uint16_t particles;
 	uint16_t variance;
 	uint16_t temperature;
+	uint16_t zero;
+	float normalized_zero;
 	int slope;
 	uint16_t LED_current_meas;
 	uint16_t Lux_ON;
@@ -38,6 +40,7 @@ uint16_t Particle_getCH1(void);
 uint16_t Particle_getCH0_OFF(void);
 uint16_t Particle_getCH1_OFF(void);
 uint16_t Particle_getCurrent(void);
+float Particle_getZeroNorm(void);
 uint16_t Particle_getTemperature(void);
 uint16_t Particle_getVariance(void);
 uint16_t Particle_getLuxON(void);
@@ -47,7 +50,7 @@ uint32_t Particle_getTime(void);
 int Particle_getSlope(void);
 void Particle_setConfig(void);
 
-
+void Particle_requestZero(void);
 void ParticlesManager(void const * argument);
 
 #endif /* INC_PARTICLESMANAGER_H_ */
