@@ -125,7 +125,7 @@ void Steppermanager(void const * argument)
 	//printf("\n Stepper manager running");
 
 	HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,RESET);
-	//HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
+	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
 	Algo_init();
 
   for(;;)
@@ -409,21 +409,21 @@ void vSetStepperMotorDirection(motor_t Motor, motor_direction_t Direction)
     case GrillStepper:
         if(Direction == Opening)
         {
-        	Grill_DIR_SetLow();
+        	Grill_DIR_SetHigh();
         }
         else
         {
-        	Grill_DIR_SetHigh();
+        	Grill_DIR_SetLow();
         }
         break;
     case SecondaryStepper:
         if(Direction == Opening)
         {
-        	Secondary_DIR_SetLow();
+        	Secondary_DIR_SetHigh();
         }
         else
         {
-        	Secondary_DIR_SetHigh();
+        	Secondary_DIR_SetLow();
         }
         break;
     default:

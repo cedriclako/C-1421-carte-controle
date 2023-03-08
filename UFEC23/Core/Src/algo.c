@@ -142,10 +142,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int R_flamelossB = 0;
 	  static int R_flamelossR = 0;
 
-	  static int part_delta = 0;
-	  static int part_speed = 0;
-
-
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
@@ -240,7 +236,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  AirInput_forceAperture(&grill, pGrillMotorParam->MaxTempRise);
 		  AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxTempRise);
 
-		  //historyState = currentState;
+		  historyState = currentState;
 		}
 #if PID_CONTROL_ON
 		if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
@@ -534,11 +530,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 										PF_GRILL_CLOSED, PF_GRILL_CLOSED,
 										pSecondaryMotorParam->MinCoalHigh, pSecondaryMotorParam->MaxCoalHigh);
 
-			StateEntryControlAdjustment(pPrimaryMotorParam->MinCoalHigh, pPrimaryMotorParam->MaxCoalHigh,
-										PF_GRILL_CLOSED, PF_GRILL_CLOSED,
-										pSecondaryMotorParam->MinCoalHigh, pSecondaryMotorParam->MaxCoalHigh);
-
-		    //historyState = currentState;
+		    historyState = currentState;
 		}
         /* Since the control algo (i.e. computeAjustement) is limited
            to +/- 3 steps, it whould take 3 * sec per step to complete
