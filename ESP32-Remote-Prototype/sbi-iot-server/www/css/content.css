@@ -10,9 +10,13 @@ h1 {
 }
 
 .table1 {
+    overflow: auto; height: 100px;
+
     font-family: Arial, Helvetica, sans-serif;
     border-collapse: collapse;
-  }
+}
+
+.table1 thead th { position: sticky; top: 0; z-index: 1; }
 
 .table1 td, .table1 th {
     border: 1px solid #ddd;

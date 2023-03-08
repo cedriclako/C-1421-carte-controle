@@ -142,7 +142,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int R_flamelossB = 0;
 	  static int R_flamelossR = 0;
 
-
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
 	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;

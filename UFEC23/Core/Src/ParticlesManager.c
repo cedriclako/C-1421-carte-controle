@@ -170,7 +170,7 @@ void ParticlesManager(void const * argument) {
 						uartErrorCount++;
 						if(uartErrorCount > 10)
 						{
-							particleBoardAbsent = true;
+							//particleBoardAbsent = true;
 						}
 
 					}

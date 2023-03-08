@@ -12,7 +12,7 @@ Public prefix : measureParticles
 
 Project # : C-1333, C-1421
 
-Product: Mesure d'�missions polluantes
+Product: Mesure d'Ã©missions polluantes
 
 Creation date:  2021/06/22
 
@@ -354,4 +354,3 @@ void measureSetLED(const gs_Parameters* Param)
     gs_sMeasPartObject.adcValue = (uint16_t) shunt;
     DAC1_Disable();
 }
-
