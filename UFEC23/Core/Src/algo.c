@@ -351,7 +351,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 										pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
 										pSecondaryMotorParam->MinCombLow,pSecondaryMotorParam->MaxCombLow);
 
-		    //historyState = currentState;
+		    historyState = currentState;
 		}
 #if PID_CONTROL_ON
         if(TimeSinceLastPIDUpdate > PID_UPDATE_PERIOD_MS)
