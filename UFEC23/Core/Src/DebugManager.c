@@ -158,7 +158,7 @@ void DebugManager(void const * argument)
 		printf("Crit:%f ",mod[2]);
 		printf("AdjOffset:%f ",mod[0]);
 		printf("SpeedDivider:%f ",mod[1]);
-		printf("AlgoAdjustment:%f",mod[3]);
+		printf("dTavant:%f",mod[3]);
 		//printf("GlobalStatus:%i,%i,%i",mod[0],mod[1],mod[2] ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
   }

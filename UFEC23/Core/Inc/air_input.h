@@ -11,7 +11,7 @@ extern "C" {
 typedef struct {
   int aperture;
   int setPoint;
-  uint32_t secPerStep;
+  float secPerStep;
   uint32_t timeRefRampe;
   int maxValue;
   int minValue;
@@ -32,7 +32,7 @@ int AirInput_getAperture( AirInput * self);
 int AirInput_getSetPoint( AirInput * self);
 
 /* adjustement: +/- a given value added to the set point. */
-void AirInput_setAjustement( AirInput * self, int adjustement, uint32_t secPerStep);
+void AirInput_setAjustement( AirInput * self, int adjustement, float secPerStep);
 
 /* currentTime in [ms] */
 void AirInput_task( AirInput * self, uint32_t currentTime_ms);

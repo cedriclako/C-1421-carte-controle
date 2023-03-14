@@ -163,8 +163,8 @@ void TemperatureManager(void const * argument)
 		}
 
 		Tboard = (int)(TemperatureFarenheit[TempSense_board]);
-		Algo_setBaffleTemp((int)(TemperatureFarenheit[FrontThermocouple]*10));
-		Algo_setRearTemp((int)(TemperatureFarenheit[RearThermocouple]*10));
+		Algo_setBaffleTemp((int)(TemperatureFarenheit[RearThermocouple]*10));
+		Algo_setRearTemp((int)(TemperatureFarenheit[FrontThermocouple]*10));
 		Algo_setPlenumTemp((int)(TemperatureFarenheit[PlenumRtd]*10));
 
   	}

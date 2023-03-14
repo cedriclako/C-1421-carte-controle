@@ -50,10 +50,10 @@ void ParameterInit(void)
     Params.TSL_gain = TSL2591_GAIN_MAX;
     Params.TSL_integrationTime = TSL2591_INTEGRATIONTIME_600MS;
     Params.DS1775_resolution = DS1775_11BITS_MODE;
-    Params.MeasureInterval = 2000;
+    Params.MeasureInterval = 1600;
     Params.PrintEnable = false;
     Params.AcqEnable = true;
-    
+    Params.DAC_value = 130;
     if(DATAEE_ReadByte(EE_FIRST_CONF_ADDR) != 0xAA)
     {
         DATAEE_WriteByte(EE_FIRST_CONF_ADDR, 0xAA);
@@ -61,7 +61,7 @@ void ParameterInit(void)
         Params.DAC_value = 130;
     }else
     {
-        Params.DAC_value = DATAEE_ReadByte(EE_DAC_ADDR);
+        //Params.DAC_value = DATAEE_ReadByte(EE_DAC_ADDR);
         EEParams.fireCounter = (uint16_t)((DATAEE_ReadByte(EE_FIRE_COUNTER_MSB) << 8) + DATAEE_ReadByte(EE_FIRE_COUNTER_LSB));
         EEParams.lastZeroValue = (uint16_t)((DATAEE_ReadByte(EE_LAST_ZERO_MSB) << 8) + DATAEE_ReadByte(EE_LAST_ZERO_LSB));
         EEParams.lastZeroCurrent = DATAEE_ReadByte(EE_CURRENT_ADDR);

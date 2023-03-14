@@ -118,16 +118,16 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	// Temperature parameters
 	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &m_sTemperatureParam.WaitingToIgnition, 	  	1000, 0, 20000),
-	PFL_INIT_SINT32(PFD_IGNITIONTOTRISE, 		"", &m_sTemperatureParam.IgnitionToTrise, 	  		9680, 0, 20000),
-	PFL_INIT_SINT32(PFD_TRISETARGETLOW, 		"", &m_sTemperatureParam.TriseTargetLow, 	  		12020, 0, 20000),
-	PFL_INIT_SINT32(PFD_TRISETARGETHIGH, 		"", &m_sTemperatureParam.TriseTargetHigh, 	  		12200, 0, 20000),
-	PFL_INIT_SINT32(PFD_COMBLOWTARGET, 			"", &m_sTemperatureParam.CombLowTarget, 		  	12020, 0, 20000),
-	PFL_INIT_SINT32(PFD_COMBLOWTOSUPERLOW, 		"", &m_sTemperatureParam.CombLowtoSuperLow, 	  	10000, 0, 20000),
-	PFL_INIT_SINT32(PFD_COMBHIGHTARGET, 		"", &m_sTemperatureParam.CombHighTarget, 	  		12740, 0, 20000),
+	PFL_INIT_SINT32(PFD_IGNITIONTOTRISE, 		"", &m_sTemperatureParam.IgnitionToTrise, 	  		7000, 0, 20000),
+	PFL_INIT_SINT32(PFD_TRISETARGETLOW, 		"", &m_sTemperatureParam.TriseTargetLow, 	  		8000, 0, 20000),
+	PFL_INIT_SINT32(PFD_TRISETARGETHIGH, 		"", &m_sTemperatureParam.TriseTargetHigh, 	  		9000, 0, 20000),
+	PFL_INIT_SINT32(PFD_COMBLOWTARGET, 			"", &m_sTemperatureParam.CombLowTarget, 		  	8000, 0, 20000),
+	PFL_INIT_SINT32(PFD_COMBLOWTOSUPERLOW, 		"", &m_sTemperatureParam.CombLowtoSuperLow, 	  	7500, 0, 20000),
+	PFL_INIT_SINT32(PFD_COMBHIGHTARGET, 		"", &m_sTemperatureParam.CombHighTarget, 	  		9500, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALCROSSOVERREARLOW, 	"", &m_sTemperatureParam.CoalCrossOverRearLow, 		7000, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALCROSSOVERREARHIGH, 	"", &m_sTemperatureParam.CoalCrossOverRearHigh,		8000, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALDELTATEMP, 			"", &m_sTemperatureParam.CoalDeltaTemp, 		  	2500, 0, 20000),
-	PFL_INIT_SINT32(PFD_COALSTOVETEMP, 			"", &m_sTemperatureParam.CoalStoveTemp, 		     7000, 0, 20000),
+	PFL_INIT_SINT32(PFD_COALSTOVETEMP, 			"", &m_sTemperatureParam.CoalStoveTemp, 		     6500, 0, 20000),
 	// FlameLoss
 	PFL_INIT_SINT32(PFD_FLAMELOSS, 				"", &m_sTemperatureParam.FlameLoss, 			  	8000, 0, 20000),
 	PFL_INIT_SINT32(PFD_FLAMELOSSDELTA, 		"", &m_sTemperatureParam.FlameLossDelta, 	  		1750, 0, 20000),
@@ -162,11 +162,11 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_GM_MINTEMPRISE,    	    "", &m_sGrillMotorParam.MinTempRise, 		 0, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// CombLow parameters
-	PFL_INIT_SINT32(PFD_PM_MAXCOMBLOW,     	    "", &m_sPrimaryMotorParam.MaxCombLow, 		100, PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_PM_MINCOMBLOW,     	    "", &m_sPrimaryMotorParam.MinCombLow, 		 10, PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_SM_MAXCOMBLOW,     	    "", &m_sSecondaryMotorParam.MaxCombLow, 		100, PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_SM_MINCOMBLOW,     	    "", &m_sSecondaryMotorParam.MinCombLow, 		10, PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_GM_MAXCOMBLOW,     	    "", &m_sGrillMotorParam.MaxCombLow, 		 20, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_PM_MAXCOMBLOW,     	    "", &m_sPrimaryMotorParam.MaxCombLow, 		200, PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_PM_MINCOMBLOW,     	    "", &m_sPrimaryMotorParam.MinCombLow, 		 0, PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_SM_MAXCOMBLOW,     	    "", &m_sSecondaryMotorParam.MaxCombLow, 		200, PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_SM_MINCOMBLOW,     	    "", &m_sSecondaryMotorParam.MinCombLow, 		0, PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_GM_MAXCOMBLOW,     	    "", &m_sGrillMotorParam.MaxCombLow, 		 200, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_GM_MINCOMBLOW,     	    "", &m_sGrillMotorParam.MinCombLow, 		 0, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// CombSuperLow parameters
