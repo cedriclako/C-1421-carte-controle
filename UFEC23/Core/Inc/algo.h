@@ -59,7 +59,7 @@ extern void Algo_setSimulatorMode(bool simulatorMode);
 extern void Algo_setState(State state);
 extern State Algo_getState();
 extern int Algo_getBaffleTemp();
-extern int Algo_getRearTemp();
+extern int Algo_getFrontTemp();
 extern int Algo_getPlenumTemp();
 extern void managePlenumSpeed(int plenumTemp, bool thermostatRequest, uint32_t Time_ms);
 extern void manageButtonLed();
@@ -69,7 +69,7 @@ void setErrorFlag(uint32_t errorcode, ErrorType type);
 extern void Algo_setBaffleTemp(int temp);
 
 /* Parameter temp in [tenth *C] */
-extern void Algo_setRearTemp(int temp);
+extern void Algo_setFrontTemp(int temp);
 
 /* Parameter temp in [tenth *C] */
 void Algo_setPlenumTemp(int temp);

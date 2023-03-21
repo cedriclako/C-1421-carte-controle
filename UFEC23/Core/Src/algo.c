@@ -47,7 +47,7 @@ static Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
 static Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
 
 static int baffleTemperature = 0;   // [Tenth *F]
-static int rearTemperature = 0; // [Tenth *F]
+static int frontTemperature = 0; // [Tenth *F]
 static int plenumTemp = 0;  // [Tenth *F]
 static bool thermostatRequest = false;
 static bool interlockRequest = false;
@@ -58,10 +58,10 @@ static int frontTempDataStore[NB_DATA]; //Data for slope calculation
 
 static bool simulatorMode = false;
 static Slope slopeBaffleTemp;
-static Slope slopeRearTemp;
+static Slope slopeFrontTemp;
 float Algo_Simulator_slopeBaffleTemp = 0.0;
 float Algo_slopeBaffleTemp = 0.0;
-float Algo_slopeRearTemp = 0.0;
+float Algo_slopeFrontTemp = 0.0;
 static uint32_t timeSinceStateEntry;
 static uint32_t TimeOfReloadRequest;
 static uint32_t TimeSinceEntryInCombLow = 0;
@@ -84,7 +84,7 @@ int16_t PIDTrapPosition = 0;
 //private functions
 static inline bool inBetween( int var, int low, int high);
 static float computeSlopeBaffleTemp(unsigned int nbData);
-static float computeSlopeRearTemp(unsigned int nbData);
+static float computeslopeFrontTemp(unsigned int nbData);
 void Algo_init();
 static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS);
 float get_crit(void);
@@ -96,7 +96,7 @@ static void AirAdjustment(int adjustement, float secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static bool computeParticleAdjustment(float dTarriere, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit);
+static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit);
 
 void Algo_init() {
 
@@ -114,7 +114,7 @@ void Algo_init() {
   AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
   AirInput_forceAperture(&secondary, PF_SECONDARY_CLOSED);  //CR TODO: Choose what to do with Secondary
   baffleTemperature = 0;
-  rearTemperature = 0;
+  frontTemperature = 0;
   thermostatRequest = false;
   delLoadingEnd = ALGO_DEL_OFF;
   delFermeturePorte = ALGO_DEL_OFF;
@@ -125,7 +125,7 @@ void Algo_init() {
 	algo_mod[3] = 0;
   Slope_init(&slopeBaffleTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
 
-  Slope_init(&slopeRearTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
+  Slope_init(&slopeFrontTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
 }
 
 static void manageStateMachine(uint32_t currentTime_ms) {
@@ -137,8 +137,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	const PF_UsrParam* pParticlesParam = PB_GetParticlesParam();
 
 	  State nextState = currentState;
+	  float dTbaffle;
 	  float dTavant;
-	  float dTarriere;
 	  static int adjustement = 0;
 
 	  static State historyState = ZEROING_STEPPER;
@@ -173,10 +173,10 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  // TODO: la periode utilisée pour le calcule de la pente n'est pas définie
   //       dans le document
-  dTavant = computeSlopeBaffleTemp(5); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
+  dTbaffle = computeSlopeBaffleTemp(5); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
   	  	  	  	  	  	  	  	  	  // la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
 
-  dTarriere = computeSlopeRearTemp(5);
+  dTavant = computeslopeFrontTemp(5);
   int deltaTemperature = 0;
   /* Perform state's actions. */
   switch (currentState) {
@@ -205,7 +205,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	delLoadingEnd = ALGO_DEL_OFF;
     	delFermeturePorte = ALGO_DEL_OFF;
 
-		if(baffleTemperature > 8000 && rearTemperature > 7000 && (!Algo_getInterlockRequest()))
+		if(baffleTemperature > 8000 && frontTemperature > 7000 && (!Algo_getInterlockRequest()))
 		{
 		  nextState = TEMPERATURE_RISE; //the only way this can happen is if we lost power we don't want to go back in reload/temprise
 		  reloadingEvent = false;
@@ -271,7 +271,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			if (TimeForStep >= (1 * SEC_PER_STEP_TEMP_RISE * 1000)) { // changer de 3 a 2 2021-12-03
 			  timeRefAutoMode = currentTime_ms;
 
-			adjustement = computeAjustement(targetTemperature, dTavant);
+			adjustement = computeAjustement(targetTemperature, dTbaffle);
 			AirAdjustment(adjustement, (float)SEC_PER_STEP_TEMP_RISE,
 						 (uint8_t)pPrimaryMotorParam->MinTempRise, (uint8_t)pPrimaryMotorParam->MaxTempRise,
 						  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
@@ -325,7 +325,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
             if (TimeForStep >= (3 * SEC_PER_STEP_COMB_HIGH * 1000)&& AirInput_InPosition(&grill) && AirInput_InPosition(&primary) && AirInput_InPosition(&secondary)) {
               timeRefAutoMode = currentTime_ms;
 			  
-            adjustement = computeAjustement(pTemperatureParam->CombHighTarget, dTavant);
+            adjustement = computeAjustement(pTemperatureParam->CombHighTarget, dTbaffle);
 
 			AirAdjustment((int32_t)(adjustement), (float)(SEC_PER_STEP_COMB_HIGH),
 							pPrimaryMotorParam->MinCombHigh, pPrimaryMotorParam->MaxCombHigh,
@@ -333,8 +333,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 							pSecondaryMotorParam->MinCombHigh,pSecondaryMotorParam->MaxCombHigh);
             }
 #endif
-            if ( ((baffleTemperature) >= (rearTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
-            		&& (pTemperatureParam->CoalCrossOverRearHigh > rearTemperature) ) //détection de l'état coal/braise
+            if ( ((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
+            		&& (pTemperatureParam->CoalCrossOverRearHigh > frontTemperature) ) //détection de l'état coal/braise
             {
             	nextState = COAL_HIGH;
             }
@@ -388,9 +388,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 				timeRefAutoMode = currentTime_ms;
 
 
-				//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);
+				//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
 				bool stove_too_cold = false;
-				stove_too_cold = computeParticleAdjustment(dTarriere, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowTarget);
+				stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowTarget);
 
 				if (((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))) || stove_too_cold){
 					nextState = COMBUSTION_SUPERLOW;
@@ -404,14 +404,14 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			}
 
 #endif
-		if ( ((baffleTemperature) >= (rearTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
-				            		&& (rearTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
+		if ( ((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
+				            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
 			{
 				nextState = COAL_LOW;
 		    }
 
-		if ( (baffleTemperature <= (rearTemperature-pTemperatureParam->CoalDeltaTemp)) //RETOUR À <= ET CHANGEMENENT POUR 200 POUR LE COALCROSSOVERLOW gtf 2022-08-30
-				&& (rearTemperature < pTemperatureParam->CoalCrossOverRearLow) )
+		if ( (baffleTemperature <= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) //RETOUR À <= ET CHANGEMENENT POUR 200 POUR LE COALCROSSOVERLOW gtf 2022-08-30
+				&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) )
         {
         	//nextState = FLAME_LOSS;
         }
@@ -428,7 +428,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 									pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
 									pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
 
-		adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTavant);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
+		adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
 
 
 		AirAdjustment(adjustement, (float)SEC_PER_STEP_COMB_LOW,
@@ -436,14 +436,14 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 						pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
 						pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
 
-		if ( ((baffleTemperature) >= (rearTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
-		            		&& (rearTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
+		if ( ((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
+		            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
 		            {
 		            	nextState = COAL_LOW;
 		            }
 
-		if ( (baffleTemperature <= (rearTemperature-pTemperatureParam->CoalDeltaTemp)) //RETOUR À <= ET CHANGEMENENT POUR 200 POUR LE COALCROSSOVERLOW gtf 2022-08-30
-						&& (rearTemperature < pTemperatureParam->CoalCrossOverRearLow) )
+		if ( (baffleTemperature <= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) //RETOUR À <= ET CHANGEMENENT POUR 200 POUR LE COALCROSSOVERLOW gtf 2022-08-30
+						&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) )
 		        {
 		        	//nextState = FLAME_LOSS;
 		        }
@@ -473,9 +473,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case FLAME_LOSS:
     	AirInput_forceAperture(&grill, PF_GRILL_FULL_OPEN);
     	AirInput_forceAperture(&secondary, PF_SECONDARY_FULL_OPEN);
-    	deltaTemperature = abs(rearTemperature - baffleTemperature);
+    	deltaTemperature = abs(frontTemperature - baffleTemperature);
     	//if( deltaTemperature > pTemperatureParam->FlameLossDelta && timeSinceStateEntry >= MINUTES(1))
-    	if( rearTemperature > (pTemperatureParam->CoalCrossOverRearLow+400) && timeSinceStateEntry >= MINUTES(1)) // ajout + 20 deg GTF 2022-10-20
+    	if( frontTemperature > (pTemperatureParam->CoalCrossOverRearLow+400) && timeSinceStateEntry >= MINUTES(1)) // ajout + 20 deg GTF 2022-10-20
     	{
     		nextState = historyState;
     		AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
@@ -483,7 +483,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		if(reloadingEvent) {
 			nextState = ZEROING_STEPPER;
 		}
-		else if((rearTemperature < pTemperatureParam->CoalCrossOverRearLow+200) && timeSinceStateEntry >= MINUTES(5))
+		else if((frontTemperature < pTemperatureParam->CoalCrossOverRearLow+200) && timeSinceStateEntry >= MINUTES(5))
 		{
 			nextState = COAL_LOW;
 		}
@@ -504,13 +504,13 @@ static void manageStateMachine(uint32_t currentTime_ms) {
            to +/- 3 steps, it whould take 3 * sec per step to complete
            the mouvement. Reevaluate the control at that maximum period. */
         if (TimeForStep >= (3 * SEC_PER_STEP_COAL_HIGH * 1000)) {
-        	if(rearTemperature > 9000) /// C'EST QUOI ÇA GTF 2022-03-11
+        	if(frontTemperature > 9000) /// C'EST QUOI ÇA GTF 2022-03-11
         	{
         		adjustement = -1; //Si T > 900, on ferme. Sinon on suit le tableau d'ajustement
         	}
         	else
         	{
-        		adjustement = computeAjustement( pTemperatureParam->CombHighTarget, dTavant);
+        		adjustement = computeAjustement( pTemperatureParam->CombHighTarget, dTbaffle);
         	}
 
 
@@ -537,7 +537,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 
       if ((baffleTemperature < pTemperatureParam->OverheatBaffle)
-    		  && (rearTemperature < pTemperatureParam->OverheatChamber)
+    		  && (frontTemperature < pTemperatureParam->OverheatChamber)
 			  && (Algo_getPlenumTemp() < pTemperatureParam->OverheatPlenumExit)){
     	  if(historyState == SAFETY || historyState == OVERTEMP)
     	  {
@@ -586,12 +586,12 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   		  /* do nothing */
   		  break;
   	  default:
-  		  if ((baffleTemperature > pTemperatureParam->OverheatBaffle) || (rearTemperature > pTemperatureParam->OverheatChamber) || (Algo_getPlenumTemp()>pTemperatureParam->OverheatPlenum)) {
+  		  if ((baffleTemperature > pTemperatureParam->OverheatBaffle) || (frontTemperature > pTemperatureParam->OverheatChamber) || (Algo_getPlenumTemp()>pTemperatureParam->OverheatPlenum)) {
   			  nextState = OVERTEMP;
   		  }
   		  if(currentState == TEMPERATURE_RISE || currentState == COMBUSTION_HIGH || currentState == COMBUSTION_LOW || currentState == COMBUSTION_SUPERLOW)
   		  {
-  			  if ((baffleTemperature < ColdStoveTemp) && (rearTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
+  			  if ((baffleTemperature < ColdStoveTemp) && (frontTemperature < ColdStoveTemp) && timeSinceStateEntry > MINUTES(1)) {
   				  nextState = WAITING;
   			  }
   			  //flameloss decision
@@ -602,7 +602,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   					  TFlameLossArrayR[i] = TFlameLossArrayR[i+1];
   				  }
   				  TFlameLossArrayB[3] = Algo_getBaffleTemp();
-  				  TFlameLossArrayR[3] = Algo_getRearTemp();
+  				  TFlameLossArrayR[3] = Algo_getFrontTemp();
   				  R_flamelossB = TFlameLossArrayB[0] - TFlameLossArrayB[3];
   				  R_flamelossR = TFlameLossArrayR[0] - TFlameLossArrayR[3];
   				  timer_flameloss = currentTime_ms;
@@ -611,7 +611,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   				  }
   			  }
   		  }
-  		  //if (((baffleTemperature > 6500) || (rearTemperature > 9000)) && (nextState == FLAME_LOSS)){
+  		  //if (((baffleTemperature > 6500) || (frontTemperature > 9000)) && (nextState == FLAME_LOSS)){
   			//  nextState = currentState;
   		  //}
 
@@ -687,15 +687,15 @@ static float computeSlopeBaffleTemp(unsigned int nbData) {
   }
 }
 
-static float computeSlopeRearTemp(unsigned int nbData) {
+static float computeslopeFrontTemp(unsigned int nbData) {
   if (simulatorMode)
   {
     return Algo_Simulator_slopeBaffleTemp;
   }
   else
   {
-	Algo_slopeRearTemp = Slope_compute(&slopeRearTemp, nbData) / 10.0;
-    return Algo_slopeRearTemp;
+	Algo_slopeFrontTemp = Slope_compute(&slopeFrontTemp, nbData) / 10.0;
+    return Algo_slopeFrontTemp;
   }
 }
 
@@ -717,12 +717,12 @@ void Algo_setBaffleTemp(int temp) {
   Slope_addData(&slopeBaffleTemp, temp);
 }
 
-void Algo_setRearTemp(int temp) {
-  rearTemperature = temp;
-  Slope_addData(&slopeRearTemp,temp);
+void Algo_setFrontTemp(int temp) {
+  frontTemperature = temp;
+  Slope_addData(&slopeFrontTemp,temp);
 }
-int Algo_getRearTemp() {
-  return rearTemperature;
+int Algo_getFrontTemp() {
+  return frontTemperature;
 }
 
 int Algo_getBaffleTemp() {
@@ -853,7 +853,7 @@ float get_crit(void)
 	return crit/100;
 }
 
-static bool computeParticleAdjustment(float dTarriere, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit)
+static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit)
 {
 	// Function memory variables
 	static uint32_t lastTimeInFunc = 0;
@@ -899,7 +899,7 @@ static bool computeParticleAdjustment(float dTarriere, int32_t* delta, int32_t* 
 	{
 		if((baffleTemperature - temperature_limit) < Tbuff_flameloss)
 		{
-			if(dTarriere < dT_threshold)
+			if(dTavant < dT_threshold)
 			{
 				aperture = 20;
 				Sec_per_step = 0;
@@ -927,7 +927,7 @@ static bool computeParticleAdjustment(float dTarriere, int32_t* delta, int32_t* 
 			Sec_per_step = 0.5;
 		}else if((baffleTemperature - temperature_limit) < Tbuff_overheat)
 		{
-			if(dTarriere >= 0)
+			if(dTavant >= 0)
 			{
 				aperture = -5;
 				Sec_per_step = 1;
@@ -977,7 +977,7 @@ static bool computeParticleAdjustment(float dTarriere, int32_t* delta, int32_t* 
 	{
 		algo_mod[0] = aperture;
 		algo_mod[1] = Sec_per_step;
-		algo_mod[3] = dTarriere;
+		algo_mod[3] = dTavant;
 	}
 	///////////////////////////////////////////
 
@@ -985,6 +985,24 @@ static bool computeParticleAdjustment(float dTarriere, int32_t* delta, int32_t* 
 		return true;
 	}
 	return false;
+
+}
+
+void ComputeAdjustmentLookUp(void)
+{
+	  const int adj[5][5][2] = {
+	    { {-5, 0},  {-5, 0.5},{-2, 1}, {-1, 2},  {-1, 10}},
+	    { {-5, 0.5},{-2, 1},  {-1, 2}, {-1, 10}, {+1, 2}},
+	    { {-2, 1},  {-1, 2},  {0, 10}, {+1, 2},  {+2, 1}},
+		{ {-1, 2},  {+1, 10}, {+1, 2}, {+2, 1},  {+5, 0.5}},
+		{ {+1, 10}, {+1, 2},  {+2, 1}, {+5, 0.5},{+5, 0}},
+	  };
+
+	  // Fetch parameters
+		int ch0 = (int)Particle_getCH0(); // Particles
+		int I = (int)Particle_getCurrent(); // Used to normalize particles values (counts per mA of output power)
+
+
 
 }
 

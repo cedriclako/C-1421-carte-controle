@@ -112,7 +112,7 @@ void HmiManager()
 			//{
 				if( (tStatDemand || Algo_getInterlockRequest()) && (Algo_getState() !=SAFETY && Algo_getState() != OVERTEMP && !ButtonBlinkingrequired) )
 				{
-					if(Algo_getInterlockRequest() || Algo_getRearTemp() < 4000) //if rear temp below 400F, furnace is too cold and reignition is needded
+					if(Algo_getInterlockRequest() || Algo_getFrontTemp() < 4000) //if rear temp below 400F, furnace is too cold and reignition is needded
 					{
 						SetButtonLed_OFF();
 					}
@@ -160,7 +160,7 @@ void HmiManager()
 			currentState = getTestState();
 			void Algo_clearReloadRequest(); // in case we generate an event on function entry
 			if(currentState == THERMO_REAR_TEST)
-				thermocoupleTestPeriod = (float)1000/Algo_getRearTemp()*800;
+				thermocoupleTestPeriod = (float)1000/Algo_getFrontTemp()*800;
 			else if (currentState== THERMO_BAFFLE_TEST)
 				thermocoupleTestPeriod = (float)1000/Algo_getBaffleTemp()*800;
 			else if (currentState== PLENUM_RTD_TEST)

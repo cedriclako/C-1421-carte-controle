@@ -66,7 +66,7 @@ void DebugManager(void const * argument)
 		HAL_RTC_GetTime(&hrtc,&sTime,0);
 		printf("#");
 		printf("%02i:%02i:%02i ",sTime.Hours,sTime.Minutes,sTime.Seconds);
-		printf("Tavant:%i TArriere:%i Plenum:%i ",Algo_getBaffleTemp()/10,Algo_getRearTemp()/10,Algo_getPlenumTemp()/10);
+		printf("Tbaffle:%i Tavant:%i Plenum:%i ",Algo_getBaffleTemp()/10,Algo_getFrontTemp()/10,Algo_getPlenumTemp()/10);
 		printf("State:");
 
 		TempAlgoState = Algo_getState();
@@ -126,7 +126,7 @@ void DebugManager(void const * argument)
 		{
 			printf("OFF ");
 		}
-		printf("dTav:%f",Algo_getBaffleTempSlope());
+		printf("dTbaffle:%f",Algo_getBaffleTempSlope());
 		printf(" FanSpeed:%i ",Mot_getFanSpeed());
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
