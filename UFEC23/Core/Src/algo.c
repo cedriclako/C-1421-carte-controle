@@ -995,14 +995,6 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 	}
 	return false;
 
-	////////////////////////////////////////////
-	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
-	{
-		algo_mod[0] = .8*algo_mod[0] + .2*aperture;
-		algo_mod[1] = .8*algo_mod[1] + .2*Sec_per_step;
-		algo_mod[3] = (float)*adjustment;
-	}
-	///////////////////////////////////////////
 
 }
 
