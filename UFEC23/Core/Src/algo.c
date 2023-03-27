@@ -55,10 +55,16 @@ static bool interlockRequest = false;
 //Data for derivative computation
 #define NB_DATA  300  // 5 minutes max si une mesure par sec
 static int frontTempDataStore[NB_DATA]; //Data for slope calculation
+static int baffleTempDataStore[NB_DATA];
+static int frontAccelDataStore[NB_DATA]; //Data for slope calculation
+static int baffleAccelDataStore[NB_DATA];
+
 
 static bool simulatorMode = false;
 static Slope slopeBaffleTemp;
 static Slope slopeFrontTemp;
+static Slope accelBaffleTemp;
+static Slope accelFrontTemp;
 float Algo_Simulator_slopeBaffleTemp = 0.0;
 float Algo_slopeBaffleTemp = 0.0;
 float Algo_slopeFrontTemp = 0.0;
@@ -123,9 +129,11 @@ void Algo_init() {
 	algo_mod[1] = 0;
 	algo_mod[2] = 0;
 	algo_mod[3] = 0;
-  Slope_init(&slopeBaffleTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
-
+  Slope_init(&slopeBaffleTemp, baffleTempDataStore, NB_DATA, SAMPLING_RATE);
+  Slope_init(&accelBaffleTemp, baffleAccelDataStore, NB_DATA, SAMPLING_RATE);
   Slope_init(&slopeFrontTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
+  Slope_init(&accelFrontTemp, frontAccelDataStore, NB_DATA, SAMPLING_RATE);
+
 }
 
 static void manageStateMachine(uint32_t currentTime_ms) {
@@ -843,7 +851,7 @@ float get_crit(void)
 
 	if(slope > 0){
 		slp = slope < 20? slope:20;
-		crit = (float)std+slp;
+		crit = (float)(std+slp);
 	}else
 	{
 		slp = abs(slope) < 20? slope:-20;
@@ -990,7 +998,7 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 
 void ComputeAdjustmentLookUp(void)
 {
-	  const int adj[5][5][2] = {
+	  const int adj[5][5][2] = { // vertical : Tbaffle -- Horizontal : dTav -- 3e dimension: {position moteur, vitesse de motion}
 	    { {-5, 0},  {-5, 0.5},{-2, 1}, {-1, 2},  {-1, 10}},
 	    { {-5, 0.5},{-2, 1},  {-1, 2}, {-1, 10}, {+1, 2}},
 	    { {-2, 1},  {-1, 2},  {0, 10}, {+1, 2},  {+2, 1}},
@@ -1001,6 +1009,9 @@ void ComputeAdjustmentLookUp(void)
 	  // Fetch parameters
 		int ch0 = (int)Particle_getCH0(); // Particles
 		int I = (int)Particle_getCurrent(); // Used to normalize particles values (counts per mA of output power)
+		float dTbaffle = computeSlopeBaffleTemp(5);
+		float dTavant = computeslopeFrontTemp(5);
+
 
 
 

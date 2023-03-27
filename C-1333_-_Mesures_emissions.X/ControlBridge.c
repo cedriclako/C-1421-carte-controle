@@ -455,16 +455,16 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     bOBJ.CH1_ON = mOBJ->m_uIrLighted;
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
     bOBJ.CH1_OFF = mOBJ->m_uIrDark;
-    /*
+    
     if(bOBJ.LED_current_meas == 0)
     {
-        bOBJ.LED_current_meas = (uint16_t)(3300*mOBJ->adcValue/4096);
+        bOBJ.LED_current_meas = (uint16_t)(3300*(float)mOBJ->adcValue/4096);
     }else
     {
-        bOBJ.LED_current_meas = 0.95*bOBJ.LED_current_meas + 0.05*(uint16_t)(3300*mOBJ->adcValue/4096);
+        bOBJ.LED_current_meas = 0.8*(float)bOBJ.LED_current_meas + 0.2*(uint16_t)(3300*(float)mOBJ->adcValue/4096);
     }
-    */
-    bOBJ.LED_current_meas = (uint16_t)(3300*(float)mOBJ->adcValue/4096);
+    
+    //bOBJ.LED_current_meas = (uint16_t)(3300*(float)mOBJ->adcValue/4096);
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
