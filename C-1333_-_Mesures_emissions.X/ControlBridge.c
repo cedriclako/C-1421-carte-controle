@@ -378,20 +378,7 @@ uint8_t fillDataBuffer(const gs_MemoryParams* Param)
     TX_BUFFER[25] = (uint8_t)(Param->lastZeroValue & 0x00FF);
 //    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.variance,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
     //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
-    printf("#");	
-    printf("PartCH0ON:%u ", bOBJ.CH0_ON);
-		printf("PartCH1ON:%u ", bOBJ.CH1_ON);
-		printf("PartCH0OFF:%u ",bOBJ.CH0_OFF);
-		printf("PartCH1OFF:%u ",bOBJ.CH1_OFF);
-		printf("PartVar:%u ",bOBJ.variance);
-		printf("PartSlope:%i ",bOBJ.slope);
-		printf("TPart:%u ",bOBJ.temperature);
-		printf("PartCurr:%u ",bOBJ.LED_current_meas);
-		printf("PartLuxON:%u ", bOBJ.Lux_ON);
-		printf("PartLuxOFF:%u ", bOBJ.Lux_OFF);
-		printf("PartTime:%lu ", bOBJ.time_since_beginning);
-		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
-		printf("*\n\r");
+
     return 26;
 }
 
@@ -468,7 +455,16 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     bOBJ.CH1_ON = mOBJ->m_uIrLighted;
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
     bOBJ.CH1_OFF = mOBJ->m_uIrDark;
-    bOBJ.LED_current_meas = (uint16_t)(0.33*mOBJ->adcValue/4.096);
+    
+    if(bOBJ.LED_current_meas == 0)
+    {
+        bOBJ.LED_current_meas = (uint16_t)(3300*(float)mOBJ->adcValue/4096);
+    }else
+    {
+        bOBJ.LED_current_meas = 0.8*(float)bOBJ.LED_current_meas + 0.2*(uint16_t)(3300*(float)mOBJ->adcValue/4096);
+    }
+    
+    //bOBJ.LED_current_meas = (uint16_t)(3300*(float)mOBJ->adcValue/4096);
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
@@ -514,6 +510,21 @@ void updateCalculatedValues(void)
         mem_index=0;
         first_loop = false;
     }
+    
+    printf("#");	
+    printf("PartCH0ON:%u ", bOBJ.CH0_ON);
+    printf("PartCH1ON:%u ", bOBJ.CH1_ON);
+    printf("PartCH0OFF:%u ",bOBJ.CH0_OFF);
+    printf("PartCH1OFF:%u ",bOBJ.CH1_OFF);
+    printf("PartVar:%u ",bOBJ.variance);
+    printf("PartSlope:%i ",bOBJ.slope);
+    printf("TPart:%u ",bOBJ.temperature);
+    printf("PartCurr:%u ",bOBJ.LED_current_meas);
+    printf("PartLuxON:%u ", bOBJ.Lux_ON);
+    printf("PartLuxOFF:%u ", bOBJ.Lux_OFF);
+    printf("PartTime:%lu ", bOBJ.time_since_beginning);
+    printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
+    printf("*\n\r");
     
 }
 

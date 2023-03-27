@@ -56,6 +56,7 @@ void DebugManager(void const * argument)
   /* Infinite loop */
 
 	State TempAlgoState;
+	float* mod;
 
 	for(;;)
 	{
@@ -65,7 +66,7 @@ void DebugManager(void const * argument)
 		HAL_RTC_GetTime(&hrtc,&sTime,0);
 		printf("#");
 		printf("%02i:%02i:%02i ",sTime.Hours,sTime.Minutes,sTime.Seconds);
-		printf("Tavant:%i TArriere:%i Plenum:%i ",Algo_getBaffleTemp()/10,Algo_getRearTemp()/10,Algo_getPlenumTemp()/10);
+		printf("Tbaffle:%i Tavant:%i Plenum:%i ",Algo_getBaffleTemp()/10,Algo_getFrontTemp()/10,Algo_getPlenumTemp()/10);
 		printf("State:");
 
 		TempAlgoState = Algo_getState();
@@ -125,12 +126,12 @@ void DebugManager(void const * argument)
 		{
 			printf("OFF ");
 		}
-		printf("dTav:%i",(int)Algo_getBaffleTempSlope());
+		printf("dTbaffle:%f",Algo_getBaffleTempSlope());
 		printf(" FanSpeed:%i ",Mot_getFanSpeed());
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
-		printf("Sec:%i ",Algo_getSecondary()*9/10);
+		printf("Sec:%i ",Algo_getSecondary()*45/100);
 		printf("Tboard:%i ",get_BoardTemp());
 		printf("Door:");
 		if(IsDoorOpen())
@@ -153,7 +154,12 @@ void DebugManager(void const * argument)
 		printf("PartLuxON:%u ", Particle_getLuxON());
 		printf("PartLuxOFF:%u ", Particle_getLuxOFF());
 		printf("PartTime:%lu ", Particle_getTime());
-		printf("GlobalStatus:FORMAT_TBD" ); // Aller chercher le flag de particle adjust ou le temps de
+		mod = get_algomod();
+		printf("Crit:%f ",mod[2]);
+		printf("AdjOffset:%f ",mod[0]);
+		printf("SpeedDivider:%f ",mod[1]);
+		printf("dTavant:%f",mod[3]);
+		//printf("GlobalStatus:%i,%i,%i",mod[0],mod[1],mod[2] ); // Aller chercher le flag de particle adjust ou le temps de
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */

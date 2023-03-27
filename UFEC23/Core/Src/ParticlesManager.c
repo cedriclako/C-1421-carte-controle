@@ -80,6 +80,7 @@ void ParticlesManager(void const * argument) {
 
 
 
+
 	for(;;) {
 
 		if(rx_success)
@@ -215,7 +216,6 @@ void ParticlesManager(void const * argument) {
 					ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
 					ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 					ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
-					ParticleDevice.zero = (uint16_t)(RX_BUFFER[26] << 8) + (uint16_t)RX_BUFFER[27];
 
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
@@ -231,7 +231,7 @@ void ParticlesManager(void const * argument) {
 					setZero = true;
 					ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
 					ParticleDevice.LED_current_meas = RX_BUFFER[7];
-					ParticleDevice.normalized_zero = (float)(10*ParticleDevice.zero/ParticleDevice.LED_current_meas);
+					ParticleDevice.normalized_zero = ParticleDevice.zero/ParticleDevice.LED_current_meas;
 
 
 				}

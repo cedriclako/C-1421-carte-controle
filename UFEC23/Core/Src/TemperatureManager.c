@@ -55,7 +55,7 @@ float VtoDegreeCRtd(float Vdata);
 enum ADC_Channel
 {
 	FrontThermocouple = 0,
-	RearThermocouple,
+	BaffleThermocouple,
 	PlenumRtd,
 	TempSense_board, // Used to determine cold junction temp
 	NUMBER_OF_ADC_CH
@@ -141,7 +141,7 @@ void TemperatureManager(void const * argument)
 			switch(i)
 			{
 				case FrontThermocouple:
-				case RearThermocouple:
+				case BaffleThermocouple:
 					AdcArray[i] = ((float)(i32tempReading)*15.625)/8; //15.625uV par bit  gain = 8
 					TemperatureCelsius[i] = uVtoDegreeCTypeK(AdcArray[i], tColdJunction); //6.7//26.1 //board is self heating to 7.3 above ambient
 					break;
@@ -163,8 +163,8 @@ void TemperatureManager(void const * argument)
 		}
 
 		Tboard = (int)(TemperatureFarenheit[TempSense_board]);
-		Algo_setBaffleTemp((int)(TemperatureFarenheit[FrontThermocouple]*10));
-		Algo_setRearTemp((int)(TemperatureFarenheit[RearThermocouple]*10));
+		Algo_setBaffleTemp((int)(TemperatureFarenheit[BaffleThermocouple]*10));
+		Algo_setFrontTemp((int)(TemperatureFarenheit[FrontThermocouple]*10));
 		Algo_setPlenumTemp((int)(TemperatureFarenheit[PlenumRtd]*10));
 
   	}

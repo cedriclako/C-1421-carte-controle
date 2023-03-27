@@ -50,10 +50,11 @@ void ParameterInit(void)
     Params.TSL_gain = TSL2591_GAIN_MAX;
     Params.TSL_integrationTime = TSL2591_INTEGRATIONTIME_600MS;
     Params.DS1775_resolution = DS1775_11BITS_MODE;
-    Params.MeasureInterval = 2000;
+    Params.MeasureInterval = 1600;
     Params.PrintEnable = false;
     Params.AcqEnable = true;
-    
+    Params.Current_cmd = 5.0;
+    //Params.DAC_value = 140;
     if(DATAEE_ReadByte(EE_FIRST_CONF_ADDR) != 0xAA)
     {
         DATAEE_WriteByte(EE_FIRST_CONF_ADDR, 0xAA);

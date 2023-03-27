@@ -87,7 +87,8 @@ void measureParticlesProcess(void)
         {
             if (tsl2591IsStarted() && ds1775IsStarted()) // give time to drivers to configure the ICs at startup
             {
-                DAC1_SetOutput(MP_Param->DAC_value);
+                //DAC1_SetOutput(MP_Param->DAC_value);
+                measureSetLED(MP_Param);
                 ds1775RequestRead(); 
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             }
@@ -145,7 +146,10 @@ void measureParticlesProcess(void)
                 //Measure_Set_Current();
                 
                 
+                
                 DAC1_Enable();
+                
+                //ADCC_StartConversion(channel_ANB7);
                 
                 // Change state and sub state
                 gs_sMeasPartObject.m_eSubState = eSUB_STATE_LIGHTED;
@@ -155,7 +159,9 @@ void measureParticlesProcess(void)
             {
                 // De-activate LED
                 //GpioWritePin(eGPIO_LED_ON, LED_OFF);
+                ADCC_DischargeSampleCapacitor();
                 gs_sMeasPartObject.adcValue = (uint16_t) ADCC_GetSingleConversion(channel_ANB7);
+
                 DAC1_Disable();
                 
                 // Change state and sub state
@@ -178,7 +184,7 @@ void measureParticlesProcess(void)
                 DAC1_Disable();
                 //gs_sMeasPartObject.m_fLuxZero = gs_sMeasPartObject.m_fLuxLighted;
                 
-                PF_Update_MemParams(gs_sMeasPartObject.m_fullZero,(uint8_t)(0.33*gs_sMeasPartObject.adcValue/4.096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
+                PF_Update_MemParams(gs_sMeasPartObject.m_fullZero,(uint8_t)(3300*(float)gs_sMeasPartObject.adcValue/4096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
                 bridgeZeroComplete();
 
                 // Change state and sub state
@@ -261,7 +267,7 @@ void measureParticlesPrintData(void)
             gs_sMeasPartObject.m_fLuxLighted,gs_sMeasPartObject.m_uFullLighted,
             gs_sMeasPartObject.m_uIrLighted, gs_sMeasPartObject.m_fLuxDark,
             gs_sMeasPartObject.m_uFullDark, gs_sMeasPartObject.m_uIrDark,
-            gs_sMeasPartObject.m_fTemperatureCelcius,(float)(.33*gs_sMeasPartObject.adcValue/4.096),
+            gs_sMeasPartObject.m_fTemperatureCelcius,(3300*(float)gs_sMeasPartObject.adcValue/4096),
             timeInSeconds);
 }
 
@@ -288,7 +294,7 @@ void measureSetLED(const gs_Parameters* Param)
     
     DAC1_Enable();
     
-    adcRequest = (uint16_t) (4096*Param->Current_cmd/3.3);
+    adcRequest = (uint16_t) (4096*Param->Current_cmd/330);
     //shunt = ADCC_GetSingleConversion(channel_ANB7);
     
     while(adcMeasured != adcRequest)
