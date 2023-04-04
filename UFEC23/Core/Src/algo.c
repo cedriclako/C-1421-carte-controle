@@ -29,9 +29,8 @@ typedef struct ParticlesParam{
 #define  RFlameLossR	 1400 // 140F Loss of temperature per R time to go in flame loss
 #define TRFlameLoss	   1 // 3 minutes time in minutes of data acquisition for R calculation
 
-//Maximum Primary and grate opening by state
-//all values are express in step 0.9degrees.
-float algo_mod[4] = {0.0,0.0,0.0,0.0};
+// For debug purposes... Contains parameter modifications in ComputeParticleAdjustment
+float algo_mod[4] = {0.0,0.0,0.0,0.0}; //
 
 //state machine variable and initial values
 static State currentState = ZEROING_STEPPER;
@@ -125,10 +124,6 @@ void Algo_init() {
   delLoadingEnd = ALGO_DEL_OFF;
   delFermeturePorte = ALGO_DEL_OFF;
 
-	algo_mod[0] = 0;
-	algo_mod[1] = 0;
-	algo_mod[2] = 0;
-	algo_mod[3] = 0;
   Slope_init(&slopeBaffleTemp, baffleTempDataStore, NB_DATA, SAMPLING_RATE);
   Slope_init(&accelBaffleTemp, baffleAccelDataStore, NB_DATA, SAMPLING_RATE);
   Slope_init(&slopeFrontTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
@@ -399,14 +394,16 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 
 				//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
-				bool stove_too_cold = false;
+
+				// Adjustment based on particle value
+				bool stove_too_cold = false; // If all openings are maxed and temperature can't be brought over minimum value, go to comb_superlow
 				stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowTarget);
 
 				if (((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))) || stove_too_cold){
 					nextState = COMBUSTION_SUPERLOW;
 				}
 
-
+				// Same adjustment function as in other states, but changed arguments
 				AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
 							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
 							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
@@ -990,7 +987,8 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 	}
 	///////////////////////////////////////////
 
-	if(MajorCorrection_counter > 8){
+	// If too many consecutive major corrections, go to comb_superlow
+	if(MajorCorrection_counter > 4){
 		return true;
 	}
 	return false;
@@ -998,27 +996,8 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 
 }
 
-void ComputeAdjustmentLookUp(void)
-{
-	  const int adj[5][5][2] = { // vertical : Tbaffle -- Horizontal : dTav -- 3e dimension: {position moteur, vitesse de motion}
-	    { {-5, 0},  {-5, 0.5},{-2, 1}, {-1, 2},  {-1, 10}},
-	    { {-5, 0.5},{-2, 1},  {-1, 2}, {-1, 10}, {+1, 2}},
-	    { {-2, 1},  {-1, 2},  {0, 10}, {+1, 2},  {+2, 1}},
-		{ {-1, 2},  {+1, 10}, {+1, 2}, {+2, 1},  {+5, 0.5}},
-		{ {+1, 10}, {+1, 2},  {+2, 1}, {+5, 0.5},{+5, 0}},
-	  };
 
-	  // Fetch parameters
-		int ch0 = (int)Particle_getCH0(); // Particles
-		int I = (int)Particle_getCurrent(); // Used to normalize particles values (counts per mA of output power)
-		float dTbaffle = computeSlopeBaffleTemp(5);
-		float dTavant = computeslopeFrontTemp(5);
-
-
-
-
-}
-
+// for DebugManager
 float* get_algomod(void)
 {
 	return algo_mod;

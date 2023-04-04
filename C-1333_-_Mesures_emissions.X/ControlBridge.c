@@ -80,7 +80,7 @@ typedef struct {
     uint16_t CH0_BUFFER[DATA_MEMORY_DEPTH];
     
     uint16_t particles;
-	uint16_t variance;
+	uint16_t stdev;
 	uint16_t temperature;
     uint32_t time_since_beginning;
 	int slope;
@@ -112,7 +112,7 @@ void ControlBridgeInitialize(void)
     bOBJ.CH1_ON = 0;
     bOBJ.CH0_OFF = 0;
     bOBJ.CH1_OFF = 0;
-    bOBJ.variance = 0;
+    bOBJ.stdev = 0;
     bOBJ.temperature = 0;
 
     bOBJ.LED_current_meas = 0;
@@ -125,8 +125,8 @@ void ControlBridgeInitialize(void)
     
 void ControlBridgeProcess(void)
 {
-    const gs_Parameters* CB_Param = PF_getCBParamAddr();
-    const gs_MemoryParams* EE_Param = PF_getEEParamAddr();
+    const gs_Parameters* CB_Param = PF_getCBParamAddr(); // Fetch settings in flash 
+    const gs_MemoryParams* EE_Param = PF_getEEParamAddr(); // Fetch device information stored in EEPROM
     static uint8_t command, payload_size, i, sum_LSB, sum_MSB;
     static uint8_t payload[MAX_BUFFER_SIZE], tx_size;
     static uint16_t rx_checksum, temp_sum;
@@ -135,7 +135,7 @@ void ControlBridgeProcess(void)
     switch(BridgeState)
     {
         case eBridge_IDLE:
-            if(UART2_is_rx_ready())
+            if(UART2_is_rx_ready()) // Check if control card is trying to communicate
             {
                 command = 0x80;
                 rx_checksum = 0;
@@ -145,12 +145,12 @@ void ControlBridgeProcess(void)
                 
                 if(UART2_Read() == START_BYTE)
                 {
-                    TMR1_StartTimer();
+                    TMR1_StartTimer();  // Timeout counter: 200 ms
                     BridgeState = eBridge_RECEIVE_CMD;
                     //printf("Start byte received\r\n");
                 }
             }
-            else if(DRDY)
+            else if(DRDY)   // If control card not interacting, check if new particle data is available
             {
                 BridgeState = eBridge_PROCESSING_DATA;
             }
@@ -158,7 +158,7 @@ void ControlBridgeProcess(void)
         case eBridge_PROCESSING_DATA:
             if(!DRDY)
             {
-                updateCalculatedValues();
+                updateCalculatedValues(); // Calculate mean, std, slope
                 BridgeState = eBridge_IDLE;
             }
             break;
@@ -170,7 +170,7 @@ void ControlBridgeProcess(void)
                 
                 if((command & 0xC0) == READ_CMD || (command & 0xC0) == FIRECNT_CMD || (command & 0xC0) == SETZERO_CMD)
                 {
-                    entry_state = eBridge_RECEIVE_CMD;
+                    entry_state = eBridge_RECEIVE_CMD; // to remember what to do after checksum verification
                     BridgeState = eBridge_RECEIVE_CHECKSUM;
                     //printf("Read Command received\r\n");
                 }else if((command & 0xC0) == WRITE_CMD)
@@ -222,7 +222,6 @@ void ControlBridgeProcess(void)
             {
                 if(UART2_Read() == STOP_BYTE)
                 {
-                    TMR1_StopTimer();
                     BridgeState = eBridge_VERIFY_CHECKSUM;
                     //printf("Stop byte received\r\n");
                 }else
@@ -236,13 +235,14 @@ void ControlBridgeProcess(void)
                 switch(entry_state)
                 {
                     case eBridge_RECEIVE_CMD:
-                        switch(command & 0xC0)
+                        switch(command & 0xC0) // Decide what to do after message validation
                         {
                             case READ_CMD:
                                 BridgeState = eBridge_TRANSMIT_DATA;
                                 break;
                             case FIRECNT_CMD:
                                 PF_IncrementFireCount();
+                                TMR1_StopTimer();
                                 BridgeState = eBridge_IDLE;
                                 break;
                             case SETZERO_CMD:
@@ -290,7 +290,7 @@ void ControlBridgeProcess(void)
                     sendData(tx_size, (uint8_t)SETZERO_CMD);
                     break;
             }
-            
+            TMR1_StopTimer();
             BridgeState = eBridge_IDLE;
             break;
         case eBridge_VERIFY_PAYLOAD:
@@ -317,6 +317,7 @@ void ControlBridgeProcess(void)
             break;
         case eBridge_TRANSMIT_CONFIG:
             sendConfig(CB_Param);
+            TMR1_StopTimer();
             BridgeState = eBridge_IDLE;
             break;
         case eBridge_COMM_ERROR: // Can add some diagnosis if wanted
@@ -353,8 +354,8 @@ uint8_t fillDataBuffer(const gs_MemoryParams* Param)
     TX_BUFFER[5] = (uint8_t)(bOBJ.CH1_ON & 0x00FF);
     TX_BUFFER[6] = (uint8_t)(bOBJ.CH1_OFF >> 8);
     TX_BUFFER[7] = (uint8_t)(bOBJ.CH1_OFF & 0x00FF);
-    TX_BUFFER[8] = (uint8_t)(bOBJ.variance >> 8);
-    TX_BUFFER[9] = (uint8_t)(bOBJ.variance & 0x00FF);
+    TX_BUFFER[8] = (uint8_t)(bOBJ.stdev >> 8);
+    TX_BUFFER[9] = (uint8_t)(bOBJ.stdev & 0x00FF);
     TX_BUFFER[10] = (uint8_t)(bOBJ.temperature >> 8);
     TX_BUFFER[11] = (uint8_t)(bOBJ.temperature & 0x00FF);
     TX_BUFFER[12] = (uint8_t)(bOBJ.LED_current_meas >> 8);
@@ -376,8 +377,8 @@ uint8_t fillDataBuffer(const gs_MemoryParams* Param)
     TX_BUFFER[23] = (uint8_t)(bOBJ.time_since_beginning & 0x000000FF);
     TX_BUFFER[24] = (uint8_t)(Param->lastZeroValue >> 8);
     TX_BUFFER[25] = (uint8_t)(Param->lastZeroValue & 0x00FF);
-//    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.variance,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
-    //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.variance,bOBJ.LED_current_meas,bOBJ.slope);
+//    printf("%u, %u, %u, %u, %u, %u, %u, %i \r\n",bOBJ.CH0_ON, bOBJ.CH0_OFF, bOBJ.CH1_ON,bOBJ.CH1_OFF,bOBJ.stdev,bOBJ.temperature,bOBJ.LED_current_meas,bOBJ.slope);
+    //printf("%u, %u, %u, %i \r\n",bOBJ.CH0_ON,bOBJ.stdev,bOBJ.LED_current_meas,bOBJ.slope);
 
     return 26;
 }
@@ -448,9 +449,8 @@ void bridgeZeroComplete(void)
     set_zero_complete = true;
 }
 
-void controlBridge_update(SMeasureParticlesObject* mOBJ)
+void controlBridge_update(SMeasureParticlesObject* mOBJ) // Called when MeasureParticles.c has data
 {
-    bOBJ.temperature = (uint16_t)(1000*mOBJ->m_fTemperatureCelcius);
     bOBJ.CH0_ON = mOBJ->m_uFullLighted;
     bOBJ.CH1_ON = mOBJ->m_uIrLighted;
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
@@ -463,14 +463,13 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ)
     {
         bOBJ.LED_current_meas = 0.8*(float)bOBJ.LED_current_meas + 0.2*(uint16_t)(3300*(float)mOBJ->adcValue/4096);
     }
-    
-    //bOBJ.LED_current_meas = (uint16_t)(3300*(float)mOBJ->adcValue/4096);
+
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
     //printf("DAC set to: %u\r\n", mOBJ->dacValue);
     
-    DRDY = false;
+    DRDY = false; // Tells the state machine it can compute calculated values
     
 }
 
@@ -486,9 +485,9 @@ void updateCalculatedValues(void)
     if(!first_loop)
     {
         
-        mean += ((float)bOBJ.CH0_ON - (float)bOBJ.CH0_BUFFER[mem_index])/(float)DATA_MEMORY_DEPTH;
-        bOBJ.CH0_BUFFER[mem_index] = bOBJ.CH0_ON;
-        bOBJ.slope = (int)((1-alpha*bOBJ.slope) + (alpha*(1000*(bOBJ.CH0_ON-mean)/mean)));
+        mean += ((float)bOBJ.CH0_ON - (float)bOBJ.CH0_BUFFER[mem_index])/(float)DATA_MEMORY_DEPTH; // rolling average
+        bOBJ.CH0_BUFFER[mem_index] = bOBJ.CH0_ON; // Add value to buffer
+        bOBJ.slope = (int)((1-alpha*bOBJ.slope) + (alpha*(1000*(bOBJ.CH0_ON-mean)/mean))); // pseudo slope
         
         for(uint8_t i = 0;i < DATA_MEMORY_DEPTH;i++)
         {
@@ -496,16 +495,16 @@ void updateCalculatedValues(void)
             vtemp = vtemp*vtemp/((float)DATA_MEMORY_DEPTH - 1);
             var += vtemp;
         }
-        bOBJ.variance = (uint16_t)sqrt(var);
+        bOBJ.stdev = (uint16_t)sqrt(var); // standard deviation (still called PartVar in string)
         
     }else
     {
-        mean += (float)bOBJ.CH0_ON/(float)DATA_MEMORY_DEPTH;
+        mean += (float)bOBJ.CH0_ON/(float)DATA_MEMORY_DEPTH; // Different behaviour when first filling the buffer
         bOBJ.CH0_BUFFER[mem_index] = bOBJ.CH0_ON;
     }
     
     mem_index++;
-    if(mem_index >= (uint8_t)DATA_MEMORY_DEPTH)
+    if(mem_index >= (uint8_t)DATA_MEMORY_DEPTH) // circular buffer
     {
         mem_index=0;
         first_loop = false;
@@ -516,7 +515,7 @@ void updateCalculatedValues(void)
     printf("PartCH1ON:%u ", bOBJ.CH1_ON);
     printf("PartCH0OFF:%u ",bOBJ.CH0_OFF);
     printf("PartCH1OFF:%u ",bOBJ.CH1_OFF);
-    printf("PartVar:%u ",bOBJ.variance);
+    printf("PartVar:%u ",bOBJ.stdev);
     printf("PartSlope:%i ",bOBJ.slope);
     printf("TPart:%u ",bOBJ.temperature);
     printf("PartCurr:%u ",bOBJ.LED_current_meas);

@@ -73,7 +73,7 @@ void ParameterInit(void)
     
 }
 
-void PF_IncrementFireCount(void)
+void PF_IncrementFireCount(void) // How many fires monitored since installation
 {
     uint16_t count = (uint16_t)((DATAEE_ReadByte(EE_FIRE_COUNTER_MSB) << 8) + DATAEE_ReadByte(EE_FIRE_COUNTER_LSB));
     count++;
@@ -90,7 +90,7 @@ void PF_Update_MemParams(uint16_t zero, uint8_t current, uint8_t temperature)
 }
 
 
-void PF_Update_EEPROM(void)
+void PF_Update_EEPROM(void) // Save memorizable paramters to EEPROM
 {
     DATAEE_WriteByte(EE_LAST_ZERO_MSB, (uint8_t)(EEParams.lastZeroValue >> 8));
     DATAEE_WriteByte(EE_LAST_ZERO_LSB, (uint8_t)(EEParams.lastZeroValue & 0x00FF));
@@ -99,7 +99,7 @@ void PF_Update_EEPROM(void)
     DATAEE_WriteByte(EE_TEMP_ADDR, EEParams.lastZeroTemp);
 }
 
-void PF_requestReconfigure(void)
+void PF_requestReconfigure(void) // Stop acquisition to change configuration
 {
     Params.AcqEnable = false;
 }

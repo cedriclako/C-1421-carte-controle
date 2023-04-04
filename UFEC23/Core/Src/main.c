@@ -28,6 +28,7 @@
 #include "DebugPort.h"
 #include "TestManager.h"
 #include "DebugManager.h"
+#include "MemBlock.h"
 #include "algo.h"
 #include "Hmi.h"
 #include "ParticlesManager.h"

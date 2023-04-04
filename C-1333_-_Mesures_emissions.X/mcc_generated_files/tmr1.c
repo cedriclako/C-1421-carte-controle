@@ -169,7 +169,7 @@ void TMR1_ISR(void)
     PIR3bits.TMR1IF = 0;
     TMR1_WriteTimer(timer1ReloadVal);
 
-    // callback function - called every 100th pass
+    // callback function - called every 200th pass
     if (++CountCallBack >= TMR1_INTERRUPT_TICKER_FACTOR)
     {
         // ticker function call

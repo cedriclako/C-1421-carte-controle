@@ -180,8 +180,8 @@ void DebugProcess(void)
                 {
                     gs_Curr = ADCC_GetSingleConversion(channel_ANB7);
                     
-                    printf("ADC VALUE = %.1f mV \r\n",(float)(3.3*gs_Curr/4.096));
-                    printf("LED current = %.1f mA \r\n", (float)(.33*gs_Curr/4.096));
+                    printf("ADC VALUE = %.1f mV \r\n",(3300*(float)gs_Curr/4096));
+                    printf("LED current = %.1f mA \r\n", (330*(float)gs_Curr/4096));
                     break;
                 }
                 default:
@@ -207,13 +207,10 @@ void DebugPrintMenu(void)
 {
     printf("\nH --> Print this help menu\r\n"); 
     printf("P --> Print DAC value [0:255] \r\n");
-    printf("A --> Increment DAC value by 1\r\n");
-    printf("B --> Decrement DAC value by 1\r\n");
-    printf("C --> Increment DAC value by 10\r\n");
-    printf("D --> Decrement DAC value by 10\r\n");
     printf("L --> Manually toggle LED\r\n"); 
     printf("S --> Start/Pause acquisition\r\n");
-    printf("Z --> Set lux zero (no effect on outputs on this version)\r\n");
+    printf("Z --> Set lux zero \r\n");
+    printf("V --> Print ADC value and LED current\r\n");
       
 }
 

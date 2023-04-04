@@ -73,7 +73,7 @@ void measureParticlesInitialize(void)
 
     gs_sMeasPartObject.adcValue = 0;
     
-    TMR0_SetInterruptHandler(MeasureTimerInterrupt);
+    TMR0_SetInterruptHandler(MeasureTimerInterrupt); //millisecond counter
     TMR0_StartTimer();
     
 }
@@ -87,8 +87,8 @@ void measureParticlesProcess(void)
         {
             if (tsl2591IsStarted() && ds1775IsStarted()) // give time to drivers to configure the ICs at startup
             {
-                //DAC1_SetOutput(MP_Param->DAC_value);
-                measureSetLED(MP_Param);
+                //DAC1_SetOutput(MP_Param->DAC_value); //Set DAC to arbitrary value
+                measureSetLED(MP_Param); // Configure DAC value to approach Led current requested value
                 ds1775RequestRead(); 
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             }
@@ -111,18 +111,14 @@ void measureParticlesProcess(void)
                 }
                 else if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_LIGHTED)
                 {
-                    // Activate LED and request light sensing
+                    
                     // Check if driver is ready
                     if (tsl2591IsReadyForRequest())
                     {
-                        //GpioWritePin(eGPIO_LED_ON, LED_ON);
                         tsl2591SenseLight(&gs_sMeasPartObject.m_uFullLighted, &gs_sMeasPartObject.m_uIrLighted, &gs_sMeasPartObject.m_fLuxLighted, measureParticlesSenseCompleteCallback);
                         gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_SENT;
                     }
                 }
-            }else
-            {
-                DAC1_Disable();
             }
             break;
         }
@@ -141,15 +137,8 @@ void measureParticlesProcess(void)
 
             if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_DARK)
             {
-                // activate LED
-                //GpioWritePin(eGPIO_LED_ON, LED_ON);
-                //Measure_Set_Current();
-                
-                
-                
+                // activate LED 
                 DAC1_Enable();
-                
-                //ADCC_StartConversion(channel_ANB7);
                 
                 // Change state and sub state
                 gs_sMeasPartObject.m_eSubState = eSUB_STATE_LIGHTED;
@@ -157,17 +146,20 @@ void measureParticlesProcess(void)
             }
             else if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_LIGHTED)
             {
-                // De-activate LED
-                //GpioWritePin(eGPIO_LED_ON, LED_OFF);
+                // measure current in LED
                 ADCC_DischargeSampleCapacitor();
                 gs_sMeasPartObject.adcValue = (uint16_t) ADCC_GetSingleConversion(channel_ANB7);
-
+                
+                // De-activate LED
                 DAC1_Disable();
                 
                 // Change state and sub state
                 gs_sMeasPartObject.m_eSubState = eSUB_STATE_DARK;
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_UPDATE_BRIDGE;
+                
+                // Notify control bridge new data is available
                 bridgeDataRDY();
+                
                 // print data in console if it is enabled
                 gs_sMeasPartObject.m_uLastRead = gs_sMeasPartObject.m_uMillisCounter;
                 if (MP_Param->PrintEnable)
@@ -178,12 +170,14 @@ void measureParticlesProcess(void)
             }
             else if (gs_sMeasPartObject.m_eSubState == eSUB_STATE_ZERO)
             {
-                // De-activate LED
-                //GpioWritePin(eGPIO_LED_ON, LED_OFF);
+                // measure current in LED
+                ADCC_DischargeSampleCapacitor();
                 gs_sMeasPartObject.adcValue = (uint16_t) ADCC_GetSingleConversion(channel_ANB7);
-                DAC1_Disable();
-                //gs_sMeasPartObject.m_fLuxZero = gs_sMeasPartObject.m_fLuxLighted;
                 
+                // De-activate LED
+                DAC1_Disable();
+                
+                // Write zero values in EEPROM parameters (wait for ctrl card to actually save in EEPROM)
                 PF_Update_MemParams(gs_sMeasPartObject.m_fullZero,(uint8_t)(3300*(float)gs_sMeasPartObject.adcValue/4096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
                 bridgeZeroComplete();
 
@@ -217,7 +211,7 @@ void measureParticlesProcess(void)
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             }
             break;
-        case eMEASURE_PARTICLES_RECONFIGURE:
+        case eMEASURE_PARTICLES_RECONFIGURE: 
             if(tsl2591IsReadyForRequest())
             {
                 TSLreset();
