@@ -868,7 +868,7 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 	static i = 0;
 
 	// Parameters set by user
-	const int MajorCorrectionInterval = 1e4; // in millseconds
+	const int MajorCorrectionInterval = 6e4; // in millseconds
 	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or add grill
 	int Tbuff_flameloss = 10;
 	int Tbuff_overheat = 100;
