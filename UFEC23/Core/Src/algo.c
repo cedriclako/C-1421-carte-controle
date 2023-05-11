@@ -161,7 +161,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
-	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
+	  const uint32_t SEC_PER_STEP_COMB_HIGH = 9;
 	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
 
 	  manageFans(Algo_getBaffleTemp(),pParticlesParam);
@@ -363,7 +363,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 
 			AirInput_forceAperture(&primary,  AirInput_getAperture(&primary));
-			AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
+			AirInput_forceAperture(&grill,  0);
 			AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCombLow);
 
 			StateEntryControlAdjustment(pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
@@ -431,6 +431,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COMBUSTION_SUPERLOW:
 
 		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCombSuperLow);
+		AirInput_forceAperture(&grill, 0);
 		StateEntryControlAdjustment(pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
 									pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
 									pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
@@ -861,18 +862,18 @@ float get_crit(void)
 
 static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit)
 {
-	// Function memory variables
+	// Function memory variables (pour timings et validation de la pertinence des corrections précédentes)
 	static uint32_t lastTimeInFunc = 0;
 	static uint32_t TimeOfMajorCorrection = 0;
 	static float previous_diffs[5] = {};
 	static i = 0;
 
 	// Parameters set by user
-	const int MajorCorrectionInterval = 6e4; // in millseconds
-	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or add grill
-	int Tbuff_flameloss = 10;
-	int Tbuff_overheat = 100;
-	int Tbuff_workingRange = 30;
+	const int MajorCorrectionInterval = SECONDS(10); // Temps d'attente avant de faire une autre modif importante
+	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or allow grid to open
+	int Tbuff_flameloss = -10; // Température limite (sous le target) sous laquelle on fait une correction pour éviter de perdre la flamme
+	int Tbuff_overheat = 100; // Température (au dessus du target) où il faut commencer à fermer un peu plus vite car on est trop haut
+	int Tbuff_workingRange = 30; // Température (au dessus du target) où on juge qu'on est stables
 	int crit_threshold_soft = 40;
 	int crit_threshold_hard = 80;
 	int diff_threshold_soft = 20;
@@ -1004,49 +1005,116 @@ float* get_algomod(void)
 }
 
 
-static void AirAdjustment(int adjustement, float secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
+static void AirAdjustment(int adjustment, float secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
 		uint8_t MinPrimary, uint8_t MaxPrimary,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary)
 {
-	if (adjustement > 0)
-	{
-		if (AirInput_getAperture(&secondary) >= MaxSecondary)
-		{
-			if (AirInput_getAperture(&primary) >= MaxPrimary)
-			{
-				if (AirInput_getAperture(&grill) < MaxGrill)
-				{
-					AirInput_setAjustement(&grill, adjustement, secondPerStep);
-				}
-			}
-			else
-			{
-				AirInput_setAjustement(&primary, adjustement, secondPerStep);
+	int adjustment_carriage = 0; // garde la balance de l'ajustement s'il est plus grand que l'angle alloué
+	int sec_delta;	// Espace (en pas) disponible pour bouger dans une direction ou l'autre
+	int prim_delta;
+	int gril_delta;
 
-			}
-		}else
+	if (adjustment > 0)
+	{
+		sec_delta = MaxSecondary - AirInput_getAperture(&secondary); // On ouvre, donc on regarde on est à combien du max
+		prim_delta = MaxPrimary - AirInput_getAperture(&primary);
+		gril_delta = MaxGrill - AirInput_getAperture(&grill);
+
+
+		if (sec_delta != 0) // A-t-on atteint le max?
 		{
-			if (AirInput_getAperture(&secondary) < MaxSecondary)
+			if(adjustment > sec_delta) // Si l'ajustement est trop grand, on bouge au max et on garde le restant pour le prochain moteur
 			{
-				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+				adjustment_carriage = adjustment - sec_delta;
+				adjustment = sec_delta;
 			}
+			AirInput_setAjustement(&secondary, adjustment, secondPerStep);
+			if(adjustment_carriage == 0) // Si on n'a pas de pas supplémentaire à faire, on a terminé
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
+		}
+
+		if (prim_delta != 0)
+		{
+			if(adjustment > prim_delta)
+			{
+				adjustment_carriage = adjustment - prim_delta;
+				adjustment = prim_delta;
+			}
+			AirInput_setAjustement(&primary, adjustment, secondPerStep);
+			if(adjustment_carriage == 0)
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
+		}
+
+		if (gril_delta != 0)
+		{
+			if(adjustment > gril_delta)
+			{
+				adjustment_carriage = adjustment - gril_delta;
+				adjustment = gril_delta;
+			}
+			AirInput_setAjustement(&grill, adjustment, secondPerStep);
 		}
 
 	}
-	else if (adjustement < 0)
+	else if (adjustment < 0)
 	{
-		if (AirInput_getAperture(&grill) > MinGrill)
-		{
-			AirInput_setAjustement(&grill, adjustement, secondPerStep);
+		sec_delta = MinSecondary - AirInput_getAperture(&secondary);
+		prim_delta = MinPrimary - AirInput_getAperture(&primary);
+		gril_delta = MinGrill - AirInput_getAperture(&grill);
 
-		}else if(AirInput_getAperture(&primary) > MinPrimary)
+		if (gril_delta != 0)
 		{
-			AirInput_setAjustement(&primary, adjustement, secondPerStep);
-		}else
-		{
-			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+			if(adjustment < gril_delta)
+			{
+				adjustment_carriage = adjustment - gril_delta;
+				adjustment = gril_delta;
+			}
+			AirInput_setAjustement(&grill, adjustment, secondPerStep);
+
+			if(adjustment_carriage == 0)
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
 		}
+
+		if (prim_delta != 0)
+		{
+			if(adjustment < prim_delta)
+			{
+				adjustment_carriage = adjustment - prim_delta;
+				adjustment = prim_delta;
+			}
+			AirInput_setAjustement(&primary, adjustment, secondPerStep);
+
+			if(adjustment_carriage == 0)
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
+		}
+
+		if (sec_delta != 0)
+		{
+			if(adjustment < sec_delta)
+			{
+				adjustment_carriage = adjustment - sec_delta;
+				adjustment = sec_delta;
+			}
+			AirInput_setAjustement(&secondary, adjustment, secondPerStep);
+		}
+
 	}
 	/*else{do nothing} air setting doesn't need further adjustment*/
 }

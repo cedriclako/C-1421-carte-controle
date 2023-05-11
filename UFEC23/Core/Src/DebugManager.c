@@ -131,7 +131,7 @@ void DebugManager(void const * argument)
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
 		printf("PIDPos:%i ",PIDTrapPosition*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
-		printf("Sec:%i ",Algo_getSecondary()*45/100);
+		printf("Sec:%i ",Algo_getSecondary()*9/10);
 		printf("Tboard:%i ",get_BoardTemp());
 		printf("Door:");
 		if(IsDoorOpen())
