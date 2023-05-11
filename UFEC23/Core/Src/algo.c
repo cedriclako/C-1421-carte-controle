@@ -161,7 +161,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
-	  const uint32_t SEC_PER_STEP_COMB_HIGH = 9;
+	  const uint32_t SEC_PER_STEP_COMB_HIGH = 12;
 	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
 
 	  manageFans(Algo_getBaffleTemp(),pParticlesParam);
@@ -282,7 +282,8 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 						  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
 						  (uint8_t)pSecondaryMotorParam->MinTempRise, (uint8_t)pSecondaryMotorParam->MaxTempRise);
 			}
-			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
+			//timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
+			timeInTemperatureRise = MINUTES(1);
 			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
 			{
 				TimeSinceEntryInCombLow = 0;
@@ -436,16 +437,26 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 									pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
 									pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
 
-		adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
+		//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
 
 
-		AirAdjustment(adjustement, (float)SEC_PER_STEP_COMB_LOW,
-						pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
-						pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
-						pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
+		//AirAdjustment(adjustement, (float)SEC_PER_STEP_COMB_LOW,
+		//				pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
+		//				pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
+		//				pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
 
-		if ( ((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
-		            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
+		// Adjustment based on particle value
+		bool stove_too_cold = false; // If all openings are maxed and temperature can't be brought over minimum value, go to comb_superlow
+		stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowtoSuperLow);
+
+		// Same adjustment function as in other states, but changed arguments
+		AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
+					pPrimaryMotorParam->MinCombSuperLow, pPrimaryMotorParam->MaxCombSuperLow,
+					pGrillMotorParam->MinCombSuperLow, pGrillMotorParam->MaxCombSuperLow,
+					pSecondaryMotorParam->MinCombSuperLow, pSecondaryMotorParam->MaxCombSuperLow);
+
+		if ( (((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
+		            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow)) || stove_too_cold) //détection de l'état coal/braise
 		            {
 		            	nextState = COAL_LOW;
 		            }
@@ -871,9 +882,9 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 	// Parameters set by user
 	const int MajorCorrectionInterval = SECONDS(10); // Temps d'attente avant de faire une autre modif importante
 	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or allow grid to open
-	int Tbuff_flameloss = -10; // Température limite (sous le target) sous laquelle on fait une correction pour éviter de perdre la flamme
+	int Tbuff_flameloss = 10; // Température limite (sous le target) sous laquelle on fait une correction pour éviter de perdre la flamme
 	int Tbuff_overheat = 100; // Température (au dessus du target) où il faut commencer à fermer un peu plus vite car on est trop haut
-	int Tbuff_workingRange = 30; // Température (au dessus du target) où on juge qu'on est stables
+	int Tbuff_workingRange = 40; // Température (au dessus du target) où on juge qu'on est stables
 	int crit_threshold_soft = 40;
 	int crit_threshold_hard = 80;
 	int diff_threshold_soft = 20;
