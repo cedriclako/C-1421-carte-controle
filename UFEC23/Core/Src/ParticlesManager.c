@@ -278,7 +278,7 @@ float Particle_getZeroNorm(void)
 
 uint16_t Particle_getTemperature(void)
 {
-	return (uint16_t)(ParticleDevice.temperature*9/5000+32);
+	return (uint16_t)(ParticleDevice.temperature*9/50+32);
 }
 
 uint16_t Particle_getCurrent(void)

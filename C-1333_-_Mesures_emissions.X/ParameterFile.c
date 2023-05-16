@@ -53,7 +53,7 @@ void ParameterInit(void)
     Params.MeasureInterval = 1600;
     Params.PrintEnable = false;
     Params.AcqEnable = true;
-    Params.Current_cmd = 5.0;
+    Params.Current_cmd = 5.3;
     //Params.DAC_value = 140;
     if(DATAEE_ReadByte(EE_FIRST_CONF_ADDR) != 0xAA)
     {

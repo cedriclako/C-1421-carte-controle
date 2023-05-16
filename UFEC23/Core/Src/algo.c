@@ -221,7 +221,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  //initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
 		}else if(reloadingEvent && (!Algo_getInterlockRequest()))
 		{
-			Particle_requestZero();
+			//Particle_requestZero();
 			nextState = RELOAD_IGNITION;
 			reloadingEvent = false;
 		}
@@ -894,7 +894,7 @@ static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* sp
 
 	// Variables for decicison making
 	float crit = get_crit();
-	bool crit_correction = false; // to avoid cancelling crit based correction with a diff based one
+	bool crit_correction = false; // to avoid cancelling crit based correction with a diff based correction
 	int32_t aperture = 0;
 	float Sec_per_step = 0.0;
 	int ch0 = (int)Particle_getCH0();
