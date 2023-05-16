@@ -61,6 +61,22 @@ static bool setZero = false;
 
 bool validateRxChecksum(uint8_t buffer_index);
 
+void ParticleInit(void)
+{
+	ParticleDevice.LED_current_meas = 0;
+	ParticleDevice.ch0_ON = 0;
+	ParticleDevice.ch0_OFF = 0;
+	ParticleDevice.ch1_ON = 0;
+	ParticleDevice.ch1_OFF = 0;
+	ParticleDevice.variance = 0;
+	ParticleDevice.temperature = 0;
+	ParticleDevice.LED_current_meas = 0;
+	ParticleDevice.slope = 0;
+	ParticleDevice.Lux_ON = 0;
+	ParticleDevice.Lux_OFF = 0;
+	ParticleDevice.TimeSinceInit = 0;
+}
+
 void ParticlesManager(void const * argument) {
 
 	osSemaphoreDef(MP_UART_SemaphoreHandle);
@@ -71,12 +87,13 @@ void ParticlesManager(void const * argument) {
 	static bool Rx_complete = false;
 	static bool rx_success = true;
 	static uint16_t tx_checksum, rx_checksum;
-	uint8_t rx_payload_size, tx_size;
+	uint8_t rx_payload_size, tx_size, zero_current;
 
 	ParticleDevice.time_window = 1;
 	ParticleDevice.TSL_gain = 3;
 	ParticleDevice.TSL_integration_time = 5;
 	ParticleDevice.LED_current_CMD = 100;
+
 
 
 
@@ -92,7 +109,7 @@ void ParticlesManager(void const * argument) {
 		}
 		if(particleBoardAbsent)
 		{
-			//osDelay(30000); //Ping every 30 sec... see if back on line
+			osDelay(30000); //Ping every 30 sec... see if back on line
 		}
 
 		if(config_mode)
@@ -137,7 +154,7 @@ void ParticlesManager(void const * argument) {
 		rx_payload_size = 0;
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 
-		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,500)) //wait 500ms for an answer or retry
+		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,800)) //wait 800ms for an answer or retry
 		{
 			//clearly something is wrong Abort the transmission
 			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
@@ -150,6 +167,7 @@ void ParticlesManager(void const * argument) {
 		else
 		{
 			RX_BUFFER[0] = 0;
+			RX_BUFFER[1] = 0;
 			HAL_UARTEx_ReceiveToIdle_IT(&huart3, RX_BUFFER,RX_BUFFER_LENGTH);
 			Rx_complete = false;
 			config_mode = false;
@@ -171,7 +189,7 @@ void ParticlesManager(void const * argument) {
 						uartErrorCount++;
 						if(uartErrorCount > 10)
 						{
-							//particleBoardAbsent = true;
+							particleBoardAbsent = true;
 						}
 
 					}
@@ -216,7 +234,6 @@ void ParticlesManager(void const * argument) {
 					ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
 					ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 					ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
-
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
 					//TODO: Implement config
@@ -228,10 +245,10 @@ void ParticlesManager(void const * argument) {
 
 				}else if((RX_BUFFER[1] & 0xC0) == SETZERO_CMD)
 				{
-					setZero = true;
+					setZero = false;
 					ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
-					ParticleDevice.LED_current_meas = RX_BUFFER[7];
-					ParticleDevice.normalized_zero = ParticleDevice.zero/ParticleDevice.LED_current_meas;
+					zero_current = RX_BUFFER[7];
+					ParticleDevice.normalized_zero = (float)ParticleDevice.zero/(float)zero_current;
 
 
 				}
@@ -311,6 +328,11 @@ bool validateRxChecksum(uint8_t buffer_index)
 	}
 
 	return (sum == (uint16_t)(RX_BUFFER[i] << 8) + (uint16_t)RX_BUFFER[i+1]);
+}
+
+bool PM_isPboard_absent(void)
+{
+	return particleBoardAbsent;
 }
 
 

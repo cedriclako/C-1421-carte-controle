@@ -46,11 +46,13 @@ uint16_t Particle_getVariance(void);
 uint16_t Particle_getLuxON(void);
 uint16_t Particle_getLuxOFF(void);
 uint32_t Particle_getTime(void);
+bool PM_isPboard_absent(void);
 
 int Particle_getSlope(void);
 void Particle_setConfig(void);
 
 void Particle_requestZero(void);
+void ParticleInit(void);
 void ParticlesManager(void const * argument);
 
 #endif /* INC_PARTICLESMANAGER_H_ */

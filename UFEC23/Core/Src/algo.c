@@ -197,7 +197,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
 		};
-		//Particle_requestZero();
+		Particle_requestZero();
 		nextState = WAITING;
 		break;
     case WAITING:
@@ -394,21 +394,32 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 				timeRefAutoMode = currentTime_ms;
 
 
-				//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
-
-				// Adjustment based on particle value
 				bool stove_too_cold = false; // If all openings are maxed and temperature can't be brought over minimum value, go to comb_superlow
-				stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowTarget);
+
+				if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
+					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
+
+					AirAdjustment(adjustement, (float)(SEC_PER_STEP_COMB_LOW),
+								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
+								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
+								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+				}else{
+					// Adjustment based on particle value
+					stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowTarget);
+
+					// Same adjustment function as in other states, but changed arguments
+					AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
+								pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
+								pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
+								pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+				}
+
 
 				if (((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))) || stove_too_cold){
 					nextState = COMBUSTION_SUPERLOW;
 				}
 
-				// Same adjustment function as in other states, but changed arguments
-				AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
-							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
-							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
-							pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+
 			}
 
 #endif
@@ -437,23 +448,28 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 									pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
 									pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
 
-		//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
+		bool stove_too_cold = false;
+
+		if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
+			adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
 
 
-		//AirAdjustment(adjustement, (float)SEC_PER_STEP_COMB_LOW,
-		//				pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
-		//				pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
-		//				pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
+			AirAdjustment(adjustement, (float)SEC_PER_STEP_COMB_LOW,
+						pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
+						pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
+						pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
+		}else{
+			// Adjustment based on particle value
 
-		// Adjustment based on particle value
-		bool stove_too_cold = false; // If all openings are maxed and temperature can't be brought over minimum value, go to comb_superlow
-		stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowtoSuperLow);
+			stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowtoSuperLow);
 
-		// Same adjustment function as in other states, but changed arguments
-		AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
+			// Same adjustment function as in other states, but changed arguments
+			AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
 					pPrimaryMotorParam->MinCombSuperLow, pPrimaryMotorParam->MaxCombSuperLow,
 					pGrillMotorParam->MinCombSuperLow, pGrillMotorParam->MaxCombSuperLow,
 					pSecondaryMotorParam->MinCombSuperLow, pSecondaryMotorParam->MaxCombSuperLow);
+		}
+
 
 		if ( (((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
 		            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow)) || stove_too_cold) //détection de l'état coal/braise
