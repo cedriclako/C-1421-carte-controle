@@ -37,6 +37,18 @@ typedef struct
 	int32_t s32ManualPrimary;
 	int32_t s32ManualSecondary;
 	int32_t s32ManualGrill;
+	int32_t s32MAJ_CORR;
+	int32_t s32TBUF_FLOSS;
+	int32_t s32TBUF_OVERHEAT;
+	int32_t s32TBUF_WORKRANGE;
+	int32_t s32CRIT_THRESHOLD_H;
+	int32_t s32CRIT_THRESHOLD_L;
+	int32_t s32DIFF_TRESHOLD_L;
+	int32_t s32DIFF_TRESHOLD_H;
+	int32_t s32DT_THRESHOLD_L;
+	int32_t s32DT_THRESHOLD_H;
+
+
 } PF_UsrParam;
 
 typedef struct
@@ -80,20 +92,30 @@ typedef struct
 	int32_t MinCoalLow;
 } PF_MotorOpeningsParam_t;
 
-#define PFD_TSLGAIN 		"TSLgain"
-#define PFD_TSLINT 			"TSLint"
-#define PFD_DACCMD 			"DACcmd"
-#define PFD_TIMEINTERVAL 	"TimeInterval"
-#define PFD_SECPERSTEP		"SecondsPerStepOffset"
-#define PFD_MAXAPERTURE		"MaxApertureOverride"
-#define PFD_MINAPERTURE		"MinApertureOverride"
-#define PFD_APERTUREOFFSET	"ApertureOffset"
-#define PFD_FANKIP			"FansKickInPoint"
-#define PFD_FANKOP			"FansKickOutPoint"
-#define PFD_MANUALBOOL		"ManualOverride"
-#define PFD_MANUALPRIM		"PrimaryOverrideValue"
-#define PFD_MANUALSEC		"SecondaryOverrideValue"
-#define PFD_MANUALGRILL		"GrillOverrideValue"
+#define PFD_TSLGAIN 			"TSLgain"
+#define PFD_TSLINT 				"TSLint"
+#define PFD_DACCMD 				"DACcmd"
+#define PFD_TIMEINTERVAL 		"TimeInterval"
+#define PFD_SECPERSTEP			"SecondsPerStepOffset"
+#define PFD_MAXAPERTURE			"MaxApertureOverride"
+#define PFD_MINAPERTURE			"MinApertureOverride"
+#define PFD_APERTUREOFFSET		"ApertureOffset"
+#define PFD_FANKIP				"FansKickInPoint"
+#define PFD_FANKOP				"FansKickOutPoint"
+#define PFD_MANUALBOOL			"ManualOverride"
+#define PFD_MANUALPRIM			"PrimaryOverrideValue"
+#define PFD_MANUALSEC			"SecondaryOverrideValue"
+#define PFD_MANUALGRILL			"GrillOverrideValue"
+#define PFD_MAJ_CORR			"SecondsToWaitAfterMajorCorrection"
+#define PFD_TBUF_FLOSS			"buffer_TempFlameLoss"
+#define PFD_TBUF_OVERHEAT		"buffer_TempOverHeat"
+#define PFD_TBUF_WORKRANGE		"buffer_TempWorkingRange"
+#define PFD_CRIT_THRESHOLD_H	"crit_HigherThreshold"
+#define PFD_CRIT_THRESHOLD_L	"crit_LowerThreshold"
+#define PFD_DIFF_TRESHOLD_L		"particles_LowerLevelThreshold"
+#define PFD_DIFF_TRESHOLD_H		"particles_HigherLevelThreshold"
+#define PFD_DT_THRESHOLD_L		"deltaTemp_LowerThreshold"
+#define PFD_DT_THRESHOLD_H		"deltaTemp_HigherThreshold"
 
 // Temperature
 #define PFD_WAITINGTOIGNITION     "temp_WaitingToIgnition"

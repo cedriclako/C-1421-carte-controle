@@ -29,6 +29,7 @@ CR    | 2022/10/12 | -       | Creation
 */
 
 #include "main.h"
+#include "ParamFile.h"
 #include "algo.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
@@ -60,6 +61,11 @@ static bool config_mode = false;
 static bool setZero = false;
 
 bool validateRxChecksum(uint8_t buffer_index);
+static bool is_part_data_updated(void);
+static void update_part_variables(void);
+
+// For debug purposes... Contains parameter modifications in ComputeParticleAdjustment
+float algo_mod[4] = {0.0,0.0,0.0,0.0}; //
 
 void ParticleInit(void)
 {
@@ -75,6 +81,8 @@ void ParticleInit(void)
 	ParticleDevice.Lux_ON = 0;
 	ParticleDevice.Lux_OFF = 0;
 	ParticleDevice.TimeSinceInit = 0;
+	ParticleDevice.last_particle_time = 0;
+	ParticleDevice.crit = 0.0;
 }
 
 void ParticlesManager(void const * argument) {
@@ -88,6 +96,7 @@ void ParticlesManager(void const * argument) {
 	static bool rx_success = true;
 	static uint16_t tx_checksum, rx_checksum;
 	uint8_t rx_payload_size, tx_size, zero_current;
+	uint32_t response_delay = 500;
 
 	ParticleDevice.time_window = 1;
 	ParticleDevice.TSL_gain = 3;
@@ -129,6 +138,7 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[8] = STOP_BYTE;
 			tx_size = 9;
+			response_delay = 500;
 		}else if(setZero)
 		{
 			TX_BUFFER[0] = START_BYTE;
@@ -138,6 +148,7 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[4] = STOP_BYTE;
 			tx_size = 5;
+			response_delay = 800;
 		}else
 		{
 			TX_BUFFER[0] = START_BYTE;
@@ -147,14 +158,14 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[4] = STOP_BYTE;
 			tx_size = 5;
-
+			response_delay = 500;
 
 
 		}
 		rx_payload_size = 0;
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 
-		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,800)) //wait 800ms for an answer or retry
+		if(osErrorOS == osSemaphoreWait(MP_UART_SemaphoreHandle,response_delay)) //wait for an answer or retry
 		{
 			//clearly something is wrong Abort the transmission
 			//HAL_GPIO_WritePin(STATUS_LED0_GPIO_Port,STATUS_LED0_Pin,RESET);
@@ -386,4 +397,259 @@ void Particle_setConfig(void)
 void Particle_requestZero(void)
 {
 	setZero = true;
+}
+
+
+static void update_part_variables(void)
+{
+	int std,slp;
+	float crit = 0.0;
+	float zero_norm;
+
+	std = ParticleDevice.variance < 80? (int)ParticleDevice.variance:80;
+
+	if(ParticleDevice.slope > 0){
+		slp = ParticleDevice.slope < 20? ParticleDevice.slope:20;
+		crit = (float)(std+slp);
+	}else
+	{
+		slp = abs(ParticleDevice.slope) < 20? ParticleDevice.slope:-20;
+		crit = (float)(std-slp)*(-1);
+	}
+
+	ParticleDevice.crit =  crit/100;
+
+	if(is_part_data_updated())
+	{
+		ParticleDevice.last_particle_time = ParticleDevice.TimeSinceInit;
+	}
+
+}
+
+static bool is_part_data_updated(void)
+{
+	return ParticleDevice.last_particle_time != ParticleDevice.TimeSinceInit;
+}
+
+
+
+bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int* delta, float* speed, uint32_t Time_ms,
+		int32_t baffleTemperature, int32_t temperature_limit)
+{
+	// Function memory variables (pour timings et validation de la pertinence des corrections précédentes)
+	static uint32_t lastTimeInFunc = 0;
+	static uint32_t TimeOfMajorCorrection = 0;
+
+	// Variables for decicison making
+	bool crit_correction = false; // to avoid cancelling crit based correction with a diff based correction
+	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or allow grid to open
+	int32_t aperture = 0;
+	float Sec_per_step = 0.0;
+	//float zero_norm = 10*ParticleDevice.normalized_zero;
+	float zero_norm = 80;
+	float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - zero_norm;
+
+	if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32TIMEINTERVAL))
+	{
+		if((baffleTemperature - temperature_limit) < pParam->s32TBUF_FLOSS)
+		{
+			if(dTavant < -1*pParam->s32DT_THRESHOLD_L)
+			{
+				aperture = 20;
+				Sec_per_step = 0;
+
+			}else
+			{
+				aperture = 10;
+				Sec_per_step = 0.5;
+			}
+
+		TimeOfMajorCorrection = Time_ms;
+		MajorCorrection_counter++;
+
+		}else
+		{
+			MajorCorrection_counter = 0;
+		}
+	}
+
+	if(ParticleDevice.crit > pParam->s32CRIT_THRESHOLD_L && MajorCorrection_counter == 0)
+	{
+		if((baffleTemperature - temperature_limit) < pParam->s32TBUF_WORKRANGE)
+		{
+			aperture = 5;
+			Sec_per_step = 0.5;
+		}else if((baffleTemperature - temperature_limit) < pParam->s32TBUF_OVERHEAT)
+		{
+			if(dTavant >= 0)
+			{
+				aperture = -5;
+				Sec_per_step = 1;
+			}else
+			{
+				aperture = 5;
+				Sec_per_step = 1;
+			}
+
+		}else
+		{
+			aperture = -10;
+			Sec_per_step = 0.5;
+		}
+		crit_correction = true;
+
+	}
+
+	if(!crit_correction && MajorCorrection_counter == 0)
+	{
+		if((baffleTemperature - temperature_limit) > pParam->s32TBUF_FLOSS)
+		{
+			if(diff > pParam->s32DIFF_TRESHOLD_H)
+			{
+				aperture = -5;
+				Sec_per_step = 0.5;
+			}else if(diff > pParam->s32DIFF_TRESHOLD_L)
+			{
+				aperture = -1;
+				Sec_per_step = 3;
+			}
+		}
+
+	}
+
+
+
+	algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
+
+
+	lastTimeInFunc = Time_ms;
+	*delta = aperture;
+	*speed = Sec_per_step;
+
+	////////////////////////////////////////////
+	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
+	{
+		algo_mod[0] = aperture;
+		algo_mod[1] = Sec_per_step;
+		algo_mod[3] = dTavant;
+	}
+	///////////////////////////////////////////
+
+	// If too many consecutive major corrections, go to comb_superlow
+	if(MajorCorrection_counter > 4){
+		return true;
+	}
+	return false;
+
+
+}
+
+
+void computeParticleRiseAdjustment(const PF_UsrParam* pParam, float dTbaffle, int* delta, float* speed, uint32_t Time_ms,
+		int32_t baffleTemperature, int32_t temperature_limit)
+{
+	// Function memory variables (pour timings et validation de la pertinence des corrections précédentes)
+		static uint32_t lastTimeInFunc = 0;
+		static uint32_t TimeOfMajorCorrection = 0;
+
+		// Variables for decicison making
+		bool crit_correction = false; // to avoid cancelling crit based correction with a diff based correction
+		static int MajorCorrection_counter = 0;
+		int32_t aperture = 0;
+		float Sec_per_step = 0.0;
+		//float zero_norm = 10*ParticleDevice.normalized_zero;
+		float zero_norm = 80;
+		float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - zero_norm;
+
+		if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32TIMEINTERVAL))
+		{
+			if((temperature_limit - baffleTemperature) < pParam->s32TBUF_OVERHEAT)
+			{
+				if(dTbaffle < pParam->s32DT_THRESHOLD_L)
+				{
+					aperture = 20;
+					Sec_per_step = 0;
+
+				}else
+				{
+					aperture = 10;
+					Sec_per_step = 0.5;
+				}
+
+			TimeOfMajorCorrection = Time_ms;
+			MajorCorrection_counter++;
+
+			}else
+			{
+				MajorCorrection_counter = 0;
+			}
+		}
+
+		if(ParticleDevice.crit > pParam->s32CRIT_THRESHOLD_L && MajorCorrection_counter == 0)
+		{
+			if((temperature_limit - baffleTemperature) < pParam->s32TBUF_WORKRANGE)
+			{
+				aperture = 5;
+				Sec_per_step = 0.5;
+			}else if((temperature_limit - baffleTemperature) < pParam->s32TBUF_OVERHEAT)
+			{
+				if(dTbaffle >= 0)
+				{
+					aperture = -5;
+					Sec_per_step = 1;
+				}else
+				{
+					aperture = 5;
+					Sec_per_step = 1;
+				}
+
+			}else
+			{
+				aperture = -10;
+				Sec_per_step = 0.5;
+			}
+			crit_correction = true;
+
+		}
+
+		if(!crit_correction && MajorCorrection_counter == 0)
+		{
+			if((baffleTemperature - temperature_limit) > pParam->s32TBUF_FLOSS)
+			{
+				if(diff > pParam->s32DIFF_TRESHOLD_H)
+				{
+					aperture = -5;
+					Sec_per_step = 0.5;
+				}else if(diff > pParam->s32DIFF_TRESHOLD_L)
+				{
+					aperture = -1;
+					Sec_per_step = 3;
+				}
+			}
+
+		}
+
+
+
+		algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
+
+
+		lastTimeInFunc = Time_ms;
+		*delta = aperture;
+		*speed = Sec_per_step;
+
+		////////////////////////////////////////////
+		if(Time_ms < (lastTimeInFunc + SECONDS(5)))
+		{
+			algo_mod[0] = aperture;
+			algo_mod[1] = Sec_per_step;
+		}
+		///////////////////////////////////////////
+
+}
+
+// for DebugManager
+float* get_algomod(void)
+{
+	return algo_mod;
 }

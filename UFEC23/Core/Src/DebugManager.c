@@ -129,7 +129,6 @@ void DebugManager(void const * argument)
 		printf("dTbaffle:%f",Algo_getBaffleTempSlope());
 		printf(" FanSpeed:%i ",Mot_getFanSpeed());
 		printf("Grille:%i ",	Algo_getGrill()*9/10);
-		printf("PIDPos:%i ",PIDTrapPosition*9/10);
 		printf("Prim:%i ",Algo_getPrimary()*9/10);
 		printf("Sec:%i ",Algo_getSecondary()*9/10);
 		printf("Tboard:%i ",get_BoardTemp());
@@ -143,6 +142,7 @@ void DebugManager(void const * argument)
 		{
 			printf("CLOSED ");
 		}
+
 		printf("PartCH0ON:%u ", Particle_getCH0());
 		printf("PartCH1ON:%u ", Particle_getCH1());
 		printf("PartCH0OFF:%u ",Particle_getCH0_OFF());
@@ -159,7 +159,15 @@ void DebugManager(void const * argument)
 		printf("AdjOffset:%f ",mod[0]);
 		printf("SpeedDivider:%f ",mod[1]);
 		printf("dTavant:%f",mod[3]);
-		//printf("GlobalStatus:%i,%i,%i",mod[0],mod[1],mod[2] ); // Aller chercher le flag de particle adjust ou le temps de
+		if(PM_isPboard_absent())
+		{
+			printf("GlobalStatus:PARTICLE_COMM_ERROR");
+		}
+		else
+		{
+
+		}
+		printf("GlobalStatus: ");
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */
