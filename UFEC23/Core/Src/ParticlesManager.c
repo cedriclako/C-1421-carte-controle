@@ -245,6 +245,7 @@ void ParticlesManager(void const * argument) {
 					ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
 					ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 					ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
+					update_part_variables();
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
 					//TODO: Implement config
@@ -404,7 +405,6 @@ static void update_part_variables(void)
 {
 	int std,slp;
 	float crit = 0.0;
-	float zero_norm;
 
 	std = ParticleDevice.variance < 80? (int)ParticleDevice.variance:80;
 
@@ -433,7 +433,7 @@ static bool is_part_data_updated(void)
 
 
 
-bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int* delta, float* speed, uint32_t Time_ms,
+bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint32_t Time_ms,
 		int32_t baffleTemperature, int32_t temperature_limit)
 {
 	// Function memory variables (pour timings et validation de la pertinence des corrections précédentes)
@@ -441,6 +441,7 @@ bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int*
 	static uint32_t TimeOfMajorCorrection = 0;
 
 	// Variables for decicison making
+	const PF_PartParam* pParam = PB_GetParticlesParam();
 	bool crit_correction = false; // to avoid cancelling crit based correction with a diff based correction
 	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or allow grid to open
 	int32_t aperture = 0;
@@ -449,11 +450,11 @@ bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int*
 	float zero_norm = 80;
 	float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - zero_norm;
 
-	if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32TIMEINTERVAL))
+	if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32MAJ_CORR_INTERVAL))
 	{
 		if((baffleTemperature - temperature_limit) < pParam->s32TBUF_FLOSS)
 		{
-			if(dTavant < -1*pParam->s32DT_THRESHOLD_L)
+			if(dTavant < -1*pParam->s32DT_THRESHOLD_H)
 			{
 				aperture = 20;
 				Sec_per_step = 0;
@@ -522,13 +523,13 @@ bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int*
 	algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
 
 
-	lastTimeInFunc = Time_ms;
 	*delta = aperture;
 	*speed = Sec_per_step;
 
 	////////////////////////////////////////////
-	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
+	if(Time_ms > (lastTimeInFunc + SECONDS(5)))
 	{
+		lastTimeInFunc = Time_ms;
 		algo_mod[0] = aperture;
 		algo_mod[1] = Sec_per_step;
 		algo_mod[3] = dTavant;
@@ -536,7 +537,9 @@ bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int*
 	///////////////////////////////////////////
 
 	// If too many consecutive major corrections, go to comb_superlow
-	if(MajorCorrection_counter > 4){
+	if(MajorCorrection_counter > 10){
+		MajorCorrection_counter = 0;
+		TimeOfMajorCorrection = 0;
 		return true;
 	}
 	return false;
@@ -545,107 +548,37 @@ bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int*
 }
 
 
-void computeParticleRiseAdjustment(const PF_UsrParam* pParam, float dTbaffle, int* delta, float* speed, uint32_t Time_ms,
-		int32_t baffleTemperature, int32_t temperature_limit)
+TempRiseAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature)
 {
-	// Function memory variables (pour timings et validation de la pertinence des corrections précédentes)
-		static uint32_t lastTimeInFunc = 0;
-		static uint32_t TimeOfMajorCorrection = 0;
 
 		// Variables for decicison making
-		bool crit_correction = false; // to avoid cancelling crit based correction with a diff based correction
-		static int MajorCorrection_counter = 0;
-		int32_t aperture = 0;
-		float Sec_per_step = 0.0;
-		//float zero_norm = 10*ParticleDevice.normalized_zero;
+		const PF_PartParam* pParam = PB_GetParticlesParam();
+		static uint32_t TimeOfMajorCorrection = 0;
 		float zero_norm = 80;
 		float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - zero_norm;
 
-		if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32TIMEINTERVAL))
+		if(Time_ms < (TimeOfMajorCorrection + MINUTES(1)))
 		{
-			if((temperature_limit - baffleTemperature) < pParam->s32TBUF_OVERHEAT)
+			return WAIT;
+		}
+
+		if(baffleTemperature > pParam->s32T_KIP_RISE)
+		{
+			if((diff > pParam->s32DIFF_TRESHOLD_H) && (dTbaffle > (float)pParam->s32DT_Rise/6.0)) //
 			{
-				if(dTbaffle < pParam->s32DT_THRESHOLD_L)
-				{
-					aperture = 20;
-					Sec_per_step = 0;
-
-				}else
-				{
-					aperture = 10;
-					Sec_per_step = 0.5;
-				}
-
-			TimeOfMajorCorrection = Time_ms;
-			MajorCorrection_counter++;
-
-			}else
-			{
-				MajorCorrection_counter = 0;
+				TimeOfMajorCorrection = Time_ms;
+				return FAST_CLOSE;
 			}
 		}
 
-		if(ParticleDevice.crit > pParam->s32CRIT_THRESHOLD_L && MajorCorrection_counter == 0)
+		if(dTbaffle < (float)pParam->s32DT_THRESHOLD_L/6.0)
 		{
-			if((temperature_limit - baffleTemperature) < pParam->s32TBUF_WORKRANGE)
-			{
-				aperture = 5;
-				Sec_per_step = 0.5;
-			}else if((temperature_limit - baffleTemperature) < pParam->s32TBUF_OVERHEAT)
-			{
-				if(dTbaffle >= 0)
-				{
-					aperture = -5;
-					Sec_per_step = 1;
-				}else
-				{
-					aperture = 5;
-					Sec_per_step = 1;
-				}
-
-			}else
-			{
-				aperture = -10;
-				Sec_per_step = 0.5;
-			}
-			crit_correction = true;
-
-		}
-
-		if(!crit_correction && MajorCorrection_counter == 0)
-		{
-			if((baffleTemperature - temperature_limit) > pParam->s32TBUF_FLOSS)
-			{
-				if(diff > pParam->s32DIFF_TRESHOLD_H)
-				{
-					aperture = -5;
-					Sec_per_step = 0.5;
-				}else if(diff > pParam->s32DIFF_TRESHOLD_L)
-				{
-					aperture = -1;
-					Sec_per_step = 3;
-				}
-			}
-
+			return WAIT;
 		}
 
 
 
-		algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
-
-
-		lastTimeInFunc = Time_ms;
-		*delta = aperture;
-		*speed = Sec_per_step;
-
-		////////////////////////////////////////////
-		if(Time_ms < (lastTimeInFunc + SECONDS(5)))
-		{
-			algo_mod[0] = aperture;
-			algo_mod[1] = Sec_per_step;
-		}
-		///////////////////////////////////////////
-
+		return SLOW_CLOSE;
 }
 
 // for DebugManager

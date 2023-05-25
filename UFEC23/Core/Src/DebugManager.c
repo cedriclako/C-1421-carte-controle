@@ -165,7 +165,7 @@ void DebugManager(void const * argument)
 		}
 		else
 		{
-
+			printf("GlobalStatus:NO_ERROR");
 		}
 		printf("GlobalStatus: ");
 		printf("*\n\r");

@@ -97,6 +97,7 @@ static PF_MotorOpeningsParam_t m_sSecondaryMotorParam =
 };
 
 static PF_UsrParam m_sMemBlock = { 0xFF }; // Simulate a flash memory
+static PF_PartParam m_sPartMemBlock = { 0xFF};
 
 static const PFL_SParameterItem m_sParameterItems[] =
 {
@@ -114,32 +115,36 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_MINAPERTURE, 			"", &m_sMemBlock.s32MIN_APERTURE, 					       	0, 0, 100),
 	PFL_INIT_SINT32(PFD_APERTUREOFFSET, 		"", &m_sMemBlock.s32APERTURE_OFFSET, 					   	0, 0, 100),
 	PFL_INIT_SINT32(PFD_FANKIP,			 		"", &m_sMemBlock.s32FAN_KIP,   	 					   		3500, 0, 20000),
-	PFL_INIT_SINT32(PFD_FANKOP,			 		"", &m_sMemBlock.s32FAN_KOP,		 				   		6500, 0, 20000),
-	PFL_INIT_SINT32(PFD_MAJ_CORR,			 	"", &m_sMemBlock.s32MAJ_CORR,		 				   		10, 0, 100),
-	PFL_INIT_SINT32(PFD_TBUF_FLOSS,			 	"", &m_sMemBlock.s32TBUF_FLOSS,		 				   		10, 0, 100),
-	PFL_INIT_SINT32(PFD_TBUF_OVERHEAT,			"", &m_sMemBlock.s32TBUF_OVERHEAT,		 				   	100, 0, 1000),
-	PFL_INIT_SINT32(PFD_TBUF_WORKRANGE,			"", &m_sMemBlock.s32TBUF_WORKRANGE,		 				   	40, 0, 1000),
-	PFL_INIT_SINT32(PFD_CRIT_THRESHOLD_H,		"", &m_sMemBlock.s32CRIT_THRESHOLD_H,		 				40, 0, 100),
-	PFL_INIT_SINT32(PFD_CRIT_THRESHOLD_L,		"", &m_sMemBlock.s32CRIT_THRESHOLD_L,		 				80, 0, 100),
-	PFL_INIT_SINT32(PFD_DIFF_TRESHOLD_L,		"", &m_sMemBlock.s32DIFF_TRESHOLD_L,		 				20, 0, 1000),
-	PFL_INIT_SINT32(PFD_DIFF_TRESHOLD_H,		"", &m_sMemBlock.s32DIFF_TRESHOLD_H,		 				50, 0, 1000),
-	PFL_INIT_SINT32(PFD_DT_THRESHOLD_L,			"", &m_sMemBlock.s32DT_THRESHOLD_L,		 				   	6, 0, 100),
-	PFL_INIT_SINT32(PFD_DT_THRESHOLD_H,			"", &m_sMemBlock.s32DT_THRESHOLD_H,		 				   	1, 0, 20000),
+	PFL_INIT_SINT32(PFD_FANKOP,			 	    "", &m_sMemBlock.s32FAN_KOP,		 				   		6500, 0, 20000),
+
+
+	PFL_INIT_SINT32(PFD_MAJ_CORR,			 	"", &m_sPartMemBlock.s32MAJ_CORR_INTERVAL,		 				10, 0, 100),
+	PFL_INIT_SINT32(PFD_TBUF_FLOSS,			 	"", &m_sPartMemBlock.s32TBUF_FLOSS,		 				   		10, 0, 100),
+	PFL_INIT_SINT32(PFD_TBUF_OVERHEAT,			"", &m_sPartMemBlock.s32TBUF_OVERHEAT,		 				   	100, 0, 1000),
+	PFL_INIT_SINT32(PFD_TBUF_WORKRANGE,			"", &m_sPartMemBlock.s32TBUF_WORKRANGE,		 				   	40, 0, 1000),
+	PFL_INIT_SINT32(PFD_KIP_PART_RISE,			"", &m_sPartMemBlock.s32T_KIP_RISE,		 				   	    500, 0, 1000),
+	PFL_INIT_SINT32(PFD_CRIT_THRESHOLD_H,		"", &m_sPartMemBlock.s32CRIT_THRESHOLD_H,		 				40, 0, 100),
+	PFL_INIT_SINT32(PFD_CRIT_THRESHOLD_L,		"", &m_sPartMemBlock.s32CRIT_THRESHOLD_L,		 				80, 0, 100),
+	PFL_INIT_SINT32(PFD_DIFF_TRESHOLD_L,		"", &m_sPartMemBlock.s32DIFF_TRESHOLD_L,		 				20, 0, 1000),
+	PFL_INIT_SINT32(PFD_DIFF_TRESHOLD_H,		"", &m_sPartMemBlock.s32DIFF_TRESHOLD_H,		 				50, 0, 1000),
+	PFL_INIT_SINT32(PFD_DT_THRESHOLD_L,			"", &m_sPartMemBlock.s32DT_THRESHOLD_H,		 				   	6, 0, 100),
+	PFL_INIT_SINT32(PFD_DT_THRESHOLD_H,			"", &m_sPartMemBlock.s32DT_THRESHOLD_L,		 				   	1, 0, 20000),
+	PFL_INIT_SINT32(PFD_DT_RISE,				"", &m_sPartMemBlock.s32DT_Rise,			 				   	10, 0, 20),
 
 	// Temperature parameters
 	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &m_sTemperatureParam.WaitingToIgnition, 	  	1500, 0, 20000),
 	PFL_INIT_SINT32(PFD_IGNITIONTOTRISE, 		"", &m_sTemperatureParam.IgnitionToTrise, 	  		5250, 0, 20000),
-	PFL_INIT_SINT32(PFD_TRISETARGETLOW, 		"", &m_sTemperatureParam.TriseTargetLow, 	  		5900, 0, 20000),
-	PFL_INIT_SINT32(PFD_TRISETARGETHIGH, 		"", &m_sTemperatureParam.TriseTargetHigh, 	  		6500, 0, 20000),
-	PFL_INIT_SINT32(PFD_COMBLOWTARGET, 			"", &m_sTemperatureParam.CombLowTarget, 		  	5900, 0, 20000),
+	PFL_INIT_SINT32(PFD_TRISETARGETLOW, 		"", &m_sTemperatureParam.TriseTargetLow, 	  		6300, 0, 20000),
+	PFL_INIT_SINT32(PFD_TRISETARGETHIGH, 		"", &m_sTemperatureParam.TriseTargetHigh, 	  		7100, 0, 20000),
+	PFL_INIT_SINT32(PFD_COMBLOWTARGET, 			"", &m_sTemperatureParam.CombLowTarget, 		  	6300, 0, 20000),
 	PFL_INIT_SINT32(PFD_COMBLOWTOSUPERLOW, 		"", &m_sTemperatureParam.CombLowtoSuperLow, 	  	5500, 0, 20000),
-	PFL_INIT_SINT32(PFD_COMBHIGHTARGET, 		"", &m_sTemperatureParam.CombHighTarget, 	  		6500, 0, 20000),
+	PFL_INIT_SINT32(PFD_COMBHIGHTARGET, 		"", &m_sTemperatureParam.CombHighTarget, 	  		7100, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALCROSSOVERREARLOW, 	"", &m_sTemperatureParam.CoalCrossOverRearLow, 		8000, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALCROSSOVERREARHIGH, 	"", &m_sTemperatureParam.CoalCrossOverRearHigh,		8000, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALDELTATEMP, 			"", &m_sTemperatureParam.CoalDeltaTemp, 		  	2500, 0, 20000),
 	PFL_INIT_SINT32(PFD_COALSTOVETEMP, 			"", &m_sTemperatureParam.CoalStoveTemp, 		    6500, 0, 20000),
 	// FlameLoss
-	PFL_INIT_SINT32(PFD_FLAMELOSS, 				"", &m_sTemperatureParam.FlameLoss, 			  	5800, 0, 20000),
+	PFL_INIT_SINT32(PFD_FLAMELOSS, 				"", &m_sTemperatureParam.FlameLoss, 			  	5500, 0, 20000),
 	PFL_INIT_SINT32(PFD_FLAMELOSSDELTA, 		"", &m_sTemperatureParam.FlameLossDelta, 	  		1750, 0, 20000),
 	// OverHeat
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sTemperatureParam.OverheatPlenum, 	  		2200, 0, 20000),
@@ -176,7 +181,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_PM_MINCOMBLOW,     	    "", &m_sPrimaryMotorParam.MinCombLow, 		 6, PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_SM_MAXCOMBLOW,     	    "", &m_sSecondaryMotorParam.MaxCombLow, 	 97, PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_SM_MINCOMBLOW,     	    "", &m_sSecondaryMotorParam.MinCombLow, 	 97, PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_GM_MAXCOMBLOW,     	    "", &m_sGrillMotorParam.MaxCombLow, 		 20, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_GM_MAXCOMBLOW,     	    "", &m_sGrillMotorParam.MaxCombLow, 		 60, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_GM_MINCOMBLOW,     	    "", &m_sGrillMotorParam.MinCombLow, 		 0, PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// CombSuperLow parameters
@@ -270,7 +275,12 @@ const PF_MotorOpeningsParam_t* PB_GetGrillMotorParam()
 	return &m_sGrillMotorParam;
 }
 
-const PF_UsrParam* PB_GetParticlesParam()
+const PF_UsrParam* PB_GetUserParam()
 {
 	return &m_sMemBlock;
+}
+
+const PF_PartParam* PB_GetParticlesParam()
+{
+	return &m_sPartMemBlock;
 }

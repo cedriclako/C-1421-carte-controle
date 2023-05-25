@@ -37,7 +37,14 @@ typedef struct
 	int32_t s32ManualPrimary;
 	int32_t s32ManualSecondary;
 	int32_t s32ManualGrill;
-	int32_t s32MAJ_CORR;
+
+
+
+} PF_UsrParam;
+
+typedef struct
+{
+	int32_t s32MAJ_CORR_INTERVAL;
 	int32_t s32TBUF_FLOSS;
 	int32_t s32TBUF_OVERHEAT;
 	int32_t s32TBUF_WORKRANGE;
@@ -47,9 +54,10 @@ typedef struct
 	int32_t s32DIFF_TRESHOLD_H;
 	int32_t s32DT_THRESHOLD_L;
 	int32_t s32DT_THRESHOLD_H;
+	int32_t s32T_KIP_RISE;
+	int32_t s32DT_Rise;
 
-
-} PF_UsrParam;
+}PF_PartParam;
 
 typedef struct
 {
@@ -106,16 +114,18 @@ typedef struct
 #define PFD_MANUALPRIM			"PrimaryOverrideValue"
 #define PFD_MANUALSEC			"SecondaryOverrideValue"
 #define PFD_MANUALGRILL			"GrillOverrideValue"
-#define PFD_MAJ_CORR			"SecondsToWaitAfterMajorCorrection"
+#define PFD_MAJ_CORR			"SecondsToWaitAfterMajCorr"
 #define PFD_TBUF_FLOSS			"buffer_TempFlameLoss"
 #define PFD_TBUF_OVERHEAT		"buffer_TempOverHeat"
 #define PFD_TBUF_WORKRANGE		"buffer_TempWorkingRange"
-#define PFD_CRIT_THRESHOLD_H	"crit_HigherThreshold"
-#define PFD_CRIT_THRESHOLD_L	"crit_LowerThreshold"
-#define PFD_DIFF_TRESHOLD_L		"particles_LowerLevelThreshold"
-#define PFD_DIFF_TRESHOLD_H		"particles_HigherLevelThreshold"
-#define PFD_DT_THRESHOLD_L		"deltaTemp_LowerThreshold"
-#define PFD_DT_THRESHOLD_H		"deltaTemp_HigherThreshold"
+#define PFD_KIP_PART_RISE		"TempKickInPointTempRise"
+#define PFD_CRIT_THRESHOLD_H	"crit_HigherThresh"
+#define PFD_CRIT_THRESHOLD_L	"crit_LowerThresh"
+#define PFD_DIFF_TRESHOLD_L		"particles_LowerLevelThresh"
+#define PFD_DIFF_TRESHOLD_H		"particles_HigherLevelThresh"
+#define PFD_DT_THRESHOLD_L		"deltaTemp_LowerThresh"
+#define PFD_DT_THRESHOLD_H		"deltaTemp_HigherThresh"
+#define PFD_DT_RISE				"deltaTemp_TempRise"
 
 // Temperature
 #define PFD_WAITINGTOIGNITION     "temp_WaitingToIgnition"
@@ -206,7 +216,9 @@ const PF_MotorOpeningsParam_t* PB_GetSecondaryMotorParam();
 
 const PF_MotorOpeningsParam_t* PB_GetGrillMotorParam();
 
-const PF_UsrParam* PB_GetParticlesParam();
+const PF_UsrParam* PB_GetUserParam();
+
+const PF_PartParam* PB_GetParticlesParam();
 
 #endif
 

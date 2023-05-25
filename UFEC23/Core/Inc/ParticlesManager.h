@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 #include "ParamFile.h"
+#include "algo.h"
 
 typedef struct MeasureParticles
 {
@@ -55,10 +56,9 @@ bool PM_isPboard_absent(void);
 
 int Particle_getSlope(void);
 void Particle_setConfig(void);
-bool computeParticleLowAdjustment(const PF_UsrParam* pParam, float dTavant, int* delta, float* speed, uint32_t Time_ms,
+bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint32_t Time_ms,
 		int32_t baffle_temperature, int32_t temperature_limit);
-void computeParticleRiseAdjustment(const PF_UsrParam* pParam, float dTbaffle, int* delta, float* speed, uint32_t Time_ms,
-		int32_t baffleTemperature, int32_t temperature_limit);
+TempRiseAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature);
 
 void Particle_requestZero(void);
 void ParticleInit(void);
