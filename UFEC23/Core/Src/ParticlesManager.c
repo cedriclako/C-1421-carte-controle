@@ -564,14 +564,14 @@ TempRiseAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, i
 
 		if(baffleTemperature > pParam->s32T_KIP_RISE)
 		{
-			if((diff > pParam->s32DIFF_TRESHOLD_H) && (dTbaffle > (float)pParam->s32DT_Rise/6.0)) //
+			if((diff > pParam->s32DIFF_TRESHOLD_H) && (dTbaffle > (float)pParam->s32DT_Rise/60.0)) //
 			{
 				TimeOfMajorCorrection = Time_ms;
 				return FAST_CLOSE;
 			}
 		}
 
-		if(dTbaffle < (float)pParam->s32DT_THRESHOLD_L/6.0)
+		if(dTbaffle < (float)pParam->s32DT_THRESHOLD_L/60.0)
 		{
 			return WAIT;
 		}

@@ -292,6 +292,10 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 						if(grillAperture != 0)
 						{
 							grillAperture = (int)(grillAperture/2);
+							if(grillAperture < 15)
+							{
+								grillAperture = 0;
+							}
 							AirInput_forceAperture(&grill, grillAperture);
 						}else
 						{
@@ -299,6 +303,11 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 						}
 						break;
 					case SLOW_CLOSE:
+						if(grillAperture < 15 && grillAperture != 0)
+						{
+							AirInput_forceAperture(&grill, 0);
+							break;
+						}
 						AirAdjustment(-1, sec_per_step,
 									 (uint8_t)pPrimaryMotorParam->MinTempRise, (uint8_t)pPrimaryMotorParam->MaxTempRise,
 									  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,

@@ -159,6 +159,7 @@ void DebugManager(void const * argument)
 		printf("AdjOffset:%f ",mod[0]);
 		printf("SpeedDivider:%f ",mod[1]);
 		printf("dTavant:%f",mod[3]);
+		/*
 		if(PM_isPboard_absent())
 		{
 			printf("GlobalStatus:PARTICLE_COMM_ERROR");
@@ -168,6 +169,7 @@ void DebugManager(void const * argument)
 			printf("GlobalStatus:NO_ERROR");
 		}
 		printf("GlobalStatus: ");
+		*/
 		printf("*\n\r");
   }
   /* USER CODE END DebugManager */
