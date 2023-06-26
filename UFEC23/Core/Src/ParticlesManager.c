@@ -83,6 +83,9 @@ void ParticleInit(void)
 	ParticleDevice.TimeSinceInit = 0;
 	ParticleDevice.last_particle_time = 0;
 	ParticleDevice.crit = 0.0;
+	ParticleDevice.normalized_zero = 80.0;
+
+
 }
 
 void ParticlesManager(void const * argument) {
@@ -90,22 +93,13 @@ void ParticlesManager(void const * argument) {
 	osSemaphoreDef(MP_UART_SemaphoreHandle);
 	MP_UART_SemaphoreHandle = osSemaphoreCreate(osSemaphore(MP_UART_SemaphoreHandle), 1);
 	osSemaphoreWait(MP_UART_SemaphoreHandle,1); //decrement semaphore value for the lack of way to create a semaphore with a count of 0.
-
+	const PF_PartParam* pParam = PB_GetParticlesParam();
 
 	static bool Rx_complete = false;
 	static bool rx_success = true;
 	static uint16_t tx_checksum, rx_checksum;
 	uint8_t rx_payload_size, tx_size, zero_current;
 	uint32_t response_delay = 500;
-
-	ParticleDevice.time_window = 1;
-	ParticleDevice.TSL_gain = 3;
-	ParticleDevice.TSL_integration_time = 5;
-	ParticleDevice.LED_current_CMD = 100;
-
-
-
-
 
 	for(;;) {
 
@@ -126,10 +120,10 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[0] = START_BYTE;
 			TX_BUFFER[1] = WRITE_CMD | 0x04;
 			tx_checksum = TX_BUFFER[1];
-			TX_BUFFER[2] = ParticleDevice.TSL_gain;
-			TX_BUFFER[3] = ParticleDevice.TSL_integration_time;
-			TX_BUFFER[4] = ParticleDevice.LED_current_CMD;
-			TX_BUFFER[5] = ParticleDevice.time_window;
+			TX_BUFFER[2] = (uint8_t)pParam->s32TLSGAIN;
+			TX_BUFFER[3] = (uint8_t)pParam->s32TSLINT;
+			TX_BUFFER[4] = (uint8_t)pParam->s32DACCMD;
+			TX_BUFFER[5] = (uint8_t)pParam->s32TIMEINTERVAL;
 			for(uint8_t j = 2;j < 6;j++)
 			{
 				tx_checksum += TX_BUFFER[j];
@@ -249,8 +243,8 @@ void ParticlesManager(void const * argument) {
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
 					//TODO: Implement config
-					if(RX_BUFFER[2] == ParticleDevice.TSL_gain && RX_BUFFER[3] == ParticleDevice.TSL_integration_time
-							&& RX_BUFFER[4] == ParticleDevice.LED_current_CMD && RX_BUFFER[5] == ParticleDevice.time_window)
+					if(RX_BUFFER[2] == pParam->s32TLSGAIN && RX_BUFFER[3] == pParam->s32TSLINT
+							&& RX_BUFFER[4] == pParam->s32DACCMD && RX_BUFFER[5] == pParam->s32TIMEINTERVAL)
 					{
 						config_mode = false;
 					}
@@ -260,7 +254,7 @@ void ParticlesManager(void const * argument) {
 					setZero = false;
 					ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
 					zero_current = RX_BUFFER[7];
-					ParticleDevice.normalized_zero = (float)ParticleDevice.zero/(float)zero_current;
+					//ParticleDevice.normalized_zero = (float)ParticleDevice.zero/(float)zero_current;
 
 
 				}
@@ -446,9 +440,8 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or allow grid to open
 	int32_t aperture = 0;
 	float Sec_per_step = 0.0;
-	//float zero_norm = 10*ParticleDevice.normalized_zero;
-	float zero_norm = 80;
-	float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - zero_norm;
+
+	float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - ParticleDevice.normalized_zero;
 
 	if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32MAJ_CORR_INTERVAL))
 	{
@@ -547,15 +540,111 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 
 }
 
+bool computeParticleCombLowAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature,
+							int32_t temperature_limit, ParticleAction* action)
+{
+	const PF_PartParam* pParam = PB_GetParticlesParam();
+	static uint32_t TimeOfLastCorrection = 0;
+	static uint32_t delay = 0;
 
-TempRiseAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature)
+	float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - ParticleDevice.normalized_zero;
+
+	switch(*action)
+	{
+	case FAST_CLOSE:
+	case FAST_OPEN:
+		delay = (uint32_t)pParam->s32FAST_CORR_INTERVAL;
+		break;
+	case AVG_OPEN:
+	case AVG_CLOSE:
+		delay = (uint32_t)pParam->s32AVG_CORR_INTERVAL;
+		break;
+	case SLOW_OPEN:
+	case SLOW_CLOSE:
+		delay = (uint32_t)pParam->s32SLOW_CORR_INTERVAL;
+		break;
+	case VERY_SLOW_CLOSE:
+	case VERY_SLOW_OPEN:
+		delay = (uint32_t)pParam->s32VERY_SLOW_CORR_INTERVAL;
+		break;
+	case INSTANT_CLOSE:
+	case INSTANT_OPEN:
+		delay = (uint32_t)pParam->s32MAJ_CORR_INTERVAL;
+	default:
+		break;
+	}
+
+	if(Time_ms < (TimeOfLastCorrection + SECONDS(delay)))
+	{
+		*action = WAIT;
+		return false;
+	}
+	TimeOfLastCorrection = Time_ms;
+	delay = 0;
+
+	if(baffleTemperature - temperature_limit < -1*pParam->s32TBUF_FLOSS)
+	{
+		if(dTbaffle > -1.0*(float)pParam->s32DT_THRESHOLD_L/60.0)
+		{
+			*action = WAIT;
+			return true;
+		}
+
+		if(dTbaffle > -1.0*(float)pParam->s32DT_THRESHOLD_H/60.0)
+		{
+			*action = SLOW_OPEN;
+			return true;
+		}
+
+		if(diff > pParam->s32DIFF_TRESHOLD_H)
+		{
+			*action = INSTANT_OPEN;
+			return false;
+
+		}
+
+		*action =  FAST_OPEN;
+		return false;
+	}
+
+	if(baffleTemperature - temperature_limit > pParam->s32TBUF_WORKRANGE)
+	{
+		if(dTbaffle > (float)pParam->s32DT_THRESHOLD_H/60.0)
+		{
+			*action =  FAST_CLOSE;
+			return true;
+		}
+
+		if(dTbaffle > -1.0*(float)pParam->s32DT_THRESHOLD_L/60.0)
+		{
+			*action =  SLOW_CLOSE;
+			return true;
+		}
+
+		*action =  WAIT;
+		return true;
+
+	}
+
+	if(fabs(dTbaffle) < (float)pParam->s32DT_THRESHOLD_L/60.0)
+	{
+		*action =  VERY_SLOW_CLOSE;
+		return true;
+	}
+
+	*action =  WAIT;
+	return true;
+
+}
+
+
+ParticleAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature)
 {
 
 		// Variables for decicison making
 		const PF_PartParam* pParam = PB_GetParticlesParam();
 		static uint32_t TimeOfMajorCorrection = 0;
-		float zero_norm = 80;
-		float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - zero_norm;
+		float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - ParticleDevice.normalized_zero;
 
 		if(Time_ms < (TimeOfMajorCorrection + MINUTES(1)))
 		{
@@ -564,7 +653,7 @@ TempRiseAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, i
 
 		if(baffleTemperature > pParam->s32T_KIP_RISE)
 		{
-			if((diff > pParam->s32DIFF_TRESHOLD_H) && (dTbaffle > (float)pParam->s32DT_Rise/60.0)) //
+			if((diff > pParam->s32DIFF_TRESHOLD_H) && (dTbaffle > (float)pParam->s32DT_RISE/60.0)) //
 			{
 				TimeOfMajorCorrection = Time_ms;
 				return FAST_CLOSE;

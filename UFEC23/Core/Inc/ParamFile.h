@@ -23,13 +23,8 @@
 
 typedef struct
 {
-	int32_t s32TLSGain;
-	int32_t s32TSLINT;
-	int32_t s32DACCMD;
-	int32_t s32TIMEINTERVAL;
+
 	int32_t s32SEC_PER_STEP;
-	int32_t s32MAX_APERTURE;
-	int32_t s32MIN_APERTURE;
 	int32_t s32APERTURE_OFFSET;
 	int32_t s32FAN_KIP;
 	int32_t s32FAN_KOP;
@@ -38,6 +33,16 @@ typedef struct
 	int32_t s32ManualSecondary;
 	int32_t s32ManualGrill;
 
+	int32_t s32VslowOpen; // Seconds per step corresponding to all speeds of opening/closing
+	int32_t s32SlowOpen;
+	int32_t s32AvgOpen;
+	int32_t s32FastOpen;
+
+	int32_t s32VslowClose;
+	int32_t s32SlowClose;
+	int32_t s32AvgClose;
+	int32_t s32FastClose;
+	int32_t s32StateEntryWaitTime;
 
 
 } PF_UsrParam;
@@ -45,6 +50,12 @@ typedef struct
 typedef struct
 {
 	int32_t s32MAJ_CORR_INTERVAL;
+	int32_t s32FAST_CORR_INTERVAL;
+	int32_t s32AVG_CORR_INTERVAL;
+	int32_t s32SLOW_CORR_INTERVAL;
+	int32_t s32VERY_SLOW_CORR_INTERVAL;
+
+
 	int32_t s32TBUF_FLOSS;
 	int32_t s32TBUF_OVERHEAT;
 	int32_t s32TBUF_WORKRANGE;
@@ -55,7 +66,11 @@ typedef struct
 	int32_t s32DT_THRESHOLD_L;
 	int32_t s32DT_THRESHOLD_H;
 	int32_t s32T_KIP_RISE;
-	int32_t s32DT_Rise;
+	int32_t s32DT_RISE;
+	int32_t s32TLSGAIN;
+	int32_t s32TSLINT;
+	int32_t s32DACCMD;
+	int32_t s32TIMEINTERVAL;
 
 }PF_PartParam;
 
@@ -100,32 +115,45 @@ typedef struct
 	int32_t MinCoalLow;
 } PF_MotorOpeningsParam_t;
 
-#define PFD_TSLGAIN 			"TSLgain"
-#define PFD_TSLINT 				"TSLint"
-#define PFD_DACCMD 				"DACcmd"
-#define PFD_TIMEINTERVAL 		"TimeInterval"
-#define PFD_SECPERSTEP			"SecondsPerStepOffset"
-#define PFD_MAXAPERTURE			"MaxApertureOverride"
-#define PFD_MINAPERTURE			"MinApertureOverride"
-#define PFD_APERTUREOFFSET		"ApertureOffset"
-#define PFD_FANKIP				"FansKickInPoint"
-#define PFD_FANKOP				"FansKickOutPoint"
-#define PFD_MANUALBOOL			"ManualOverride"
-#define PFD_MANUALPRIM			"PrimaryOverrideValue"
-#define PFD_MANUALSEC			"SecondaryOverrideValue"
-#define PFD_MANUALGRILL			"GrillOverrideValue"
-#define PFD_MAJ_CORR			"SecondsToWaitAfterMajCorr"
-#define PFD_TBUF_FLOSS			"buffer_TempFlameLoss"
-#define PFD_TBUF_OVERHEAT		"buffer_TempOverHeat"
-#define PFD_TBUF_WORKRANGE		"buffer_TempWorkingRange"
-#define PFD_KIP_PART_RISE		"TempKickInPointTempRise"
-#define PFD_CRIT_THRESHOLD_H	"crit_HigherThresh"
-#define PFD_CRIT_THRESHOLD_L	"crit_LowerThresh"
-#define PFD_DIFF_TRESHOLD_L		"particles_LowerLevelThresh"
-#define PFD_DIFF_TRESHOLD_H		"particles_HigherLevelThresh"
-#define PFD_DT_THRESHOLD_L		"deltaTemp_LowerThresh"
-#define PFD_DT_THRESHOLD_H		"deltaTemp_HigherThresh"
-#define PFD_DT_RISE				"deltaTemp_TempRise"
+
+#define PFD_SECPERSTEP			"usr_SecPerStepOffset"
+#define PFD_APERTUREOFFSET		"usr_ApertureOffset"
+#define PFD_FANKIP				"usr_FansKickInPoint"
+#define PFD_FANKOP				"usr_FansKickOutPoint"
+#define PFD_MANUALBOOL			"usr_ManualOverride"
+#define PFD_MANUALPRIM			"usr_PrimaryOverrideValue"
+#define PFD_MANUALSEC			"usr_SecondaryOverrideValue"
+#define PFD_MANUALGRILL			"usr_GrillOverrideValue"
+#define PFD_OPEN_VSLOW			"usr_SecPerStepVerySlowOpen"
+#define PFD_OPEN_SLOW			"usr_SecPerStepSlowOpen"
+#define PFD_OPEN_AVG			"usr_SecPerStepAverageOpen"
+#define PFD_OPEN_FAST			"usr_SecPerStepFastOpen"
+#define PFD_CLOSE_VSLOW			"usr_SecPerStepVerySlowClose"
+#define PFD_CLOSE_SLOW			"usr_SecPerStepSlowClose"
+#define PFD_CLOSE_AVG			"usr_SecPerStepAverageClose"
+#define PFD_CLOSE_FAST			"usr_SecPerStepFastClose"
+#define PFD_STATE_ENTRY_WAIT	"usr_MinutesToWait_StateEntry"
+
+
+#define PFD_MAJ_CORR			"part_secsToWaitAfterMajCorr"
+#define PFD_FAST_CORR			"part_secsToWaitAfterFastCorr"
+#define PFD_AVG_CORR			"part_secsToWaitAfterAvgCorr"
+#define PFD_SLOW_CORR			"part_secsToWaitAfterSlowCorr"
+#define PFD_TBUF_FLOSS			"part_buffer_TempFlameLoss"
+#define PFD_TBUF_OVERHEAT		"part_buffer_TempOverHeat"
+#define PFD_TBUF_WORKRANGE		"part_buffer_TempWorkingRange"
+#define PFD_KIP_PART_RISE		"part_TempKickInPointTempRise"
+#define PFD_CRIT_THRESHOLD_H	"part_crit_HigherThresh"
+#define PFD_CRIT_THRESHOLD_L	"part_crit_LowerThresh"
+#define PFD_DIFF_TRESHOLD_L		"part_diff_LowerThresh"
+#define PFD_DIFF_TRESHOLD_H		"part_diff_HigherThresh"
+#define PFD_DT_THRESHOLD_L		"part_deltaTemp_LowerThresh"
+#define PFD_DT_THRESHOLD_H		"part_deltaTemp_HigherThresh"
+#define PFD_DT_RISE				"part_deltaTemp_TempRise"
+#define PFD_TSLGAIN 			"part_TSLgain"
+#define PFD_TSLINT 				"part_TSLint"
+#define PFD_DACCMD 				"part_DACcmd"
+#define PFD_TIMEINTERVAL 		"part_TimeInterval"
 
 // Temperature
 #define PFD_WAITINGTOIGNITION     "temp_WaitingToIgnition"

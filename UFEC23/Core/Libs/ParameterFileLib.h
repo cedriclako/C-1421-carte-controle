@@ -16,7 +16,7 @@
 typedef enum
 {
 	//PFL_TYPE_Float,
-	PFL_TYPE_Int32
+PFL_TYPE_Int32
 } PFL_TYPE;
 
 typedef struct

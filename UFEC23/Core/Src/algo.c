@@ -135,11 +135,12 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	  static int adjustement = 0;
 
 	  static State historyState = ZEROING_STEPPER;
-
+	  static ParticleAction action = WAIT;
 	  static uint32_t stateChangeTimeRef = 0;
 	  static uint32_t timeRefAutoMode = 0;
 	  static int targetTemperature = 0;
 	  static uint32_t Safetydebounce_ms = 0;
+	  static uint32_t partComeback_timer_ms = 0;
 	  float dTbaffle;
 	  float dTavant;
 
@@ -242,7 +243,6 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case TEMPERATURE_RISE:
 
 		targetTemperature = thermostatRequest ? pTemperatureParam->TriseTargetHigh : pTemperatureParam->TriseTargetLow;
-		TempRiseAction action;
 
 		if(historyState != currentState){
 		  AirInput_forceAperture(&primary, pPrimaryMotorParam->MaxTempRise);
@@ -267,7 +267,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 //		if((timeSinceStateEntry >= MINUTES(3)) ||  (baffleTemperature > targetTemperature)) //3minutes // changemenet 2 min 2021-12-03
 		//asservie seulement si on est depuis 3 minutes dans Temperature Rise ou qu'on a atteint 650 ou 660
 
-			if (TimeForStep >= (1 * SEC_PER_STEP_TEMP_RISE * 1000) && timeSinceStateEntry > MINUTES(1)) { // changer de 3 a 2 2021-12-03
+			if (TimeForStep >= (1 * SEC_PER_STEP_TEMP_RISE * 1000) && timeSinceStateEntry > MINUTES(pUserParam->s32StateEntryWaitTime)) { // changer de 3 a 2 2021-12-03
 				timeRefAutoMode = currentTime_ms;
 
 				sec_per_step = (float)SEC_PER_STEP_TEMP_RISE;
@@ -324,7 +324,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			}
 			//timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
 			timeInTemperatureRise = MINUTES(1);
-			if ( (timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature)) || (Algo_getPrimary() <= 75))
+			if ( (timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature)) || (Algo_getPrimary() < 75))
 			{
 				TimeSinceEntryInCombLow = 0;
 				nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
@@ -431,17 +431,65 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 			{
 
 				timeRefAutoMode = currentTime_ms;
-
-
 				bool stove_too_cold = false; // If all openings are maxed and temperature can't be brought over minimum value, go to comb_superlow
+
 
 				if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
 					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
 					sec_per_step = (float)(SEC_PER_STEP_COMB_LOW);
 				}else{
+
 					// Adjustment based on particle value
-					stove_too_cold = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step, baffleTemperature/10,
-							currentTime_ms,pTemperatureParam->CombLowTarget/10);
+					//stove_too_cold = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step, baffleTemperature/10,
+					//		currentTime_ms,pTemperatureParam->CombLowTarget/10);
+
+					bool closeGrill = false;
+
+					closeGrill = computeParticleCombLowAdjustment(dTbaffle, currentTime_ms, baffleTemperature, pTemperatureParam->CombLowTarget, &action);
+					int grillAperture = Algo_getGrill();
+
+					if((closeGrill) && (grillAperture != 0) && (currentTime_ms > partComeback_timer_ms))
+					{
+						partComeback_timer_ms = currentTime_ms + 500;
+						AirInput_forceAperture(&grill, grillAperture - 1);
+					}
+
+					switch(action)
+					{
+					case WAIT:
+						break;
+					case VERY_SLOW_CLOSE:
+						sec_per_step = (float)pUserParam->s32VslowClose/10;
+						break;
+					case SLOW_CLOSE:
+						sec_per_step = (float)pUserParam->s32SlowClose/10;
+						break;
+					case FAST_CLOSE:
+						sec_per_step = (float)pUserParam->s32FastClose/10;
+						break;
+					case INSTANT_CLOSE:
+						break;
+					case SLOW_OPEN:
+						sec_per_step = (float)pUserParam->s32SlowOpen/10;
+						break;
+					case FAST_OPEN:
+						sec_per_step = (float)pUserParam->s32FastOpen/10;
+						break;
+					case INSTANT_OPEN:
+						if(grillAperture < 30)
+						{
+							grillAperture = 30;
+						}else
+						{
+							grillAperture *= 2;
+						}
+						AirInput_forceAperture(&grill, grillAperture);
+						break;
+					default:
+						break;
+
+					}
+
 				}
 				// Same adjustment function as in other states, but changed arguments
 				AirAdjustment(adjustement, sec_per_step,

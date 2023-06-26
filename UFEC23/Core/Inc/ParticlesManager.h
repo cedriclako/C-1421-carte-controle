@@ -31,10 +31,6 @@ typedef struct MeasureParticles
 	uint16_t Lux_OFF;
 	uint32_t TimeSinceInit;
 	uint32_t last_particle_time;
-	uint16_t time_window;
-	uint8_t TSL_gain;
-	uint8_t TSL_integration_time;
-	uint8_t LED_current_CMD;
 
 	float crit;
 
@@ -58,7 +54,10 @@ int Particle_getSlope(void);
 void Particle_setConfig(void);
 bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint32_t Time_ms,
 		int32_t baffle_temperature, int32_t temperature_limit);
-TempRiseAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature);
+ParticleAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature);
+
+bool computeParticleCombLowAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature,
+							int32_t temperature_limit, ParticleAction* action);
 
 void Particle_requestZero(void);
 void ParticleInit(void);
