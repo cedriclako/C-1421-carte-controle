@@ -1,4 +1,4 @@
-#ifndef _EMBEDDEDFILES_
+﻿#ifndef _EMBEDDEDFILES_
 #define _EMBEDDEDFILES_
 
 #include <stdint.h>

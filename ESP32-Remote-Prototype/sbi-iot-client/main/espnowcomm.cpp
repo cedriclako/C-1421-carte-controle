@@ -103,8 +103,7 @@ static void wifi_init(uint8_t u8CurrentChannel)
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP) );
     
-    wifi_config_t wifi_configAP;
-    memset(&wifi_configAP, 0, sizeof(wifi_config_t));
+    wifi_config_t wifi_configAP = {0};
     strcpy((char*)wifi_configAP.ap.ssid, "test");
     wifi_configAP.ap.ssid_len = 0;
     wifi_configAP.ap.authmode = WIFI_AUTH_OPEN;
@@ -112,7 +111,7 @@ static void wifi_init(uint8_t u8CurrentChannel)
     wifi_configAP.ap.max_connection = 5;
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_configAP));
-    ESP_LOGI(TAG, "esp_wifi_start()");
+    ESP_LOGI(TAG, "esp_wifi_start(), u8CurrentChannel: %"PRIu8, u8CurrentChannel);
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_set_channel(u8CurrentChannel, WIFI_SECOND_CHAN_NONE));
     
@@ -185,7 +184,7 @@ void ESPNOWCOMM_Handler()
             if (m_sHandle.u8CurrChannel == 0)
                 m_sHandle.u8CurrChannel = 1;
             else
-                m_sHandle.u8CurrChannel = (m_sHandle.u8CurrChannel + 1) % 12;
+                m_sHandle.u8CurrChannel = ((m_sHandle.u8CurrChannel) % 12) + 1;
 
             if (m_sHandle.bIsWiFiActive)
                 wifi_uninit();
