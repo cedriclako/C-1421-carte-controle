@@ -10,6 +10,7 @@
 #include "lwip/apps/netbiosns.h"
 #include <esp_sntp.h>
 #include "fwconfig.h"
+#include "spiff.h"
 #include "webserver/webserver.h"
 #include "settings.h"
 #include "main.h"
@@ -18,6 +19,7 @@
 #include "uartbridge/uartbridge.h"
 #include "fwconfig.h"
 #include "event.h"
+#include "log.h"
 
 #define TAG "main"
 
@@ -179,6 +181,10 @@ void app_main(void)
     // Set new priority for main task
     vTaskPrioritySet( xTaskGetCurrentTaskHandle(), FWCONFIG_MAINTASK_PRIORITY);
 
+    HARDWAREGPIO_Init();
+
+    SPIFF_Init();
+
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -193,8 +199,6 @@ void app_main(void)
         .task_name = NULL
     };
     esp_event_loop_create(&loop_args, &EVENT_g_LoopHandle);
-
-    HARDWAREGPIO_Init();
 
     SETTINGS_Init();
 
@@ -229,6 +233,8 @@ void app_main(void)
     const int loopPeriodMS = 1000/200;
     const TickType_t xFrequency = loopPeriodMS / portTICK_PERIOD_MS;
 
+    LOG_Init();
+
     while (true)
     {
         TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -236,6 +242,7 @@ void app_main(void)
         // Basic processes ...
         ESPNOWPROCESS_Handler();
         UARTBRIDGE_Handler();
+        LOG_Handler();
 
         // Sanity LED process
         if ( (xTaskGetTickCount() - ttLed) > pdMS_TO_TICKS(m_bIsConnectedWiFi ? 150 : 500) )
@@ -277,7 +284,6 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         m_bIsConnectedWiFi = false;
-
         esp_wifi_connect();
         ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%d", ++m_s32ConnectWiFiCount);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {

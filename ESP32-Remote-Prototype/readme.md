@@ -7,6 +7,14 @@ These software are meant to be compiled using: **ESP-IDF 4.4.4**
 | sbi-iot-client | M5 Paper remote application |
 | sbi-iot-server | Bridge between SBI stove    |
 
+## Upload new FW to STM32
+
+You can test the upload to STM32 using 'Insomnia' or 'Postman'.
+No webpage page has been created yet.
+
+http://172.16.40.231/ota/upload_stm32
+
+![](./readme-assets/post-upload-stm32.png)
 
 # Variables
 

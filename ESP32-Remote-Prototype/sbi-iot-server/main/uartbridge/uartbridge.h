@@ -11,8 +11,9 @@
 
 void UARTBRIDGE_Init();
 
-void UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint16_t u16PayloadLen);
+void UARTBRIDGE_SetSilenceMode(bool bIsSilent);
 
 void UARTBRIDGE_Handler();
+
 
 #endif
