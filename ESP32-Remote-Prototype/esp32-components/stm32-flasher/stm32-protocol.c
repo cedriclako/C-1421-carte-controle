@@ -149,6 +149,13 @@ esp_err_t STM32PROTOCOL_CmdId(const STM32PROTOCOL_SContext* pContext)
 
 esp_err_t STM32PROTOCOL_CmdErase(const STM32PROTOCOL_SContext* pContext)
 {
+    /*  It seems to be one based, so Byte1 is the first one.
+    Byte 1: 0x43
+    Byte 2: 0xBC
+    Wait for ACK
+    Byte 3: 0xFF or number of pages to be erased – 1 (0 ≤N ≤ maximum number of pages)
+    Byte 4: 0x00 (in case of global erase) or ((N + 1 bytes (page numbers) and then checksum
+    XOR (N, N+1 bytes) */
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
     ESP_LOGI(TAG_STM_PRO, "ERASE MEMORY");
     const uint8_t bytes[] = {0x43, 0xBC};
@@ -158,8 +165,7 @@ esp_err_t STM32PROTOCOL_CmdErase(const STM32PROTOCOL_SContext* pContext)
     const esp_err_t a = SendReceiveBytes(pContext, bytes, sizeof(bytes), u8RespData, u32RespLen);
     if (a == ESP_OK)
     {
-        uint8_t params[] = {0xFF, 0x00};
-        
+        const uint8_t params[] = {0xFF, 0x00};
         const int u32Resp2Len = 1;
         uint8_t u8Resp2Data[1];
         return SendReceiveBytes(pContext, params, sizeof(params), u8Resp2Data, u32Resp2Len);
@@ -169,6 +175,21 @@ esp_err_t STM32PROTOCOL_CmdErase(const STM32PROTOCOL_SContext* pContext)
 
 esp_err_t STM32PROTOCOL_CmdExtErase(const STM32PROTOCOL_SContext* pContext)
 {
+    /*  It seems to be one based, so Byte1 is the first one.
+    Byte 1: 0x44
+    Byte 2: 0xBB
+    Wait for ACK
+    Bytes 3-4: Special erase (0xFFFF, 0xFFFE, or 0xFFFD)
+    or
+    Number of pages to be erased (N+1 where 0 ≤ N < Maximum number of
+    pages).
+    Remaining
+    bytes:
+    Checksum of bytes 3-4 in case of special erase (0x00 if 0xFFFF or 0x01 if
+    0xFFFE, or 0x02 if 0xFFFD)
+    or
+    (2 x (N + 1)) bytes (page numbers coded on two bytes MSB first) and then
+    the checksum for bytes 3-4 and all the following bytes */
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
     ESP_LOGI(TAG_STM_PRO, "EXTENDED ERASE MEMORY");
     const uint8_t bytes[] = {0x44, 0xBB};
@@ -176,10 +197,9 @@ esp_err_t STM32PROTOCOL_CmdExtErase(const STM32PROTOCOL_SContext* pContext)
     const uint32_t u32RespLen = 1;
     uint8_t u8RespData[1];
     const esp_err_t a = SendReceiveBytes(pContext, bytes, sizeof(bytes), u8RespData, u32RespLen);
-
     if (a == ESP_OK)
     {
-        uint8_t params[] = {0xFF, 0xFF, 0x00};
+        const uint8_t params[] = {0xFF, 0xFF, 0x00};
         const uint32_t u32Resp2Len = 1;
         uint8_t u8Resp2Data[1];
         return SendReceiveBytes(pContext, params, sizeof(params), u8Resp2Data, u32Resp2Len);
@@ -242,14 +262,25 @@ esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const 
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
     ESP_LOGI(TAG_STM_PRO, "Flashing Page");
-
+    /*  It seems to be one based, so Byte1 is the first one.
+        Byte 1: 0x31
+        Byte 2: 0xCE
+        Wait for ACK
+        Bytes 3 to 6: Start address (byte 3: MSB, byte 6: LSB)
+        Byte 7: Checksum: XOR (byte3, byte4, byte5, byte6)
+        Wait for ACK
+        Byte 8: Number of bytes to be received (0 < N ≤ 255)
+        N +1 data bytes: Max 256 bytes
+        Checksum byte: XOR (N, N+1 data bytes)
+    */
     STM32PROTOCOL_CmdWrite(pContext);
 
     STM32PROTOCOL_LoadAddress(pContext, address[0], address[1], address[2], address[3]);
     //ESP_LOG_BUFFER_HEXDUMP("FLASH PAGE", data, 256, ESP_LOG_DEBUG);
     uint8_t xor = 0xFF;
     uint8_t sz = 0xFF;
-
+    // the bootloader interpret it as 255+1 (256 bytes) to be written.
+    // according to the documentation.
     SendData(pContext, &sz, 1);
     for (int i = 0; i < 256; i++)
     {
