@@ -1,0 +1,2 @@
+uart_protocol_enc.c:4:6:UARTPROTOCOLENC_Init	16	static
+uart_protocol_enc.c:12:6:UARTPROTOCOLENC_Send	40	static

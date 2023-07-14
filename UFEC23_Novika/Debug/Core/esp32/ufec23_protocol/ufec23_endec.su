@@ -1,0 +1,12 @@
+ufec23_endec.c:3:6:UFEC23ENDEC_Init	4	static
+ufec23_endec.c:8:9:UFEC23ENDEC_A2AReqPingAliveEncode	24	static
+ufec23_endec.c:16:6:UFEC23ENDEC_A2AReqPingAliveDecode	24	static
+ufec23_endec.c:109:9:UFEC23ENDEC_C2SGetParameterEncode	32	static
+ufec23_endec.c:118:6:UFEC23ENDEC_C2SGetParameterDecode	24	static
+ufec23_endec.c:129:6:UFEC23ENDEC_C2SSetRunningSettingDecode	32	static
+ufec23_endec.c:141:9:UFEC23ENDEC_S2CGetParameterRespEncode	40	static
+ufec23_endec.c:177:6:UFEC23ENDEC_S2CGetParameterRespDecode	32	static
+ufec23_endec.c:217:9:UFEC23ENDEC_C2SSetParameterEncode	32	static
+ufec23_endec.c:233:6:UFEC23ENDEC_C2SSetParameterDecode	32	static
+ufec23_endec.c:251:9:UFEC23ENDEC_S2CSetParameterRespEncode	32	static
+ufec23_endec.c:260:6:UFEC23ENDEC_S2CSetParameterRespDecode	24	static

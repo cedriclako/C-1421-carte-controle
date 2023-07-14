@@ -49,6 +49,7 @@ static int frontTempDataStore[NB_DATA]; //Data for slope calculation
 static int baffleTempDataStore[NB_DATA];
 static int frontAccelDataStore[NB_DATA]; //Data for slope calculation
 static int baffleAccelDataStore[NB_DATA];
+static int lastBaffleTemp;
 
 
 static bool simulatorMode = false;
@@ -172,10 +173,11 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  // TODO: la periode utilisée pour le calcule de la pente n'est pas définie
   //       dans le document
-  dTbaffle = computeSlopeBaffleTemp(5); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
-  	  	  	  	  	  	  	  	  	  // la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
+  dTbaffle = computeSlopeBaffleTemp(6); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
 
-  dTavant = computeslopeFrontTemp(5);
+  dTbaffle = (float)(baffleTemperature-lastBaffleTemp)/50;// la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
+
+  dTavant = computeslopeFrontTemp(6);
   int deltaTemperature = 0;
   /* Perform state's actions. */
   switch (currentState) {
@@ -231,7 +233,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		if (((baffleTemperature > pTemperatureParam->IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
 		reloadingEvent = false;
-		AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
+		//AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
 		}
 		if(timeSinceStateEntry >= MINUTES(20))
 		{
@@ -439,40 +441,57 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 					sec_per_step = (float)(SEC_PER_STEP_COMB_LOW);
 				}else{
 
-					// Adjustment based on particle value
-					//stove_too_cold = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step, baffleTemperature/10,
-					//		currentTime_ms,pTemperatureParam->CombLowTarget/10);
-
 					bool closeGrill = false;
+					bool openGrill = false;
+					// Adjustment based on particle value
+					closeGrill = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step,
+							currentTime_ms,baffleTemperature/10,pTemperatureParam->CombLowTarget/10, &openGrill);
 
-					closeGrill = computeParticleCombLowAdjustment(dTbaffle, currentTime_ms, baffleTemperature, pTemperatureParam->CombLowTarget, &action);
+
+
+					//closeGrill = computeParticleCombLowAdjustment(dTbaffle, currentTime_ms, baffleTemperature, pTemperatureParam->CombLowTarget, &action);
 					int grillAperture = Algo_getGrill();
+
+					if(openGrill)
+					{
+						if(grillAperture < 30)
+						{
+							grillAperture = 30;
+						}else
+						{
+							grillAperture *= 2;
+						}
+						AirInput_forceAperture(&grill, grillAperture);
+					}
 
 					if((closeGrill) && (grillAperture != 0) && (currentTime_ms > partComeback_timer_ms))
 					{
 						partComeback_timer_ms = currentTime_ms + 500;
 						AirInput_forceAperture(&grill, grillAperture - 1);
 					}
-
+/*
 					switch(action)
 					{
 					case WAIT:
 						break;
 					case VERY_SLOW_CLOSE:
+						adjustement = 1;
 						sec_per_step = (float)pUserParam->s32VslowClose/10;
 						break;
 					case SLOW_CLOSE:
+						adjustement = 1;
 						sec_per_step = (float)pUserParam->s32SlowClose/10;
 						break;
 					case FAST_CLOSE:
+						adjustement = 5;
 						sec_per_step = (float)pUserParam->s32FastClose/10;
 						break;
-					case INSTANT_CLOSE:
-						break;
 					case SLOW_OPEN:
+						adjustement = 2;
 						sec_per_step = (float)pUserParam->s32SlowOpen/10;
 						break;
 					case FAST_OPEN:
+						adjustement = 5;
 						sec_per_step = (float)pUserParam->s32FastOpen/10;
 						break;
 					case INSTANT_OPEN:
@@ -484,11 +503,13 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 							grillAperture *= 2;
 						}
 						AirInput_forceAperture(&grill, grillAperture);
+						adjustement = 0;
 						break;
 					default:
+						adjustement = 0;
 						break;
 
-					}
+					}*/
 
 				}
 				// Same adjustment function as in other states, but changed arguments
@@ -534,17 +555,17 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 		bool stove_too_cold = false;
 
-		if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
+		//if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
 			adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
 
 			sec_per_step = (float)SEC_PER_STEP_COMB_LOW;
 
-		}else{
+		//}else{
 			// Adjustment based on particle value
-			stove_too_cold = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step,
-					baffleTemperature/10, currentTime_ms, pTemperatureParam->CombLowtoSuperLow/10);
+		//	stove_too_cold = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step,
+		//			baffleTemperature/10, currentTime_ms, pTemperatureParam->CombLowtoSuperLow/10);
 
-		}
+		//}
 		AirAdjustment(adjustement, sec_per_step,
 				pPrimaryMotorParam->MinCombSuperLow, pPrimaryMotorParam->MaxCombSuperLow,
 				pGrillMotorParam->MinCombSuperLow, pGrillMotorParam->MaxCombSuperLow,
@@ -796,6 +817,7 @@ static float computeSlopeBaffleTemp(unsigned int nbData) {
   else
   {
 	Algo_slopeBaffleTemp = Slope_compute(&slopeBaffleTemp, nbData) / 10.0;
+	Algo_slopeBaffleTemp = (float)(baffleTemperature-lastBaffleTemp)/500;
     return Algo_slopeBaffleTemp;
   }
 }
@@ -826,6 +848,7 @@ uint32_t getStateTime(){
 }
 
 void Algo_setBaffleTemp(int temp) {
+  lastBaffleTemp = baffleTemperature;
   baffleTemperature = temp;
   Slope_addData(&slopeBaffleTemp, temp);
 }

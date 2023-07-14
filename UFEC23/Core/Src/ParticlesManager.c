@@ -99,7 +99,7 @@ void ParticlesManager(void const * argument) {
 	static bool rx_success = true;
 	static uint16_t tx_checksum, rx_checksum;
 	uint8_t rx_payload_size, tx_size, zero_current;
-	uint32_t response_delay = 500;
+	uint32_t response_delay = 800;
 
 	for(;;) {
 
@@ -132,7 +132,7 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[8] = STOP_BYTE;
 			tx_size = 9;
-			response_delay = 500;
+			response_delay = 600;
 		}else if(setZero)
 		{
 			TX_BUFFER[0] = START_BYTE;
@@ -152,7 +152,7 @@ void ParticlesManager(void const * argument) {
 			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
 			TX_BUFFER[4] = STOP_BYTE;
 			tx_size = 5;
-			response_delay = 500;
+			response_delay = 800;
 
 
 		}
@@ -412,6 +412,7 @@ static void update_part_variables(void)
 	}
 
 	ParticleDevice.crit =  crit/100;
+	algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
 
 	if(is_part_data_updated())
 	{
@@ -428,7 +429,7 @@ static bool is_part_data_updated(void)
 
 
 bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint32_t Time_ms,
-		int32_t baffleTemperature, int32_t temperature_limit)
+		int32_t baffleTemperature, int32_t temperature_limit, bool* OpenGrill)
 {
 	// Function memory variables (pour timings et validation de la pertinence des corrections précédentes)
 	static uint32_t lastTimeInFunc = 0;
@@ -445,11 +446,12 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 
 	if(Time_ms - TimeOfMajorCorrection > SECONDS(pParam->s32MAJ_CORR_INTERVAL))
 	{
-		if((baffleTemperature - temperature_limit) < pParam->s32TBUF_FLOSS)
+		if((baffleTemperature - temperature_limit) < -pParam->s32TBUF_FLOSS)
 		{
-			if(dTavant < -1*pParam->s32DT_THRESHOLD_H)
+			if(dTavant < -1*pParam->s32DT_THRESHOLD_H/60.0)
 			{
-				aperture = 20;
+				aperture = 5;
+				*OpenGrill = true;
 				Sec_per_step = 0;
 
 			}else
@@ -467,7 +469,7 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 		}
 	}
 
-	if(ParticleDevice.crit > pParam->s32CRIT_THRESHOLD_L && MajorCorrection_counter == 0)
+	if(ParticleDevice.crit > pParam->s32CRIT_THRESHOLD_L/100 && MajorCorrection_counter == 0)
 	{
 		if((baffleTemperature - temperature_limit) < pParam->s32TBUF_WORKRANGE)
 		{
@@ -488,7 +490,7 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 		}else
 		{
 			aperture = -10;
-			Sec_per_step = 0.5;
+			Sec_per_step = 1;
 		}
 		crit_correction = true;
 
@@ -501,7 +503,7 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 			if(diff > pParam->s32DIFF_TRESHOLD_H)
 			{
 				aperture = -5;
-				Sec_per_step = 0.5;
+				Sec_per_step = .5;
 			}else if(diff > pParam->s32DIFF_TRESHOLD_L)
 			{
 				aperture = -1;
@@ -513,7 +515,7 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 
 
 
-	algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
+	//algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
 
 
 	*delta = aperture;
@@ -530,12 +532,10 @@ bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint3
 	///////////////////////////////////////////
 
 	// If too many consecutive major corrections, go to comb_superlow
-	if(MajorCorrection_counter > 10){
-		MajorCorrection_counter = 0;
-		TimeOfMajorCorrection = 0;
-		return true;
+	if(MajorCorrection_counter != 0){
+		return false;
 	}
-	return false;
+	return true;
 
 
 }
@@ -547,6 +547,7 @@ bool computeParticleCombLowAdjustment(float dTbaffle, uint32_t Time_ms, int32_t 
 	static uint32_t TimeOfLastCorrection = 0;
 	static uint32_t delay = 0;
 
+	//algo_mod[2] = .8*algo_mod[2]+ .2*ParticleDevice.crit;
 	float diff = (float)(10*ParticleDevice.ch0_ON/ParticleDevice.LED_current_meas) - ParticleDevice.normalized_zero;
 
 	switch(*action)

@@ -1,0 +1,6 @@
+uart_protocol_dec.c:10:6:UARTPROTOCOLDEC_Init	16	static
+uart_protocol_dec.c:16:6:UARTPROTOCOLDEC_Reset	16	static
+uart_protocol_dec.c:27:6:UARTPROTOCOLDEC_HandleIn	32	static
+uart_protocol_dec.c:33:13:AddByte	112	static
+uart_protocol_dec.c:156:13:AcceptFrame	24	static
+uart_protocol_dec.c:163:13:DropFrame	16	static

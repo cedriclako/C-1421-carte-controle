@@ -53,7 +53,7 @@ bool PM_isPboard_absent(void);
 int Particle_getSlope(void);
 void Particle_setConfig(void);
 bool computeParticleLowAdjustment(float dTavant, int* delta, float* speed, uint32_t Time_ms,
-		int32_t baffle_temperature, int32_t temperature_limit);
+		int32_t baffle_temperature, int32_t temperature_limit, bool* OpenGrill);
 ParticleAction computeParticleRiseAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature);
 
 bool computeParticleCombLowAdjustment(float dTbaffle, uint32_t Time_ms, int32_t baffleTemperature,
