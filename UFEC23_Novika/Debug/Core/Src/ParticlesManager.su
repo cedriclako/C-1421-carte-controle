@@ -1,0 +1,6 @@
+ParticlesManager.c:72:6:Particle_Init	4	static
+ParticlesManager.c:93:6:ParticlesManager	24	static
+ParticlesManager.c:214:6:validateRxChecksum	24	static
+ParticlesManager.c:227:6:PM_isPboard_absent	4	static
+ParticlesManager.c:233:6:Particle_setConfig	4	static
+ParticlesManager.c:238:6:Particle_requestZero	4	static

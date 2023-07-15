@@ -135,7 +135,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of Algo_task */
-  osThreadDef(Algo_task, Algo_Init, osPriorityNormal, 0, 128);
+  osThreadDef(Algo_task, Algo_Init, osPriorityNormal, 0, 512);
   Algo_taskHandle = osThreadCreate(osThread(Algo_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

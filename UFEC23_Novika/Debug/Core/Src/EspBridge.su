@@ -1,0 +1,7 @@
+EspBridge.c:98:6:ESPMANAGER_Init	8	static
+EspBridge.c:115:6:ESPMANAGER_Task	16	static
+EspBridge.c:145:13:UARTErrorCb	16	static
+EspBridge.c:152:13:EncWriteUART	24	static
+EspBridge.c:160:13:DecAcceptFrame	112	static
+EspBridge.c:263:13:DecDropFrame	16	static
+EspBridge.c:268:16:GetTimerCountMS	16	static

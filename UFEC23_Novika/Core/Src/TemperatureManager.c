@@ -71,8 +71,6 @@ typedef struct
 static int Tboard;
 static bool b_tx_pending, b_tx_success;
 static bool b_rx_pending,b_rx_success;
-static uint32_t u32conf_time;
-static uint8_t adcData[4];
 static Temp_state currentState;
 static Temp_state nextState;
 
@@ -92,7 +90,6 @@ void Temperature_Init(void)
 	b_tx_success = false;
 	b_rx_pending = false;
 	b_rx_success = false;
-	u32conf_time = 0;
 	Tobj.ADCConfigByte[0] = 0x9F;
 	Tobj.ADCConfigByte[1] = 0xBF;
 	Tobj.ADCConfigByte[2] = 0xDC;
@@ -104,10 +101,12 @@ void Temperature_Init(void)
 void TemperatureManager(Mobj* stove, uint32_t u32time_ms)
 {
 	static int8_t ch_idx = NUMBER_OF_ADC_CH - 1;
+	static uint8_t adcData[4];
+	static uint32_t u32conf_time;
 	int32_t i32tempReading=0;
 	float ftempReading = 0.0;
 	float flastReading = 0.0;
-	const float slope_filter_weight = 0.2;
+	const float slope_filter_weight = 0.1;
 
 	switch(currentState)
 	{

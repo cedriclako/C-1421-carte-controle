@@ -15,7 +15,6 @@ static PF_MotorOpeningsParam_t m_sGrillMotorParam = { 0xFF};
 static PF_MotorOpeningsParam_t m_sSecondaryMotorParam = { 0xFF};
 
 static PF_UsrParam m_sMemBlock = { 0xFF };
-static PF_PartParam m_sPartMemBlock = { 0xFF};
 
 static const PFL_SParameterItem m_sParameterItems[] =
 {
@@ -24,40 +23,6 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_MANUALPRIM, 			"", &m_sMemBlock.s32ManualPrimary, 			                50, 0, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_MANUALSEC,		 		"", &m_sMemBlock.s32ManualSecondary, 		                50, 0, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_MANUALGRILL, 			"", &m_sMemBlock.s32ManualGrill, 		    	            50, 0, PF_GRILL_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_SECPERSTEP, 			"", &m_sMemBlock.s32SEC_PER_STEP, 					       	0, 0, 10),
-	PFL_INIT_SINT32(PFD_APERTUREOFFSET, 		"", &m_sMemBlock.s32APERTURE_OFFSET, 					   	0, 0, 100),
-	PFL_INIT_SINT32(PFD_FANKIP,			 		"", &m_sMemBlock.s32FAN_KIP,   	 					   		3500, 0, 20000),
-	PFL_INIT_SINT32(PFD_FANKOP,			 	    "", &m_sMemBlock.s32FAN_KOP,		 				   		6500, 0, 20000),
-	PFL_INIT_SINT32(PFD_OPEN_VSLOW,			 	"", &m_sMemBlock.s32VslowOpen,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_OPEN_SLOW,			 	"", &m_sMemBlock.s32SlowOpen,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_OPEN_AVG,			 	"", &m_sMemBlock.s32AvgOpen,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_OPEN_FAST,			 	"", &m_sMemBlock.s32FastOpen,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_CLOSE_VSLOW,			"", &m_sMemBlock.s32VslowClose,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_CLOSE_SLOW,			 	"", &m_sMemBlock.s32SlowClose,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_CLOSE_AVG,			 	"", &m_sMemBlock.s32AvgClose,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_CLOSE_AVG,			 	"", &m_sMemBlock.s32FastClose,		 				   		0, 0, 100),
-	PFL_INIT_SINT32(PFD_STATE_ENTRY_WAIT,	    "", &m_sMemBlock.s32StateEntryWaitTime,		 				1, 0, 10),
-
-
-	PFL_INIT_SINT32(PFD_TSLGAIN, 				"", &m_sPartMemBlock.s32TLSGAIN, 				             3, 0, 3),
-	PFL_INIT_SINT32(PFD_TSLINT,  				"", &m_sPartMemBlock.s32TSLINT, 					    	 5, 0, 5),
-	PFL_INIT_SINT32(PFD_DACCMD,  				"", &m_sPartMemBlock.s32DACCMD, 							 130, 0, 255),
-	PFL_INIT_SINT32(PFD_TIMEINTERVAL, 			"", &m_sPartMemBlock.s32TIMEINTERVAL, 					     1, 0, 255),
-	PFL_INIT_SINT32(PFD_MAJ_CORR,			 	"", &m_sPartMemBlock.s32MAJ_CORR_INTERVAL,		 			60, 0, 1000),
-	PFL_INIT_SINT32(PFD_FAST_CORR,			 	"", &m_sPartMemBlock.s32FAST_CORR_INTERVAL,		 			90, 0, 1000),
-	PFL_INIT_SINT32(PFD_AVG_CORR,			 	"", &m_sPartMemBlock.s32AVG_CORR_INTERVAL,		 			45, 0, 1000),
-	PFL_INIT_SINT32(PFD_SLOW_CORR,			 	"", &m_sPartMemBlock.s32SLOW_CORR_INTERVAL,		 			30, 0, 1000),
-	PFL_INIT_SINT32(PFD_TBUF_FLOSS,			 	"", &m_sPartMemBlock.s32TBUF_FLOSS,		 				   	10, 0, 100),
-	PFL_INIT_SINT32(PFD_TBUF_OVERHEAT,			"", &m_sPartMemBlock.s32TBUF_OVERHEAT,		 				100, 0, 1000),
-	PFL_INIT_SINT32(PFD_TBUF_WORKRANGE,			"", &m_sPartMemBlock.s32TBUF_WORKRANGE,		 				40, 0, 1000),
-	PFL_INIT_SINT32(PFD_KIP_PART_RISE,			"", &m_sPartMemBlock.s32T_KIP_RISE,		 				   	500, 0, 1000),
-	PFL_INIT_SINT32(PFD_CRIT_THRESHOLD_H,		"", &m_sPartMemBlock.s32CRIT_THRESHOLD_H,		 			40, 0, 100),
-	PFL_INIT_SINT32(PFD_CRIT_THRESHOLD_L,		"", &m_sPartMemBlock.s32CRIT_THRESHOLD_L,		 			80, 0, 100),
-	PFL_INIT_SINT32(PFD_DIFF_TRESHOLD_L,		"", &m_sPartMemBlock.s32DIFF_TRESHOLD_L,		 			20, 0, 1000),
-	PFL_INIT_SINT32(PFD_DIFF_TRESHOLD_H,		"", &m_sPartMemBlock.s32DIFF_TRESHOLD_H,		 			50, 0, 1000),
-	PFL_INIT_SINT32(PFD_DT_THRESHOLD_L,			"", &m_sPartMemBlock.s32DT_THRESHOLD_H,		 				10, 0, 100),
-	PFL_INIT_SINT32(PFD_DT_THRESHOLD_H,			"", &m_sPartMemBlock.s32DT_THRESHOLD_L,		 				2, 0, 20000),
-	PFL_INIT_SINT32(PFD_DT_RISE,				"", &m_sPartMemBlock.s32DT_RISE,			 				10, 0, 20),
 
 	// Temperature parameters
 	PFL_INIT_SINT32(PFD_WAITINGTOIGNITION, 		"", &m_sTemperatureParam.WaitingToIgnition, 	  			1500, 0, 20000),
@@ -208,7 +173,4 @@ const PF_UsrParam* PB_GetUserParam()
 	return &m_sMemBlock;
 }
 
-const PF_PartParam* PB_GetParticlesParam()
-{
-	return &m_sPartMemBlock;
-}
+
