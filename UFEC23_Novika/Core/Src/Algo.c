@@ -101,7 +101,7 @@ void Algo_Init(void const * argument)
     	GPIOManager(&UFEC23,osKernelSysTick());
     	TemperatureManager(&UFEC23,osKernelSysTick());
     	DebugManager(&UFEC23,osKernelSysTick());
-    	ESPMANAGER_Task();
+    	//ESPMANAGER_Task();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
     	osDelay(1);

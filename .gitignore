@@ -46,5 +46,9 @@ C-1333_-_Mesures_emissions.X/nbproject/private/
 ESP32-Remote-Prototype/sbi-iot-client/error.txt
 /ESP32-Remote-Prototype/.vs
 UFEC23_Novika/Debug/
+<<<<<<< 02e51bb0a5eb37dc62f908122d52ce1084962bb2
 UFEC23_Novika/Release/
 UFEC23_Novika/Core/esp32/
+=======
+UFEC23_Novika/Release/
+>>>>>>> Correction
