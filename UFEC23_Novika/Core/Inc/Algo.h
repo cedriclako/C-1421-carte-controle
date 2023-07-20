@@ -40,7 +40,8 @@ typedef enum {
   NB_OF_STATE
 } State;
 
-typedef struct _AirInput AirInput;
+//typedef struct _AirInput AirInput;
+
 
 typedef struct
 {
@@ -66,9 +67,6 @@ typedef struct
 
 /***** Fonctions ******/
 
-//extern void Algo_init(void const * argument);
-
-void Algo_task(void);
 extern void Algo_Init(void const * argument);
 
 #endif /* INC_ALGO_H_ */

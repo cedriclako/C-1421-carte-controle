@@ -33,6 +33,8 @@ extern "C" {
         TSL2591_INTEGRATIONTIME_600MS = 0x05, // 600 millis
     } tsl2591IntegrationTime_t;
     
+#define TSL2591_MAX_PARAM_VALUE   0x05
+    
     #define DS1775_9BITS_MODE 0x00      // Conversion time: 125ms typ. 187.5ms max
     #define DS1775_10BITS_MODE 0x20     // Conversion time: 250ms typ. 375ms max
     #define DS1775_11BITS_MODE 0x40     // Conversion time: 500ms typ. 750ms max

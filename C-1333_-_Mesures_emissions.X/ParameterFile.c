@@ -59,7 +59,7 @@ void ParameterInit(void)
     {
         DATAEE_WriteByte(EE_FIRST_CONF_ADDR, 0xAA);
         EEParams.fireCounter = 0;
-        Params.DAC_value = 130;
+        Params.DAC_value = 130;//Hard coded value --> gives roughly 5 mA (best go through void measureSetLED(const gs_Parameters* Param))
     }else
     {
         Params.DAC_value = DATAEE_ReadByte(EE_DAC_ADDR);
