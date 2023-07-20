@@ -65,8 +65,11 @@ static MeasureParticles_t ParticleDevice;
 static bool particleBoardAbsent = false;
 static bool config_mode = false;
 static bool setZero = false;
+static bool IncFireCount = false;
 
 bool validateRxChecksum(uint8_t buffer_index);
+
+uint16_t Particle_Send_CMD(uint8_t cmd);
 
 
 void Particle_Init(void)
@@ -105,17 +108,58 @@ void ParticlesManager(uint32_t u32Time_ms)
 	case Idle:
 		if(u32Time_ms - u32LastReqTime > SECONDS(2))
 		{
-			TX_BUFFER[0] = START_BYTE;
-			TX_BUFFER[1] = READ_CMD;
-			tx_checksum = READ_CMD;
-			TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
-			TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
-			TX_BUFFER[4] = STOP_BYTE;
-			tx_size = 5;
-			response_delay = 800;
+			//GC 2023-07-19 debug
+			if(config_mode)
+			{
+				//Test unitaire - WRITE CMD
+				TX_BUFFER[0] = START_BYTE;
+				TX_BUFFER[1] = WRITE_CMD | 0x04; //Attention, devrait etre 0x05, updater aussi PF_VvalidatateConfig
+				tx_checksum = TX_BUFFER[1];
+				TX_BUFFER[2] = 3;//(uint8_t)pParam->s32TLSGAIN;
+				TX_BUFFER[3] = 5;//(uint8_t)pParam->s32TSLINT;
+				TX_BUFFER[4] = 7;//(uint8_t)pParam->s32DACCMD;
+				TX_BUFFER[5] = 10;//(uint8_t)pParam->s32TIMEINTERVAL;  //GC Attention, devrait être un WORD (2 byte)
+				//TX_BUFFER[6] = 0;//(uint8_t)pParam->s32TIMEINTERVAL;  //GC Attention, devrait être un WORD (2 byte)
+				for(uint8_t j = 2;j < 6;j++)
+				{
+					tx_checksum += TX_BUFFER[j];
+				}
+				TX_BUFFER[6] = (uint8_t)(tx_checksum >> 8);
+				TX_BUFFER[7] = (uint8_t)(tx_checksum & 0x00FF);
+				TX_BUFFER[8] = STOP_BYTE;
+				tx_size = 9;
+				response_delay = 600;
+			}else if(IncFireCount)
+			{
+				//Test unitaire - FIRECNT_CMD
+				tx_checksum = Particle_Send_CMD(FIRECNT_CMD);
+				tx_size = 5;
+				response_delay = 600;
+			}else if(setZero)
+			{
+				//Test unitaire - SETZERO CMD
+				tx_checksum = Particle_Send_CMD(SETZERO_CMD);
+				tx_size = 5;
+				response_delay = 600;
+
+			}else{
+
+				//Test unitaire - READ_CMD
+				tx_checksum = Particle_Send_CMD(READ_CMD);
+				tx_size = 5;
+				response_delay = 800;
+
+				//TX_BUFFER[0] = START_BYTE;
+				//TX_BUFFER[1] = READ_CMD;
+				//tx_checksum = READ_CMD;
+				//TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
+				//TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
+				//TX_BUFFER[4] = STOP_BYTE;
+				//tx_size = 5;
+				//response_delay = 800;
+			}
 			nextState = Send_request;
 		}
-
 		break;
 	case Send_request:
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
@@ -181,6 +225,8 @@ void ParticlesManager(uint32_t u32Time_ms)
 			ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
 			ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 			ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
+
+			config_mode = true; //GC 2023-07-19 Debug comm
 		}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 		{
 			//TODO: Implement config
@@ -189,6 +235,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			//{
 			//	config_mode = false;
 			//}
+			config_mode = false; //GC 2023-07-19 debug
 
 		}else if((RX_BUFFER[1] & 0xC0) == SETZERO_CMD)
 		{
@@ -239,3 +286,24 @@ void Particle_requestZero(void)
 {
 	setZero = true;
 }
+
+void Particle_IncFireCount(void)
+{
+	IncFireCount = true;
+}
+
+uint16_t Particle_Send_CMD(uint8_t cmd)
+{
+	static uint16_t tx_checksum;
+
+	TX_BUFFER[0] = START_BYTE;
+	TX_BUFFER[1] = cmd;
+	tx_checksum = cmd;
+	TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
+	TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
+	TX_BUFFER[4] = STOP_BYTE;
+
+	return tx_checksum;
+}
+
+

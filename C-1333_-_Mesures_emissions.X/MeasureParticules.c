@@ -177,8 +177,8 @@ void measureParticlesProcess(void)
                 // De-activate LED
                 DAC1_Disable();
                 
-                // Write zero values in EEPROM parameters (wait for ctrl card to actually save in EEPROM)
-                PF_Update_MemParams(gs_sMeasPartObject.m_fullZero,(uint8_t)(3300*(float)gs_sMeasPartObject.adcValue/4096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
+                // Write zero values in EEPROM parameters (wait for ctrl card to actually save in EEPROM)   
+                PF_Update_MemParams(PF_GetFireCount(),gs_sMeasPartObject.m_fullZero,(uint8_t)(3300*(float)gs_sMeasPartObject.adcValue/4096),(uint8_t)gs_sMeasPartObject.m_fTemperatureCelcius);
                 bridgeZeroComplete();
 
                 // Change state and sub state

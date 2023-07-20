@@ -76,11 +76,13 @@ extern "C" {
     
     void PF_requestReconfigure(void);
     
+    void PF_ReConfigureDone(void);
+    
     void PF_ToggleAcqEnable(void);
     
     void PF_setDAC(uint8_t value);
     
-    void PF_Update_MemParams(uint16_t zero, uint8_t current,uint8_t temperature);
+    void PF_Update_MemParams(uint16_t FireCount, uint16_t zero, uint8_t current, uint8_t temperature);
     
     bool PF_validateConfig(uint8_t* payload,uint8_t payload_size);
     
@@ -89,6 +91,8 @@ extern "C" {
     const gs_Parameters* PF_getCBParamAddr(void);
     
     const gs_MemoryParams* PF_getEEParamAddr(void);
+    
+    uint16_t PF_GetFireCount(void);
 
 
 #ifdef	__cplusplus

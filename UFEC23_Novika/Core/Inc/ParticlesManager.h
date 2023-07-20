@@ -39,6 +39,8 @@ typedef struct MeasureParticles
 bool PM_isPboard_absent(void);
 
 void Particle_requestZero(void);
+void Particle_IncFireCount(void);
+void Particle_setConfig(void);
 void Particle_Init(void);
 void ParticlesManager(uint32_t u32Time_ms);
 

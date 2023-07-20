@@ -1,8 +1,0 @@
-ParameterFileLib.c:17:6:PFL_Init	24	static
-ParameterFileLib.c:25:6:PFL_LoadAll	32	static
-ParameterFileLib.c:47:6:PFL_LoadAllDefault	32	static
-ParameterFileLib.c:65:6:PFL_CommitAll	16	static
-ParameterFileLib.c:71:13:PFL_GetValueInt32	32	static
-ParameterFileLib.c:89:13:PFL_SetValueInt32	40	static
-ParameterFileLib.c:103:20:ValidateValueInt32	24	static
-ParameterFileLib.c:111:34:GetParameterEntryByKey	24	static
