@@ -55,6 +55,10 @@ typedef enum
 #define RX_BUFFER_LENGTH 64
 #define TX_BUFFER_LENGTH 20
 
+#define COMM_ERR_LIMIT   10
+#define TIME_TO_WAIT_IF_OK 2
+#define TIME_TO_WAIT_IF_ERR 30
+
 extern UART_HandleTypeDef huart3;
 
 static Part_States currentState;
@@ -99,6 +103,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 	static uint16_t tx_checksum, rx_checksum;
 	static uint8_t rx_payload_size, tx_size, zero_current;
 	static uint32_t response_delay = 800;
+	static uint8_t request_interval = TIME_TO_WAIT_IF_OK;
 	static uint32_t u32LastReqTime = 0;
 	int slp_sign = 1;
 
@@ -106,7 +111,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 	switch(currentState)
 	{
 	case Idle:
-		if(u32Time_ms - u32LastReqTime > SECONDS(2))
+		if(u32Time_ms - u32LastReqTime > SECONDS(request_interval))
 		{
 			//GC 2023-07-19 debug
 			if(config_mode)
@@ -162,6 +167,12 @@ void ParticlesManager(uint32_t u32Time_ms)
 		}
 		break;
 	case Send_request:
+		if(uartErrorCount > COMM_ERR_LIMIT && request_interval !=TIME_TO_WAIT_IF_ERR)
+		{
+			request_interval = TIME_TO_WAIT_IF_ERR;
+			nextState = Idle;
+			break;
+		}
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 		RX_BUFFER[0] = 0;
 		RX_BUFFER[1] = 0;
@@ -181,8 +192,15 @@ void ParticlesManager(uint32_t u32Time_ms)
 
 		}else if(u32Time_ms - u32LastReqTime > response_delay)
 		{
+			if(uartErrorCount <= COMM_ERR_LIMIT)
+			{
+				nextState = Send_request;
+			}else
+			{
+				nextState = Idle;
+			}
 			uartErrorCount++;
-			nextState = Send_request;
+
 		}
 
 		break;
@@ -196,12 +214,19 @@ void ParticlesManager(uint32_t u32Time_ms)
 		if(rx_checksum == ((uint16_t)(RX_BUFFER[rx_payload_size+2] << 8) + (uint16_t)RX_BUFFER[rx_payload_size+3]))
 		{
 			particleBoardAbsent = false;
+			request_interval = TIME_TO_WAIT_IF_OK;
 			uartErrorCount = 0;
 			nextState = Data_ready;
 		}else
 		{
+			if(uartErrorCount <= COMM_ERR_LIMIT)
+			{
+				nextState = Send_request;
+			}else
+			{
+				nextState = Idle;
+			}
 			uartErrorCount++;
-			nextState = Send_request;
 		}
 		break;
 	case Data_ready:
@@ -245,8 +270,14 @@ void ParticlesManager(uint32_t u32Time_ms)
 			//ParticleDevice.normalized_zero = (float)ParticleDevice.zero/(float)zero_current;
 		}else
 		{
+			if(uartErrorCount <= COMM_ERR_LIMIT)
+			{
+				nextState = Send_request;
+			}else
+			{
+				nextState = Idle;
+			}
 			uartErrorCount++;
-			nextState = Send_request;
 		}
 		break;
 	}

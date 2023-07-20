@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "AirInput.h"
 
 /***** Définitions ******/
 
@@ -40,15 +41,14 @@ typedef enum {
   NB_OF_STATE
 } State;
 
-//typedef struct _AirInput AirInput;
 
 
 typedef struct
 {
 
-	//AirInput primary;
-	//AirInput grill;
-	//AirInput secondary;
+	AirInput primary;
+	AirInput grill;
+	AirInput secondary;
 
 	float fBaffleTemp;
 	float fChamberTemp;

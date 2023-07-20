@@ -22,9 +22,7 @@
 #include "DebugManager.h"
 #include "Algo.h"
 
-extern osMessageQId MotorControlsHandle;
-extern MessageBufferHandle_t MotorControlHanlde;
-static uint16_t u16MotorControls[6] = {0xAA,0xBB,0xCC,0xDD,0xDD,0xFF};
+extern MessageBufferHandle_t MotorControlsHandle;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
@@ -32,6 +30,7 @@ static uint32_t timeSinceStateEntry;
 static uint32_t TimeOfReloadRequest;
 
 void Algo_task(uint32_t u32CurrentTime_ms);
+bool Algo_adjust_steppers_position(uint8_t* cmd);
 
 void Algo_Init(void const * argument)
 {
@@ -67,9 +66,9 @@ void Algo_Init(void const * argument)
 
     for(;;)
     {
-    	//TemperatureManager(&UFEC23,osKernelSysTick());
+    	TemperatureManager(&UFEC23,osKernelSysTick());
     	DebugManager(&UFEC23,osKernelSysTick());
-    	//ESPMANAGER_Task();
+    	ESPMANAGER_Task();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(osKernelSysTick());
     	osDelay(10);
@@ -80,14 +79,30 @@ void Algo_Init(void const * argument)
 void Algo_task(uint32_t u32CurrentTime_ms)
 {
 	static uint32_t u32LastTime_ms = 0;
-	static uint8_t caca_cadeau[6] = {0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
+	static uint8_t u8cmds[6] = {0x00,0x00,0x00,0x00,0x00,0x00};
+	bool bMotorManagerOK = false;
 
 	if(u32CurrentTime_ms - u32LastTime_ms > SECONDS(1))
 	{
-		xMessageBufferSend(MotorControlHanlde,caca_cadeau,6,0);
-		//xQueueSend(MotorControlsHandle,u16MotorControls,0);
+		if(Algo_adjust_steppers_position(u8cmds))
+		{
+			bMotorManagerOK = true;
+		}
+		else
+		{
+			bMotorManagerOK = false;
+		}
 		u32LastTime_ms = u32CurrentTime_ms;
 	}
 
 }
 
+
+bool Algo_adjust_steppers_position(uint8_t* cmd)
+{
+	if(!xMessageBufferSend(MotorControlsHandle,cmd,6,0))
+		{
+		return false;
+		}
+	return true;
+}

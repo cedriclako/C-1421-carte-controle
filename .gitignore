@@ -47,3 +47,4 @@ ESP32-Remote-Prototype/sbi-iot-client/error.txt
 /ESP32-Remote-Prototype/.vs
 UFEC23_Novika/Debug/
 UFEC23_Novika/Release/
+UFEC23_Novika/Core/esp32/

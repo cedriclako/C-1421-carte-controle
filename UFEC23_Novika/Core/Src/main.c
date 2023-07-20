@@ -55,7 +55,7 @@ osThreadId Algo_taskHandle;
 osThreadId MotorManagerHandle;
 osTimerId TimerHandle;
 /* USER CODE BEGIN PV */
-MessageBufferHandle_t MotorControlHanlde;
+MessageBufferHandle_t MotorControlsHandle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,7 +134,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
-	MotorControlHanlde = xMessageBufferCreate(10);
+	MotorControlsHandle = xMessageBufferCreate(10);
 
   /* USER CODE END RTOS_QUEUES */
 
