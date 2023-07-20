@@ -56,9 +56,9 @@ void Algo_Init(void const * argument)
 
     for(;;)
     {
-    	TemperatureManager(&UFEC23,osKernelSysTick());
+    	//TemperatureManager(&UFEC23,osKernelSysTick());
     	DebugManager(&UFEC23,osKernelSysTick());
-    	ESPMANAGER_Task();
+    	//ESPMANAGER_Task();
     	ParticlesManager(osKernelSysTick());
     	osDelay(10);
     }

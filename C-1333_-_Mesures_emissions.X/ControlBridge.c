@@ -243,16 +243,15 @@ void ControlBridgeProcess(void)
                             case FIRECNT_CMD:
                                 PF_IncrementFireCount();
                                 TMR1_StopTimer();
-                                BridgeState = eBridge_IDLE;
+                                BridgeState = eBridge_TRANSMIT_DATA; //BridgeState = eBridge_IDLE;
                                 break;
                             case SETZERO_CMD:
                                 PF_requestReconfigure();
-                                
-                                
+                                                                
                                 if(measureParticlesReadyForConfig())
                                 {
                                     measureParticlesSetZero();
-                                    PF_ToggleAcqEnable();
+                                    PF_ReConfigureDone();//PF_ToggleAcqEnable();
                                 }
                                 
                                 if(set_zero_complete)
@@ -285,6 +284,9 @@ void ControlBridgeProcess(void)
                     sendData(tx_size, (uint8_t)READ_CMD);
                     break;
                 case FIRECNT_CMD:
+                    tx_size = fillEEBuffer(EE_Param);
+                    sendData(tx_size, (uint8_t)FIRECNT_CMD);
+                    break;
                 case SETZERO_CMD:
                     tx_size = fillEEBuffer(EE_Param);
                     sendData(tx_size, (uint8_t)SETZERO_CMD);
@@ -295,7 +297,7 @@ void ControlBridgeProcess(void)
             break;
         case eBridge_VERIFY_PAYLOAD:
             printf("Verifiyng payload\r\n");
-            if(command == WRITE_CMD)
+            if((command & 0xC0) == WRITE_CMD)
             {
                 if(PF_validateConfig(payload, payload_size))
                 {
@@ -319,6 +321,7 @@ void ControlBridgeProcess(void)
             sendConfig(CB_Param);
             TMR1_StopTimer();
             BridgeState = eBridge_IDLE;
+            PF_ReConfigureDone();
             break;
         case eBridge_COMM_ERROR: // Can add some diagnosis if wanted
             TMR1_StopTimer();
