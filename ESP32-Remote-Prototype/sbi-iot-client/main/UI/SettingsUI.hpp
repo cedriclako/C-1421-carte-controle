@@ -1,7 +1,7 @@
 #ifndef _SETTINGSUI_H_
 #define _SETTINGSUI_H_
 
-#include "CommonUI.h"
+#include "CommonUI.hpp"
 
 #ifdef __cplusplus
 extern "C" {

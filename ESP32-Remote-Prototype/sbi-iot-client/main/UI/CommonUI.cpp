@@ -1,4 +1,4 @@
-#include "CommonUI.h"
+#include "CommonUI.hpp"
 
 const EF_SFile* COMMONUI_GetBtnArrowUp(bool bIsEnabled)
 {

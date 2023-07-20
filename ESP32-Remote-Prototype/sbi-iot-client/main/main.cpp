@@ -13,7 +13,7 @@
 #include "espnowcomm.h"
 #include "SleepData.h"
 #include "Global.h"
-#include "UIManager.h"
+#include "UIManager.hpp"
 #include "assets/EmbeddedFiles.h"
 
 #define TAG "main"
@@ -59,14 +59,17 @@ void setup()
     UIMANAGER_Init();
 
     M5.update();
-    if (M5.BtnP.isPressed())
+
+    const bool test = true; // TODO: For test purpose
+
+    if (M5.BtnP.isPressed() || test)
     {
         m_isUserModeActive = true;
         UIMANAGER_SwitchTo(ESCREEN_HomeUsermode);
     }
     else
     {
-        UIMANAGER_SwitchTo(ESCREEN_HomeReadOnly);
+        UIMANAGER_SwitchTo(ESCREEN_UIPoweredOffView);
     }
 
     ESP_LOGI(TAG, "Init netif");
@@ -154,7 +157,7 @@ void loop()
         {
             ESP_LOGI(TAG, "User is done with change, time to switch to readonly mode and sleep");
             m_isUserModeActive = false;
-            UIMANAGER_SwitchTo(ESCREEN_HomeReadOnly);
+            UIMANAGER_SwitchTo(ESCREEN_UIPoweredOffView);
         }
 
         vTaskDelay(pdMS_TO_TICKS(200));

@@ -1,7 +1,7 @@
 #ifndef _POWERINGONUI_H_
 #define _POWERINGONUI_H_
 
-#include "CommonUI.h"
+#include "CommonUI.hpp"
 
 #ifdef __cplusplus
 extern "C" {

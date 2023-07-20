@@ -1,7 +1,7 @@
 #ifndef _COMMONUI_H_
 #define _COMMONUI_H_
 
-#include "EScreen.h"
+#include "EScreen.hpp"
 #include <M5EPD.h>
 #include <stdint.h>
 #include "../assets/EmbeddedFiles.h"

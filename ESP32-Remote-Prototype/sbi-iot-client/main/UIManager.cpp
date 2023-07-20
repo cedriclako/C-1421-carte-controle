@@ -1,15 +1,15 @@
-#include "UIManager.h"
+#include "UIManager.hpp"
 #include "Global.h"
-#include "UI/MainUI.h"
-#include "UI/PoweringOnUI.h"
-#include "UI/SettingsUI.h"
+#include "UI/MainUI.hpp"
+#include "UI/PoweringOnUI.hpp"
+#include "UI/SettingsUI.hpp"
+#include "UI/UIPoweredOffView.hpp"
 
 #define TAG "UIManager"
 
 static void SwitchUI(const COMMONUI_SContext* sContext, ESCREEN eScreen);
 
 static MAINUI_SHandle m_sMainUIHandle; 
-static MAINUI_SArgument m_sMainUIArgumentRO         = { .bIsUserModeActive = false };
 static MAINUI_SArgument m_sMainUIArgumentUserMode   = { .bIsUserModeActive = true };
 
 static COMMONUI_SUIManagerContext m_sUIManagerCtx = { .ptrSwitchUI = SwitchUI };
@@ -17,12 +17,13 @@ static COMMONUI_SUIManagerContext m_sUIManagerCtx = { .ptrSwitchUI = SwitchUI };
 static COMMONUI_SContext m_sUIs[ESCREEN_Count] =
 {
     // Main
-    [ESCREEN_HomeReadOnly] = { .szName = "MainReadOnly", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
-    [ESCREEN_HomeUsermode] = { .szName = "MainUsermode", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    [ESCREEN_HomeUsermode]          = { .szName = "MainUsermode", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    // Powering off
+    [ESCREEN_UIPoweredOffView]     = { .szName = "PoweredOff", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &UIPOWEREDOFFVIEW_g_sConfig },
     // Powering on
-    [ESCREEN_PoweringOn]   = { .szName = "PoweringOn", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
+    [ESCREEN_PoweringOn]            = { .szName = "PoweringOn", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
     // Settings
-    [ESCREEN_Settings]     = { .szName = "Settings", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &SETTINGSUI_g_sConfig }
+    [ESCREEN_Settings]              = { .szName = "Settings", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &SETTINGSUI_g_sConfig }
 };
 
 static ESCREEN m_eScreen = ESCREEN_Invalid;

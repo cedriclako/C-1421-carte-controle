@@ -1,7 +1,7 @@
 #ifndef _MAINUI_H_
 #define _MAINUI_H_
 
-#include "CommonUI.h"
+#include "CommonUI.hpp"
 #include <stdint.h>
 #include <stdbool.h>
 

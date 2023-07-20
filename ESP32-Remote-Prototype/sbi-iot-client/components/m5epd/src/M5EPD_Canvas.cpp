@@ -986,10 +986,10 @@ static uint32_t jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect)
 static bool jpgDecode(jpg_file_decoder_t *jpeg,
                       uint32_t (*reader)(JDEC *, uint8_t *, uint32_t))
 {
-    static uint8_t work[3100];
+    static uint8_t work[3092];
     JDEC decoder;
 
-    JRESULT jres = jd_prepare(&decoder, reader, work, 3100, jpeg);
+    JRESULT jres = jd_prepare(&decoder, reader, work, sizeof(work), jpeg);
     if (jres != JDR_OK)
     {
         log_e("jd_prepare failed! %s", jd_errors[jres]);

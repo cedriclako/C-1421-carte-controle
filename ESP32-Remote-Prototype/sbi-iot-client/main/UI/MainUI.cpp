@@ -1,7 +1,7 @@
-#include "MainUI.h"
+#include "MainUI.hpp"
 #include "Global.h"
 #include "../MemBlock.h"
-#include "../UIManager.h"
+#include "../UIManager.hpp"
 #include "espnowcomm.h"
 
 #define TAG "MainUI"
@@ -10,11 +10,11 @@
 #define BAR_WIDTH 48
 #define BAR_MARGIN 16
 
-#define ZONE_SETPOINT_START_Y 250
-#define ZONE_SETPOINT_BUTTONUP_X (40)
-#define ZONE_SETPOINT_BUTTONUP_Y (ZONE_SETPOINT_START_Y+16)
-#define ZONE_SETPOINT_BUTTONDOWN_X (40)
-#define ZONE_SETPOINT_BUTTONDOWN_Y (ZONE_SETPOINT_START_Y+136)
+#define ZONE_SETPOINT_START_Y (15)
+#define ZONE_SETPOINT_BUTTONUP_X (360)
+#define ZONE_SETPOINT_BUTTONUP_Y (ZONE_SETPOINT_START_Y+15)
+#define ZONE_SETPOINT_BUTTONDOWN_X (360)
+#define ZONE_SETPOINT_BUTTONDOWN_Y (ZONE_SETPOINT_START_Y+80)
 
 #define ZONE_FANSPEED_START_Y 500
 #define ZONE_FANSPEED_BUTTONUP_X (40)
@@ -166,66 +166,101 @@ static void RedrawUI(COMMONUI_SContext* pContext)
     // -----------------------------------
     // Current room temperature
     {
-        const int32_t s32CurrentTempY = 0;
-
-        G_g_CanvasResult.setFreeFont(FF18);
+        G_g_CanvasResult.setFreeFont(FF22);
         G_g_CanvasResult.setTextSize(2);
-        G_g_CanvasResult.drawCentreString("Room", 40+EF_g_sIMAGES_ICON_ARROW_DOWN_EN_120X60_JPG.s32Width/2, s32CurrentTempY+96, GFXFF);
-
-        G_g_CanvasResult.setFreeFont(FSSB18);
-        G_g_CanvasResult.setTextSize(3);
-        sprintf(tmp, "%.1f", tem);
-        G_g_CanvasResult.drawString(String(tmp), 232, s32CurrentTempY+72);
+        sprintf(tmp, "Room %.1f C", tem);
+        G_g_CanvasResult.drawCentreString(String(tmp), SCREEN_WIDTH / 3, 40, GFXFF);
+            
+        // -----------------------------------
+        // Current set point
+        G_g_CanvasResult.setFreeFont(FF23);
         G_g_CanvasResult.setTextSize(1);
-        G_g_CanvasResult.drawString("C", 440, s32CurrentTempY+72);
-        
-        G_g_CanvasResult.drawRect(40, s32CurrentTempY + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
-    }
 
-    // -----------------------------------
-    // Current set point
-    {
-        G_g_CanvasResult.setFreeFont(FF19);
-        G_g_CanvasResult.setTextSize(1);
-        G_g_CanvasResult.drawCentreString("Setpoint", 40+EF_g_sIMAGES_ICON_ARROW_DOWN_EN_120X60_JPG.s32Width/2, ZONE_SETPOINT_START_Y+92, GFXFF);
-        if (pArgument->bIsUserModeActive)
-        {
-            const EF_SFile* pSFileArrowUp = COMMONUI_GetBtnArrowUp(true);
-            G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, ZONE_SETPOINT_BUTTONUP_X, ZONE_SETPOINT_BUTTONUP_Y);
-            const EF_SFile* pSFileArrowDown = COMMONUI_GetBtnArrowDown(true);
-            G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, ZONE_SETPOINT_BUTTONDOWN_X, ZONE_SETPOINT_BUTTONDOWN_Y);
-        }
-        G_g_CanvasResult.setFreeFont(FSSB18);
-        G_g_CanvasResult.setTextSize(3);
-
-        // S2C Get status response
-        const char* szTempUnitString = "";
-        
+        // S2C Get status response       
         if (g_sMemblock.has_s2cGetStatusResp && 
             g_sMemblock.s2cGetStatusResp.has_stove_state &&
             g_sMemblock.s2cGetStatusResp.stove_state.has_remote_temperature_setp)
         {
+            const char* szTempUnitString = "";
             if (g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Celcius)
                 szTempUnitString = "C";
             else if (g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit)
                 szTempUnitString = "F";
-
-            sprintf(tmp, "%.1f", g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp);
+            sprintf(tmp, "Set point: %.1f %s", g_sMemblock.s2cGetStatusResp.stove_state.remote_temperature_setp.temp, szTempUnitString);
         }
         else
         {
-            sprintf(tmp, "---"); 
+            sprintf(tmp, "Set point: ---"); 
         }
+        G_g_CanvasResult.drawCentreString(String(tmp), SCREEN_WIDTH / 3, 100, GFXFF);
         
-        G_g_CanvasResult.drawString(String(tmp), 232, ZONE_SETPOINT_START_Y+72);
-        G_g_CanvasResult.setTextSize(1);
-        G_g_CanvasResult.drawString(szTempUnitString, 440, ZONE_SETPOINT_START_Y+72);
-        
-        G_g_CanvasResult.drawRect(40, ZONE_SETPOINT_START_Y + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
+        // Arrows
+        const EF_SFile* pSFileArrowUp = COMMONUI_GetBtnArrowUp(true);
+        G_g_CanvasResult.drawJpg(pSFileArrowUp->pu8StartAddr, pSFileArrowUp->u32Length, ZONE_SETPOINT_BUTTONUP_X, ZONE_SETPOINT_BUTTONUP_Y);
+        const EF_SFile* pSFileArrowDown = COMMONUI_GetBtnArrowDown(true);
+        G_g_CanvasResult.drawJpg(pSFileArrowDown->pu8StartAddr, pSFileArrowDown->u32Length, ZONE_SETPOINT_BUTTONDOWN_X, ZONE_SETPOINT_BUTTONDOWN_Y);
+    }
+    // -----------------------------------
+    // Room temperature separation line
+    {
+        const int32_t s32Left = 40; 
+        G_g_CanvasResult.drawFastHLine(s32Left, 160, SCREEN_WIDTH - (s32Left*2), TFT_WHITE);
     }
 
     // -----------------------------------
-    // Current temperature
+    // System status
+    {
+        G_g_CanvasResult.setFreeFont(FF23);
+        G_g_CanvasResult.setTextSize(1);
+
+        const int32_t s32TopY_1 = 230; 
+        G_g_CanvasResult.drawString("Etat: Comb. Eleve", 20, s32TopY_1);
+        G_g_CanvasResult.drawString("650 C", 420, s32TopY_1);
+
+        const EF_SFile* pSIconFlame80x80 = &EF_g_sFiles[EF_EFILE_ICON_FLAME_80X80_JPG];
+        G_g_CanvasResult.drawJpg(pSIconFlame80x80->pu8StartAddr, pSIconFlame80x80->u32Length, 330, s32TopY_1-30);
+
+        const int32_t s32TopY_2 = 300; 
+        G_g_CanvasResult.drawString("Fumee: Faible", 20, s32TopY_2);
+        G_g_CanvasResult.drawString("175", 420, s32TopY_2);
+
+        const EF_SFile* pSIcon3Bars80x80 = &EF_g_sFiles[EF_EFILE_ICON_3BARS_80X80_JPG];
+        G_g_CanvasResult.drawJpg(pSIcon3Bars80x80->pu8StartAddr, pSIcon3Bars80x80->u32Length, 330, s32TopY_2-30);
+    }
+
+    // System status separation line
+    {
+        const int32_t s32Left = 40; 
+        G_g_CanvasResult.drawFastHLine(s32Left, 380, SCREEN_WIDTH - (s32Left*2), TFT_WHITE);
+    }
+
+    // -----------------------------------
+    // Actions
+    {
+        G_g_CanvasResult.setFreeFont(FF23);
+        G_g_CanvasResult.setTextSize(1);
+
+        G_g_CanvasResult.drawCentreString("Action", SCREEN_WIDTH / 2, 380+20, GFXFF);
+
+        G_g_CanvasResult.drawString("Ventilateur", 50, 380+20+80*1);
+        const EF_SFile* pSIconFan72x72 = &EF_g_sFiles[EF_EFILE_ICON_FAN_72X72_JPG];
+        G_g_CanvasResult.drawJpg(pSIconFan72x72->pu8StartAddr, pSIconFan72x72->u32Length, 330, 380+0+80*1);
+        G_g_CanvasResult.drawString("min", 417, 380+20+80*1);
+
+        G_g_CanvasResult.drawString("Distribution", 50, 380+20+80*2);
+        const EF_SFile* pSIconDist72x72 = &EF_g_sFiles[EF_EFILE_ICON_DISTRIBUTION_72X72_JPG];
+        G_g_CanvasResult.drawJpg(pSIconDist72x72->pu8StartAddr, pSIconDist72x72->u32Length, 330, 380+0+80*2);
+        G_g_CanvasResult.drawString("max", 417, 380+20+80*2);
+
+        G_g_CanvasResult.drawString("Boost", 50, 380+20+80*3);
+        const EF_SFile* pSIconFireBoost72x72 = &EF_g_sFiles[EF_EFILE_ICON_FIREBOOST_72X72_JPG];
+        G_g_CanvasResult.drawJpg(pSIconFireBoost72x72->pu8StartAddr, pSIconFireBoost72x72->u32Length, 330, 380+0+80*3);
+        G_g_CanvasResult.drawString("55s", 417, 380+20+80*3);
+    }
+
+    // -----------------------------------
+    // Fan speed.
+    /*
     {
         G_g_CanvasResult.setFreeFont(FF19);
         G_g_CanvasResult.setTextSize(1);
@@ -244,16 +279,43 @@ static void RedrawUI(COMMONUI_SContext* pContext)
         DrawAllBars(232, ZONE_FANSPEED_START_Y, u8CurrentFanSpeed);
 
         G_g_CanvasResult.drawRect(40, ZONE_FANSPEED_START_Y + 216, SCREEN_WIDTH-(40*2), 2, TFT_WHITE);
+    }*/
+
+    {
+        // Message box
+        const int32_t s32Width = SCREEN_WIDTH - (20 * 2);
+        const int32_t s32Height = 210;
+        const int32_t s32Left = (SCREEN_WIDTH / 2) - (s32Width / 2);
+        const int32_t s32Top = (SCREEN_HEIGHT - s32Height - 20);
+        G_g_CanvasResult.setTextSize(1);
+        G_g_CanvasResult.setFreeFont(FF23);
+        G_g_CanvasResult.drawRoundRect(s32Left, s32Top, s32Width, s32Height, 20, TFT_WHITE);
+        
+        G_g_CanvasResult.drawCentreString("MESSAGE", SCREEN_WIDTH/2, s32Top + 20, GFXFF);
+        
+        // 21 characters maximum
+        G_g_CanvasResult.setFreeFont(FF19);
+        const int32_t s32LineHeight = 40;
+        const char* szLines[] = 
+        {
+            "ANTICONSTITUTIONNE#01",
+            "ANTICONSTITUTIONNE#02",
+            "ANTICONSTITUTIONNE#03"
+        };
+        for(int i = 0; i < sizeof(szLines)/sizeof(szLines[0]); i++)
+        {
+            G_g_CanvasResult.drawCentreString(szLines[i], SCREEN_WIDTH/2, s32Top + 80 + s32LineHeight*i, GFXFF);
+        }
     }
 
     // -----------------------------------
     // Settings
-    if (pArgument->bIsUserModeActive)
+    /*if (pArgument->bIsUserModeActive)
     {
         G_g_CanvasResult.drawJpg(pSFileSetting->pu8StartAddr, pSFileSetting->u32Length, ZONE_BTSETTING_START_X, ZONE_BTSETTING_START_Y);
     }
 
-    G_g_CanvasResult.drawJpg(pSFileSBILogo->pu8StartAddr, pSFileSBILogo->u32Length, 16, 832);
+    G_g_CanvasResult.drawJpg(pSFileSBILogo->pu8StartAddr, pSFileSBILogo->u32Length, 16, 832);*/
 
     // Update screen
     G_g_CanvasResult.pushCanvas(0, 0, UPDATE_MODE_DU4);
