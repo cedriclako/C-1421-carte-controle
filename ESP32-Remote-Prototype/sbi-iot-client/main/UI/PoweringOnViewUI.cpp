@@ -1,4 +1,4 @@
-#include "PoweringOnUI.hpp"
+#include "PoweringOnViewUI.hpp"
 
 #define TAG "PoweringOnUI"
 
@@ -6,7 +6,7 @@ static void Init(COMMONUI_SContext* pContext);
 static void Enter(COMMONUI_SContext* pContext);
 static void Exit(COMMONUI_SContext* pContext);
 
-const COMMONUI_SConfig POWERINGONUI_g_sConfig =
+const COMMONUI_SConfig POWERINGONVIEWUI_g_sConfig =
 {
     .ptrInit = Init,
     .ptrEnter = Enter,

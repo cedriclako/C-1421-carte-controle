@@ -33,8 +33,7 @@ typedef struct
 
     // Fan
     bool bHasFanSpeed;
-    bool bIsFanSpeedAutomatic;
-    uint8_t u8FanSpeedCurr;
+    SBI_iot_common_EFANSPEED eFanSpeedCurr;
 
     // Last communication ticks
     TickType_t ttLastCommunicationTicks; 

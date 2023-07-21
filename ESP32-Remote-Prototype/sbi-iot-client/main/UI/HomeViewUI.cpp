@@ -1,7 +1,7 @@
 #include <string.h>
-#include "UIPoweredOffView.hpp"
+#include "HomeViewUI.hpp"
 
-#define TAG "UIPoweredOffView"
+#define TAG "HomeViewUI"
 
 static void Init(COMMONUI_SContext* pContext);
 static void Enter(COMMONUI_SContext* pContext);
@@ -11,7 +11,7 @@ static void Process(COMMONUI_SContext* pContext);
 static void OnTouch(COMMONUI_SContext* pContext, int32_t s32TouchX, int32_t s32TouchY);
 static void DataReceived(COMMONUI_SContext* pContext);
 
-const COMMONUI_SConfig UIPOWEREDOFFVIEW_g_sConfig = 
+const COMMONUI_SConfig HOMEVIEWUI_g_sConfig = 
 { 
     .ptrInit = Init, 
     .ptrEnter = Enter, 

@@ -65,11 +65,11 @@ void setup()
     if (M5.BtnP.isPressed() || test)
     {
         m_isUserModeActive = true;
-        UIMANAGER_SwitchTo(ESCREEN_HomeUsermode);
+        UIMANAGER_SwitchTo(ESCREEN_ControlViewUI);
     }
     else
     {
-        UIMANAGER_SwitchTo(ESCREEN_UIPoweredOffView);
+        UIMANAGER_SwitchTo(ESCREEN_HomeViewUI);
     }
 
     ESP_LOGI(TAG, "Init netif");
@@ -135,7 +135,7 @@ void loop()
         if (M5.BtnP.isPressed())
         {
             m_isUserModeActive = true;
-            UIMANAGER_SwitchTo(ESCREEN_HomeUsermode);
+            UIMANAGER_SwitchTo(ESCREEN_ControlViewUI);
         }
     }
 
@@ -157,7 +157,7 @@ void loop()
         {
             ESP_LOGI(TAG, "User is done with change, time to switch to readonly mode and sleep");
             m_isUserModeActive = false;
-            UIMANAGER_SwitchTo(ESCREEN_UIPoweredOffView);
+            UIMANAGER_SwitchTo(ESCREEN_HomeViewUI);
         }
 
         vTaskDelay(pdMS_TO_TICKS(200));
@@ -211,13 +211,11 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 {
     if (!pMsg->has_stove_state ||
         !pMsg->stove_state.has_fan_speed_set ||
-        !pMsg->stove_state.has_fan_speed_boundary ||
         !pMsg->stove_state.has_remote_temperature_setp)
     {
-        ESP_LOGE(TAG, "GetStatus received but no stove_state, has_stove_state: %d, has_fan_speed_set: %d, has_fan_speed_boundary: %d, has_remote_temperature_setp: %d",
+        ESP_LOGE(TAG, "GetStatus received but no stove_state, has_stove_state: %d, has_fan_speed_set: %d, has_remote_temperature_setp: %d",
             pMsg->has_stove_state,
             pMsg->stove_state.has_fan_speed_set,
-            pMsg->stove_state.has_fan_speed_boundary,
             pMsg->stove_state.has_remote_temperature_setp);
         return;
     }
@@ -234,15 +232,11 @@ static void ENS2CGetStatusRespCallback(const SBI_iot_S2CGetStatusResp* pMsg)
 
     UIMANAGER_OnDataReceived();
 
-    ESP_LOGI(TAG, "temp. sp: %f %s, fanmode: %s, fanspeed: %d [%d-%d]", 
+    ESP_LOGI(TAG, "temp. sp: %f %s, fanspeed: %d", 
         pMsg->stove_state.remote_temperature_setp.temp,
         ((pMsg->stove_state.remote_temperature_setp.unit == SBI_iot_common_ETEMPERATUREUNIT_Farenheit) ? "F" : "C"),
 
-        (pMsg->stove_state.fan_speed_set.is_automatic ? "AUTO" : "MANUAL"),
-
-        (int)pMsg->stove_state.fan_speed_set.curr,
-        (int)pMsg->stove_state.fan_speed_boundary.min,
-        (int)pMsg->stove_state.fan_speed_boundary.max);
+        (int)pMsg->stove_state.fan_speed_set.curr);
 
     m_bDataReceived = true;
 }

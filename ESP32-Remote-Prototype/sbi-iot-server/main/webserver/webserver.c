@@ -542,7 +542,7 @@ static char* GetLiveData()
     cJSON* pRemote = cJSON_CreateObject();
     cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.fTempCurrentC));
     cJSON_AddItemToObject(pRemote, "tempC_sp", cJSON_CreateNumber(pMemBlock->sRemoteData.sTempSetpoint.temp));
-    cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber(pMemBlock->sRemoteData.u8FanSpeedCurr));
+    cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber((int)pMemBlock->sRemoteData.eFanSpeedCurr));
     const TickType_t ttLastCommTicks = xTaskGetTickCount() - pMemBlock->sRemoteData.ttLastCommunicationTicks;
     cJSON_AddItemToObject(pRemote, "lastcomm_ms", cJSON_CreateNumber(pdTICKS_TO_MS(ttLastCommTicks)));
 

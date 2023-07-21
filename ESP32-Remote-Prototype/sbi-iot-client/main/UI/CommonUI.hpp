@@ -43,11 +43,17 @@ typedef void (*COMMONUI_SwitchUIFn)(const COMMONUI_SContext* pContext, ESCREEN e
 
 typedef struct
 {
-    uint16_t u16X1;
-    uint16_t u16Y1;
-    uint16_t u16X2;
-    uint16_t u16Y2;
+    int32_t s32X;
+    int32_t s32Y;
+    int32_t s32Width;
+    int32_t s32Height;
 } COMMONUI_SRect;
+
+typedef struct
+{
+    const EF_SFile* pSFile;
+    COMMONUI_SRect sRect;
+} COMMONUI_SButton;
 
 struct _COMMONUI_SConfig
 {
@@ -71,7 +77,11 @@ struct _COMMONUI_SUIManagerContext
 const EF_SFile* COMMONUI_GetBtnArrowUp(bool bIsEnabled);
 const EF_SFile* COMMONUI_GetBtnArrowDown(bool bIsEnabled);
 
-bool COMMONUI_IsInCoordinate(int32_t s32X, int32_t s32Y, int32_t s32Width, int32_t s32Height, int32_t s32TouchX, int32_t s32TouchY);
+bool COMMONUI_IsInCoordinate(const COMMONUI_SButton* psButton, int32_t s32TouchX, int32_t s32TouchY);
+
+void COMMONUI_Button_Init(COMMONUI_SButton* sButton, const EF_SFile* pSFile, int32_t s32X, int32_t s32Y);
+
+void COMMONUI_Button_Draw(const COMMONUI_SButton* psButton);
 
 #ifdef __cplusplus
 }

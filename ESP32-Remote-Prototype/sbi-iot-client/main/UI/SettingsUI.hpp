@@ -7,6 +7,11 @@
 extern "C" {
 #endif
 
+typedef struct
+{
+    COMMONUI_SButton sBtClose;    
+} SETTINGSUI_SHandle;
+
 extern const COMMONUI_SConfig SETTINGSUI_g_sConfig;
 
 #ifdef __cplusplus
