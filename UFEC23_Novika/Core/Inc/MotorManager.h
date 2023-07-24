@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#define NOVIKA_SETUP (1)
+
 typedef enum
 {
     PrimaryStepper =  0,
@@ -24,8 +26,14 @@ typedef enum
 
 typedef enum
 {
-    Closing =  0,
+#if NOVIKA_SETUP
+	Opening =  0,
+    Closing
+#else
+	Closing =  0,
     Opening
+#endif
+
 }motor_direction_t;
 
 typedef struct Pin_set
@@ -65,14 +73,9 @@ typedef struct Stepper
 #define RANGE(min,val,max) MAX(min,MIN(val,max))
 #define UNUSED_PARAM(param)  (void)(param)
 
-#define STEP_RANGE_PRIMARY   (PF_PRIMARY_FULL_OPEN - PF_PRIMARY_MINIMUM_OPENING)
-#define STEP_RANGE_GRILL   (PF_GRILL_FULL_OPEN - PF_GRILL_CLOSED)
 
-//#private functions
-void AllMotorToZero();
-void Motor_Init(void const * argument);
-//public function
-extern void StepperMotorProdTest(motor_t MotorId);
+void Motor_task(void const * argument);
+
 
 #ifdef	__cplusplus // Provide C++ Compatibility
 }

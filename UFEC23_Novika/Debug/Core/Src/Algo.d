@@ -49,9 +49,9 @@ Core/Src/Algo.o: ../Core/Src/Algo.c ../Core/Inc/ParamFile.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/message_buffer.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/stream_buffer.h \
  ../Core/Inc/ParticlesManager.h ../Core/Inc/ParamFile.h \
- ../Core/Inc/algo.h ../Core/Inc/AirInput.h ../Core/Inc/AirInput.h \
  ../Core/Inc/EspBridge.h ../Core/Inc/TemperatureManager.h \
- ../Core/Inc/Algo.h ../Core/Inc/DebugManager.h ../Core/Inc/Algo.h
+ ../Core/Inc/Algo.h ../Core/Inc/ParticlesManager.h \
+ ../Core/Inc/DebugManager.h ../Core/Inc/Algo.h
 
 ../Core/Inc/ParamFile.h:
 
@@ -159,17 +159,13 @@ Core/Src/Algo.o: ../Core/Src/Algo.c ../Core/Inc/ParamFile.h \
 
 ../Core/Inc/ParamFile.h:
 
-../Core/Inc/algo.h:
-
-../Core/Inc/AirInput.h:
-
-../Core/Inc/AirInput.h:
-
 ../Core/Inc/EspBridge.h:
 
 ../Core/Inc/TemperatureManager.h:
 
 ../Core/Inc/Algo.h:
+
+../Core/Inc/ParticlesManager.h:
 
 ../Core/Inc/DebugManager.h:
 

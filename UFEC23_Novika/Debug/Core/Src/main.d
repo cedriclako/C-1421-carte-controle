@@ -44,7 +44,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
- ../Core/Inc/Algo.h ../Core/Inc/AirInput.h \
+ ../Core/Inc/Algo.h ../Core/Inc/ParticlesManager.h \
+ ../Core/Inc/ParamFile.h ../Core/Inc/ParameterFileLib.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/message_buffer.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/stream_buffer.h
 
@@ -142,7 +143,11 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 
 ../Core/Inc/Algo.h:
 
-../Core/Inc/AirInput.h:
+../Core/Inc/ParticlesManager.h:
+
+../Core/Inc/ParamFile.h:
+
+../Core/Inc/ParameterFileLib.h:
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/message_buffer.h:
 

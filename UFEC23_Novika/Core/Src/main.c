@@ -56,6 +56,7 @@ osThreadId MotorManagerHandle;
 osTimerId TimerHandle;
 /* USER CODE BEGIN PV */
 MessageBufferHandle_t MotorControlsHandle;
+QueueHandle_t MotorInPlaceHandle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,7 +66,7 @@ static void MX_DMA_Init(void);
 static void MX_RTC_Init(void);
 static void MX_USART1_UART_Init(void);
 void Algo_Init(void const * argument);
-extern void Motor_Init(void const * argument);
+extern void Motor_task(void const * argument);
 void TimerCallback(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -135,6 +136,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
 	MotorControlsHandle = xMessageBufferCreate(10);
+	MotorInPlaceHandle = xQueueCreate(1, sizeof(bool));
 
   /* USER CODE END RTOS_QUEUES */
 
@@ -144,7 +146,7 @@ int main(void)
   Algo_taskHandle = osThreadCreate(osThread(Algo_task), NULL);
 
   /* definition and creation of MotorManager */
-  osThreadDef(MotorManager, Motor_Init, osPriorityAboveNormal, 0, 128);
+  osThreadDef(MotorManager, Motor_task, osPriorityAboveNormal, 0, 128);
   MotorManagerHandle = osThreadCreate(osThread(MotorManager), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

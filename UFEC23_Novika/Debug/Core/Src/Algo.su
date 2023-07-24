@@ -1,3 +1,4 @@
-Algo.c:35:6:Algo_Init	208	static
-Algo.c:79:6:Algo_task	24	static
-Algo.c:101:6:Algo_adjust_steppers_position	16	static
+Algo.c:37:6:Algo_Init	208	static
+Algo.c:82:6:Algo_task	24	static
+Algo.c:104:6:Algo_adjust_steppers_position	16	static
+Algo.c:120:6:Algo_steppers_ready	8	static

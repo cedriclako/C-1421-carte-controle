@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "AirInput.h"
+#include "ParticlesManager.h"
 
 /***** Définitions ******/
 
@@ -41,14 +41,21 @@ typedef enum {
   NB_OF_STATE
 } State;
 
+typedef struct {
+  int8_t i8apertureDegree ;
+  int8_t i8setPoint;
+
+} AirInput;
 
 
 typedef struct
 {
 
-	AirInput primary;
-	AirInput grill;
-	AirInput secondary;
+	AirInput sPrimary;
+	AirInput sGrill;
+	AirInput sSecondary;
+
+	MeasureParticles_t *sParticles;
 
 	float fBaffleTemp;
 	float fChamberTemp;

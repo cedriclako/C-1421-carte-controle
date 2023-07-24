@@ -16,21 +16,23 @@
 //#include "ProdTest.h"
 //#include "MotorManager.h"
 #include "ParticlesManager.h"
-#include "AirInput.h"
 #include "EspBridge.h"
 #include "TemperatureManager.h"
 #include "DebugManager.h"
 #include "Algo.h"
 
 extern MessageBufferHandle_t MotorControlsHandle;
+extern QueueHandle_t MotorInPlaceHandle;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
 static uint32_t timeSinceStateEntry;
 static uint32_t TimeOfReloadRequest;
+static bool motors_ready_for_req = true;
 
 void Algo_task(uint32_t u32CurrentTime_ms);
 bool Algo_adjust_steppers_position(uint8_t* cmd);
+void Algo_steppers_ready(void);
 
 void Algo_Init(void const * argument)
 {
@@ -66,6 +68,7 @@ void Algo_Init(void const * argument)
 
     for(;;)
     {
+    	Algo_steppers_ready();
     	TemperatureManager(&UFEC23,osKernelSysTick());
     	DebugManager(&UFEC23,osKernelSysTick());
     	ESPMANAGER_Task();
@@ -100,9 +103,25 @@ void Algo_task(uint32_t u32CurrentTime_ms)
 
 bool Algo_adjust_steppers_position(uint8_t* cmd)
 {
-	if(!xMessageBufferSend(MotorControlsHandle,cmd,6,0))
-		{
+	if(!motors_ready_for_req)
+	{
 		return false;
-		}
+	}
+	if(!xMessageBufferSend(MotorControlsHandle,cmd,6,0))
+	{
+		return false;
+	}
+	cmd[4] = 50;
+	cmd[5] = 10;
+	motors_ready_for_req = false;
 	return true;
+}
+
+void Algo_steppers_ready(void)
+{
+	if(!motors_ready_for_req)
+	{
+		xQueueReceive(MotorInPlaceHandle,&motors_ready_for_req,5);
+	}
+
 }

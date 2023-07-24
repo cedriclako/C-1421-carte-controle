@@ -25,9 +25,10 @@
 #define Step1_2_3_SLEEP() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_SET);
 #define Step1_2_3_WAKE() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_RESET);
 
-#define STEP_PERIOD 50
+#define STEP_PERIOD 20
 
 extern MessageBufferHandle_t MotorControlsHandle;
+extern QueueHandle_t MotorInPlaceHandle;
 
 void StepperAdjustPosition(StepObj *motor);
 bool StepperSetToZero(StepObj *motor);
@@ -42,12 +43,15 @@ void StepperLowCurrentOFF(StepObj *motor);
 bool StepperAtSetpoint(StepObj *motor);
 bool StepperLimitSwitchActive(StepObj *motor);
 
-void Motor_Init(void const * argument)
+void Motor_task(void const * argument)
 {
 
 	Step1_2_3_WAKE();
+#if NOVIKA_SETUP
+	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,RESET);
+#else
 	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
-
+#endif
 	StepObj motor[NumberOfMotors] = {
 			STEPPER_INIT(PF_PRIMARY_MINIMUM_OPENING,PF_PRIMARY_FULL_OPEN, Step1_STEP_Pin, Step1_ENABLE_Pin, Step1_RESET_Pin, Step1_LowCurrent_Pin, Step1_DIR_Pin, Limit_switch1_Pin,
 					Step1_STEP_GPIO_Port, Step1_ENABLE_GPIO_Port, Step1_RESET_GPIO_Port, Step1_LowCurrent_GPIO_Port, Step1_DIR_GPIO_Port, Limit_switch1_GPIO_Port),
@@ -57,6 +61,7 @@ void Motor_Init(void const * argument)
 										Step3_STEP_GPIO_Port,Step3_ENABLE_GPIO_Port,Step3_RESET_GPIO_Port,Step3_LowCurrent_GPIO_Port,Step3_DIR_GPIO_Port, Limit_switch3_GPIO_Port),
 			};
 
+	bool AllInPlace = true;
 	uint8_t u8cmd_buf[6] = {0x00};
 	uint32_t u32CurrentTime_ms = 0;
 
@@ -67,6 +72,11 @@ void Motor_Init(void const * argument)
 	  if(StepperAtSetpoint(&motor[PrimaryStepper]) && StepperAtSetpoint(&motor[GrillStepper])
 			  && StepperAtSetpoint(&motor[SecondaryStepper]))
 	  {
+		  if(!AllInPlace)
+		  {
+			  AllInPlace = true;
+			  xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
+		  }
 		  if(xMessageBufferReceive(MotorControlsHandle, u8cmd_buf, 6, 10) == 6)
 		  {
 			  for(uint8_t i = 0;i < NumberOfMotors;i++)
@@ -77,6 +87,7 @@ void Motor_Init(void const * argument)
 		  }
 	  }else
 	  {
+		  AllInPlace = false;
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
 
@@ -86,7 +97,8 @@ void Motor_Init(void const * argument)
 				  {
 					  if(StepperSetToZero(&motor[i]))
 					  {
-						  motor->u8SetPoint = motor->u8MinValue;
+						  motor[i].u8SetPoint = motor[i].u8MinValue;
+						  StepperDisable(&motor[i]);
 					  }
 
 				  }else if(u32CurrentTime_ms - motor[i].u32LastMove_ms > motor[i].fSecPerStep*1000)
@@ -99,7 +111,7 @@ void Motor_Init(void const * argument)
 
 	  }
 
-	  osDelay(10);
+	  osDelay(1);
   }
 
 
@@ -183,7 +195,7 @@ void StepperAdjustPosition(StepObj *motor)
     motor->u8Position += delta_pos;
 	StepperToggleOneStep(motor);
 
-    if(StepperLimitSwitchActive(motor))
+    if(StepperLimitSwitchActive(motor) && motor->sDirection == Closing)
 	{
 		motor->u8Position = motor->u8MinValue; // On a atteint le minimum, on peut désactiver le moteur
 		StepperDisable(motor);
@@ -194,6 +206,11 @@ void StepperAdjustPosition(StepObj *motor)
     	motor->fSecPerStep = 0.0;
     }
 
+    if(motor->u8Position == motor->u8SetPoint)
+    {
+    	StepperLowCurrentON(motor);
+    }
+
 }
 
 void StepperToggleOneStep(StepObj * motor)
@@ -202,7 +219,7 @@ void StepperToggleOneStep(StepObj * motor)
 	HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_RESET);
 	osDelay(10);
 	HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_SET);
-
+	motor->u32LastMove_ms = osKernelSysTick();
 }
 bool StepperLimitSwitchActive(StepObj * motor)
 {
@@ -233,15 +250,7 @@ void StepperDisable(StepObj *motor)
 
 void StepperSetDirection(StepObj *motor)
 {
-
-	if(motor->sDirection == Opening)
-	{
-		HAL_GPIO_WritePin(motor->sPins.DIRECTION_PORT,motor->sPins.DIRECTION_PIN,GPIO_PIN_SET);
-	}else
-	{
-		HAL_GPIO_WritePin(motor->sPins.DIRECTION_PORT,motor->sPins.DIRECTION_PIN,GPIO_PIN_RESET);
-	}
-
+	HAL_GPIO_WritePin(motor->sPins.DIRECTION_PORT,motor->sPins.DIRECTION_PIN,motor->sDirection);
 }
 
 

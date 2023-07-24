@@ -12,7 +12,6 @@
 #include <stdio.h>
 
 #include "ParamFile.h"
-#include "algo.h"
 
 typedef struct MeasureParticles
 {
