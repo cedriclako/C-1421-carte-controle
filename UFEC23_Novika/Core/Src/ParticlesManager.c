@@ -101,7 +101,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 {
 	static uint16_t uartErrorCount = 0;
 	static uint16_t tx_checksum, rx_checksum;
-	static uint8_t rx_payload_size, tx_size, zero_current;
+	static uint8_t rx_payload_size, tx_size;
 	static uint32_t response_delay = 800;
 	static uint8_t request_interval = TIME_TO_WAIT_IF_OK;
 	static uint32_t u32LastReqTime = 0;
@@ -266,7 +266,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 		{
 			setZero = false;
 			ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
-			zero_current = RX_BUFFER[7];
+			//zero_current = RX_BUFFER[7];
 			//ParticleDevice.normalized_zero = (float)ParticleDevice.zero/(float)zero_current;
 		}else
 		{
@@ -337,4 +337,7 @@ uint16_t Particle_Send_CMD(uint8_t cmd)
 	return tx_checksum;
 }
 
-
+const MeasureParticles_t* ParticlesGetObject(void)
+{
+	return &ParticleDevice;
+}

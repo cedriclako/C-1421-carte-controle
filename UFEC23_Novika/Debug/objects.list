@@ -2,6 +2,7 @@
 "Core/Src/DebugManager.o"
 "Core/Src/DebugPort.o"
 "Core/Src/EspBridge.o"
+"Core/Src/GPIOManager.o"
 "Core/Src/MotorManager.o"
 "Core/Src/ParamFile.o"
 "Core/Src/ParameterFileLib.o"

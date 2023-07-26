@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "ParticlesManager.h"
+#include "ParamFile.h"
 
 /***** Définitions ******/
 
@@ -18,6 +19,7 @@
 #define MINUTES(x) (SECONDS(60)*x)
 #define CELSIUS_TO_FAHRENHEIT(TEMP) (TEMP*9/5+32)
 #define FAHRENHEIT_TO_CELSIUS(TEMP) ((TEMP-32)*5/9)
+#define P2F(x) (float)(x/10) //Parameter to float
 
 
 /***** Variables ******/
@@ -29,46 +31,65 @@ typedef enum {
   TEMPERATURE_RISE,
   COMBUSTION_HIGH,
   COMBUSTION_LOW,
-  COMBUSTION_SUPERLOW,
   COAL_LOW,
-  FLAME_LOSS,
   COAL_HIGH,
   OVERTEMP,
   SAFETY,
-  PRODUCTION_TEST,
   MANUAL_CONTROL,
 
-  NB_OF_STATE
+  ALGO_NB_OF_STATE
 } State;
 
 typedef struct {
-  int8_t i8apertureDegree ;
-  int8_t i8setPoint;
+
+	int8_t i8apertureDegree;
+	int8_t i8apertureSetPoint;
+	float fSecPerStep;
 
 } AirInput;
 
 
 typedef struct
 {
+	///////////////STRUCTURES/////////////////////////
 
+	//Air openings (in degrees) and min/max
 	AirInput sPrimary;
 	AirInput sGrill;
 	AirInput sSecondary;
 
-	MeasureParticles_t *sParticles;
+	//Particles values (ch0, ch1, slope, stdev, etc.)
+	const MeasureParticles_t *sParticles;
 
+	//Manual mode params
+	const PF_UsrParam *sUserParams;
+	//////////////////////////////////////////////////
+
+	////////////////VARIABLES/////////////////////////
+	//Temperatures
 	float fBaffleTemp;
 	float fChamberTemp;
 	float fPlenumTemp;
 
+	//Temperature slopes
 	float fBaffleDeltaT;
 	float fChamberDeltaT;
+	///////////////////////////////////////////////////
+
+	/////////////////STATE VARIABLES///////////////////
 
 	bool bThermostatOn;
 	bool bInterlockOn;
 
+	bool bstateJustChanged;
+	uint32_t u32TimeOfStateEntry_ms;
 
+	uint32_t u32TimeOfMotorRequest_ms;
+	uint32_t u32TimeBeforeInPlace_ms;
 
+	bool bReloadRequested;
+	uint32_t TimeOfReloadRequest;
+	///////////////////////////////////////////////////
 
 } Mobj; // Main application object
 

@@ -9,6 +9,7 @@ C_SRCS += \
 ../Core/Src/DebugManager.c \
 ../Core/Src/DebugPort.c \
 ../Core/Src/EspBridge.c \
+../Core/Src/GPIOManager.c \
 ../Core/Src/MotorManager.c \
 ../Core/Src/ParamFile.c \
 ../Core/Src/ParameterFileLib.c \
@@ -28,6 +29,7 @@ OBJS += \
 ./Core/Src/DebugManager.o \
 ./Core/Src/DebugPort.o \
 ./Core/Src/EspBridge.o \
+./Core/Src/GPIOManager.o \
 ./Core/Src/MotorManager.o \
 ./Core/Src/ParamFile.o \
 ./Core/Src/ParameterFileLib.o \
@@ -47,6 +49,7 @@ C_DEPS += \
 ./Core/Src/DebugManager.d \
 ./Core/Src/DebugPort.d \
 ./Core/Src/EspBridge.d \
+./Core/Src/GPIOManager.d \
 ./Core/Src/MotorManager.d \
 ./Core/Src/ParamFile.d \
 ./Core/Src/ParameterFileLib.d \
@@ -71,6 +74,8 @@ Core/Src/DebugPort.o: ../Core/Src/DebugPort.c Core/Src/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F105xC -c -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/DebugPort.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
 Core/Src/EspBridge.o: ../Core/Src/EspBridge.c Core/Src/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F105xC -c -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/EspBridge.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
+Core/Src/GPIOManager.o: ../Core/Src/GPIOManager.c Core/Src/subdir.mk
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F105xC -c -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/GPIOManager.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
 Core/Src/MotorManager.o: ../Core/Src/MotorManager.c Core/Src/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F105xC -c -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/MotorManager.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
 Core/Src/ParamFile.o: ../Core/Src/ParamFile.c Core/Src/subdir.mk
