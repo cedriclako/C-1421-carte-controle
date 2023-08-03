@@ -25,7 +25,7 @@
 #define Step1_2_3_SLEEP() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_SET);
 #define Step1_2_3_WAKE() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_RESET);
 
-#define STEP_PERIOD 20
+#define STEP_PERIOD 10
 
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
@@ -69,7 +69,20 @@ void Motor_task(void const * argument)
   {
 	  u32CurrentTime_ms = osKernelSysTick();
 
-	  if(StepperAtSetpoint(&motor[PrimaryStepper]) && StepperAtSetpoint(&motor[GrillStepper])
+	  if(xMessageBufferIsFull(MotorControlsHandle) == pdTRUE)
+	  {
+		  xMessageBufferReceive(MotorControlsHandle, u8cmd_buf, 6, 10);
+
+		  for(uint8_t i = 0;i < NumberOfMotors;i++)
+		  {
+
+			  motor[i].u8SetPoint = MIN(u8cmd_buf[2*i], motor->u8MaxValue);
+			  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1])/10;
+		  }
+	  }
+
+
+	  if(StepperAtSetpoint(&motor[PrimaryStepper]) && StepperAtSetpoint(&motor[GrillStepper]) //TODO: receive commands at every passage
 			  && StepperAtSetpoint(&motor[SecondaryStepper]))
 	  {
 		  if(!AllInPlace)
@@ -77,14 +90,7 @@ void Motor_task(void const * argument)
 			  AllInPlace = true;
 			  xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 		  }
-		  if(xMessageBufferReceive(MotorControlsHandle, u8cmd_buf, 6, 10) == 6)
-		  {
-			  for(uint8_t i = 0;i < NumberOfMotors;i++)
-			  {
-				  motor[i].u8SetPoint = MIN(u8cmd_buf[2*i], motor->u8MaxValue);
-				  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1])/10;
-			  }
-		  }
+
 	  }else
 	  {
 		  AllInPlace = false;
@@ -208,7 +214,7 @@ void StepperAdjustPosition(StepObj *motor)
 
     if(motor->u8Position == motor->u8SetPoint)
     {
-    	StepperLowCurrentON(motor);
+    	StepperLowCurrentON(motor); // To remove if spring load is too strong (reduces torque)
     }
 
 }

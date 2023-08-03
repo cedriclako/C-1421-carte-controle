@@ -51,11 +51,7 @@ typedef enum
 
 typedef struct
 {
-	uint32_t u32LastTimeBaffle;
-	uint32_t u32LastTimeChamber;
-	uint32_t u32LastTimePlenum;
 	float fTcoldJunct;
-
 	uint8_t ADCConfigByte[NUMBER_OF_ADC_CH];
 
 }TempObj;
@@ -68,7 +64,6 @@ typedef struct
 
 
 /* Private variables ---------------------------------------------------------*/
-static int Tboard;
 static bool b_tx_pending, b_tx_success;
 static bool b_rx_pending,b_rx_success;
 static Temp_state currentState;
@@ -105,8 +100,6 @@ void TemperatureManager(Mobj* stove, uint32_t u32time_ms)
 	static uint32_t u32conf_time;
 	int32_t i32tempReading=0;
 	float ftempReading = 0.0;
-	float flastReading = 0.0;
-	const float slope_filter_weight = 0.1;
 
 	switch(currentState)
 	{
@@ -161,30 +154,13 @@ void TemperatureManager(Mobj* stove, uint32_t u32time_ms)
 		{
 			case BaffleThermocouple:
 				ftempReading = ((float)(i32tempReading)*15.625)/8; //15.625uV par bit  gain = 8
-				flastReading = stove->fBaffleTemp;
 				stove->fBaffleTemp = CELSIUS_TO_FAHRENHEIT(uVtoDegreeCTypeK(ftempReading, Tobj.fTcoldJunct)); //6.7//26.1 //board is self heating to 7.3 above ambient
-
-				if(Tobj.u32LastTimeBaffle !=0)
-				{
-					stove->fBaffleDeltaT =  slope_filter_weight*stove->fBaffleDeltaT +
-							(1-slope_filter_weight)*(stove->fBaffleTemp-flastReading)/((u32time_ms-Tobj.u32LastTimeBaffle)/1000);
-				}
-
-				Tobj.u32LastTimeBaffle = u32time_ms;
 
 				break;
 			case ChamberThermocouple:
 				ftempReading = ((float)(i32tempReading)*15.625)/8; //15.625uV par bit  gain = 8
-				flastReading = stove->fChamberTemp;
 				stove->fChamberTemp = CELSIUS_TO_FAHRENHEIT(uVtoDegreeCTypeK(ftempReading, Tobj.fTcoldJunct)); //6.7//26.1 //board is self heating to 7.3 above ambient
 
-				if(Tobj.u32LastTimeChamber !=0)
-				{
-					stove->fChamberDeltaT =  slope_filter_weight*stove->fChamberDeltaT +
-											(1-slope_filter_weight)*(stove->fChamberTemp-flastReading)/((u32time_ms-Tobj.u32LastTimeChamber)/1000);
-				}
-
-				Tobj.u32LastTimeChamber = u32time_ms;
 				break;
 			case PlenumRtd:
 				ftempReading = (float)(i32tempReading*15.625e-6);
@@ -214,12 +190,31 @@ void TemperatureManager(Mobj* stove, uint32_t u32time_ms)
 
 }
 
-
-
-
-int get_BoardTemp(void)
+void Temperature_update_deltaT(Mobj *stove, uint32_t u32DeltaT_ms)
 {
-	return Tboard;
+	static float baffle = 0;
+	static float chamber = 0;
+
+	if(baffle == 0 && chamber == 0)
+	{
+		baffle = stove->fBaffleTemp;
+		chamber = stove->fChamberTemp;
+		return;
+	}
+
+	stove->fBaffleDeltaT = (stove->fBaffleTemp-baffle)/((u32DeltaT_ms)/1000);
+	stove->fChamberDeltaT = (stove->fChamberTemp-chamber)/((u32DeltaT_ms)/1000);
+
+	baffle = stove->fBaffleTemp;
+	chamber = stove->fChamberTemp;
+
+}
+
+
+
+float get_BoardTemp(void)
+{
+	return Tobj.fTcoldJunct ;
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)

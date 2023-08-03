@@ -19,7 +19,7 @@
 #define MINUTES(x) (SECONDS(60)*x)
 #define CELSIUS_TO_FAHRENHEIT(TEMP) (TEMP*9/5+32)
 #define FAHRENHEIT_TO_CELSIUS(TEMP) ((TEMP-32)*5/9)
-#define P2F(x) (float)(x/10) //Parameter to float
+#define P2F(x) ((float)x/10) //Parameter to float
 
 
 /***** Variables ******/
@@ -42,12 +42,23 @@ typedef enum {
 
 typedef struct {
 
-	int8_t i8apertureDegree;
-	int8_t i8apertureSetPoint;
+	int8_t i8apertureSteps;
+	int8_t i8apertureAdjustment;
 	float fSecPerStep;
 
 } AirInput;
 
+typedef enum
+{
+	Prim_pos = 0,
+	prim_spd,
+	gril_pos,
+	gril_spd,
+	sec_pos,
+	sec_spd,
+
+	NUMBER_OF_STEPPER_CMDS
+}eMotor_commands;
 
 typedef struct
 {
@@ -80,12 +91,13 @@ typedef struct
 
 	bool bThermostatOn;
 	bool bInterlockOn;
+	bool bDoorOpen;
 
 	bool bstateJustChanged;
 	uint32_t u32TimeOfStateEntry_ms;
 
-	uint32_t u32TimeOfMotorRequest_ms;
-	uint32_t u32TimeBeforeInPlace_ms;
+	uint32_t u32TimeOfAdjustment_ms;
+	uint32_t u32TimeOfComputation_ms;
 
 	bool bReloadRequested;
 	uint32_t TimeOfReloadRequest;

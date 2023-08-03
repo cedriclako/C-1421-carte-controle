@@ -5,5 +5,6 @@
 //public handle
 //public function
 void DebugManager(Mobj * stove, uint32_t u32time_ms);
+void PrintOutput(Mobj * stove, State currentState);
 
 #endif	/* TEMPERATURE_MAN_H  */

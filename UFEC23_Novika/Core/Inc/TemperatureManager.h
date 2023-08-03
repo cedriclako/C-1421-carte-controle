@@ -8,7 +8,8 @@
 
 //public function
 void TemperatureManager(Mobj* Stove, uint32_t time_ms);
+void Temperature_update_deltaT(Mobj *stove, uint32_t u32DeltaT_ms);
 void Temperature_Init();
-int get_BoardTemp(void);
+float get_BoardTemp(void);
 
 #endif	/* TEMPERATURE_MAN_H  */

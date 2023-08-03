@@ -31,9 +31,10 @@ typedef struct
 	int32_t s32ManualSecondary;
 	int32_t s32ManualGrill;
 
+	int32_t s32TimeBetweenComputations_ms;
+
 
 } PF_UsrParam;
-
 
 typedef struct
 {
@@ -85,6 +86,7 @@ typedef struct
 #define PFD_MANUALPRIM			"usr_PrimaryOverrideValue"
 #define PFD_MANUALSEC			"usr_SecondaryOverrideValue"
 #define PFD_MANUALGRILL			"usr_GrillOverrideValue"
+#define PFD_ALGO_PERIOD			"usr_AlgoComputingPeriodMs"
 
 // Overheat
 #define PFD_OVERHEATPLENUM        "temp_OverheatPlenum"
@@ -175,9 +177,9 @@ typedef struct
 #define PFD_COL_PM_MAX       		"coalL_pm_Max"
 #define PFD_COL_PM_MIN       		"coalL_pm_Min"
 #define PFD_COL_SM_MAX       		"coalL_sm_Max"
-#define PFD_COL_SM_MIN      		 "coalL_sm_Min"
-#define PFD_COL_GM_MAX     		 "coalL_gm_Max"
-#define PFD_COL_GM_MIN     		  "coalL_gm_Min"
+#define PFD_COL_SM_MIN      		"coalL_sm_Min"
+#define PFD_COL_GM_MAX     		 	"coalL_gm_Max"
+#define PFD_COL_GM_MIN     		  	"coalL_gm_Min"
 
 #define PFD_COH_T_TARGET         "coalH_TemperatureTarget"
 #define PFD_COH_T_TOL           "coalH_TemperatureTolerance"
@@ -200,12 +202,14 @@ typedef struct
 #define PFD_COH_GM_MAX      	"coalH_gm_Max"
 #define PFD_COH_GM_MIN      	"coalH_gm_Min"
 
-#define PFD_WA_T_TARGET     "temp_WaitingToIgnition"
+#define PFD_WA_T_TARGET     	"waiting_TempToIgnition"
+#define PFD_WA_T_SKIP     		"waiting_TempToTrise"
 #define PFD_WA_PM_POS		    "waiting_pm_pos"
 #define PFD_WA_SM_POS		    "waiting_sm_pos"
 #define PFD_WA_GM_POS		    "waiting_gm_pos"
 
-#define PFD_REL_T_TARGET       "temp_IgnitionToTrise"
+#define PFD_REL_T_TARGET       	"reload_TempToTrise"
+#define PFD_REL_T_SKIP       	"reload_SkipToTrise"
 #define PFD_REL_PM_POS		    "reload_pm_pos"
 #define PFD_REL_SM_POS		    "reload_sm_pos"
 #define PFD_REL_GM_POS		    "reload_gm_pos"
@@ -237,8 +241,6 @@ const PF_StateParam_t *PB_GetCombHighParams(void);
 const PF_StateParam_t *PB_GetCoalLowParams(void);
 
 const PF_StateParam_t *PB_GetCoalHighParams(void);
-
-
 
 #endif
 

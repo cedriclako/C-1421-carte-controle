@@ -55,7 +55,7 @@ typedef enum
 #define RX_BUFFER_LENGTH 64
 #define TX_BUFFER_LENGTH 20
 
-#define COMM_ERR_LIMIT   10
+#define COMM_ERR_LIMIT   1000
 #define TIME_TO_WAIT_IF_OK 2
 #define TIME_TO_WAIT_IF_ERR 30
 
@@ -78,20 +78,20 @@ uint16_t Particle_Send_CMD(uint8_t cmd);
 
 void Particle_Init(void)
 {
-	ParticleDevice.LED_current_meas = 0;
-	ParticleDevice.ch0_ON = 0;
-	ParticleDevice.ch0_OFF = 0;
-	ParticleDevice.ch1_ON = 0;
-	ParticleDevice.ch1_OFF = 0;
-	ParticleDevice.variance = 0;
-	ParticleDevice.temperature = 0;
-	ParticleDevice.LED_current_meas = 0;
-	ParticleDevice.slope = 0;
-	ParticleDevice.Lux_ON = 0;
-	ParticleDevice.Lux_OFF = 0;
-	ParticleDevice.TimeSinceInit = 0;
-	ParticleDevice.last_particle_time = 0;
-	ParticleDevice.normalized_zero = 80.0;
+	ParticleDevice.fLED_current_meas = 0;
+	ParticleDevice.u16ch0_ON = 0;
+	ParticleDevice.u16ch0_OFF = 0;
+	ParticleDevice.u16ch1_ON = 0;
+	ParticleDevice.u16ch1_OFF = 0;
+	ParticleDevice.u16stDev = 0;
+	ParticleDevice.u16temperature = 0;
+	ParticleDevice.fLED_current_meas = 0;
+	ParticleDevice.fslope = 0;
+	ParticleDevice.u16Lux_ON = 0;
+	ParticleDevice.u16Lux_OFF = 0;
+	ParticleDevice.u16TimeSinceInit = 0;
+	ParticleDevice.u16Last_particle_time = 0;
+	ParticleDevice.fnormalized_zero = 80.0;
 
 	currentState = Idle;
 	nextState = Idle;
@@ -173,14 +173,15 @@ void ParticlesManager(uint32_t u32Time_ms)
 			nextState = Idle;
 			break;
 		}
+
+
 		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 		RX_BUFFER[0] = 0;
-		RX_BUFFER[1] = 0;
 		u32LastReqTime = u32Time_ms;
-		HAL_UARTEx_ReceiveToIdle_IT(&huart3, RX_BUFFER,RX_BUFFER_LENGTH);
 		nextState = Request_sent;
 		break;
 	case Request_sent:
+		HAL_UARTEx_ReceiveToIdle_IT(&huart3, RX_BUFFER,RX_BUFFER_LENGTH);
 		if(RX_BUFFER[0] == START_BYTE)
 		{
 			rx_payload_size = RX_BUFFER[1] & 0x3F;
@@ -190,7 +191,9 @@ void ParticlesManager(uint32_t u32Time_ms)
 				nextState = Validate_data;
 			}
 
-		}else if(u32Time_ms - u32LastReqTime > response_delay)
+		}
+
+		if(u32Time_ms - u32LastReqTime > response_delay)
 		{
 			if(uartErrorCount <= COMM_ERR_LIMIT)
 			{
@@ -233,25 +236,27 @@ void ParticlesManager(uint32_t u32Time_ms)
 		nextState = Idle;
 		if((RX_BUFFER[1] & 0xC0) == READ_CMD)
 		{
-			ParticleDevice.ch0_ON = (uint16_t)(RX_BUFFER[2] << 8) + (uint16_t)RX_BUFFER[3];
-			ParticleDevice.ch0_OFF = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
-			ParticleDevice.ch1_ON = (uint16_t)(RX_BUFFER[6] << 8) + (uint16_t)RX_BUFFER[7];
-			ParticleDevice.ch1_OFF = (uint16_t)(RX_BUFFER[8] << 8) + (uint16_t)RX_BUFFER[9];
-			ParticleDevice.variance = (uint16_t)(RX_BUFFER[10] << 8) + (uint16_t)RX_BUFFER[11];
-			ParticleDevice.temperature = (uint16_t)(RX_BUFFER[12] << 8) + (uint16_t)RX_BUFFER[13];
-			ParticleDevice.LED_current_meas = (uint16_t)(RX_BUFFER[14] << 8) + (uint16_t)RX_BUFFER[15];
+			ParticleDevice.u16ch0_ON = (uint16_t)(RX_BUFFER[2] << 8) + (uint16_t)RX_BUFFER[3];
+			ParticleDevice.u16ch0_OFF = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
+			ParticleDevice.u16ch1_ON = (uint16_t)(RX_BUFFER[6] << 8) + (uint16_t)RX_BUFFER[7];
+			ParticleDevice.u16ch1_OFF = (uint16_t)(RX_BUFFER[8] << 8) + (uint16_t)RX_BUFFER[9];
+			ParticleDevice.u16stDev = (uint16_t)(RX_BUFFER[10] << 8) + (uint16_t)RX_BUFFER[11];
+			ParticleDevice.u16temperature = (uint16_t)(RX_BUFFER[12] << 8) + (uint16_t)RX_BUFFER[13];
+			ParticleDevice.fLED_current_meas = P2F(((uint16_t)(RX_BUFFER[14] << 8) + (uint16_t)RX_BUFFER[15]));
 
 			if(RX_BUFFER[16] & 0x80)
 			{
 				RX_BUFFER[16] &= 0x7F;
 				slp_sign = -1;
 			}
-			ParticleDevice.slope = slp_sign*((int)(RX_BUFFER[16] << 8) + (int)RX_BUFFER[17]);
-			ParticleDevice.Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
-			ParticleDevice.Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
-			ParticleDevice.TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
+			ParticleDevice.fslope = P2F(slp_sign*((int)(RX_BUFFER[16] << 8) + (int)(uint8_t)RX_BUFFER[17]));
+			ParticleDevice.u16Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
+			ParticleDevice.u16Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
+			ParticleDevice.u16TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
 
-			config_mode = true; //GC 2023-07-19 Debug comm
+			ParticleDevice.fparticles = (float)ParticleDevice.u16ch0_ON/ParticleDevice.fLED_current_meas;
+
+			config_mode = false; //GC 2023-07-19 Debug comm
 		}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 		{
 			//TODO: Implement config
@@ -265,9 +270,9 @@ void ParticlesManager(uint32_t u32Time_ms)
 		}else if((RX_BUFFER[1] & 0xC0) == SETZERO_CMD)
 		{
 			setZero = false;
-			ParticleDevice.zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
+			ParticleDevice.u16zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
 			//zero_current = RX_BUFFER[7];
-			//ParticleDevice.normalized_zero = (float)ParticleDevice.zero/(float)zero_current;
+			//ParticleDevice.normalized_zero = (float)ParticleDevice.u16zero/(float)zero_current;
 		}else
 		{
 			if(uartErrorCount <= COMM_ERR_LIMIT)

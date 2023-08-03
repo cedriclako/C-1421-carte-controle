@@ -15,21 +15,22 @@
 
 typedef struct MeasureParticles
 {
-	uint16_t ch0_ON;
-	uint16_t ch0_OFF;
-	uint16_t ch1_ON;
-	uint16_t ch1_OFF;
-	uint16_t particles;
-	uint16_t variance;
-	uint16_t temperature;
-	uint16_t zero;
-	float normalized_zero;
-	int slope;
-	uint16_t LED_current_meas;
-	uint16_t Lux_ON;
-	uint16_t Lux_OFF;
-	uint32_t TimeSinceInit;
-	uint32_t last_particle_time;
+	uint16_t u16ch0_ON;
+	uint16_t u16ch0_OFF;
+	uint16_t u16ch1_ON;
+	uint16_t u16ch1_OFF;
+
+	uint16_t u16stDev;
+	uint16_t u16temperature;
+	uint16_t u16zero;
+	float fnormalized_zero;
+	float fparticles;
+	float fslope;
+	float fLED_current_meas;
+	uint16_t u16Lux_ON;
+	uint16_t u16Lux_OFF;
+	uint32_t u16TimeSinceInit;
+	uint32_t u16Last_particle_time;
 
 
 

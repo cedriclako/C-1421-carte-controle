@@ -11,7 +11,7 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	stove->bThermostatOn = (HAL_GPIO_ReadPin(Thermostat_Input_GPIO_Port,Thermostat_Input_Pin) == GPIO_PIN_RESET);
 	stove->bInterlockOn = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
-
+	stove->bDoorOpen = (HAL_GPIO_ReadPin(Limit_switch_Door_GPIO_Port,Limit_switch_Door_Pin) == GPIO_PIN_SET);
 	bButtonPressed = (HAL_GPIO_ReadPin(Button_Input_GPIO_Port,Button_Input_Pin) == GPIO_PIN_SET);//TODO: add some sort of debounce
 
 	if(bButtonPressed && (u32PressStartTime_ms == 0))
@@ -28,10 +28,18 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 
 
+	//if(stove->bDoorOpen)
+	//{
+
+	//}
+
+
 }
 
 bool GPIO_IsButtonPressed(void)
 {
 	return bButtonPressed;
 }
+
+
 
