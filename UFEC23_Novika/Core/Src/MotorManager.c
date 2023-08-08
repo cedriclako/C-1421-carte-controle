@@ -71,7 +71,7 @@ void Motor_task(void const * argument)
 
 	  if(xMessageBufferIsFull(MotorControlsHandle) == pdTRUE)
 	  {
-		  xMessageBufferReceive(MotorControlsHandle, u8cmd_buf, 6, 10);
+		  xMessageBufferReceive(MotorControlsHandle, u8cmd_buf, 6, 5);
 
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {

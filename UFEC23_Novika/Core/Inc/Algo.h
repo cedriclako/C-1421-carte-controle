@@ -19,7 +19,9 @@
 #define MINUTES(x) (SECONDS(60)*x)
 #define CELSIUS_TO_FAHRENHEIT(TEMP) (TEMP*9/5+32)
 #define FAHRENHEIT_TO_CELSIUS(TEMP) ((TEMP-32)*5/9)
-#define P2F(x) ((float)x/10) //Parameter to float
+#define P2F(x) ((float)x) //Parameter to float
+#define P2F1DEC(x) ((float)x/10) //Parameter to float with 1 decimal precision
+#define P2F2DEC(x) ((float)x/100) //Parameter to float with 2 decimal precision
 
 
 /***** Variables ******/
@@ -92,6 +94,7 @@ typedef struct
 	bool bThermostatOn;
 	bool bInterlockOn;
 	bool bDoorOpen;
+	bool bSafetyOn;
 
 	bool bstateJustChanged;
 	uint32_t u32TimeOfStateEntry_ms;

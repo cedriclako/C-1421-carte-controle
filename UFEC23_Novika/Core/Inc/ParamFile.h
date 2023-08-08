@@ -9,6 +9,8 @@
 
 #include "ParameterFileLib.h"
 
+#define PF_UNUSED (1)
+
 #define PF_PRIMARY_MINIMUM_OPENING				6 //5.4 degres @ 0.9 deg/pas
 #define PF_PRIMARY_CLOSED  						PF_PRIMARY_MINIMUM_OPENING
 #define PF_PRIMARY_FULL_OPEN			   		97
@@ -44,7 +46,7 @@ typedef struct
 	int32_t fTolerance;
 	int32_t fAbsMaxDiff;
 
-} PF_FreeParam_t;
+} PF_BinnedParam_t;
 
 typedef struct
 {
@@ -63,10 +65,10 @@ typedef struct
 
 typedef struct
 {
-	PF_FreeParam_t sTemperature;
-	PF_FreeParam_t sTempSlope;
-	PF_FreeParam_t sParticles;
-	PF_FreeParam_t sPartStdev;
+	PF_BinnedParam_t sTemperature;
+	PF_BinnedParam_t sTempSlope;
+	PF_BinnedParam_t sParticles;
+	PF_BinnedParam_t sPartStdev;
 
 	PF_MotorOpeningsParam_t sPrimary;
 	PF_MotorOpeningsParam_t sSecondary;
@@ -76,7 +78,20 @@ typedef struct
 	int32_t i32MinimumTimeInStateMinutes;
 	int32_t i32MaximumTimeInStateMinutes;
 
+	int32_t i32FreeParam1;
+	int32_t i32FreeParam2;
+
 }PF_StateParam_t;
+
+typedef struct
+{
+	int32_t fVerySlow;
+	int32_t fSlow;
+	int32_t fNormal;
+	int32_t fFast;
+	int32_t fVeryFast;
+
+}PF_StepperStepsPerSec_t;
 
 
 
@@ -160,9 +175,13 @@ typedef struct
 #define PFD_CBH_GM_MIN      		"combH_gm_Min"
 
 
+#define PFD_COL_TIME_P			 "coalL_TimeBeforeClosingPrim"
+#define PFD_COL_TIME_S			 "coalL_TimeBeforeClosingSec"
+
 #define PFD_COL_T_TARGET         "coalL_TemperatureTarget"
 #define PFD_COL_T_TOL            "coalL_TemperatureTolerance"
 #define PFD_COL_T_ABS            "coalL_TemperatureAbsMaxDiff"
+#if !PF_UNUSED
 #define PFD_COL_TS_TARGET        "coalL_TempSlopeTarget"
 #define PFD_COL_TS_TOL           "coalL_TempSlopeTolerance"
 #define PFD_COL_TS_ABS           "coalL_TempSlopeAbsMaxDiff"
@@ -171,6 +190,7 @@ typedef struct
 #define PFD_COL_P_ABS			 "coalL_PartAbs"
 #define PFD_COL_PS_TOL			 "coalL_PartStdevTolerance"
 #define PFD_COL_PS_ABS			 "coalL_PartStdevAbsMax"
+#endif
 #define PFD_COL_ENTRY_TIME 	 	 "coalL_StateEntryDelay"
 #define PFD_COL_MIN_TIME	 	 "coalL_MinTimeInState"
 #define PFD_COL_MAX_TIME		 "coalL_MaxTimeInState"
@@ -184,6 +204,7 @@ typedef struct
 #define PFD_COH_T_TARGET         "coalH_TemperatureTarget"
 #define PFD_COH_T_TOL           "coalH_TemperatureTolerance"
 #define PFD_COH_T_ABS           "coalH_TemperatureAbsMaxDiff"
+#if !PF_UNUSED
 #define PFD_COH_TS_TARGET        "coalH_TempSlopeTarget"
 #define PFD_COH_TS_TOL          "coalH_TempSlopeTolerance"
 #define PFD_COH_TS_ABS          "coalH_TempSlopeAbsMaxDiff"
@@ -192,6 +213,7 @@ typedef struct
 #define PFD_COH_P_ABS			 "coalH_PartAbs"
 #define PFD_COH_PS_TOL			 "coalH_PartStdevTolerance"
 #define PFD_COH_PS_ABS			 "coalH_PartStdevAbsMax"
+#endif
 #define PFD_COH_ENTRY_TIME 	 	 "coalH_StateEntryDelay"
 #define PFD_COH_MIN_TIME	 	 "coalH_MinTimeInState"
 #define PFD_COH_MAX_TIME		 "coalH_MaxTimeInState"
@@ -213,6 +235,12 @@ typedef struct
 #define PFD_REL_PM_POS		    "reload_pm_pos"
 #define PFD_REL_SM_POS		    "reload_sm_pos"
 #define PFD_REL_GM_POS		    "reload_gm_pos"
+
+#define PFD_SPS_VSLOW			"secPerStep_verySlow"
+#define PFD_SPS_SLOW			"secPerStep_slow"
+#define PFD_SPS_NORMAL			"secPerStep_normal"
+#define PFD_SPS_FAST			"secPerStep_fast"
+#define PFD_SPS_VFAST			"secPerStep_veryFast"
 
 extern PFL_SHandle PARAMFILE_g_sHandle;
 
@@ -241,6 +269,8 @@ const PF_StateParam_t *PB_GetCombHighParams(void);
 const PF_StateParam_t *PB_GetCoalLowParams(void);
 
 const PF_StateParam_t *PB_GetCoalHighParams(void);
+
+const PF_StepperStepsPerSec_t *PB_SpeedParams(void);
 
 #endif
 

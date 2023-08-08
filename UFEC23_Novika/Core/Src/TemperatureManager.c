@@ -202,8 +202,9 @@ void Temperature_update_deltaT(Mobj *stove, uint32_t u32DeltaT_ms)
 		return;
 	}
 
-	stove->fBaffleDeltaT = (stove->fBaffleTemp-baffle)/((u32DeltaT_ms)/1000);
-	stove->fChamberDeltaT = (stove->fChamberTemp-chamber)/((u32DeltaT_ms)/1000);
+	// To avoid confusion, parameters calculated per 30 seconds => (deg F / 30 sec)
+	stove->fBaffleDeltaT = 30*(stove->fBaffleTemp-baffle)/((u32DeltaT_ms)/1000);
+	stove->fChamberDeltaT = 30*(stove->fChamberTemp-chamber)/((u32DeltaT_ms)/1000);
 
 	baffle = stove->fBaffleTemp;
 	chamber = stove->fChamberTemp;

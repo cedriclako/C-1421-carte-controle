@@ -52,6 +52,8 @@ static void Algo_coalHigh_action(Mobj* stove, const PF_StateParam_t* sParams, ui
 static void Algo_coalLow_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
 static void Algo_manual_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
 static void Algo_zeroing_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
+static void Algo_safety_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
+static void Algo_overtemp_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
 
 static void Algo_waiting_entry(Mobj *stove,const  PF_StateParam_t* sParams);
 static void Algo_reload_entry(Mobj *stove,const  PF_StateParam_t* sParams);
@@ -110,11 +112,24 @@ void Algo_Init(void const * argument)
 void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_UsrParam* UsrParam =  PB_GetUserParam();
+	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
+
 	Algo_update_steppers_inPlace_flag();
 
-	if(currentState != MANUAL_CONTROL && UsrParam->s32ManualOverride == 1)
+	if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
 	{
 		nextState = MANUAL_CONTROL;
+	}
+	else if((currentState != SAFETY) && stove->bSafetyOn)
+	{
+		nextState = SAFETY;
+	}
+	else if((currentState != OVERTEMP) && (currentState != SAFETY) && (
+			(stove->fBaffleTemp > P2F(OvrhtParams->OverheatBaffle))  ||
+			(stove->fChamberTemp > P2F(OvrhtParams->OverheatChamber)) ||
+			(stove->fPlenumTemp > P2F(OvrhtParams->OverheatPlenum))) )
+	{
+		nextState = OVERTEMP;
 	}
 	else if(stove->bstateJustChanged) // If first loop in state, perform entry action
 	{
@@ -169,37 +184,9 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 }
 
-
-bool Algo_adjust_steppers_position(Mobj *stove)
-{
-	uint8_t cmd[NUMBER_OF_STEPPER_CMDS] =
-	{
-		stove->sPrimary.i8apertureSteps,
-		(uint8_t)(stove->sPrimary.fSecPerStep*10),
-		stove->sGrill.i8apertureSteps,
-		(uint8_t)(stove->sGrill.fSecPerStep*10),
-		stove->sSecondary.i8apertureSteps,
-		(uint8_t)(stove->sSecondary.fSecPerStep*10)
-
-	};
-	if(!xMessageBufferSend(MotorControlsHandle,cmd,NUMBER_OF_STEPPER_CMDS,0))
-	{
-		return false;
-	}
-	return true;
-}
-
-void Algo_update_steppers_inPlace_flag(void)
-{
-	if(!motors_ready_for_req)
-	{
-		xQueueReceive(MotorInPlaceHandle,&motors_ready_for_req,5);
-	}
-}
-
 void Algo_stoveInit(Mobj *stove)
 {
-	stove->sParticles = ParticlesGetObject();
+	stove->sParticles = ParticlesGetObject(); // Get pointer to particles Structure
 	stove->sUserParams = PB_GetUserParam();
 	sOverheatParams = PB_GetOverheatParams();
 	sStateParams[WAITING] = PB_GetWaitingParams();
@@ -222,37 +209,9 @@ void Algo_stoveInit(Mobj *stove)
 	stove->u32TimeOfComputation_ms = 0;
 	stove->bReloadRequested = false;
 	stove->bstateJustChanged = true;
+	stove->bSafetyOn = false;
 	stove->TimeOfReloadRequest = 0;
 }
-
-void Algo_fill_state_functions(void)
-{
-	AlgoComputeAdjustment[ZEROING_STEPPER] = Algo_zeroing_action;
-	AlgoComputeAdjustment[WAITING] = Algo_Waiting_action;
-	AlgoComputeAdjustment[RELOAD_IGNITION] = Algo_reload_action;
-	AlgoComputeAdjustment[TEMPERATURE_RISE] = Algo_tempRise_action;
-	AlgoComputeAdjustment[COMBUSTION_HIGH] = Algo_combHigh_action;
-	AlgoComputeAdjustment[COMBUSTION_LOW] = Algo_combLow_action;
-	AlgoComputeAdjustment[COAL_LOW] = Algo_coalLow_action;
-	AlgoComputeAdjustment[COAL_HIGH] = Algo_coalHigh_action;
-	AlgoComputeAdjustment[OVERTEMP] = NULL;
-	AlgoComputeAdjustment[SAFETY] = NULL;
-	AlgoComputeAdjustment[MANUAL_CONTROL] = Algo_manual_action;
-
-	AlgoStateEntryAction[ZEROING_STEPPER] = Algo_zeroing_entry;
-	AlgoStateEntryAction[WAITING] = Algo_waiting_entry;
-	AlgoStateEntryAction[RELOAD_IGNITION] = Algo_reload_entry;
-	AlgoStateEntryAction[TEMPERATURE_RISE] = Algo_tempRise_entry;
-	AlgoStateEntryAction[COMBUSTION_HIGH] = Algo_combHigh_entry;
-	AlgoStateEntryAction[COMBUSTION_LOW] = Algo_combLow_entry;
-	AlgoStateEntryAction[COAL_LOW] = Algo_coalLow_entry;
-	AlgoStateEntryAction[COAL_HIGH] = Algo_coalHigh_entry;
-	AlgoStateEntryAction[OVERTEMP] = Algo_zeroing_entry;
-	AlgoStateEntryAction[SAFETY] = Algo_zeroing_entry;
-	AlgoStateEntryAction[MANUAL_CONTROL] = NULL;
-
-}
-
 
 ///////////////////////// STATE MACHINE  //////////////////////////////////////////////////////////////////////
 
@@ -347,18 +306,19 @@ static void Algo_tempRise_entry(Mobj* stove,const  PF_StateParam_t* sParams)
 static void Algo_tempRise_action(Mobj* stove,const  PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
 {
 	static uint32_t u32TimeOfMajorCorr = 0;
+	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 
 	// Case(s) we want to wait
 	if((u32TimeOfMajorCorr != 0 && (u32CurrentTime_ms - u32TimeOfMajorCorr < MINUTES(1))) || 	// We just made a correction
-			(stove->fBaffleDeltaT < (P2F(sParams->sTempSlope.fTarget) - P2F(sParams->sTempSlope.fTolerance)))) // Temperature rises abnormally slow
+			(stove->fBaffleDeltaT < (P2F1DEC(sParams->sTempSlope.fTarget) - P2F1DEC(sParams->sTempSlope.fTolerance)))) // Temperature rises abnormally slow
 	{
 		return;
 	}
 
-	if(stove->fBaffleTemp >P2F( sParams->sTemperature.fTolerance)) // Here, fTolerance -> Temp to start regulating with particles
+	if(stove->fBaffleTemp >P2F(sParams->i32FreeParam1)) // Here, i32FreeParam1 -> Temp to start regulating with particles
 	{
 		if((stove->sParticles->fparticles - stove->sParticles->fnormalized_zero) > (P2F(sParams->sParticles.fAbsMaxDiff)) &&
-				stove->fBaffleDeltaT > (P2F(sParams->sTempSlope.fTarget) + P2F(sParams->sTempSlope.fTolerance)))
+				stove->fBaffleDeltaT > (P2F1DEC(sParams->sTempSlope.fTarget) + P2F1DEC(sParams->sTempSlope.fTolerance)))
 		{
 			if(stove->sGrill.i8apertureSteps > 15)
 			{
@@ -384,21 +344,25 @@ static void Algo_tempRise_action(Mobj* stove,const  PF_StateParam_t* sParams, ui
 		}
 	}
 
-	if(stove->sGrill.i8apertureSteps > sParams->sGrill.i32Min)
+	if(motors_ready_for_req)
 	{
-		stove->sGrill.i8apertureSteps--;
-		stove->sGrill.fSecPerStep = 6;
-	}else
-	{
-
-		if(stove->sPrimary.i8apertureSteps-- <= 75)
+		if(stove->sGrill.i8apertureSteps > sParams->sGrill.i32Min)
 		{
-			nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+			stove->sGrill.i8apertureSteps--;
+			stove->sGrill.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
+		}else
+		{
+
+			if(stove->sPrimary.i8apertureSteps-- <= 75)
+			{
+				nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+			}
+			stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
 		}
-		stove->sPrimary.fSecPerStep = 6;
+
+		bStepperAdjustmentNeeded = true;
 	}
 
-	bStepperAdjustmentNeeded = true;
 
 }
 //** END: TEMPERATURE RISE **//
@@ -418,6 +382,98 @@ static void Algo_combLow_entry(Mobj *stove,const  PF_StateParam_t* sParams)
 
 static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
 {
+	static uint32_t u32ActionTime_ms = 0;
+	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+
+	if(stove->fBaffleTemp < P2F(sParams->sTemperature.fTarget - sParams->sTemperature.fTolerance))
+	{
+		if(stove->fBaffleDeltaT < P2F1DEC(sParams->sTempSlope.fTarget - sParams->sTempSlope.fAbsMaxDiff))
+		{
+			if(u32ActionTime_ms - u32CurrentTime_ms > SECONDS(30))
+			{
+				if(stove->sPrimary.i8apertureSteps *= 2 > sParams->sPrimary.i32Max)
+				{
+					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+				}
+				stove->sPrimary.fSecPerStep = 0; // force aperture
+				bStepperAdjustmentNeeded = true;
+
+				u32ActionTime_ms = u32CurrentTime_ms;
+				return;
+			}
+
+		}
+
+		if(stove->fBaffleDeltaT < P2F1DEC(sParams->sTempSlope.fTarget - sParams->sTempSlope.fTolerance))
+		{
+			if(motors_ready_for_req || stove->sPrimary.fSecPerStep != P2F1DEC(sSpeedParams->fSlow))
+			{
+				if(stove->sPrimary.i8apertureSteps++ > sParams->sPrimary.i32Max)
+				{
+					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+				}
+				stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
+				bStepperAdjustmentNeeded = true;
+				return;
+			}
+
+		}
+	}else if(stove->fBaffleTemp < P2F(sParams->sTemperature.fTarget + sParams->sTemperature.fAbsMaxDiff))
+	{
+		if(fabs(stove->fBaffleDeltaT) < P2F1DEC(sParams->sTempSlope.fTarget + sParams->sTempSlope.fTolerance))
+		{
+			if(motors_ready_for_req)
+			{
+				if(stove->sPrimary.i8apertureSteps-- < sParams->sPrimary.i32Min)
+				{
+					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+				}
+				stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fVerySlow);
+				bStepperAdjustmentNeeded = true;
+				return;
+			}
+
+		}
+	}else
+	{
+		if(stove->fBaffleDeltaT > P2F1DEC(sParams->sTempSlope.fTarget + sParams->sTempSlope.fAbsMaxDiff))
+		{
+			if(motors_ready_for_req || stove->sPrimary.fSecPerStep != P2F1DEC(sSpeedParams->fNormal))
+			{
+				if(stove->sPrimary.i8apertureSteps-- < sParams->sPrimary.i32Min)
+				{
+					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+				}
+				stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
+				bStepperAdjustmentNeeded = true;
+				return;
+			}
+		}
+
+		if(stove->fBaffleDeltaT > P2F1DEC(sParams->sTempSlope.fTarget - sParams->sTempSlope.fTolerance))
+		{
+			if(motors_ready_for_req || stove->sPrimary.fSecPerStep != P2F1DEC(sSpeedParams->fSlow))
+			{
+				if(stove->sPrimary.i8apertureSteps-- < sParams->sPrimary.i32Min)
+				{
+					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+				}
+				stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
+				bStepperAdjustmentNeeded = true;
+				return;
+			}
+		}
+
+
+	}
+
+	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms >MINUTES(sParams->i32MaximumTimeInStateMinutes))
+	{
+		nextState = COAL_LOW;
+	}
+
+
+
 
 }
 //** END: COMBUSTION LOW **//
@@ -443,6 +499,37 @@ static void Algo_coalLow_entry(Mobj *stove,const  PF_StateParam_t* sParams)
 
 static void Algo_coalLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
 {
+	static uint32_t u32ActionTime_ms = 0;
+
+	if((stove->fBaffleTemp < P2F( sParams->sTemperature.fTarget)) && stove->sGrill.i8apertureSteps != sParams->sGrill.i32Max)
+	{
+		stove->sGrill.i8apertureSteps = sParams->sGrill.i32Max;
+		stove->sGrill.fSecPerStep = 0; // force aperture
+		bStepperAdjustmentNeeded = true;
+
+		u32ActionTime_ms = u32CurrentTime_ms;
+
+	}
+
+													// FreeParam1 used as container (see ParamFile.c)
+	if(u32CurrentTime_ms - u32ActionTime_ms > MINUTES(sParams->i32FreeParam1) && (stove->sPrimary.i8apertureSteps != sParams->sPrimary.i32Min))
+	{
+		stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+		stove->sPrimary.fSecPerStep = 0; // force aperture
+		bStepperAdjustmentNeeded = true;
+
+		u32ActionTime_ms = u32CurrentTime_ms;
+	}
+													// FreeParam2 used as container (see ParamFile.c)
+	if(u32CurrentTime_ms - u32ActionTime_ms > MINUTES(sParams->i32FreeParam2) && (stove->sSecondary.i8apertureSteps != sParams->sSecondary.i32Min))
+	{
+		stove->sSecondary.i8apertureSteps = sParams->sSecondary.i32Min;
+		stove->sSecondary.fSecPerStep = 0; // force aperture
+		bStepperAdjustmentNeeded = true;
+
+		u32ActionTime_ms = u32CurrentTime_ms;
+	}
+
 
 }
 //** END: COAL LOW **//
@@ -485,3 +572,79 @@ static void Algo_manual_action(Mobj* stove,const  PF_StateParam_t* sParams, uint
 
 }
 
+static void Algo_safety_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
+{
+	if(!stove->bSafetyOn)
+	{
+		nextState = lastState;
+	}
+}
+
+static void Algo_overtemp_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
+{
+	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
+
+	if((stove->fBaffleTemp < P2F(OvrhtParams->OverheatBaffle))  &&
+				(stove->fChamberTemp < P2F(OvrhtParams->OverheatChamber)) &&
+				(stove->fPlenumTemp < P2F(OvrhtParams->OverheatPlenumExit)) )
+		{
+			nextState = lastState;
+		}
+}
+
+///////////////// Handle and low level functions /////////////////////////////////////////
+
+void Algo_fill_state_functions(void)
+{
+	AlgoComputeAdjustment[ZEROING_STEPPER] = Algo_zeroing_action;
+	AlgoComputeAdjustment[WAITING] = Algo_Waiting_action;
+	AlgoComputeAdjustment[RELOAD_IGNITION] = Algo_reload_action;
+	AlgoComputeAdjustment[TEMPERATURE_RISE] = Algo_tempRise_action;
+	AlgoComputeAdjustment[COMBUSTION_HIGH] = Algo_combHigh_action;
+	AlgoComputeAdjustment[COMBUSTION_LOW] = Algo_combLow_action;
+	AlgoComputeAdjustment[COAL_LOW] = Algo_coalLow_action;
+	AlgoComputeAdjustment[COAL_HIGH] = Algo_coalHigh_action;
+	AlgoComputeAdjustment[OVERTEMP] = Algo_overtemp_action;
+	AlgoComputeAdjustment[SAFETY] = Algo_safety_action;
+	AlgoComputeAdjustment[MANUAL_CONTROL] = Algo_manual_action;
+
+	AlgoStateEntryAction[ZEROING_STEPPER] = Algo_zeroing_entry;
+	AlgoStateEntryAction[WAITING] = Algo_waiting_entry;
+	AlgoStateEntryAction[RELOAD_IGNITION] = Algo_reload_entry;
+	AlgoStateEntryAction[TEMPERATURE_RISE] = Algo_tempRise_entry;
+	AlgoStateEntryAction[COMBUSTION_HIGH] = Algo_combHigh_entry;
+	AlgoStateEntryAction[COMBUSTION_LOW] = Algo_combLow_entry;
+	AlgoStateEntryAction[COAL_LOW] = Algo_coalLow_entry;
+	AlgoStateEntryAction[COAL_HIGH] = Algo_coalHigh_entry;
+	AlgoStateEntryAction[OVERTEMP] = Algo_zeroing_entry;
+	AlgoStateEntryAction[SAFETY] = Algo_zeroing_entry;
+	AlgoStateEntryAction[MANUAL_CONTROL] = NULL;
+
+}
+
+void Algo_update_steppers_inPlace_flag(void)
+{
+	if(!motors_ready_for_req)
+	{
+		xQueueReceive(MotorInPlaceHandle,&motors_ready_for_req,5);
+	}
+}
+
+bool Algo_adjust_steppers_position(Mobj *stove)
+{
+	uint8_t cmd[NUMBER_OF_STEPPER_CMDS] =
+	{
+		stove->sPrimary.i8apertureSteps,
+		(uint8_t)(stove->sPrimary.fSecPerStep*10),
+		stove->sGrill.i8apertureSteps,
+		(uint8_t)(stove->sGrill.fSecPerStep*10),
+		stove->sSecondary.i8apertureSteps,
+		(uint8_t)(stove->sSecondary.fSecPerStep*10)
+
+	};
+	if(!xMessageBufferSend(MotorControlsHandle,cmd,NUMBER_OF_STEPPER_CMDS,0))
+	{
+		return false;
+	}
+	return true;
+}

@@ -242,14 +242,14 @@ void ParticlesManager(uint32_t u32Time_ms)
 			ParticleDevice.u16ch1_OFF = (uint16_t)(RX_BUFFER[8] << 8) + (uint16_t)RX_BUFFER[9];
 			ParticleDevice.u16stDev = (uint16_t)(RX_BUFFER[10] << 8) + (uint16_t)RX_BUFFER[11];
 			ParticleDevice.u16temperature = (uint16_t)(RX_BUFFER[12] << 8) + (uint16_t)RX_BUFFER[13];
-			ParticleDevice.fLED_current_meas = P2F(((uint16_t)(RX_BUFFER[14] << 8) + (uint16_t)RX_BUFFER[15]));
+			ParticleDevice.fLED_current_meas = P2F1DEC(((uint16_t)(RX_BUFFER[14] << 8) + (uint16_t)RX_BUFFER[15]));
 
 			if(RX_BUFFER[16] & 0x80)
 			{
 				RX_BUFFER[16] &= 0x7F;
 				slp_sign = -1;
 			}
-			ParticleDevice.fslope = P2F(slp_sign*((int)(RX_BUFFER[16] << 8) + (int)(uint8_t)RX_BUFFER[17]));
+			ParticleDevice.fslope = P2F1DEC(slp_sign*((int)(RX_BUFFER[16] << 8) + (int)(uint8_t)RX_BUFFER[17]));
 			ParticleDevice.u16Lux_ON = (uint16_t)(RX_BUFFER[18] << 8) + (uint16_t)RX_BUFFER[19];
 			ParticleDevice.u16Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 			ParticleDevice.u16TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
