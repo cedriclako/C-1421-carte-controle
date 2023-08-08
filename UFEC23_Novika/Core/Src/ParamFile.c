@@ -77,7 +77,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_CBL_TS_TOL, 			"", &m_sCombLowParams.sTempSlope.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_TS_ABS, 			"", &m_sCombLowParams.sTempSlope.fAbsMaxDiff, 				50, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_P_TARGET, 			"", &m_sCombLowParams.sParticles.fTarget, 					80, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_CBL_P_TOL, 				"", &m_sCombLowParams.sParticles.fTolerance, 				30, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBL_P_TOL, 				"", &m_sCombLowParams.sParticles.fTolerance, 				50, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_P_ABS, 				"", &m_sCombLowParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PS_TOL, 			"", &m_sCombLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PS_ABS, 			"", &m_sCombLowParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
@@ -176,9 +176,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	// Motor Speed params
 	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				"", &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_SLOW, 				"", &m_sSpeedParams.fSlow, 	  								150, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			"", &m_sSpeedParams.fNormal, 	  							60, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								25, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_SPS_VFAST, 				"", &m_sSpeedParams.fVeryFast, 	  							10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			"", &m_sSpeedParams.fNormal, 	  							100, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								60, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_SPS_VFAST, 				"", &m_sSpeedParams.fVeryFast, 	  							15, 		0, 		20000),
 
 };
 

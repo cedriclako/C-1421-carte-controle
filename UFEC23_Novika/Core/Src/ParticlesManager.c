@@ -254,7 +254,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			ParticleDevice.u16Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 			ParticleDevice.u16TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
 
-			ParticleDevice.fparticles = (float)ParticleDevice.u16ch0_ON/ParticleDevice.fLED_current_meas;
+			ParticleDevice.fparticles = (float)ParticleDevice.u16ch0_ON/ParticleDevice.fLED_current_meas - ParticleDevice.fnormalized_zero;//TODO:comment
 
 			config_mode = false; //GC 2023-07-19 Debug comm
 		}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)

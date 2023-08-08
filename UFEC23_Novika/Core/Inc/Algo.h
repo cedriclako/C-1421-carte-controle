@@ -74,8 +74,6 @@ typedef struct
 	//Particles values (ch0, ch1, slope, stdev, etc.)
 	const MeasureParticles_t *sParticles;
 
-	//Manual mode params
-	const PF_UsrParam *sUserParams;
 	//////////////////////////////////////////////////
 
 	////////////////VARIABLES/////////////////////////
@@ -98,6 +96,7 @@ typedef struct
 
 	bool bstateJustChanged;
 	uint32_t u32TimeOfStateEntry_ms;
+	uint32_t u32TimeSinceCombEntry_ms;
 
 	uint32_t u32TimeOfAdjustment_ms;
 	uint32_t u32TimeOfComputation_ms;

@@ -113,7 +113,7 @@ typedef struct
 // State
 #define PFD_TR_T_TARGETH         "tRise_TemperatureTargetHigh"
 #define PFD_TR_T_TARGETL         "tRise_TemperatureTargetLow"
-#define PFD_TR_T_TOL            "tRise_TempperatureTolerance"
+#define PFD_TR_T_TOL            "tRise_TempperatureToStartRegulate"
 #define PFD_TR_TS_TARGET        "tRise_TempSlopeTarget"
 #define PFD_TR_TS_TOL           "tRise_TempSlopeTolerance"
 #define PFD_TR_TS_ABS           "tRise_TempSlopeAbsMaxDiff"
