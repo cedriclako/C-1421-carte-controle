@@ -113,7 +113,7 @@ typedef struct
 // State
 #define PFD_TR_T_TARGETH         "tRise_TemperatureTargetHigh"
 #define PFD_TR_T_TARGETL         "tRise_TemperatureTargetLow"
-#define PFD_TR_T_TOL            "tRise_TempperatureToStartRegulate"
+#define PFD_TR_T_TOL            "tRise_TemperatureToRegulate"
 #define PFD_TR_TS_TARGET        "tRise_TempSlopeTarget"
 #define PFD_TR_TS_TOL           "tRise_TempSlopeTolerance"
 #define PFD_TR_TS_ABS           "tRise_TempSlopeAbsMaxDiff"
@@ -188,9 +188,9 @@ typedef struct
 #define PFD_COL_P_TARGET		 "coalL_PartTarget"
 #define PFD_COL_P_TOL			 "coalL_PartTol"
 #define PFD_COL_P_ABS			 "coalL_PartAbs"
-#define PFD_COL_PS_TOL			 "coalL_PartStdevTolerance"
 #define PFD_COL_PS_ABS			 "coalL_PartStdevAbsMax"
 #endif
+#define PFD_COL_PS_TOL			 "coalL_PartStdevTolerance"
 #define PFD_COL_ENTRY_TIME 	 	 "coalL_StateEntryDelay"
 #define PFD_COL_MIN_TIME	 	 "coalL_MinTimeInState"
 #define PFD_COL_MAX_TIME		 "coalL_MaxTimeInState"

@@ -153,7 +153,7 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 {
     //uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 	// Write byte into UART ...
-	HAL_UART_Transmit(&huart2, (uint8_t*)u8Datas, (uint16_t)u32DataLen, 500);
+	HAL_UART_Transmit_IT(&huart2, (uint8_t*)u8Datas, (uint16_t)u32DataLen);
 }
 
 

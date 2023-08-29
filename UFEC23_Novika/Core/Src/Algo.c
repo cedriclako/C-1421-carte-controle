@@ -80,7 +80,7 @@ void Algo_Init(void const * argument)
 	ESPMANAGER_Init();
 	Particle_Init();
 
-/*
+
 	// Print all parameters into the debug file
 	for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
 	{
@@ -94,7 +94,7 @@ void Algo_Init(void const * argument)
 	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)", pParamItem->szKey, (int)s32Value, (int)pParamItem->uType.sInt32.s32Default, (int)pParamItem->uType.sInt32.s32Min, (int)pParamItem->uType.sInt32.s32Max);
 	  printf(tmp);
 	}
-*/
+
 
     for(;;)
     {
@@ -170,6 +170,10 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 		if(Algo_adjust_steppers_position(stove))
 		{
+			stove->sPrimary.i8aperturePosSteps = RANGE(PF_PRIMARY_MINIMUM_OPENING,stove->sPrimary.i8apertureCmdSteps,PF_PRIMARY_FULL_OPEN);
+			stove->sGrill.i8aperturePosSteps = RANGE(PF_GRILL_MINIMUM_OPENING,stove->sGrill.i8apertureCmdSteps,PF_GRILL_FULL_OPEN);
+			stove->sSecondary.i8aperturePosSteps = RANGE(PF_SECONDARY_MINIMUM_OPENING,stove->sSecondary.i8apertureCmdSteps,PF_SECONDARY_FULL_OPEN);
+
 			bStepperAdjustmentNeeded = false;
 			stove->u32TimeOfAdjustment_ms = u32CurrentTime_ms;
 		}
@@ -224,11 +228,11 @@ void Algo_stoveInit(Mobj *stove)
 //** STATE: ZEROING STEPPER **//
 static void Algo_zeroing_entry(Mobj *stove,const  PF_StateParam_t* sParams)
 {
-	stove->sPrimary.i8apertureSteps = 0;
+	stove->sPrimary.i8apertureCmdSteps = 0;
 	stove->sPrimary.fSecPerStep = 0;
-	stove->sGrill.i8apertureSteps = 0;
+	stove->sGrill.i8apertureCmdSteps = 0;
 	stove->sGrill.fSecPerStep = 0;
-	stove->sSecondary.i8apertureSteps = 0;
+	stove->sSecondary.i8apertureCmdSteps = 0;
 	stove->sSecondary.fSecPerStep = 0;
 	bStepperAdjustmentNeeded = true;
 }
@@ -272,11 +276,11 @@ static void Algo_reload_entry(Mobj* stove,const  PF_StateParam_t* sParams)
 {
 	stove->u32TimeSinceCombEntry_ms = 0;
 
-	stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+	stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
-	stove->sGrill.i8apertureSteps = sParams->sGrill.i32Max;
+	stove->sGrill.i8apertureCmdSteps = sParams->sGrill.i32Max;
 	stove->sGrill.fSecPerStep = 0; // force aperture
-	stove->sSecondary.i8apertureSteps = sParams->sSecondary.i32Max;
+	stove->sSecondary.i8apertureCmdSteps = sParams->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
 
@@ -303,11 +307,11 @@ static void Algo_tempRise_entry(Mobj* stove,const  PF_StateParam_t* sParams)
 {
 	stove->u32TimeSinceCombEntry_ms = 0;
 
-	stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+	stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
-	stove->sGrill.i8apertureSteps = sParams->sGrill.i32Max;
+	stove->sGrill.i8apertureCmdSteps = sParams->sGrill.i32Max;
 	stove->sGrill.fSecPerStep = 0; // force aperture
-	stove->sSecondary.i8apertureSteps = sParams->sSecondary.i32Max;
+	stove->sSecondary.i8apertureCmdSteps = sParams->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
 }
@@ -316,6 +320,13 @@ static void Algo_tempRise_action(Mobj* stove,const  PF_StateParam_t* sParams, ui
 {
 	static uint32_t u32TimeOfMajorCorr = 0;
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+
+	if((stove->bThermostatOn && stove->fBaffleTemp > sParams->sTemperature.fAbsMaxDiff) ||	//2023-08-11: if hot enough, go to comb states
+			(!stove->bThermostatOn && stove->fBaffleTemp > sParams->sTemperature.fTarget))
+	{
+		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		return;
+	}
 
 	// Case(s) we want to wait
 	if((u32TimeOfMajorCorr != 0 && (u32CurrentTime_ms - u32TimeOfMajorCorr < MINUTES(1))) || 	// We just made a correction
@@ -329,22 +340,23 @@ static void Algo_tempRise_action(Mobj* stove,const  PF_StateParam_t* sParams, ui
 		if((stove->sParticles->fparticles) > (P2F(sParams->sParticles.fTarget + sParams->sParticles.fAbsMaxDiff)) &&
 				(stove->fBaffleDeltaT > (P2F1DEC(sParams->sTempSlope.fTarget + sParams->sTempSlope.fTolerance))))
 		{
-			if(stove->sGrill.i8apertureSteps > 15)
+			if(stove->sGrill.i8apertureCmdSteps > 15)
 			{
-				stove->sGrill.i8apertureSteps /= 2;
+				stove->sGrill.i8apertureCmdSteps /= 2;
 				stove->sGrill.fSecPerStep = 0;
 			}
-			else if(stove->sGrill.i8apertureSteps > sParams->sGrill.i32Min)
+			else if(stove->sGrill.i8apertureCmdSteps > sParams->sGrill.i32Min)
 			{
-				stove->sGrill.i8apertureSteps = sParams->sGrill.i32Min;
+				stove->sGrill.i8apertureCmdSteps = sParams->sGrill.i32Min;
 				stove->sGrill.fSecPerStep = 0;
 			}
 			else
 			{
-				stove->sPrimary.i8apertureSteps = 75;
+				stove->sPrimary.i8apertureCmdSteps = 75;
 				stove->sPrimary.fSecPerStep = 0;
 				nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
 			}
+
 
 
 			bStepperAdjustmentNeeded = true;
@@ -355,14 +367,14 @@ static void Algo_tempRise_action(Mobj* stove,const  PF_StateParam_t* sParams, ui
 
 	if(motors_ready_for_req)
 	{
-		if(stove->sGrill.i8apertureSteps > sParams->sGrill.i32Min)
+		if(stove->sGrill.i8apertureCmdSteps > sParams->sGrill.i32Min)
 		{
-			stove->sGrill.i8apertureSteps--;
+			stove->sGrill.i8apertureCmdSteps--;
 			stove->sGrill.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
 		}else
 		{
 
-			if(stove->sPrimary.i8apertureSteps-- <= 75)
+			if(stove->sPrimary.i8apertureCmdSteps-- <= 75)
 			{
 				nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
 			}
@@ -380,16 +392,16 @@ static void Algo_tempRise_action(Mobj* stove,const  PF_StateParam_t* sParams, ui
 //** STATE: COMBUSTION LOW **//
 static void Algo_combLow_entry(Mobj *stove,const  PF_StateParam_t* sParams)
 {
-	stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+	stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
-	stove->sGrill.i8apertureSteps = sParams->sGrill.i32Max;
+	stove->sGrill.i8apertureCmdSteps = sParams->sGrill.i32Min;
 	stove->sGrill.fSecPerStep = 0; // force aperture
-	stove->sSecondary.i8apertureSteps = sParams->sSecondary.i32Max;
+	stove->sSecondary.i8apertureCmdSteps = sParams->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
 }
 
-static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
+static void Algo_combLow_action(Mobj* stove, const  PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms)
 {
 	static uint32_t u32MajorCorrectionTime_ms = 0;
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
@@ -401,9 +413,9 @@ static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 		{
 			if(u32MajorCorrectionTime_ms - u32CurrentTime_ms > SECONDS(30))
 			{
-				if(stove->sPrimary.i8apertureSteps *= 2 > sParams->sPrimary.i32Max)
+				if(stove->sPrimary.i8apertureCmdSteps *= 2 > sParams->sPrimary.i32Max)
 				{
-					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+					stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Max;
 				}
 				stove->sPrimary.fSecPerStep = 0; // force aperture
 				bStepperAdjustmentNeeded = true;
@@ -417,9 +429,9 @@ static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 		{
 			if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow))
 			{
-				if(stove->sPrimary.i8apertureSteps++ > sParams->sPrimary.i32Max)//Open by one step
+				if(stove->sPrimary.i8apertureCmdSteps++ > sParams->sPrimary.i32Max)//Open by one step
 				{
-					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Max;
+					stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Max;
 				}
 
 				if(stove->sParticles->u16stDev > sParams->sPartStdev.fTolerance)
@@ -440,9 +452,9 @@ static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 		{
 			if(motors_ready_for_req)
 			{
-				if(stove->sPrimary.i8apertureSteps-- < sParams->sPrimary.i32Min)//Close by one step
+				if(stove->sPrimary.i8apertureCmdSteps-- < sParams->sPrimary.i32Min)//Close by one step
 				{
-					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+					stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Min;
 				}
 
 				if(stove->sParticles->u16stDev > sParams->sPartStdev.fTolerance)
@@ -467,9 +479,9 @@ static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 		{
 			if(motors_ready_for_req || (stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow)) || (stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow)))
 			{
-				if(stove->sPrimary.i8apertureSteps-- < sParams->sPrimary.i32Min)
+				if(stove->sPrimary.i8apertureCmdSteps-- < sParams->sPrimary.i32Min)
 				{
-					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+					stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Min;
 				}
 
 				if(stove->sParticles->u16stDev > sParams->sPartStdev.fTolerance)
@@ -488,9 +500,9 @@ static void Algo_combLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 		{
 			if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow))
 			{
-				if(stove->sPrimary.i8apertureSteps-- < sParams->sPrimary.i32Min)
+				if(stove->sPrimary.i8apertureCmdSteps-- < sParams->sPrimary.i32Min)
 				{
-					stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+					stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Min;
 				}
 
 				if(stove->sParticles->u16stDev > sParams->sPartStdev.fTolerance)
@@ -551,9 +563,9 @@ static void Algo_coalLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 	}
 
 
-	if((stove->fBaffleTemp < P2F( sParams->sTemperature.fTarget)) && stove->sGrill.i8apertureSteps != sParams->sGrill.i32Max)
+	if((stove->fBaffleTemp < P2F( sParams->sTemperature.fTarget)) && stove->sGrill.i8apertureCmdSteps != sParams->sGrill.i32Max)
 	{
-		stove->sGrill.i8apertureSteps = sParams->sGrill.i32Max;
+		stove->sGrill.i8apertureCmdSteps = sParams->sGrill.i32Max;
 		stove->sGrill.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
 
@@ -565,17 +577,17 @@ static void Algo_coalLow_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 		//TODO: Regarder après avoir ouvert la grille, temp et particules++ --> ****(en tout temps pour fumée)si remontée, on retourne en comb
 	//Ça pourrait être le entry action, mettre des thresholds temp, parts
 													// FreeParam1 used as container (see ParamFile.c)
-	if(u32CurrentTime_ms - stove->u32TimeOfAdjustment_ms > MINUTES(sParams->i32FreeParam1) && (stove->sPrimary.i8apertureSteps != sParams->sPrimary.i32Min))
+	if(u32CurrentTime_ms - stove->u32TimeOfAdjustment_ms > MINUTES(sParams->i32FreeParam1) && (stove->sPrimary.i8apertureCmdSteps != sParams->sPrimary.i32Min))
 	{
-		stove->sPrimary.i8apertureSteps = sParams->sPrimary.i32Min;
+		stove->sPrimary.i8apertureCmdSteps = sParams->sPrimary.i32Min;
 		stove->sPrimary.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
 
 	}
 													// FreeParam2 used as container (see ParamFile.c)
-	if(u32CurrentTime_ms - stove->u32TimeOfAdjustment_ms > MINUTES(sParams->i32FreeParam2) && (stove->sSecondary.i8apertureSteps != sParams->sSecondary.i32Min))
+	if(u32CurrentTime_ms - stove->u32TimeOfAdjustment_ms > MINUTES(sParams->i32FreeParam2) && (stove->sSecondary.i8apertureCmdSteps != sParams->sSecondary.i32Min))
 	{
-		stove->sSecondary.i8apertureSteps = sParams->sSecondary.i32Min;
+		stove->sSecondary.i8apertureCmdSteps = sParams->sSecondary.i32Min;
 		stove->sSecondary.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
 
@@ -607,15 +619,15 @@ static void Algo_manual_action(Mobj* stove,const  PF_StateParam_t* sParams, uint
 		return;
 	}
 
-	if(stove->sPrimary.i8apertureSteps != sManParam->s32ManualPrimary ||
-			stove->sGrill.i8apertureSteps != sManParam->s32ManualGrill ||
-			stove->sSecondary.i8apertureSteps != sManParam->s32ManualSecondary)
+	if(stove->sPrimary.i8apertureCmdSteps != sManParam->s32ManualPrimary ||
+			stove->sGrill.i8apertureCmdSteps != sManParam->s32ManualGrill ||
+			stove->sSecondary.i8apertureCmdSteps != sManParam->s32ManualSecondary)
 	{
-		stove->sPrimary.i8apertureSteps = sManParam->s32ManualPrimary;
+		stove->sPrimary.i8apertureCmdSteps = sManParam->s32ManualPrimary;
 		stove->sPrimary.fSecPerStep = 0; // force aperture
-		stove->sGrill.i8apertureSteps = sManParam->s32ManualGrill;
+		stove->sGrill.i8apertureCmdSteps = sManParam->s32ManualGrill;
 		stove->sGrill.fSecPerStep = 0; // force aperture
-		stove->sSecondary.i8apertureSteps = sManParam->s32ManualSecondary;
+		stove->sSecondary.i8apertureCmdSteps = sManParam->s32ManualSecondary;
 		stove->sSecondary.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
 	}
@@ -685,14 +697,15 @@ bool Algo_adjust_steppers_position(Mobj *stove)
 {
 	uint8_t cmd[NUMBER_OF_STEPPER_CMDS] =
 	{
-		stove->sPrimary.i8apertureSteps,
+		stove->sPrimary.i8apertureCmdSteps,
 		(uint8_t)(stove->sPrimary.fSecPerStep*10),
-		stove->sGrill.i8apertureSteps,
+		stove->sGrill.i8apertureCmdSteps,
 		(uint8_t)(stove->sGrill.fSecPerStep*10),
-		stove->sSecondary.i8apertureSteps,
+		stove->sSecondary.i8apertureCmdSteps,
 		(uint8_t)(stove->sSecondary.fSecPerStep*10)
 
 	};
+
 	if(!xMessageBufferSend(MotorControlsHandle,cmd,NUMBER_OF_STEPPER_CMDS,0))
 	{
 		return false;

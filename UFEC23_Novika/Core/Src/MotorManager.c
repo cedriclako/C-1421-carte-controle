@@ -25,7 +25,7 @@
 #define Step1_2_3_SLEEP() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_SET);
 #define Step1_2_3_WAKE() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_RESET);
 
-#define STEP_PERIOD 10
+#define STEP_PERIOD 1
 
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
@@ -75,8 +75,12 @@ void Motor_task(void const * argument)
 
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
-
+#if NOVIKA_SETUP
+			  motor[i].u8SetPoint = 2*MIN(u8cmd_buf[2*i], motor->u8MaxValue);
+#else
 			  motor[i].u8SetPoint = MIN(u8cmd_buf[2*i], motor->u8MaxValue);
+#endif
+
 			  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1])/10;
 		  }
 	  }
@@ -223,7 +227,7 @@ void StepperToggleOneStep(StepObj * motor)
 {
 
 	HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_RESET);
-	osDelay(10);
+	osDelay(STEP_PERIOD);
 	HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_SET);
 	motor->u32LastMove_ms = osKernelSysTick();
 }

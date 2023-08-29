@@ -128,9 +128,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COL_P_TARGET, 			"", &m_sCoalLowParams.sParticles.fTarget, 					80, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_P_TOL, 				"", &m_sCoalLowParams.sParticles.fTolerance, 				30, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_P_ABS, 				"", &m_sCoalLowParams.sParticles.fAbsMaxDiff, 				1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_PS_TOL, 			"", &m_sCoalLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_PS_ABS, 			"", &m_sCoalLowParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
 #endif
+	PFL_INIT_SINT32(PFD_COL_PS_TOL, 			"", &m_sCoalLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		"", &m_sCoalLowParams.i32EntryWaitTimeSeconds, 				0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			"", &m_sCoalLowParams.i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sCoalLowParams.i32MaximumTimeInStateMinutes, 		20, 		0, 		20000),
@@ -152,7 +152,6 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COH_P_TARGET, 			"", &m_sCoalHighParams.sParticles.fTarget, 					80, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_P_TOL, 				"", &m_sCoalHighParams.sParticles.fTolerance, 				30, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_P_ABS, 				"", &m_sCoalHighParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_PS_TOL, 			"", &m_sCoalHighParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_PS_ABS, 			"", &m_sCoalHighParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
 #endif
 	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		"", &m_sCoalHighParams.i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
