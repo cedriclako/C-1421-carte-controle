@@ -12,4 +12,12 @@
 #define FWCONFIG_MDNS_DESCRIPTION "sbi-iot-svr"
 #define FWCONFIG_MDNS_SERVICENAME "sbi-iot-stove-svr"
 
+// Options
+#define FWCONFIG_SDCARD_ISACTIVE (1)
+#define FWCONFIG_SDCARD_ROOTPATH "/sdcard"
+
+// SPIFF
+#define FWCONFIG_SPIFF_ROOTPATH "/spiffs"
+#define FWCONFIG_SPIFF_PARTITION "storage"
+
 #endif

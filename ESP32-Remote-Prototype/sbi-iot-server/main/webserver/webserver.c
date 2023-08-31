@@ -10,9 +10,11 @@
 #include "esp_ota_ops.h"
 #include "cJSON.h"
 #include "freertos/FreeRTOS.h"
-
+#include "stm32-process.h"
+#include "stm32-protocol.h"
 #include "event.h"
 #include "webserver.h"
+#include "hardwaregpio.h"
 #include "../espnowprocess.h"
 #include "nvsjson.h"
 #include "../settings.h"
@@ -20,6 +22,7 @@
 #include "../fwconfig.h"
 #include "apiurl.h"
 #include "../uartbridge/stovemb.h"
+#include "../uartbridge/uartbridge.h"
 
 #define TAG "webserver"
 
@@ -33,7 +36,8 @@ static esp_err_t file_get_handler(httpd_req_t *req);
 static esp_err_t file_post_handler(httpd_req_t *req);
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filename);
 
-static esp_err_t file_otauploadpost_handler(httpd_req_t *req);
+static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req);
+static esp_err_t file_postotauploadSTM32_handler(httpd_req_t *req);
 
 static const EF_SFile* GetFile(const char* strFilename);
 
@@ -84,10 +88,19 @@ static const httpd_uri_t m_sHttpActionPost = {
     .user_ctx  = ""
 };
 
-static const httpd_uri_t m_sHttpOTAUploadPost = {
-    .uri       = "/ota/upload",
+static const httpd_uri_t m_sHttpOTAUploadESP32Post = {
+    .uri       = "/ota/upload_esp32",
     .method    = HTTP_POST,
-    .handler   = file_otauploadpost_handler,
+    .handler   = file_postotauploadESP32_handler,
+    /* Let's pass response string in user
+     * context to demonstrate it's usage */
+    .user_ctx  = ""
+};
+
+static const httpd_uri_t m_sHttpOTAUploadSTM32Post = {
+    .uri       = "/ota/upload_stm32",
+    .method    = HTTP_POST,
+    .handler   = file_postotauploadSTM32_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = ""
@@ -113,7 +126,8 @@ void WEBSERVER_Init()
         httpd_register_uri_handler(server, &m_sHttpPostAPI);
         httpd_register_uri_handler(server, &m_sHttpUI);
         // return server;
-        httpd_register_uri_handler(server, &m_sHttpOTAUploadPost);
+        httpd_register_uri_handler(server, &m_sHttpOTAUploadESP32Post);
+        httpd_register_uri_handler(server, &m_sHttpOTAUploadSTM32Post);
     }
 }
 
@@ -214,7 +228,9 @@ static esp_err_t api_get_handler(httpd_req_t *req)
     //ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
     char szError[128+1] = {0,};
     char* pExportJSON = NULL;
-
+    
+    httpd_resp_set_type(req, "application/json");
+    
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {
         pExportJSON = NVSJSON_ExportJSON(&g_sSettingHandle);
@@ -526,7 +542,7 @@ static char* GetLiveData()
     cJSON* pRemote = cJSON_CreateObject();
     cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.fTempCurrentC));
     cJSON_AddItemToObject(pRemote, "tempC_sp", cJSON_CreateNumber(pMemBlock->sRemoteData.sTempSetpoint.temp));
-    cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber(pMemBlock->sRemoteData.u8FanSpeedCurr));
+    cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber((int)pMemBlock->sRemoteData.eFanSpeedCurr));
     const TickType_t ttLastCommTicks = xTaskGetTickCount() - pMemBlock->sRemoteData.ttLastCommunicationTicks;
     cJSON_AddItemToObject(pRemote, "lastcomm_ms", cJSON_CreateNumber(pdTICKS_TO_MS(ttLastCommTicks)));
 
@@ -582,9 +598,9 @@ static const char* GetESPChipId(esp_chip_model_t eChipid)
     return "";
 }
 
-static esp_err_t file_otauploadpost_handler(httpd_req_t *req)
+static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req)
 {
-    ESP_LOGI(TAG, "file_otauploadpost_handler / uri: %s", req->uri);
+    ESP_LOGI(TAG, "file_postotauploadESP32_handler / uri: %s", req->uri);
 
     const esp_partition_t *configured = esp_ota_get_boot_partition();
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -620,7 +636,7 @@ static esp_err_t file_otauploadpost_handler(httpd_req_t *req)
 
     while(n > 0)
     {
-        ESP_LOGI(TAG, "file_otauploadpost_handler / receiving: %d bytes", n);
+        ESP_LOGI(TAG, "file_postotauploadESP32_handler / receiving: %d bytes", n);
 
         err = esp_ota_write( update_handle, (const void *)m_u8Buffers, n);
         if (err != ESP_OK)
@@ -665,4 +681,81 @@ static esp_err_t file_otauploadpost_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid image");
     return ESP_FAIL;
+}
+
+
+static esp_err_t file_postotauploadSTM32_handler(httpd_req_t *req)
+{
+    esp_err_t err = ESP_FAIL;
+    const char* szError = NULL;
+
+    FILE* flash_file = NULL;
+
+    httpd_resp_set_type(req, "application/json");
+    const char* filename = FWCONFIG_SPIFF_ROOTPATH"/stm32.bin";
+
+    ESP_LOGI(TAG, "file_postotauploadSTM32_handler / uri: %s, filename: %s", req->uri, filename);
+
+    // Stop the UART bridge
+    UARTBRIDGE_SetSilenceMode(true);
+
+    // Prepare the STM32
+    flash_file = fopen(filename, "w");
+    if (flash_file == NULL)
+    {
+        szError = "Unable to open file for writing operation";
+        goto ERROR;
+    }
+
+    int binary_file_length = 0;
+    int n = 0;
+    
+    do
+    {
+        n = httpd_req_recv(req, (char*)m_u8Buffers, HTTPSERVER_BUFFERSIZE);
+        if (n == 0) {
+            break;
+        }
+        else if (n < 0) {
+            /* Respond with 500 Internal Server Error */
+            szError = "Failed to receive";
+            goto ERROR;
+        }
+        fwrite (m_u8Buffers , sizeof(uint8_t), n, flash_file);
+        ESP_LOGI(TAG, "file_postotauploadSTM32_handler / receiving: %d bytes", n);
+
+        binary_file_length += n;
+    }
+    while (n > 0);
+
+    // Initialize upload
+    STM32PROTOCOL_SContext sContext;
+    STM32PROTOCOL_SConfig sConfig = STM32PROTOCOL_SCONFIG_INIT;
+    sConfig.bInitGPIO = true;
+    sConfig.reset_pin = HWGPIO_STM32_RESET_PIN;
+    sConfig.boot0_pin = HWGPIO_STM32_BOOT0_PIN;
+
+    sConfig.uart_port = HWGPIO_BRIDGEUART_PORT_NUM;
+
+    STM32PROTOCOL_Init(&sContext, &sConfig);
+
+    if (STM32PROCESS_FlashSTM(&sContext, filename) != ESP_OK)
+    {
+        szError = "Unable to flash";
+        goto ERROR;
+    }
+
+    err = ESP_OK;
+    goto END;
+    ERROR:
+    err = ESP_FAIL;
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, ((szError != NULL) ? szError : "Unknown error"));
+    END:
+    if (flash_file != NULL)
+        fclose(flash_file);
+
+    httpd_resp_set_hdr(req, "Connection", "close");
+    // Restore the UART bridge.
+    UARTBRIDGE_SetSilenceMode(false);
+    return err;
 }

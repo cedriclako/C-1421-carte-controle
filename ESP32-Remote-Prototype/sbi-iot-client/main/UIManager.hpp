@@ -1,7 +1,7 @@
 #ifndef _UIMANAGER_H_
 #define _UIMANAGER_H_
 
-#include "UI/CommonUI.h"
+#include "UI/CommonUI.hpp"
 
 #ifdef __cplusplus
 extern "C" {

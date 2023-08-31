@@ -22,7 +22,10 @@ typedef enum
 
 typedef struct 
 {
+    // State
     bool bIsConnected;
+
+    bool bIsSilentMode;
 
     // Connection 
     TickType_t ttLastCommTicks;
@@ -53,6 +56,7 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
+static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint16_t u16PayloadLen);
 
 // Event loops
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
@@ -95,6 +99,9 @@ void UARTBRIDGE_Init()
 {
     STOVEMB_Init();
 
+    // Silence mode?
+    m_sStateMachine.bIsSilentMode = false;
+
     // Reset communication
     m_sStateMachine.bIsConnected = false;
     m_sStateMachine.ttLastCommTicks = 0;
@@ -113,15 +120,22 @@ void UARTBRIDGE_Init()
     esp_event_handler_register_with(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, RequestConfigWriteEvent, NULL);
 }
 
+void UARTBRIDGE_SetSilenceMode(bool bIsSilent)
+{
+    m_sStateMachine.bIsSilentMode = bIsSilent;
+}
+
 void UARTBRIDGE_Handler()
 {
     // Read data from the UART
-    uint8_t u8UARTDriverBuffers[128];    
-    uint8_t dbg[128];
-    int len = 0;
-    while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 0)) > 0)
+    if (!m_sStateMachine.bIsSilentMode)
     {
-        UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8UARTDriverBuffers, len);
+        uint8_t u8UARTDriverBuffers[128];
+        int len = 0;
+        while ((len = uart_read_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8UARTDriverBuffers, sizeof(u8UARTDriverBuffers), 0)) > 0)
+        {
+            UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder, u8UARTDriverBuffers, len);
+        }
     }
 
     ManageServerConnection();
@@ -145,7 +159,8 @@ static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
+    if (!m_sStateMachine.bIsSilentMode)
+        uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 }
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
@@ -254,12 +269,12 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 break;
             }
 
-            UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
+            const UFEC23ENDEC_C2SGetParameter sC2SReqParameterGet = 
             {
                 .eIterateOp = UFEC23ENDEC_EITERATEOP_Next
             };
             const int32_t n = UFEC23ENDEC_C2SGetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
-            UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
+            SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_S2CSetParameterResp:
@@ -327,11 +342,6 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
     ESP_LOGE(TAG, "Dropped frame: %s", szReason);
 }
 
-void UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint16_t u16PayloadLen)
-{
-    UARTPROTOCOLENC_Send(&m_sHandleEncoder, (uint8_t)eFrameID, u8Payloads, u16PayloadLen);
-}
-
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ESP_LOGI(TAG, "RequestConfigReloadEvent");
@@ -371,7 +381,7 @@ static void ManageServerConnection()
     {
         const UFEC23ENDEC_A2AReqPingAlive a2aReqPinAlive = { .u32Ping = m_sStateMachine.u32PingCount++ };
         const int32_t s32n = UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &a2aReqPinAlive);
-        UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, m_u8UARTSendProtocols, s32n);
+        SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, m_u8UARTSendProtocols, s32n);
         m_sStateMachine.ttLastKeepAliveSent = xTaskGetTickCount(); 
         // ESP_LOGI(TAG, "Sending frame A2AReqPingAlive");
     }
@@ -382,19 +392,23 @@ static void ServerConnected()
     // Connected ...
     ESP_LOGI(TAG, "Server Connected");
 
+    STOVEMB_Take(portMAX_DELAY);
     STOVEMB_GetMemBlock()->bIsStoveConnectedAndReady = true;
+    STOVEMB_Give();
 
     // Send some requests ...
-    // UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
-    //UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+    // SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
+    //SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
     
     // Start downloading parameters
     ProcParameterDownload();
 }
 
 static void ServerDisconnected()
-{   
+{       
+    STOVEMB_Take(portMAX_DELAY);
     STOVEMB_GetMemBlock()->bIsStoveConnectedAndReady = false;
+    STOVEMB_Give();
 
     // Disconnected ...
     ESP_LOGI(TAG, "Server disconnected");
@@ -411,7 +425,7 @@ static bool SendSetParameter(const STOVEMB_SParameterEntry* psParamEntry)
         return false;
         
     ESP_LOGI(TAG, "Parameter upload, key: %s", psParamEntry->sEntry.szKey);
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SSetParameter, m_u8UARTSendProtocols, n);
+    SendFrame(UFEC23PROTOCOL_FRAMEID_C2SSetParameter, m_u8UARTSendProtocols, n);
     return true;
 }
 
@@ -469,7 +483,7 @@ static bool ProcParameterDownload()
     STOVEMB_Give();
 
     const int32_t n = UFEC23ENDEC_C2SGetParameterEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &sC2SReqParameterGet);
-    UARTBRIDGE_SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
+    SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetParameter, m_u8UARTSendProtocols, n);
     return true;
 }
 
@@ -509,4 +523,9 @@ static bool ProcParameterUpload()
     m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_Uploading;
     m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
     return true;
+}
+
+static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint16_t u16PayloadLen)
+{
+    UARTPROTOCOLENC_Send(&m_sHandleEncoder, (uint8_t)eFrameID, u8Payloads, u16PayloadLen);
 }

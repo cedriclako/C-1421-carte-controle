@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "main.h": "c",
+        "fwconfig.h": "c",
+        "apiurl.h": "c",
+        "webserver.h": "c",
+        "hardwaregpio.h": "c"
+    },
+    "idf.adapterTargetName": "esp32"
+}

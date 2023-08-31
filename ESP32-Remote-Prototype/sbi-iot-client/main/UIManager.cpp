@@ -1,28 +1,31 @@
-#include "UIManager.h"
+#include "UIManager.hpp"
 #include "Global.h"
-#include "UI/MainUI.h"
-#include "UI/PoweringOnUI.h"
-#include "UI/SettingsUI.h"
+#include "UI/ControlViewUI.hpp"
+#include "UI/SettingsUI.hpp"
+#include "UI/PoweringOnViewUI.hpp"
+#include "UI/HomeViewUI.hpp"
 
 #define TAG "UIManager"
 
 static void SwitchUI(const COMMONUI_SContext* sContext, ESCREEN eScreen);
 
-static MAINUI_SHandle m_sMainUIHandle; 
-static MAINUI_SArgument m_sMainUIArgumentRO         = { .bIsUserModeActive = false };
-static MAINUI_SArgument m_sMainUIArgumentUserMode   = { .bIsUserModeActive = true };
+static CONTROLVIEWUI_SHandle m_sMainUIHandle;
+static SETTINGSUI_SHandle m_sSettingsUIHandle;
+
+static CONTROLVIEWUI_SArgument m_sMainUIArgumentUserMode   = { .bIsUserModeActive = true };
 
 static COMMONUI_SUIManagerContext m_sUIManagerCtx = { .ptrSwitchUI = SwitchUI };
 
 static COMMONUI_SContext m_sUIs[ESCREEN_Count] =
 {
     // Main
-    [ESCREEN_HomeReadOnly] = { .szName = "MainReadOnly", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentRO },
-    [ESCREEN_HomeUsermode] = { .szName = "MainUsermode", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &MAINUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    [ESCREEN_ControlViewUI]          = { .szName = "ControlViewUI", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sMainUIHandle, .psConfig = &CONTROLVIEWUI_g_sConfig, .pvdArgument = &m_sMainUIArgumentUserMode },
+    // Home off
+    [ESCREEN_HomeViewUI]             = { .szName = "HomeViewUI", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &HOMEVIEWUI_g_sConfig },
     // Powering on
-    [ESCREEN_PoweringOn]   = { .szName = "PoweringOn", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &POWERINGONUI_g_sConfig },
+    [ESCREEN_PoweringOn]            = { .szName = "PoweringOn", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &POWERINGONVIEWUI_g_sConfig },
     // Settings
-    [ESCREEN_Settings]     = { .szName = "Settings", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = NULL, .psConfig = &SETTINGSUI_g_sConfig }
+    [ESCREEN_Settings]              = { .szName = "Settings", .pUIManagerCtx = &m_sUIManagerCtx, .pHandle = &m_sSettingsUIHandle, .psConfig = &SETTINGSUI_g_sConfig }
 };
 
 static ESCREEN m_eScreen = ESCREEN_Invalid;
@@ -32,6 +35,15 @@ void UIMANAGER_Init()
 {
     ESP_LOGI(TAG, "CreateCanvas");
     G_g_CanvasResult.createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    for(int i = 0; i < ESCREEN_Count; i++)
+    {
+        COMMONUI_SContext* pContext = &m_sUIs[i];
+        if (pContext->psConfig != NULL && pContext->psConfig->ptrInit != NULL)
+        {
+            pContext->psConfig->ptrInit(pContext);
+        }
+    }
 }
 
 void UIMANAGER_SwitchTo(ESCREEN eScreen)
@@ -41,7 +53,7 @@ void UIMANAGER_SwitchTo(ESCREEN eScreen)
         return;
 
     G_g_CanvasResult.fillCanvas(TFT_BLACK);
-    if (m_bIsFirstLoad) 
+    if (m_bIsFirstLoad)
     {
         M5.EPD.Clear(true);
         m_bIsFirstLoad = false;

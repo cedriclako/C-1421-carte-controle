@@ -37,11 +37,14 @@ message S2CGetStatusResp
 	message StoveState
 	{
 		SBI.iot.common.FanspeedSet fan_speed_set = 1;
-		SBI.iot.common.FanspeedBoundary fan_speed_boundary = 2;
+		reserved 2;
 		SBI.iot.common.TemperatureSetPoint remote_temperature_setp = 3;
 		reserved 4;
 		reserved 5;
 		SBI.iot.common.DateTime datetime = 6;
+		string message_line1 = 7;
+		string message_line2 = 8;
+		string message_line3 = 9;
 	}
 
 	DeviceInfo stove_info = 1;	// Represent the stove itself

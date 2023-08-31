@@ -148,15 +148,10 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
     SBI_iot_S2CGetStatusResp resp = {0};
     resp.has_stove_state = true;
 
-    resp.stove_state.has_fan_speed_boundary = true;
-    resp.stove_state.fan_speed_boundary.min = 1;
-    resp.stove_state.fan_speed_boundary.max = 4;
-
     if (pMB->sRemoteData.bHasFanSpeed)
     {
         resp.stove_state.has_fan_speed_set = true;
-        resp.stove_state.fan_speed_set.is_automatic = pMB->sRemoteData.bIsFanSpeedAutomatic;
-        resp.stove_state.fan_speed_set.curr = pMB->sRemoteData.u8FanSpeedCurr;
+        resp.stove_state.fan_speed_set.curr = pMB->sRemoteData.eFanSpeedCurr;
     }
 
     // These values comes from the remote
@@ -219,14 +214,13 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
     if (pC2SChangeSettingSP->has_fan_speed_set)
     {
         pMB->sRemoteData.bHasFanSpeed = true;
-        pMB->sRemoteData.bIsFanSpeedAutomatic = pC2SChangeSettingSP->fan_speed_set.is_automatic;
-        uint8_t u8NewFanSpeedValue = (uint8_t)pC2SChangeSettingSP->fan_speed_set.curr;
-        if (u8NewFanSpeedValue < 1)
-            u8NewFanSpeedValue = 1;
-        else if (u8NewFanSpeedValue > 4)
-            u8NewFanSpeedValue = 4;
-        pMB->sRemoteData.u8FanSpeedCurr = u8NewFanSpeedValue;
-        ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %d, set: %d", pC2SChangeSettingSP->fan_speed_set.curr, u8NewFanSpeedValue);
+        int32_t s32CurrFanSpeedValue = (int32_t)pC2SChangeSettingSP->fan_speed_set.curr;
+        if (s32CurrFanSpeedValue < (int32_t)SBI_iot_common_EFANSPEED_Off)
+            s32CurrFanSpeedValue = (int32_t)SBI_iot_common_EFANSPEED_Off;
+        else if (s32CurrFanSpeedValue >= (int32_t)SBI_iot_common_EFANSPEED_Count)
+            s32CurrFanSpeedValue = (int32_t)SBI_iot_common_EFANSPEED_Count;
+        pMB->sRemoteData.eFanSpeedCurr = (SBI_iot_common_EFANSPEED)s32CurrFanSpeedValue;
+        ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %d, set: %d", pC2SChangeSettingSP->fan_speed_set.curr, s32CurrFanSpeedValue);
     }
 
     ESP_LOGI(TAG, "transaction id: %d", pInCmd->transaction_id);

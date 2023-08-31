@@ -1,1 +1,5 @@
 # SBI.iot.MiscStoveState.state  	max_size:25
+
+SBI.iot.S2CGetStatusResp.StoveState.message_line1		max_size:25
+SBI.iot.S2CGetStatusResp.StoveState.message_line2		max_size:25
+SBI.iot.S2CGetStatusResp.StoveState.message_line3		max_size:25

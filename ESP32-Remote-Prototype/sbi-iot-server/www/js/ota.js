@@ -5,7 +5,7 @@ function idBtnUpload_Click()
 	try {
 		console.log("idBtnUpload_Click");
 		var xhr = new XMLHttpRequest();
-		xhr.open('POST', '/ota/upload', true);
+		xhr.open('POST', '/ota/upload_esp32', true);
 
 		let firmwareFile = document.getElementById("idFile").files[0];
 

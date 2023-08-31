@@ -2,16 +2,18 @@ syntax = "proto3";
 
 package SBI.iot.common;
 
-message FanspeedSet
+enum EFANSPEED
 {
-    bool is_automatic = 1;
-    uint32 curr = 2;
+    Off = 0;
+	Min = 1;
+	Max = 2;
+
+	Count = 3; // How many possible fan speed there are
 }
 
-message FanspeedBoundary
+message FanspeedSet
 {
-    uint32 min = 1;
-    uint32 max = 2;
+	EFANSPEED curr = 1;
 }
 
 enum ETEMPERATUREUNIT
