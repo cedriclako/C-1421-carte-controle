@@ -45,8 +45,8 @@ typedef struct
 } SBridgeState;
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
-extern UART_HandleTypeDef huart2;
-extern DMA_HandleTypeDef hdma_usart2_rx;
+extern UART_HandleTypeDef huart1;
+extern DMA_HandleTypeDef hdma_usart1_rx;
 // =======
 // UART protocol encoder buffers
 #define MAX_RX_DMA_SIZE 1024
@@ -108,8 +108,8 @@ void ESPMANAGER_Init()
     // Decoder
     UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
 
-	HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
-	HAL_UART_RegisterCallback(&huart2, HAL_UART_ERROR_CB_ID, UARTErrorCb);
+	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
+	HAL_UART_RegisterCallback(&huart1, HAL_UART_ERROR_CB_ID, UARTErrorCb);
 }
 
 void ESPMANAGER_Task(void)
@@ -119,10 +119,10 @@ void ESPMANAGER_Task(void)
 		if (m_bNeedRestartDMA)
 		{
 			m_bNeedRestartDMA = false;
-			HAL_UARTEx_ReceiveToIdle_DMA(&huart2, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
+			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
 		}
 
-		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart2_rx.Instance->CNDTR);
+		const uint16_t u16DMA_count = (uint16_t)(MAX_RX_DMA_SIZE - hdma_usart1_rx.Instance->CNDTR);
 
 		if(u16DMA_count > m_last_DMA_count)
 		{
@@ -153,7 +153,7 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 {
     //uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 	// Write byte into UART ...
-	HAL_UART_Transmit_IT(&huart2, (uint8_t*)u8Datas, (uint16_t)u32DataLen);
+	HAL_UART_Transmit_IT(&huart1, (uint8_t*)u8Datas, (uint16_t)u32DataLen);
 }
 
 

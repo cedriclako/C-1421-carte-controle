@@ -47,11 +47,7 @@ void Motor_task(void const * argument)
 {
 
 	Step1_2_3_WAKE();
-#if NOVIKA_SETUP
-	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,RESET);
-#else
-	HAL_GPIO_WritePin(Stepper_HalfStep_GPIO_Port,Stepper_HalfStep_Pin,SET);
-#endif
+
 	StepObj motor[NumberOfMotors] = {
 			STEPPER_INIT(PF_PRIMARY_MINIMUM_OPENING,PF_PRIMARY_FULL_OPEN, Step1_STEP_Pin, Step1_ENABLE_Pin, Step1_RESET_Pin, Step1_LowCurrent_Pin, Step1_DIR_Pin, Limit_switch1_Pin,
 					Step1_STEP_GPIO_Port, Step1_ENABLE_GPIO_Port, Step1_RESET_GPIO_Port, Step1_LowCurrent_GPIO_Port, Step1_DIR_GPIO_Port, Limit_switch1_GPIO_Port),

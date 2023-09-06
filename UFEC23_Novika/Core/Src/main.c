@@ -49,7 +49,7 @@ RTC_HandleTypeDef hrtc;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
-DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 osThreadId Algo_taskHandle;
 osThreadId MotorManagerHandle;
@@ -419,9 +419,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Channel6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+  /* DMA1_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
 }
 
@@ -445,30 +445,30 @@ static void MX_GPIO_Init(void)
                           |Step2_DIR_Pin|Step1_LowCurrent_Pin|Step2_STEP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, Step3_RESET_Pin|STATUS_LED1_Pin|Step3_ENABLE_Pin|Step2_RESET_Pin
+  HAL_GPIO_WritePin(GPIOC, Step3_RESET_Pin|AFK_Speed1_Pin|Step3_ENABLE_Pin|Step2_RESET_Pin
                           |Step2_ENABLE_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Buzzer_ON_Pin|AFK_Var_Pin|USB_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, Step3_DIR_Pin|Button_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, STATUS_LED2_Pin|Step3_DIR_Pin|Button_LED_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, Step3_LowCurrent_Pin|USB_ENABLE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, Step3_STEP_Pin|Step3_LowCurrent_Pin|Stepper_HalfStep_Pin|Step1_STEP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Step3_STEP_Pin|Safety_Out_Pin|Step1_STEP_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, Reset_Particles_Sensor_Pin|Step1_RESET_Pin|Step1_ENABLE_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(Step1_DIR_GPIO_Port, Step1_DIR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, Step1_RESET_Pin|Step1_ENABLE_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pins : Step2_LowCurrent_Pin Step3_RESET_Pin STATUS_LED1_Pin uc_Stepper_Sleep_Pin
+  /*Configure GPIO pins : Step2_LowCurrent_Pin Step3_RESET_Pin AFK_Speed1_Pin uc_Stepper_Sleep_Pin
                            Step3_ENABLE_Pin SPEED2_COIL_Pin SPEED3_COIL_Pin Step2_DIR_Pin
-                           Step1_LowCurrent_Pin Step2_STEP_Pin Step2_RESET_Pin Step2_ENABLE_Pin */
-  GPIO_InitStruct.Pin = Step2_LowCurrent_Pin|Step3_RESET_Pin|STATUS_LED1_Pin|uc_Stepper_Sleep_Pin
+                           Step1_LowCurrent_Pin Step2_RESET_Pin Step2_ENABLE_Pin */
+  GPIO_InitStruct.Pin = Step2_LowCurrent_Pin|Step3_RESET_Pin|AFK_Speed1_Pin|uc_Stepper_Sleep_Pin
                           |Step3_ENABLE_Pin|SPEED2_COIL_Pin|SPEED3_COIL_Pin|Step2_DIR_Pin
-                          |Step1_LowCurrent_Pin|Step2_STEP_Pin|Step2_RESET_Pin|Step2_ENABLE_Pin;
+                          |Step1_LowCurrent_Pin|Step2_RESET_Pin|Step2_ENABLE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -480,20 +480,24 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Buzzer_ON_Pin STATUS_LED2_Pin Step3_DIR_Pin AFK_Var_Pin
-                           Button_LED_Pin USB_ENABLE_Pin */
-  GPIO_InitStruct.Pin = Buzzer_ON_Pin|STATUS_LED2_Pin|Step3_DIR_Pin|AFK_Var_Pin
-                          |Button_LED_Pin|USB_ENABLE_Pin;
+  /*Configure GPIO pins : FAN_Zero_crossing_Pin Limit_switch3_Pin */
+  GPIO_InitStruct.Pin = FAN_Zero_crossing_Pin|Limit_switch3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : Step3_DIR_Pin Step3_LowCurrent_Pin Button_LED_Pin USB_ENABLE_Pin */
+  GPIO_InitStruct.Pin = Step3_DIR_Pin|Step3_LowCurrent_Pin|Button_LED_Pin|USB_ENABLE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Limit_switch3_Pin */
-  GPIO_InitStruct.Pin = Limit_switch3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Limit_switch3_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : PA6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Limit_switch_Door_Pin Thermostat_Input_Pin Safety_ON_Pin Interlock_Input_Pin
                            Button_Input_Pin USB_Fault_Pin */
@@ -503,14 +507,26 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Step3_STEP_Pin Step3_LowCurrent_Pin Stepper_HalfStep_Pin Step1_STEP_Pin
-                           Step1_RESET_Pin Step1_ENABLE_Pin */
-  GPIO_InitStruct.Pin = Step3_STEP_Pin|Step3_LowCurrent_Pin|Stepper_HalfStep_Pin|Step1_STEP_Pin
-                          |Step1_RESET_Pin|Step1_ENABLE_Pin;
+  /*Configure GPIO pins : Step3_STEP_Pin Step1_STEP_Pin */
+  GPIO_InitStruct.Pin = Step3_STEP_Pin|Step1_STEP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : Safety_Out_Pin Reset_Particles_Sensor_Pin Step1_RESET_Pin Step1_ENABLE_Pin */
+  GPIO_InitStruct.Pin = Safety_Out_Pin|Reset_Particles_Sensor_Pin|Step1_RESET_Pin|Step1_ENABLE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Step2_STEP_Pin */
+  GPIO_InitStruct.Pin = Step2_STEP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(Step2_STEP_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Step1_DIR_Pin */
   GPIO_InitStruct.Pin = Step1_DIR_Pin;
