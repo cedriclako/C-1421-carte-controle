@@ -55,7 +55,7 @@ float Slope_compute(Slope * slope, unsigned int nbData) {
     readingIndex = slope->nbDataInDataStore - (nbDataToUse - slope->dataIndex);
   }
 
-  for (int32_t i = 0; i < nbDataToUse; i++) {
+  for (int32_t i = 1; i < nbDataToUse; i++) {
 
     sumX += i;
     sumY += slope->dataStore[readingIndex];

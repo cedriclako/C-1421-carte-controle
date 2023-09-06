@@ -1,4 +1,4 @@
-#include "algo.h"
+#include "ParamFile.h"
 #include "air_input.h"
 #include "slope.h"
 #include "cmsis_os.h"
@@ -12,25 +12,18 @@
 #include "MotorManager.h"
 #include "ParticlesManager.h"
 #include "Hmi.h"
-#include "ParamFile.h"
+#include "algo.h"
 
-typedef struct ParticlesParam{
-	int16_t TempRiseMax;
-	int16_t CombLowMax;
-	int16_t CombSuperLowMax;
-	int16_t FlameLossMax;
-	int16_t CoalMax;
-}ParticlesParam_t;
+
 
 #define ColdStoveTemp 900 //90F
+
 
 //Flame loss parameters:
 #define  RFlameLossB  500 // 50F Loss of temperature per R time to go in flame loss
 #define  RFlameLossR	 1400 // 140F Loss of temperature per R time to go in flame loss
 #define TRFlameLoss	   1 // 3 minutes time in minutes of data acquisition for R calculation
 
-// For debug purposes... Contains parameter modifications in ComputeParticleAdjustment
-float algo_mod[4] = {0.0,0.0,0.0,0.0}; //
 
 //state machine variable and initial values
 static State currentState = ZEROING_STEPPER;
@@ -40,7 +33,6 @@ bool fanPauseRequired = false;
 static AirInput primary = AirInput_init(PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN);
 static AirInput grill = AirInput_init(PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN);
 static AirInput secondary = AirInput_init(PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN);
-static int16_t sec_aperture;
 
 static Algo_DELState delLoadingEnd = ALGO_DEL_OFF;
 static Algo_DELState delFermeturePorte = ALGO_DEL_OFF;
@@ -57,6 +49,7 @@ static int frontTempDataStore[NB_DATA]; //Data for slope calculation
 static int baffleTempDataStore[NB_DATA];
 static int frontAccelDataStore[NB_DATA]; //Data for slope calculation
 static int baffleAccelDataStore[NB_DATA];
+static int lastBaffleTemp;
 
 
 static bool simulatorMode = false;
@@ -70,6 +63,7 @@ float Algo_slopeFrontTemp = 0.0;
 static uint32_t timeSinceStateEntry;
 static uint32_t TimeOfReloadRequest;
 static uint32_t TimeSinceEntryInCombLow = 0;
+
 
 //Novika parameters Kc=0.500, Ti=0.200, Td = 0.002 (pas utilisé)
 //Kp = Kc
@@ -92,7 +86,6 @@ static float computeSlopeBaffleTemp(unsigned int nbData);
 static float computeslopeFrontTemp(unsigned int nbData);
 void Algo_init();
 static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS);
-float get_crit(void);
 static void StateEntryControlAdjustment(uint8_t MinPrimary, uint8_t MaxPrimary,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
@@ -101,7 +94,6 @@ static void AirAdjustment(int adjustement, float secondPerStep,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary);
 
-static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit);
 
 void Algo_init() {
 
@@ -117,7 +109,7 @@ void Algo_init() {
   reloadingEvent = false;
   AirInput_forceAperture(&primary, PF_PRIMARY_CLOSED);
   AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
-  AirInput_forceAperture(&secondary, PF_SECONDARY_CLOSED);  //CR TODO: Choose what to do with Secondary
+  AirInput_forceAperture(&secondary, PF_SECONDARY_CLOSED);
   baffleTemperature = 0;
   frontTemperature = 0;
   thermostatRequest = false;
@@ -129,6 +121,7 @@ void Algo_init() {
   Slope_init(&slopeFrontTemp, frontTempDataStore, NB_DATA, SAMPLING_RATE);
   Slope_init(&accelFrontTemp, frontAccelDataStore, NB_DATA, SAMPLING_RATE);
 
+
 }
 
 static void manageStateMachine(uint32_t currentTime_ms) {
@@ -137,19 +130,20 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 	const PF_MotorOpeningsParam_t* pPrimaryMotorParam = PB_GetPrimaryMotorParam();
 	const PF_MotorOpeningsParam_t* pSecondaryMotorParam = PB_GetSecondaryMotorParam();
 	const PF_CombTempParam_t* pTemperatureParam = PB_GetTemperatureParam();
-	const PF_UsrParam* pParticlesParam = PB_GetParticlesParam();
+	const PF_UsrParam* pUserParam = PB_GetUserParam();
 
 	  State nextState = currentState;
-	  float dTbaffle;
-	  float dTavant;
 	  static int adjustement = 0;
 
 	  static State historyState = ZEROING_STEPPER;
-
+	  static ParticleAction action = WAIT;
 	  static uint32_t stateChangeTimeRef = 0;
 	  static uint32_t timeRefAutoMode = 0;
 	  static int targetTemperature = 0;
 	  static uint32_t Safetydebounce_ms = 0;
+	  static uint32_t partComeback_timer_ms = 0;
+	  float dTbaffle;
+	  float dTavant;
 
 	  //flameloss variable
 	  static uint32_t timer_flameloss = 0;
@@ -161,10 +155,11 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  const uint32_t SEC_PER_STEP_TEMP_RISE = 6;
 	  const uint32_t SEC_PER_STEP_COMB_LOW = 10;
-	  const uint32_t SEC_PER_STEP_COMB_HIGH = 6;
+	  const uint32_t SEC_PER_STEP_COMB_HIGH = 12;
 	  const uint32_t SEC_PER_STEP_COAL_HIGH = 12;
+	  float sec_per_step = 0.0;
 
-	  manageFans(Algo_getBaffleTemp(),pParticlesParam);
+	  manageFans(Algo_getBaffleTemp(),pUserParam);
 
 
 	  //calculate time used in the state transition.
@@ -178,10 +173,11 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 	  // TODO: la periode utilisée pour le calcule de la pente n'est pas définie
   //       dans le document
-  dTbaffle = computeSlopeBaffleTemp(5); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
-  	  	  	  	  	  	  	  	  	  // la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
+  dTbaffle = computeSlopeBaffleTemp(6); //�tait 300, selon ce que Novika utilise test du 2019-12-04.
 
-  dTavant = computeslopeFrontTemp(5);
+  dTbaffle = (float)(baffleTemperature-lastBaffleTemp)/50;// la d�riv� risque d'�tre sketch, une mesure de temp�rature /5 secondes si on
+
+  dTavant = computeslopeFrontTemp(6);
   int deltaTemperature = 0;
   /* Perform state's actions. */
   switch (currentState) {
@@ -197,7 +193,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		while(!AirInput_InPosition(&grill) || !AirInput_InPosition(&primary) || !AirInput_InPosition(&secondary))
 		{
 		};
-		//Particle_requestZero();
+		Particle_requestZero();
 		nextState = WAITING;
 		break;
     case WAITING:
@@ -221,7 +217,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		  //initPID(&TemperaturePID,Ki,Kd,Kp,20,-20); // pas utilisé
 		}else if(reloadingEvent && (!Algo_getInterlockRequest()))
 		{
-			Particle_requestZero();
+			//Particle_requestZero();
 			nextState = RELOAD_IGNITION;
 			reloadingEvent = false;
 		}
@@ -237,7 +233,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		if (((baffleTemperature > pTemperatureParam->IgnitionToTrise) && (timeSinceStateEntry >= MINUTES(1))) || (baffleTemperature > 10000)) {
 		nextState = TEMPERATURE_RISE;
 		reloadingEvent = false;
-		AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
+		//AirInput_forceAperture(&grill, PF_GRILL_CLOSED);
 		}
 		if(timeSinceStateEntry >= MINUTES(20))
 		{
@@ -273,17 +269,64 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 //		if((timeSinceStateEntry >= MINUTES(3)) ||  (baffleTemperature > targetTemperature)) //3minutes // changemenet 2 min 2021-12-03
 		//asservie seulement si on est depuis 3 minutes dans Temperature Rise ou qu'on a atteint 650 ou 660
 
-			if (TimeForStep >= (1 * SEC_PER_STEP_TEMP_RISE * 1000)) { // changer de 3 a 2 2021-12-03
-			  timeRefAutoMode = currentTime_ms;
+			if (TimeForStep >= (1 * SEC_PER_STEP_TEMP_RISE * 1000) && timeSinceStateEntry > MINUTES(pUserParam->s32StateEntryWaitTime)) { // changer de 3 a 2 2021-12-03
+				timeRefAutoMode = currentTime_ms;
 
-			adjustement = computeAjustement(targetTemperature, dTbaffle);
-			AirAdjustment(adjustement, (float)SEC_PER_STEP_TEMP_RISE,
-						 (uint8_t)pPrimaryMotorParam->MinTempRise, (uint8_t)pPrimaryMotorParam->MaxTempRise,
-						  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
-						  (uint8_t)pSecondaryMotorParam->MinTempRise, (uint8_t)pSecondaryMotorParam->MaxTempRise);
+				sec_per_step = (float)SEC_PER_STEP_TEMP_RISE;
+
+				if(PM_isPboard_absent())
+				{
+					adjustement = computeAjustement(targetTemperature, dTbaffle);
+					AirAdjustment(adjustement, sec_per_step,
+								 (uint8_t)pPrimaryMotorParam->MinTempRise, (uint8_t)pPrimaryMotorParam->MaxTempRise,
+								  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
+								  (uint8_t)pSecondaryMotorParam->MinTempRise, (uint8_t)pSecondaryMotorParam->MaxTempRise);
+
+				}else
+				{
+					action =  computeParticleRiseAdjustment(dTbaffle, currentTime_ms, baffleTemperature);
+					int grillAperture = Algo_getGrill();
+
+					switch(action)
+					{
+					case FAST_CLOSE:
+
+						if(grillAperture != 0)
+						{
+							grillAperture = (int)(grillAperture/2);
+							if(grillAperture < 15)
+							{
+								grillAperture = 0;
+							}
+							AirInput_forceAperture(&grill, grillAperture);
+						}else
+						{
+							AirInput_forceAperture(&primary, 75);
+						}
+						break;
+					case SLOW_CLOSE:
+						if(grillAperture < 15 && grillAperture != 0)
+						{
+							AirInput_forceAperture(&grill, 0);
+							break;
+						}
+						AirAdjustment(-1, sec_per_step,
+									 (uint8_t)pPrimaryMotorParam->MinTempRise, (uint8_t)pPrimaryMotorParam->MaxTempRise,
+									  (uint8_t)pGrillMotorParam->MinTempRise, (uint8_t)pGrillMotorParam->MaxTempRise,
+									  (uint8_t)pSecondaryMotorParam->MinTempRise, (uint8_t)pSecondaryMotorParam->MaxTempRise);
+
+					case WAIT:
+					default:
+						break;
+					}
+
+				}
+
+
 			}
-			timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
-			if ( timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature))
+			//timeInTemperatureRise = thermostatRequest ? MINUTES(10):MINUTES(7);
+			timeInTemperatureRise = MINUTES(1);
+			if ( (timeSinceStateEntry > timeInTemperatureRise && (baffleTemperature > targetTemperature)) || (Algo_getPrimary() < 75))
 			{
 				TimeSinceEntryInCombLow = 0;
 				nextState = thermostatRequest ? COMBUSTION_HIGH : COMBUSTION_LOW;
@@ -363,7 +406,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 
 
 			AirInput_forceAperture(&primary,  AirInput_getAperture(&primary));
-			AirInput_forceAperture(&grill,  AirInput_getAperture(&grill));
+			AirInput_forceAperture(&grill,  0);
 			AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCombLow);
 
 			StateEntryControlAdjustment(pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
@@ -383,40 +426,114 @@ static void manageStateMachine(uint32_t currentTime_ms) {
 		AirInput_forceAperture(&primary,PIDTrapPosition);
 #else
 
-			if (TimeForStep >= (1 * SEC_PER_STEP_COMB_LOW * 1000)
-					&& AirInput_InPosition(&grill)
+			if (AirInput_InPosition(&grill)
 					&& AirInput_InPosition(&primary)
 					&& AirInput_InPosition(&secondary)
 				  /*&& (timeSinceStateEntry >=MINUTES(2))*/ )
 			{
 
 				timeRefAutoMode = currentTime_ms;
-
-
-				//adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
-
-				// Adjustment based on particle value
 				bool stove_too_cold = false; // If all openings are maxed and temperature can't be brought over minimum value, go to comb_superlow
-				stove_too_cold = computeParticleAdjustment(dTavant, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms,pTemperatureParam->CombLowTarget);
+
+
+				if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
+					adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);
+					sec_per_step = (float)(SEC_PER_STEP_COMB_LOW);
+				}else{
+
+					bool closeGrill = false;
+					bool openGrill = false;
+					// Adjustment based on particle value
+					closeGrill = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step,
+							currentTime_ms,baffleTemperature/10,pTemperatureParam->CombLowTarget/10, &openGrill);
+
+
+
+					//closeGrill = computeParticleCombLowAdjustment(dTbaffle, currentTime_ms, baffleTemperature, pTemperatureParam->CombLowTarget, &action);
+					int grillAperture = Algo_getGrill();
+
+					if(openGrill)
+					{
+						if(grillAperture < 30)
+						{
+							grillAperture = 30;
+						}else
+						{
+							grillAperture *= 2;
+						}
+						AirInput_forceAperture(&grill, grillAperture);
+					}
+
+					if((closeGrill) && (grillAperture != 0) && (currentTime_ms > partComeback_timer_ms))
+					{
+						partComeback_timer_ms = currentTime_ms + 500;
+						AirInput_forceAperture(&grill, grillAperture - 1);
+					}
+/*
+					switch(action)
+					{
+					case WAIT:
+						break;
+					case VERY_SLOW_CLOSE:
+						adjustement = 1;
+						sec_per_step = (float)pUserParam->s32VslowClose/10;
+						break;
+					case SLOW_CLOSE:
+						adjustement = 1;
+						sec_per_step = (float)pUserParam->s32SlowClose/10;
+						break;
+					case FAST_CLOSE:
+						adjustement = 5;
+						sec_per_step = (float)pUserParam->s32FastClose/10;
+						break;
+					case SLOW_OPEN:
+						adjustement = 2;
+						sec_per_step = (float)pUserParam->s32SlowOpen/10;
+						break;
+					case FAST_OPEN:
+						adjustement = 5;
+						sec_per_step = (float)pUserParam->s32FastOpen/10;
+						break;
+					case INSTANT_OPEN:
+						if(grillAperture < 30)
+						{
+							grillAperture = 30;
+						}else
+						{
+							grillAperture *= 2;
+						}
+						AirInput_forceAperture(&grill, grillAperture);
+						adjustement = 0;
+						break;
+					default:
+						adjustement = 0;
+						break;
+
+					}*/
+
+				}
+				// Same adjustment function as in other states, but changed arguments
+				AirAdjustment(adjustement, sec_per_step,
+							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
+							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
+							pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+
 
 				if (((currentTime_ms >=(TimeSinceEntryInCombLow + MINUTES(30))) && (AirInput_getAperture(&primary) >= (pPrimaryMotorParam->MaxCombLow - 1))) || stove_too_cold){
 					nextState = COMBUSTION_SUPERLOW;
 				}
 
-				// Same adjustment function as in other states, but changed arguments
-				AirAdjustment((int32_t)(pParticlesParam->s32APERTURE_OFFSET), (float)(pParticlesParam->s32SEC_PER_STEP/100),
-							pPrimaryMotorParam->MinCombLow, pPrimaryMotorParam->MaxCombLow,
-							pGrillMotorParam->MinCombLow, pGrillMotorParam->MaxCombLow,
-							pSecondaryMotorParam->MinCombLow, pSecondaryMotorParam->MaxCombLow);
+
 			}
 
 #endif
+		/*  NE PAS PASSER EN COAL LOW D'ICI.... CETTE ACTION SE FAIT EN COMB_SUPERLOW CR:2023-05-23
 		if ( ((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
 				            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
 			{
 				nextState = COAL_LOW;
 		    }
-
+	     */
 		if ( (baffleTemperature <= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) //RETOUR À <= ET CHANGEMENENT POUR 200 POUR LE COALCROSSOVERLOW gtf 2022-08-30
 				&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) )
         {
@@ -431,20 +548,31 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     case COMBUSTION_SUPERLOW:
 
 		AirInput_forceAperture(&secondary, pSecondaryMotorParam->MaxCombSuperLow);
+		AirInput_forceAperture(&grill, 0);
 		StateEntryControlAdjustment(pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
 									pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
 									pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
 
-		adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
+		bool stove_too_cold = false;
 
+		//if(PM_isPboard_absent()){  //2023-05-16 (CR): Permet de contrôler avec l'ancien algo si la carte de particules est boguée ou absente
+			adjustement = computeAjustement(pTemperatureParam->CombLowTarget, dTbaffle);  // changement pour comblow au lieu de combsuperlow (660 au lieu de 700) GTF-2022-10-20
 
-		AirAdjustment(adjustement, (float)SEC_PER_STEP_COMB_LOW,
-						pPrimaryMotorParam->MinCombSuperLow,pPrimaryMotorParam->MaxCombSuperLow,
-						pGrillMotorParam->MinCombSuperLow,pGrillMotorParam->MaxCombSuperLow,
-						pSecondaryMotorParam->MinCombSuperLow,pSecondaryMotorParam->MaxCombSuperLow);
+			sec_per_step = (float)SEC_PER_STEP_COMB_LOW;
 
-		if ( ((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
-		            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow) ) //détection de l'état coal/braise
+		//}else{
+			// Adjustment based on particle value
+		//	stove_too_cold = computeParticleLowAdjustment(dTavant, &adjustement, &sec_per_step,
+		//			baffleTemperature/10, currentTime_ms, pTemperatureParam->CombLowtoSuperLow/10);
+
+		//}
+		AirAdjustment(adjustement, sec_per_step,
+				pPrimaryMotorParam->MinCombSuperLow, pPrimaryMotorParam->MaxCombSuperLow,
+				pGrillMotorParam->MinCombSuperLow, pGrillMotorParam->MaxCombSuperLow,
+				pSecondaryMotorParam->MinCombSuperLow, pSecondaryMotorParam->MaxCombSuperLow);
+
+		if ( (((baffleTemperature) >= (frontTemperature-pTemperatureParam->CoalDeltaTemp)) // changement de <= à >= UFEC 23 2021-11-23
+		            		&& (frontTemperature < pTemperatureParam->CoalCrossOverRearLow)) || stove_too_cold) //détection de l'état coal/braise
 		            {
 		            	nextState = COAL_LOW;
 		            }
@@ -563,9 +691,9 @@ static void manageStateMachine(uint32_t currentTime_ms) {
     	break;
 
     case MANUAL_CONTROL:
-        AirInput_forceAperture(&primary, pParticlesParam->s32ManualPrimary);
-        AirInput_forceAperture(&secondary, pParticlesParam->s32ManualSecondary);
-        AirInput_forceAperture(&grill, pParticlesParam->s32ManualGrill);
+        AirInput_forceAperture(&primary, pUserParam->s32ManualPrimary);
+        AirInput_forceAperture(&secondary, pUserParam->s32ManualSecondary);
+        AirInput_forceAperture(&grill, pUserParam->s32ManualGrill);
 
     	break;
   }
@@ -622,7 +750,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   			//  nextState = currentState;
   		  //}
 
-  		//computeParticleAdjustment(adjustement, &pParticlesParam->s32APERTURE_OFFSET, &pParticlesParam->s32SEC_PER_STEP, currentTime_ms);
+  		//computeParticleAdjustment(adjustement, &pUserParam->s32APERTURE_OFFSET, &pUserParam->s32SEC_PER_STEP, currentTime_ms);
     	break;
   }
   if(Algo_getInterlockRequest() && (currentState !=PRODUCTION_TEST) && (nextState != OVERTEMP) && (nextState != SAFETY))
@@ -630,7 +758,7 @@ static void manageStateMachine(uint32_t currentTime_ms) {
   		nextState = WAITING;
   }
 
-  if(pParticlesParam->s32ManualOverride == 1)
+  if(pUserParam->s32ManualOverride == 1)
   {
 	  nextState = MANUAL_CONTROL;
   }	else if(currentState == MANUAL_CONTROL)
@@ -689,6 +817,7 @@ static float computeSlopeBaffleTemp(unsigned int nbData) {
   else
   {
 	Algo_slopeBaffleTemp = Slope_compute(&slopeBaffleTemp, nbData) / 10.0;
+	Algo_slopeBaffleTemp = (float)(baffleTemperature-lastBaffleTemp)/500;
     return Algo_slopeBaffleTemp;
   }
 }
@@ -719,6 +848,7 @@ uint32_t getStateTime(){
 }
 
 void Algo_setBaffleTemp(int temp) {
+  lastBaffleTemp = baffleTemperature;
   baffleTemperature = temp;
   Slope_addData(&slopeBaffleTemp, temp);
 }
@@ -838,215 +968,119 @@ static int computeAjustement( int tempTarget_tenthF, float dTempAvant_FperS) {
   return adjustment[line][column];
 }
 
-float get_crit(void)
-{
-	int slope = Particle_getSlope();
-	int stdev = (int)Particle_getVariance();
-	int std,slp;
-	float crit = 0;
-
-	std = stdev < 80? stdev:80;
-
-	if(slope > 0){
-		slp = slope < 20? slope:20;
-		crit = (float)(std+slp);
-	}else
-	{
-		slp = abs(slope) < 20? slope:-20;
-		crit = (float)(std-slp)*(-1);
-	}
-
-	return crit/100;
-}
-
-static bool computeParticleAdjustment(float dTavant, int32_t* delta, int32_t* speed, uint32_t Time_ms, int32_t temperature_limit)
-{
-	// Function memory variables
-	static uint32_t lastTimeInFunc = 0;
-	static uint32_t TimeOfMajorCorrection = 0;
-	static float previous_diffs[5] = {};
-	static i = 0;
-
-	// Parameters set by user
-	const int MajorCorrectionInterval = 1e4; // in millseconds
-	static int MajorCorrection_counter = 0;  // after 2 or 3, change state to superlow or add grill
-	int Tbuff_flameloss = 10;
-	int Tbuff_overheat = 100;
-	int Tbuff_workingRange = 30;
-	int crit_threshold_soft = 40;
-	int crit_threshold_hard = 80;
-	int diff_threshold_soft = 20;
-	int diff_threshold_hard = 50;
-	float dT_threshold = -6.0;
-
-
-	// Variables for decicison making
-	float crit = get_crit();
-	bool crit_correction = false; // to avoid cancelling crit based correction with a diff based one
-	int32_t aperture = 0;
-	float Sec_per_step = 0.0;
-	int ch0 = (int)Particle_getCH0();
-	int I = (int)Particle_getCurrent();
-	//float zero_norm = 10*Particle_getZeroNorm();
-	float zero_norm = 80;
-	float diff = (float)(10*ch0/I)- zero_norm;
-
-	if(i > 5)
-	{
-		i = 0;
-	}else
-	{
-		previous_diffs[i] = diff;
-		i++;
-	}
-
-
-	if(Time_ms - TimeOfMajorCorrection > MajorCorrectionInterval)
-	{
-		if((baffleTemperature - temperature_limit) < Tbuff_flameloss)
-		{
-			if(dTavant < dT_threshold)
-			{
-				aperture = 20;
-				Sec_per_step = 0;
-
-			}else
-			{
-				aperture = 10;
-				Sec_per_step = 0.5;
-			}
-
-		TimeOfMajorCorrection = Time_ms;
-		MajorCorrection_counter++;
-
-		}else
-		{
-			MajorCorrection_counter = 0;
-		}
-	}
-
-	if(crit > crit_threshold_soft && MajorCorrection_counter == 0)
-	{
-		if((baffleTemperature - temperature_limit) < Tbuff_workingRange)
-		{
-			aperture = 5;
-			Sec_per_step = 0.5;
-		}else if((baffleTemperature - temperature_limit) < Tbuff_overheat)
-		{
-			if(dTavant >= 0)
-			{
-				aperture = -5;
-				Sec_per_step = 1;
-			}else
-			{
-				aperture = 5;
-				Sec_per_step = 1;
-			}
-
-		}else
-		{
-			aperture = -10;
-			Sec_per_step = 0.5;
-		}
-		crit_correction = true;
-
-	}
-
-	if(!crit_correction && MajorCorrection_counter == 0)
-	{
-		if((baffleTemperature - temperature_limit) > Tbuff_flameloss)
-		{
-			if(diff > diff_threshold_hard)
-			{
-				aperture = -5;
-				Sec_per_step = 0.5;
-			}else if(diff > diff_threshold_soft)
-			{
-				aperture = -1;
-				Sec_per_step = 3;
-			}
-		}
-
-	}
 
 
 
-	algo_mod[2] = .8*algo_mod[2]+ .2*crit;
-
-
-	lastTimeInFunc = Time_ms;
-	*delta = aperture;
-	*speed = (int32_t)(Sec_per_step*100);
-
-	////////////////////////////////////////////
-	if(Time_ms < (lastTimeInFunc + SECONDS(5)))
-	{
-		algo_mod[0] = aperture;
-		algo_mod[1] = Sec_per_step;
-		algo_mod[3] = dTavant;
-	}
-	///////////////////////////////////////////
-
-	// If too many consecutive major corrections, go to comb_superlow
-	if(MajorCorrection_counter > 4){
-		return true;
-	}
-	return false;
-
-
-}
-
-
-// for DebugManager
-float* get_algomod(void)
-{
-	return algo_mod;
-}
-
-
-static void AirAdjustment(int adjustement, float secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
+static void AirAdjustment(int adjustment, float secondPerStep, ////////////////// Insérer la gestion du secondaire dans cette fonction
 		uint8_t MinPrimary, uint8_t MaxPrimary,
 		uint8_t MinGrill, uint8_t MaxGrill,
 		uint8_t MinSecondary, uint8_t MaxSecondary)
 {
-	if (adjustement > 0)
-	{
-		if (AirInput_getAperture(&secondary) >= MaxSecondary)
-		{
-			if (AirInput_getAperture(&primary) >= MaxPrimary)
-			{
-				if (AirInput_getAperture(&grill) < MaxGrill)
-				{
-					AirInput_setAjustement(&grill, adjustement, secondPerStep);
-				}
-			}
-			else
-			{
-				AirInput_setAjustement(&primary, adjustement, secondPerStep);
+	int adjustment_carriage = 0; // garde la balance de l'ajustement s'il est plus grand que l'angle alloué
+	int sec_delta;	// Espace (en pas) disponible pour bouger dans une direction ou l'autre
+	int prim_delta;
+	int gril_delta;
 
-			}
-		}else
+	if (adjustment > 0)
+	{
+		sec_delta = MaxSecondary - AirInput_getAperture(&secondary); // On ouvre, donc on regarde on est à combien du max
+		prim_delta = MaxPrimary - AirInput_getAperture(&primary);
+		gril_delta = MaxGrill - AirInput_getAperture(&grill);
+
+
+		if (sec_delta != 0) // A-t-on atteint le max?
 		{
-			if (AirInput_getAperture(&secondary) < MaxSecondary)
+			if(adjustment > sec_delta) // Si l'ajustement est trop grand, on bouge au max et on garde le restant pour le prochain moteur
 			{
-				AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+				adjustment_carriage = adjustment - sec_delta;
+				adjustment = sec_delta;
 			}
+			AirInput_setAjustement(&secondary, adjustment, secondPerStep);
+			if(adjustment_carriage == 0) // Si on n'a pas de pas supplémentaire à faire, on a terminé
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
+		}
+
+		if (prim_delta != 0)
+		{
+			if(adjustment > prim_delta)
+			{
+				adjustment_carriage = adjustment - prim_delta;
+				adjustment = prim_delta;
+			}
+			AirInput_setAjustement(&primary, adjustment, secondPerStep);
+			if(adjustment_carriage == 0)
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
+		}
+
+		if (gril_delta != 0)
+		{
+			if(adjustment > gril_delta)
+			{
+				adjustment_carriage = adjustment - gril_delta;
+				adjustment = gril_delta;
+			}
+			AirInput_setAjustement(&grill, adjustment, secondPerStep);
 		}
 
 	}
-	else if (adjustement < 0)
+	else if (adjustment < 0)
 	{
-		if (AirInput_getAperture(&grill) > MinGrill)
-		{
-			AirInput_setAjustement(&grill, adjustement, secondPerStep);
+		sec_delta = MinSecondary - AirInput_getAperture(&secondary);
+		prim_delta = MinPrimary - AirInput_getAperture(&primary);
+		gril_delta = MinGrill - AirInput_getAperture(&grill);
 
-		}else if(AirInput_getAperture(&primary) > MinPrimary)
+		if (gril_delta != 0)
 		{
-			AirInput_setAjustement(&primary, adjustement, secondPerStep);
-		}else
-		{
-			AirInput_setAjustement(&secondary, adjustement, secondPerStep);
+			if(adjustment < gril_delta)
+			{
+				adjustment_carriage = adjustment - gril_delta;
+				adjustment = gril_delta;
+			}
+			AirInput_setAjustement(&grill, adjustment, secondPerStep);
+
+			if(adjustment_carriage == 0)
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
 		}
+
+		if (prim_delta != 0)
+		{
+			if(adjustment < prim_delta)
+			{
+				adjustment_carriage = adjustment - prim_delta;
+				adjustment = prim_delta;
+			}
+			AirInput_setAjustement(&primary, adjustment, secondPerStep);
+
+			if(adjustment_carriage == 0)
+			{
+				return;
+			}
+			adjustment = adjustment_carriage;
+			adjustment_carriage = 0;
+		}
+
+		if (sec_delta != 0)
+		{
+			if(adjustment < sec_delta)
+			{
+				adjustment_carriage = adjustment - sec_delta;
+				adjustment = sec_delta;
+			}
+			AirInput_setAjustement(&secondary, adjustment, secondPerStep);
+		}
+
 	}
 	/*else{do nothing} air setting doesn't need further adjustment*/
 }
@@ -1087,6 +1121,7 @@ static void StateEntryControlAdjustment(uint8_t MinPrimary, uint8_t MaxPrimary, 
 		AirAdjustment(apertureAdjustment,1, MinPrimary, MaxPrimary,
 				MinGrill, MaxGrill,
 				MinSecondary, MaxSecondary);
+
 	}
 }
 
@@ -1113,5 +1148,6 @@ void setErrorFlag(uint32_t errorcode, ErrorType type)
 		break;
 	}
 }
+
 
 

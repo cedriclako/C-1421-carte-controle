@@ -1,0 +1,11 @@
+MotorManager.c:46:6:Motor_task	200	static
+MotorManager.c:126:6:StepperAtSetpoint	16	static
+MotorManager.c:131:6:StepperSetToZero	16	static
+MotorManager.c:174:6:StepperAdjustPosition	24	static
+MotorManager.c:222:6:StepperToggleOneStep	16	static
+MotorManager.c:230:6:StepperLimitSwitchActive	16	static
+MotorManager.c:236:6:StepperEnable	16	static
+MotorManager.c:242:6:StepperLowCurrentOFF	16	static
+MotorManager.c:247:6:StepperLowCurrentON	16	static
+MotorManager.c:252:6:StepperDisable	16	static
+MotorManager.c:257:6:StepperSetDirection	16	static

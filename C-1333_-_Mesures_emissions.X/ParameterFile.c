@@ -53,13 +53,13 @@ void ParameterInit(void)
     Params.MeasureInterval = 1600;
     Params.PrintEnable = false;
     Params.AcqEnable = true;
-    Params.Current_cmd = 5.0;
+    Params.Current_cmd = 5.3;
     //Params.DAC_value = 140;
     if(DATAEE_ReadByte(EE_FIRST_CONF_ADDR) != 0xAA)
     {
         DATAEE_WriteByte(EE_FIRST_CONF_ADDR, 0xAA);
         EEParams.fireCounter = 0;
-        Params.DAC_value = 130;
+        Params.DAC_value = 130;//Hard coded value --> gives roughly 5 mA (best go through void measureSetLED(const gs_Parameters* Param))
     }else
     {
         Params.DAC_value = DATAEE_ReadByte(EE_DAC_ADDR);
@@ -79,19 +79,29 @@ void PF_IncrementFireCount(void) // How many fires monitored since installation
     count++;
     DATAEE_WriteByte(EE_FIRE_COUNTER_MSB, (uint8_t)(count >> 8));
     DATAEE_WriteByte(EE_FIRE_COUNTER_LSB, (uint8_t)(count & 0x00FF));
+    
+    EEParams.fireCounter = count;     
 }
 
-void PF_Update_MemParams(uint16_t zero, uint8_t current, uint8_t temperature)
+uint16_t PF_GetFireCount(void)
 {
+    (uint16_t)((DATAEE_ReadByte(EE_FIRE_COUNTER_MSB) << 8) + DATAEE_ReadByte(EE_FIRE_COUNTER_LSB));
+}
+
+void PF_Update_MemParams(uint16_t FireCount, uint16_t zero, uint8_t current, uint8_t temperature)  
+{
+    EEParams.fireCounter = FireCount;
     EEParams.lastZeroValue = zero;
     EEParams.lastZeroCurrent = current;
     EEParams.lastZeroTemp = temperature;
-    EEParams.lastZeroDac = Params.DAC_value;
+    EEParams.lastZeroDac = Params.DAC_value;    
 }
 
 
-void PF_Update_EEPROM(void) // Save memorizable paramters to EEPROM
+void PF_Update_EEPROM(void) // Save memorizable paramters to EEPROM  //GC 2023-07-19 N'est pas appelé.  
 {
+    DATAEE_WriteByte(EE_FIRE_COUNTER_MSB, (uint8_t)(EEParams.fireCounter >> 8));
+    DATAEE_WriteByte(EE_FIRE_COUNTER_LSB, (uint8_t)(EEParams.fireCounter & 0x00FF));
     DATAEE_WriteByte(EE_LAST_ZERO_MSB, (uint8_t)(EEParams.lastZeroValue >> 8));
     DATAEE_WriteByte(EE_LAST_ZERO_LSB, (uint8_t)(EEParams.lastZeroValue & 0x00FF));
     DATAEE_WriteByte(EE_CURRENT_ADDR, EEParams.lastZeroCurrent);
@@ -99,9 +109,23 @@ void PF_Update_EEPROM(void) // Save memorizable paramters to EEPROM
     DATAEE_WriteByte(EE_TEMP_ADDR, EEParams.lastZeroTemp);
 }
 
+void PF_Read_EE_Param(gs_MemoryParams *MemParam)  //À tester
+{
+    MemParam->fireCounter = (uint16_t)((DATAEE_ReadByte(EE_FIRE_COUNTER_MSB) << 8) + DATAEE_ReadByte(EE_FIRE_COUNTER_LSB));
+    MemParam->lastZeroCurrent = DATAEE_ReadByte(EE_CURRENT_ADDR);
+    MemParam->lastZeroDac = DATAEE_ReadByte(EE_DAC_ADDR);
+    MemParam->lastZeroTemp = DATAEE_ReadByte(EE_TEMP_ADDR);
+    MemParam->lastZeroValue = (uint16_t)((DATAEE_ReadByte(EE_LAST_ZERO_MSB) << 8) + DATAEE_ReadByte(EE_LAST_ZERO_LSB));   
+}
+
 void PF_requestReconfigure(void) // Stop acquisition to change configuration
 {
     Params.AcqEnable = false;
+}
+
+void PF_ReConfigureDone(void) // ReStart acquisition after configuration change
+{
+    Params.AcqEnable = true;
 }
 
 void PF_ToggleAcqEnable(void)
@@ -118,11 +142,11 @@ bool PF_validateConfig(uint8_t* payload, uint8_t payload_size)
 {
     if(payload_size == 4) // Hard coded value, if more parameters are needed, put theme in the loop and update the size
     {
-        if(payload[0] < 4)
+        if(payload[0] < 4) //GC - Ne pas mettre de "magic number" Définir pourquoi ces limitation
         {
-            if(payload[1] < 6)
+            if(payload[1] < 6) //GC - Ne pas mettre de "magic number" Définir pourquoi ces limitation
             {
-                if(payload[3] < 11)
+                if(payload[3] < 11)  //GC - Ne pas mettre de "magic number" Définir pourquoi ces limitation
                 {
                     Params.TSL_gain = payload[0];
                     Params.TSL_integrationTime = payload[1];

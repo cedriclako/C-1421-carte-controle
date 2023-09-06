@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include "cmsis_os.h"
 #include "air_input.h"
-#include "../Src/ParamFile.h"
+#include "ParamFile.h"
 
 #ifdef	__cplusplus
 extern "C" {

@@ -147,6 +147,8 @@ int main(void)
 
   PARAMFILE_Init(); // Initialize param file reader before main process
 
+  ParticleInit();
+
   ESPMANAGER_Init();
 
   // Print all parameters into the debug file

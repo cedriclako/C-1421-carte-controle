@@ -51,6 +51,21 @@ typedef enum {
 	Particle,
 }ErrorType;
 
+typedef enum
+{
+	WAIT = 0,
+	VERY_SLOW_CLOSE,
+	SLOW_CLOSE,
+	AVG_CLOSE,
+	FAST_CLOSE,
+	INSTANT_CLOSE,
+	VERY_SLOW_OPEN,
+	SLOW_OPEN,
+	AVG_OPEN,
+	FAST_OPEN,
+	INSTANT_OPEN,
+}ParticleAction;
+
 extern float Algo_Simulator_slopeTempAvant;
 extern int16_t PIDTrapPosition;
 extern bool fanPauseRequired;

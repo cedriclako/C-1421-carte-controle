@@ -54,8 +54,8 @@ float VtoDegreeCRtd(float Vdata);
 
 enum ADC_Channel
 {
-	FrontThermocouple = 0,
-	BaffleThermocouple,
+	BaffleThermocouple = 0,
+	FrontThermocouple,
 	PlenumRtd,
 	TempSense_board, // Used to determine cold junction temp
 	NUMBER_OF_ADC_CH
@@ -95,7 +95,7 @@ void TemperatureManager(void const * argument)
 		//temp1 = uCAdcData[1]*3.3/4096;  //Vout=TC x TA + VoC where TC = 10mV/C V0C->500mV
 
 
-		for (i=TempSense_board;i>=FrontThermocouple;i--)
+		for (i=TempSense_board; i >= 0; i--)
 		{
 
 			HAL_I2C_Master_Transmit_IT(&hi2c1, ADC_ADDRESS_7BIT,&ADCConfigByte[i],1);

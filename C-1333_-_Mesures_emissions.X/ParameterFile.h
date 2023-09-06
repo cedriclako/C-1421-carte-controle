@@ -33,6 +33,8 @@ extern "C" {
         TSL2591_INTEGRATIONTIME_600MS = 0x05, // 600 millis
     } tsl2591IntegrationTime_t;
     
+#define TSL2591_MAX_PARAM_VALUE   0x05
+    
     #define DS1775_9BITS_MODE 0x00      // Conversion time: 125ms typ. 187.5ms max
     #define DS1775_10BITS_MODE 0x20     // Conversion time: 250ms typ. 375ms max
     #define DS1775_11BITS_MODE 0x40     // Conversion time: 500ms typ. 750ms max
@@ -74,11 +76,13 @@ extern "C" {
     
     void PF_requestReconfigure(void);
     
+    void PF_ReConfigureDone(void);
+    
     void PF_ToggleAcqEnable(void);
     
     void PF_setDAC(uint8_t value);
     
-    void PF_Update_MemParams(uint16_t zero, uint8_t current,uint8_t temperature);
+    void PF_Update_MemParams(uint16_t FireCount, uint16_t zero, uint8_t current, uint8_t temperature);
     
     bool PF_validateConfig(uint8_t* payload,uint8_t payload_size);
     
@@ -87,6 +91,8 @@ extern "C" {
     const gs_Parameters* PF_getCBParamAddr(void);
     
     const gs_MemoryParams* PF_getEEParamAddr(void);
+    
+    uint16_t PF_GetFireCount(void);
 
 
 #ifdef	__cplusplus

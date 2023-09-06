@@ -14,30 +14,34 @@ bool UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
     if (u16PayloadLen > UARTPROTOCOLCOMMON_MAXPAYLOAD)
         return false;
 
+
     uint8_t u8Checksum = 0;
-    const uint8_t u8STARTBYTE = UARTPROTOCOLCOMMON_START_BYTE;
-    psHandle->psConfig->fnWriteCb(psHandle, &u8STARTBYTE, 1);
-    psHandle->psConfig->fnWriteCb(psHandle, &u8ID, 1);
-    u8Checksum += u8ID;
+    uint8_t u8TxBuffer[UARTPROTOCOLCOMMON_MAXPAYLOAD+6] = {0x00};
+
+    u8TxBuffer[0] = (uint8_t)UARTPROTOCOLCOMMON_START_BYTE;
+    u8TxBuffer[1] = u8ID;
     // Payload in LITTLE ENDIAN format
-    const uint8_t u8LenB0 = (uint8_t)(u16PayloadLen & 0xFF);
-    psHandle->psConfig->fnWriteCb(psHandle, &u8LenB0, 1);
-    const uint8_t u8LenB1 = (uint8_t)((u16PayloadLen >> 8) & 0xFF);
-    psHandle->psConfig->fnWriteCb(psHandle, &u8LenB1, 1);
-    // Calculate checksum on the fly ...
+    u8TxBuffer[2] = (uint8_t)(u16PayloadLen & 0xFF);
+    u8TxBuffer[3] = (uint8_t)((u16PayloadLen >> 8) & 0xFF);
+
     if (u8Payloads != NULL && u16PayloadLen > 0)
     {
-        u8Checksum += u8LenB0;
-        u8Checksum += u8LenB1;
-        for(int i = 0; i < u16PayloadLen; i++)
-            u8Checksum += u8Payloads[i];
-        psHandle->psConfig->fnWriteCb(psHandle, u8Payloads, u16PayloadLen);
-    }
-    u8Checksum = ~u8Checksum;
+    	for(uint16_t i = 0; i < u16PayloadLen; i++)
+    	{
+    		u8TxBuffer[i+4] = u8Payloads[i];
+    	}
 
-    psHandle->psConfig->fnWriteCb(psHandle, &u8Checksum, 1);
-    const uint8_t u8STOPBYTE = UARTPROTOCOLCOMMON_STOP_BYTE;
-    psHandle->psConfig->fnWriteCb(psHandle, &u8STOPBYTE, 1);
+    }
+
+    for(uint16_t i = 1; i < u16PayloadLen + 4; i++)
+    {
+    	u8Checksum += (uint8_t)u8TxBuffer[i];
+    }
+
+    u8TxBuffer[u16PayloadLen + 4] = (uint8_t)(~u8Checksum);
+    u8TxBuffer[u16PayloadLen + 5] = (uint8_t) UARTPROTOCOLCOMMON_STOP_BYTE;
+
+    psHandle->psConfig->fnWriteCb(psHandle, u8TxBuffer, (uint32_t)(u16PayloadLen + 6));
     return true;
 }
 
