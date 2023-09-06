@@ -101,7 +101,7 @@ void Algo_Init(void const * argument)
     	GPIOManager(&UFEC23,osKernelSysTick());
     	TemperatureManager(&UFEC23,osKernelSysTick());
     	DebugManager(&UFEC23,osKernelSysTick());
-    	//ESPMANAGER_Task();
+    	ESPMANAGER_Task();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
     	osDelay(1);
@@ -141,6 +141,16 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			AlgoStateEntryAction[currentState](stove, sStateParams[currentState]);
 		}
 
+	}
+	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
+			currentState == COAL_LOW || currentState == COAL_HIGH))
+	{
+		if(!stove->bInterlockOn)
+		{
+			nextState = RELOAD_IGNITION;
+			stove->bReloadRequested = false;
+			stove->TimeOfReloadRequest = u32CurrentTime_ms;
+		}
 	}
 	else // When we get here, check if it's time to compute an adjustment
 	{
@@ -261,10 +271,9 @@ static void Algo_Waiting_action(Mobj* stove,const  PF_StateParam_t* sParams, uin
 {
 	if(!stove->bInterlockOn)
 	{
-		if((stove->fBaffleTemp > P2F(sParams->sTemperature.fTarget)) || stove->bReloadRequested)
+		if((stove->fBaffleTemp > P2F(sParams->sTemperature.fTarget)))
 		{
-			nextState = RELOAD_IGNITION;
-			stove->TimeOfReloadRequest = u32CurrentTime_ms;
+			stove->bReloadRequested = true;
 		}
 	}
 
@@ -613,9 +622,14 @@ static void Algo_manual_action(Mobj* stove,const  PF_StateParam_t* sParams, uint
 {
 	const PF_UsrParam* sManParam = PB_GetUserParam();
 
-	if(!sManParam->s32ManualOverride) // TODO: Put this in task function
+	if(!(sManParam->s32ManualOverride == 1)) // TODO: Put this in task function
 	{
 		nextState = lastState;
+		if(nextState == ZEROING_STEPPER)
+		{
+			motors_ready_for_req = false;
+		}
+
 		return;
 	}
 
