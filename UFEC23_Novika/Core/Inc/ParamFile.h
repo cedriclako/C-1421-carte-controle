@@ -8,7 +8,7 @@
 #define _PARAMETERFILEDEF_H_
 
 #include "ParameterFileLib.h"
-
+#include "Algo.h"
 #define PF_UNUSED (1)
 
 #define PF_PRIMARY_MINIMUM_OPENING				6 //5.4 degres @ 0.9 deg/pas
@@ -65,6 +65,63 @@ typedef struct
 
 typedef struct
 {
+
+	int32_t i32EntryWaitTimeSeconds;
+	int32_t i32MinimumTimeInStateMinutes;
+	int32_t i32MaximumTimeInStateMinutes;
+
+}PF_SuperStateParam_t;
+
+typedef struct
+{
+
+	int32_t fTempToSkipWaiting;
+	int32_t fTempToQuitWaiting;
+
+	PF_MotorOpeningsParam_t sPrimary;
+	PF_MotorOpeningsParam_t sSecondary;
+	PF_MotorOpeningsParam_t sGrill;
+
+}PF_WaitingParam_t;
+
+typedef struct
+{
+
+	int32_t fTempToSkipReload;
+	int32_t fTempToQuitReload;
+
+	PF_BinnedParam_t sTempSlope;
+	PF_BinnedParam_t sParticles;
+	PF_BinnedParam_t sPartStdev;
+
+	PF_MotorOpeningsParam_t sPrimary;
+	PF_MotorOpeningsParam_t sSecondary;
+	PF_MotorOpeningsParam_t sGrill;
+
+
+}PF_ReloadParam_t;
+
+typedef struct
+{
+
+	int32_t fTempToStartReg;
+	int32_t fTempToCombLow;
+	int32_t fTempToCombHigh;
+
+	PF_BinnedParam_t sTempSlope;
+	PF_BinnedParam_t sParticles;
+	PF_BinnedParam_t sPartStdev;
+
+	PF_MotorOpeningsParam_t sPrimary;
+	PF_MotorOpeningsParam_t sSecondary;
+	PF_MotorOpeningsParam_t sGrill;
+
+
+}PF_TriseParam_t;
+
+typedef struct
+{
+
 	PF_BinnedParam_t sTemperature;
 	PF_BinnedParam_t sTempSlope;
 	PF_BinnedParam_t sParticles;
@@ -74,14 +131,25 @@ typedef struct
 	PF_MotorOpeningsParam_t sSecondary;
 	PF_MotorOpeningsParam_t sGrill;
 
-	int32_t i32EntryWaitTimeSeconds;
-	int32_t i32MinimumTimeInStateMinutes;
-	int32_t i32MaximumTimeInStateMinutes;
 
-	int32_t i32FreeParam1;
-	int32_t i32FreeParam2;
+}PF_CombustionParam_t;
 
-}PF_StateParam_t;
+typedef struct
+{
+
+	int32_t i32TimeBeforeMovingPrim;
+	int32_t i32TimeBeforeMovingSec;
+
+	PF_BinnedParam_t sTemperature;
+	PF_BinnedParam_t sPartStdev;
+
+	PF_MotorOpeningsParam_t sPrimary;
+	PF_MotorOpeningsParam_t sSecondary;
+	PF_MotorOpeningsParam_t sGrill;
+
+
+}PF_CoalParam_t;
+
 
 typedef struct
 {
@@ -256,21 +324,17 @@ const PF_UsrParam* PB_GetUserParam();
 
 const PF_OverHeat_Thresholds_t* PB_GetOverheatParams(void);
 
-const PF_StateParam_t *PB_GetWaitingParams(void);
-
-const PF_StateParam_t *PB_GetReloadParams(void);
-
-const PF_StateParam_t *PB_GetTRiseParams(void);
-
-const PF_StateParam_t *PB_GetCombLowParams(void);
-
-const PF_StateParam_t *PB_GetCombHighParams(void);
-
-const PF_StateParam_t *PB_GetCoalLowParams(void);
-
-const PF_StateParam_t *PB_GetCoalHighParams(void);
+const PF_WaitingParam_t *PB_GetWaitingParams(void);
+const PF_ReloadParam_t *PB_GetReloadParams(void);
+const PF_TriseParam_t *PB_GetTRiseParams(void);
+const PF_CombustionParam_t *PB_GetCombLowParams(void);
+const PF_CombustionParam_t *PB_GetCombHighParams(void);
+const PF_CoalParam_t *PB_GetCoalLowParams(void);
+const PF_CoalParam_t *PB_GetCoalHighParams(void);
 
 const PF_StepperStepsPerSec_t *PB_SpeedParams(void);
+
+const PF_SuperStateParam_t *PB_GetSuperStateParams(uint8_t state);
 
 #endif
 

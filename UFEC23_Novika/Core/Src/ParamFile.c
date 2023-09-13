@@ -7,13 +7,15 @@
 #include "ParamFile.h"
 #include "Algo.h"
 
-static PF_StateParam_t m_sWaitingParams;
-static PF_StateParam_t m_sReloadParams;
-static PF_StateParam_t m_sTRiseParams;
-static PF_StateParam_t m_sCombLowParams;
-static PF_StateParam_t m_sCombHighParams;
-static PF_StateParam_t m_sCoalLowParams;
-static PF_StateParam_t m_sCoalHighParams;
+static PF_SuperStateParam_t m_sSuperParams[ALGO_NB_OF_STATE];
+
+static PF_WaitingParam_t m_sWaitingParams;
+static PF_ReloadParam_t m_sReloadParams;
+static PF_TriseParam_t m_sTriseParams;
+static PF_CombustionParam_t m_sCombLowParams;
+static PF_CombustionParam_t m_sCombHighParams;
+static PF_CoalParam_t m_sCoalLowParams;
+static PF_CoalParam_t m_sCoalHighParams;
 
 static PF_OverHeat_Thresholds_t m_sOverheatParams = {0x00};
 
@@ -33,41 +35,37 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_FANKOP,			 	    "", &m_sMemBlock.s32FAN_KOP,		 				   		350, 		0, 		20000),
 
 	// Waiting parameters
-	PFL_INIT_SINT32(PFD_WA_T_TARGET,    	    "", &m_sWaitingParams.sTemperature.fTarget, 				150, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_WA_T_SKIP,    	        "", &m_sWaitingParams.sTemperature.fAbsMaxDiff, 			800, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_WA_T_TARGET,    	    "", &m_sWaitingParams.fTempToQuitWaiting, 				150, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_WA_T_SKIP,    	        "", &m_sWaitingParams.fTempToSkipWaiting, 				800, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_WA_PM_POS,    	    	"", &m_sWaitingParams.sPrimary.i32Max, 						0, 			PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_WA_SM_POS,    	    	"", &m_sWaitingParams.sSecondary.i32Max, 					0, 			PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_WA_GM_POS,    	    	"", &m_sWaitingParams.sGrill.i32Max, 						0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// Reload parameters
-	PFL_INIT_SINT32(PFD_REL_T_TARGET,    	    "", &m_sReloadParams.sTemperature.fTarget, 					525, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_REL_T_SKIP,    	        "", &m_sReloadParams.sTemperature.fAbsMaxDiff, 				1000, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_REL_T_TARGET,    	    "", &m_sReloadParams.fTempToQuitReload, 					525, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_REL_T_SKIP,    	        "", &m_sReloadParams.fTempToSkipReload, 					1000, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_REL_PM_POS,    	    	"", &m_sReloadParams.sPrimary.i32Max, 						97, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_REL_SM_POS,    	    	"", &m_sReloadParams.sSecondary.i32Max, 					97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_REL_GM_POS,    	    	"", &m_sReloadParams.sGrill.i32Max, 						97, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// TempRise parameters
-	PFL_INIT_SINT32(PFD_TR_T_TARGETH, 			"", &m_sTRiseParams.sTemperature.fTarget, 		  			630, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_T_TARGETL, 			"", &m_sTRiseParams.sTemperature.fAbsMaxDiff, 		  		710, 		0, 		20000),
-	/*FreeParam1 variable will be used to contain the temperature to start regulating*/
-	PFL_INIT_SINT32(PFD_TR_T_TOL, 				"", &m_sTRiseParams.i32FreeParam1,				  			500, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_TS_TARGET, 			"", &m_sTRiseParams.sTempSlope.fTarget, 		  			50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_TS_TOL, 				"", &m_sTRiseParams.sTempSlope.fTolerance, 					50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_TS_ABS, 				"", &m_sTRiseParams.sTempSlope.fAbsMaxDiff, 				100, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_P_TARGET, 			"", &m_sTRiseParams.sParticles.fTarget, 					80, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_P_TOL, 				"", &m_sTRiseParams.sParticles.fTolerance, 					30, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_P_ABS, 				"", &m_sTRiseParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_PS_TOL, 				"", &m_sTRiseParams.sPartStdev.fTolerance, 					10, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_PS_ABS, 				"", &m_sTRiseParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_ENTRY_TIME, 			"", &m_sTRiseParams.i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_MIN_TIME, 			"", &m_sTRiseParams.i32MinimumTimeInStateMinutes, 			1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			"", &m_sTRiseParams.i32MaximumTimeInStateMinutes, 			10, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_PM_MAX,    	    	"", &m_sTRiseParams.sPrimary.i32Max, 						85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_TR_PM_MIN,    	    	"", &m_sTRiseParams.sPrimary.i32Min, 						17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_TR_SM_MAX,    	    	"", &m_sTRiseParams.sSecondary.i32Max, 						97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_TR_SM_MIN,    	    	"", &m_sTRiseParams.sSecondary.i32Min, 						97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_TR_GM_MAX,    	    	"", &m_sTRiseParams.sGrill.i32Max, 							48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_TR_GM_MIN,    	    	"", &m_sTRiseParams.sGrill.i32Min, 		 					0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_TR_T_TARGETH, 			"", &m_sTriseParams.fTempToCombHigh, 		  			710, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_T_TARGETL, 			"", &m_sTriseParams.fTempToCombLow, 		  			630, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_T_TOL, 				"", &m_sTriseParams.fTempToStartReg,				  			500, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_TS_TARGET, 			"", &m_sTriseParams.sTempSlope.fTarget, 		  			50, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_TS_TOL, 				"", &m_sTriseParams.sTempSlope.fTolerance, 					50, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_TS_ABS, 				"", &m_sTriseParams.sTempSlope.fAbsMaxDiff, 				100, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_P_TARGET, 			"", &m_sTriseParams.sParticles.fTarget, 					80, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_P_TOL, 				"", &m_sTriseParams.sParticles.fTolerance, 					30, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_P_ABS, 				"", &m_sTriseParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_PS_TOL, 				"", &m_sTriseParams.sPartStdev.fTolerance, 					10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_PS_ABS, 				"", &m_sTriseParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_PM_MAX,    	    	"", &m_sTriseParams.sPrimary.i32Max, 						85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_TR_PM_MIN,    	    	"", &m_sTriseParams.sPrimary.i32Min, 						17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_TR_SM_MAX,    	    	"", &m_sTriseParams.sSecondary.i32Max, 						97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_TR_SM_MIN,    	    	"", &m_sTriseParams.sSecondary.i32Min, 						97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_TR_GM_MAX,    	    	"", &m_sTriseParams.sGrill.i32Max, 							48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_TR_GM_MIN,    	    	"", &m_sTriseParams.sGrill.i32Min, 		 					0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// Comb low parameters
 	PFL_INIT_SINT32(PFD_CBL_T_TARGET, 			"", &m_sCombLowParams.sTemperature.fTarget, 		  		630, 		0, 		20000),
@@ -81,9 +79,6 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_CBL_P_ABS, 				"", &m_sCombLowParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PS_TOL, 			"", &m_sCombLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PS_ABS, 			"", &m_sCombLowParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_CBL_ENTRY_TIME, 		"", &m_sCombLowParams.i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			"", &m_sCombLowParams.i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			"", &m_sCombLowParams.i32MaximumTimeInStateMinutes, 		30, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PM_MAX,    	    	"", &m_sCombLowParams.sPrimary.i32Max, 						85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBL_PM_MIN,    	    	"", &m_sCombLowParams.sPrimary.i32Min, 						17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBL_SM_MAX,    	    	"", &m_sCombLowParams.sSecondary.i32Max, 					97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
@@ -103,9 +98,6 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_CBH_P_ABS, 				"", &m_sCombHighParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_PS_TOL, 			"", &m_sCombHighParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_PS_ABS, 			"", &m_sCombHighParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_ENTRY_TIME, 		"", &m_sCombHighParams.i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_MIN_TIME, 			"", &m_sCombHighParams.i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_MAX_TIME, 			"", &m_sCombHighParams.i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_PM_MAX,    	    	"", &m_sCombHighParams.sPrimary.i32Max, 					85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBH_PM_MIN,    	    	"", &m_sCombHighParams.sPrimary.i32Min, 					17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBH_SM_MAX,    	    	"", &m_sCombHighParams.sSecondary.i32Max, 					97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
@@ -115,25 +107,13 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	// Coal low parameters
 	/* Free Params will contain time to wait before positionning prim and sec */
-	PFL_INIT_SINT32(PFD_COL_TIME_P, 			"", &m_sCoalLowParams.i32FreeParam1,	 					1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_TIME_S, 			"", &m_sCoalLowParams.i32FreeParam2,		 				5, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_TIME_P, 			"", &m_sCoalLowParams.i32TimeBeforeMovingPrim,	 					1, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_TIME_S, 			"", &m_sCoalLowParams.i32TimeBeforeMovingSec,		 				5, 			0, 		20000),
 
 	PFL_INIT_SINT32(PFD_COL_T_TARGET, 			"", &m_sCoalLowParams.sTemperature.fTarget, 		  		500, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_T_TOL, 				"", &m_sCoalLowParams.sTemperature.fTolerance, 	  			0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_T_ABS, 				"", &m_sCoalLowParams.sTemperature.fAbsMaxDiff, 			0, 			0, 		20000),
-#if !PF_UNUSED
-	PFL_INIT_SINT32(PFD_COL_TS_TARGET, 			"", &m_sCoalLowParams.sTempSlope.fTarget, 		  			50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_TS_TOL, 			"", &m_sCoalLowParams.sTempSlope.fTolerance, 				10, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_TS_ABS, 			"", &m_sCoalLowParams.sTempSlope.fAbsMaxDiff, 				50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_P_TARGET, 			"", &m_sCoalLowParams.sParticles.fTarget, 					80, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_P_TOL, 				"", &m_sCoalLowParams.sParticles.fTolerance, 				30, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_P_ABS, 				"", &m_sCoalLowParams.sParticles.fAbsMaxDiff, 				1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_PS_ABS, 			"", &m_sCoalLowParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
-#endif
 	PFL_INIT_SINT32(PFD_COL_PS_TOL, 			"", &m_sCoalLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		"", &m_sCoalLowParams.i32EntryWaitTimeSeconds, 				0, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			"", &m_sCoalLowParams.i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sCoalLowParams.i32MaximumTimeInStateMinutes, 		20, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_PM_MAX,    	    	"", &m_sCoalLowParams.sPrimary.i32Max, 						85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COL_PM_MIN,    	    	"", &m_sCoalLowParams.sPrimary.i32Min, 						6, 			PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COL_SM_MAX,    	    	"", &m_sCoalLowParams.sSecondary.i32Max, 					97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
@@ -145,18 +125,6 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COH_T_TARGET, 			"", &m_sCoalHighParams.sTemperature.fTarget, 		  		630, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_T_TOL, 				"", &m_sCoalHighParams.sTemperature.fTolerance, 	  		0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_T_ABS, 				"", &m_sCoalHighParams.sTemperature.fAbsMaxDiff, 			0, 			0, 		20000),
-#if !PF_UNUSED
-	PFL_INIT_SINT32(PFD_COH_TS_TARGET, 			"", &m_sCoalHighParams.sTempSlope.fTarget, 		  			50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_TS_TOL, 			"", &m_sCoalHighParams.sTempSlope.fTolerance, 				10, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_TS_ABS, 			"", &m_sCoalHighParams.sTempSlope.fAbsMaxDiff, 				50, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_P_TARGET, 			"", &m_sCoalHighParams.sParticles.fTarget, 					80, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_P_TOL, 				"", &m_sCoalHighParams.sParticles.fTolerance, 				30, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_P_ABS, 				"", &m_sCoalHighParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_PS_ABS, 			"", &m_sCoalHighParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
-#endif
-	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		"", &m_sCoalHighParams.i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_MIN_TIME, 			"", &m_sCoalHighParams.i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sCoalHighParams.i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_PM_MAX,    	    	"", &m_sCoalHighParams.sPrimary.i32Max, 					85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_PM_MIN,    	    	"", &m_sCoalHighParams.sPrimary.i32Min, 					17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_SM_MAX,    	    	"", &m_sCoalHighParams.sSecondary.i32Max, 					97, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
@@ -164,6 +132,27 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COH_GM_MAX,    	    	"", &m_sCoalHighParams.sGrill.i32Max, 						48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_GM_MIN,    	    	"", &m_sCoalHighParams.sGrill.i32Min, 		 				0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
+
+	//SuperStateParameters
+	PFL_INIT_SINT32(PFD_TR_ENTRY_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_MIN_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32MaximumTimeInStateMinutes, 			10, 		0, 		20000),
+
+	PFL_INIT_SINT32(PFD_CBL_ENTRY_TIME, 		"", &m_sSuperParams[COMBUSTION_LOW].i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 		30, 		0, 		20000),
+
+	PFL_INIT_SINT32(PFD_CBH_ENTRY_TIME, 		"", &m_sSuperParams[COMBUSTION_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBH_MIN_TIME, 			"", &m_sSuperParams[COMBUSTION_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_CBH_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_HIGH].i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
+
+	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		"", &m_sSuperParams[COAL_LOW].i32EntryWaitTimeSeconds, 				0, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 		20, 		0, 		20000),
+
+	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		"", &m_sSuperParams[COAL_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COH_MIN_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
 
 	// Overheat parameters
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sOverheatParams.OverheatPlenum, 	  					220, 		0, 		20000),
@@ -194,6 +183,31 @@ void PARAMFILE_Init()
 	PFL_Init(&PARAMFILE_g_sHandle,  m_sParameterItems, PARAMETERITEM_COUNT, &m_sConfig);
 	//PFL_LoadAll(&PARAMFILE_g_sHandle);
 	PFL_LoadAllDefault(&PARAMFILE_g_sHandle);
+
+	m_sSuperParams[ZEROING_STEPPER].i32EntryWaitTimeSeconds = 0;
+	m_sSuperParams[ZEROING_STEPPER].i32MaximumTimeInStateMinutes = 0;
+	m_sSuperParams[ZEROING_STEPPER].i32MinimumTimeInStateMinutes = 0;
+
+	m_sSuperParams[WAITING].i32EntryWaitTimeSeconds = 0;
+	m_sSuperParams[WAITING].i32MaximumTimeInStateMinutes = 0;
+	m_sSuperParams[WAITING].i32MinimumTimeInStateMinutes = 0;
+
+	m_sSuperParams[RELOAD_IGNITION].i32EntryWaitTimeSeconds = 0;
+	m_sSuperParams[RELOAD_IGNITION].i32MaximumTimeInStateMinutes = 0;
+	m_sSuperParams[RELOAD_IGNITION].i32MinimumTimeInStateMinutes = 0;
+
+	m_sSuperParams[OVERTEMP].i32EntryWaitTimeSeconds = 0;
+	m_sSuperParams[OVERTEMP].i32MaximumTimeInStateMinutes = 0;
+	m_sSuperParams[OVERTEMP].i32MinimumTimeInStateMinutes = 0;
+
+	m_sSuperParams[SAFETY].i32EntryWaitTimeSeconds = 0;
+	m_sSuperParams[SAFETY].i32MaximumTimeInStateMinutes = 0;
+	m_sSuperParams[SAFETY].i32MinimumTimeInStateMinutes = 0;
+
+	m_sSuperParams[MANUAL_CONTROL].i32EntryWaitTimeSeconds = 0;
+	m_sSuperParams[MANUAL_CONTROL].i32MaximumTimeInStateMinutes = 0;
+	m_sSuperParams[MANUAL_CONTROL].i32MinimumTimeInStateMinutes = 0;
+
 }
 
 uint32_t PARAMFILE_GetParamEntryCount()
@@ -229,32 +243,31 @@ const PF_OverHeat_Thresholds_t* PB_GetOverheatParams(void)
 	return &m_sOverheatParams;
 }
 
-
-const PF_StateParam_t *PB_GetWaitingParams(void)
+const PF_WaitingParam_t *PB_GetWaitingParams(void)
 {
 	return &m_sWaitingParams;
 }
-const PF_StateParam_t *PB_GetReloadParams(void)
+const PF_ReloadParam_t *PB_GetReloadParams(void)
 {
 	return &m_sReloadParams;
 }
-const PF_StateParam_t *PB_GetTRiseParams(void)
+const PF_TriseParam_t *PB_GetTRiseParams(void)
 {
-	return &m_sTRiseParams;
+	return &m_sTriseParams;
 }
-const PF_StateParam_t *PB_GetCombLowParams(void)
+const PF_CombustionParam_t *PB_GetCombLowParams(void)
 {
 	return &m_sCombLowParams;
 }
-const PF_StateParam_t *PB_GetCombHighParams(void)
+const PF_CombustionParam_t *PB_GetCombHighParams(void)
 {
 	return &m_sCombHighParams;
 }
-const PF_StateParam_t *PB_GetCoalLowParams(void)
+const PF_CoalParam_t *PB_GetCoalLowParams(void)
 {
 	return &m_sCoalLowParams;
 }
-const PF_StateParam_t *PB_GetCoalHighParams(void)
+const PF_CoalParam_t *PB_GetCoalHighParams(void)
 {
 	return &m_sCoalHighParams;
 }
@@ -264,4 +277,7 @@ const PF_StepperStepsPerSec_t *PB_SpeedParams(void)
 	return &m_sSpeedParams;
 }
 
-
+const PF_SuperStateParam_t *PB_GetSuperStateParams(uint8_t state)
+{
+	return &m_sSuperParams[state];
+}
