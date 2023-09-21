@@ -136,6 +136,9 @@ void   MX_USART2_UART_Init(void);
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define RANGE(min,val,max) MAX(min,MIN(val,max))
+#define NOVIKA_SETUP (0)
+
+#define MOTOR_HOME_CMD 0xEE
 
 /* USER CODE END Private defines */
 

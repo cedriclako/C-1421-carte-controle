@@ -46,6 +46,7 @@ Core/Src/MotorManager.o: ../Core/Src/MotorManager.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
  ../Core/Inc/ParamFile.h ../Core/Inc/ParameterFileLib.h \
+ ../Core/Inc/main.h ../Core/Inc/Algo.h ../Core/Inc/ParticlesManager.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/message_buffer.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/stream_buffer.h \
  ../Core/Inc/main.h
@@ -145,6 +146,12 @@ Core/Src/MotorManager.o: ../Core/Src/MotorManager.c \
 ../Core/Inc/ParamFile.h:
 
 ../Core/Inc/ParameterFileLib.h:
+
+../Core/Inc/main.h:
+
+../Core/Inc/Algo.h:
+
+../Core/Inc/ParticlesManager.h:
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/message_buffer.h:
 
