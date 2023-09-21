@@ -32,7 +32,6 @@ extern QueueHandle_t MotorInPlaceHandle;
 
 void StepperAdjustPosition(StepObj *motor);
 void StepperRecoverPosition(StepObj *motor);
-bool StepperSetToZero(StepObj *motor);
 bool StepperHome(StepObj *motor);
 
 void StepperEnable(StepObj * motor);
@@ -87,12 +86,8 @@ void Motor_task(void const * argument)
 			  }
 			  else
 			  {
-#if NOVIKA_SETUP
-			  motor[i].u8SetPoint = 2*MIN(u8cmd_buf[2*i], motor->u8MaxValue);
-#else
-			  motor[i].u8SetPoint = MIN(u8cmd_buf[2*i], motor->u8MaxValue);
-#endif
 
+			  motor[i].u8SetPoint = RANGE(motor[i].u8MinValue, u8cmd_buf[2*i], motor[i].u8MaxValue);
 			  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1])/10;
 			  }
 
@@ -139,14 +134,6 @@ void Motor_task(void const * argument)
 						  motor[i].bHomingRequest = false;
 					  }
 				  }
-				  else if((motor[i].u8SetPoint == 0) && (motor[i].fSecPerStep == 0.0))
-				  {
-					  if(StepperSetToZero(&motor[i]))
-					  {
-						  motor[i].u8SetPoint = motor[i].u8MinValue;
-					  }
-
-				  }
 				  else if(motor[i].bRecovering)
 				  {
 					  StepperRecoverPosition(&motor[i]);
@@ -171,35 +158,6 @@ bool StepperAtSetpoint(StepObj *motor)
 	return motor->u8Position == motor->u8SetPoint;
 }
 
-bool StepperSetToZero(StepObj *motor)
-{
-	if(motor->sHomingDirection == Closing)
-	{
-		if(!StepperLimitSwitchActive(motor))
-		{
-			StepperEnable(motor);
-			StepperLowCurrentON(motor);
-			motor->sDirection = Closing;
-			StepperSetDirection(motor);
-
-			StepperToggleOneStep(motor);
-			return false;
-		}
-		StepperDisable(motor);
-		motor->u8Position = motor->u8MinValue;
-		return true;
-
-	}
-	else
-	{
-		if(motor->u8Position != motor->u8MinValue)
-		{
-			StepperAdjustPosition(motor);
-			return false;
-		}
-		return true;
-	}
-}
 
 bool StepperHome(StepObj *motor)
 {
