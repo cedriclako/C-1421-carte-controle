@@ -98,7 +98,7 @@ void Motor_task(void const * argument)
 
 	  for(uint8_t i = 0;i < NumberOfMotors;i++)
 	  {
-		  if(!motor[i].bHomingRequest && !motor[i].bRecovering && StepperLimitSwitchActive(&motor[i]) && (abs(motor[i].u8Position - motor[i].u8HomePosition) > 3) && (abs(motor[i].u8SetPoint - motor[i].u8HomePosition) > 3))
+		  if(!motor[i].bHomingRequest && !motor[i].bRecovering && StepperLimitSwitchActive(&motor[i]) && (abs(motor[i].u8Position - motor[i].u8HomePosition) > 5) && (abs(motor[i].u8SetPoint - motor[i].u8HomePosition) > 5))
 		  {
 			  motor[i].bRecovering = true;
 			  motor[i].u8RecoverPosition = motor[i].u8Position;
@@ -119,7 +119,6 @@ void Motor_task(void const * argument)
 			  xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 		  }
 		  osDelay(1);
-
 	  }else
 	  {
 		  AllInPlace = false;
@@ -127,7 +126,12 @@ void Motor_task(void const * argument)
 		  {
 			  if(!StepperAtSetpoint(&motor[i]) && (u32CurrentTime_ms - motor[i].u32LastMove_ms > STEP_PERIOD))
 			  {
-				  if(motor[i].bHomingRequest)
+				  if(motor[i].bInMiddleOfStep)
+				  {
+					  StepperToggleOneStep(&motor[i]);
+
+				  }
+				  else if(motor[i].bHomingRequest)
 				  {
 					  if(StepperHome(&motor[i]))
 					  {
@@ -147,7 +151,7 @@ void Motor_task(void const * argument)
 
 	  }
 
-	  //osDelay(1);
+	  osDelay(1);
   }
 
 
@@ -254,7 +258,9 @@ void StepperAdjustPosition(StepObj *motor)
 	}
     else if(motor->u8Position == motor->u8HomePosition) // On pense qu'on est au minimum, mais on est perdu
     {
-    	motor->bHomingRequest = true;
+    		motor->bHomingRequest = true;
+    		motor->u8SetPoint = motor->u8HomePosition;
+    		motor->u8Position = 100;
     }
 
     if(motor->u8Position == motor->u8SetPoint)
@@ -267,9 +273,17 @@ void StepperAdjustPosition(StepObj *motor)
 void StepperToggleOneStep(StepObj * motor)
 {
 
-	HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_RESET);
-	osDelay(STEP_PERIOD);
-	HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_SET);
+	if(!motor->bInMiddleOfStep)
+	{
+		HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_RESET);
+		motor->bInMiddleOfStep = true;
+	}
+	else
+	{
+		HAL_GPIO_WritePin(motor->sPins.PWM_PORT,motor->sPins.PWM_PIN,GPIO_PIN_SET);
+		motor->bInMiddleOfStep = false;
+	}
+
 	motor->u32LastMove_ms = osKernelSysTick();
 }
 bool StepperLimitSwitchActive(StepObj * motor)

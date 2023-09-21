@@ -64,6 +64,8 @@ typedef struct Stepper
 	bool bRecovering;
 	uint8_t u8RecoverPosition;
 
+	bool bInMiddleOfStep;
+
 	Pin_set_t sPins;
 	uint8_t u8Position;
 	uint8_t u8HomePosition;
@@ -74,7 +76,7 @@ typedef struct Stepper
 	float fSecPerStep;
 }StepObj;
 
-#define STEPPER_INIT(_min, _max, _rest,_homedir, _PP, _EP, _RP, _LP, _DP, _SP,_PG, _EG, _RG, _LG, _DG, _SG) {.u8MinValue = _min, .u8MaxValue = _max,.u8Position = 100,.u8HomePosition = _rest, .sHomingDirection = _homedir,.bHomingRequest = true, .bRecovering = false, .u8SetPoint = 100,.sPins = {.PWM_PIN = _PP,.ENABLE_PIN = _EP,.RESET_PIN = _RP,.LOW_CURRENT_PIN = _LP,.DIRECTION_PIN = _DP,.SWITCH_PIN = _SP, .PWM_PORT = _PG,.ENABLE_PORT = _EG,.RESET_PORT =  _RG,.LOW_CURRENT_PORT = _LG,.DIRECTION_PORT = _DG, .SWITCH_PORT = _SG}}
+#define STEPPER_INIT(_min, _max, _rest,_homedir, _PP, _EP, _RP, _LP, _DP, _SP,_PG, _EG, _RG, _LG, _DG, _SG) {.u8MinValue = _min, .u8MaxValue = _max,.u8Position = 100,.u8HomePosition = _rest, .sHomingDirection = _homedir,.bHomingRequest = true, .bRecovering = false, .u8SetPoint = 100,.bInMiddleOfStep = false, .sPins = {.PWM_PIN = _PP,.ENABLE_PIN = _EP,.RESET_PIN = _RP,.LOW_CURRENT_PIN = _LP,.DIRECTION_PIN = _DP,.SWITCH_PIN = _SP, .PWM_PORT = _PG,.ENABLE_PORT = _EG,.RESET_PORT =  _RG,.LOW_CURRENT_PORT = _LG,.DIRECTION_PORT = _DG, .SWITCH_PORT = _SG}}
 
 
 #define UNUSED_PARAM(param)  (void)(param)
