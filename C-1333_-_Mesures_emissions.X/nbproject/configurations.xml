@@ -22,6 +22,7 @@
         <itemPath>mcc_generated_files/adcc.h</itemPath>
         <itemPath>mcc_generated_files/memory.h</itemPath>
         <itemPath>mcc_generated_files/tmr1.h</itemPath>
+        <itemPath>mcc_generated_files/pwm1_16bit.h</itemPath>
       </logicalFolder>
       <itemPath>GPIO.h</itemPath>
       <itemPath>I2CEngine.h</itemPath>
@@ -31,6 +32,7 @@
       <itemPath>MeasureParticles.h</itemPath>
       <itemPath>ControlBridge.h</itemPath>
       <itemPath>ParameterFile.h</itemPath>
+      <itemPath>ChillerManager.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -57,6 +59,7 @@
         <itemPath>mcc_generated_files/adcc.c</itemPath>
         <itemPath>mcc_generated_files/memory.c</itemPath>
         <itemPath>mcc_generated_files/tmr1.c</itemPath>
+        <itemPath>mcc_generated_files/pwm1_16bit.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>GPIO.c</itemPath>
@@ -67,6 +70,7 @@
       <itemPath>MeasureParticules.c</itemPath>
       <itemPath>ControlBridge.c</itemPath>
       <itemPath>ParameterFile.c</itemPath>
+      <itemPath>ChillerManager.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -299,8 +303,6 @@
         <property key="communication.interface" value=""/>
         <property key="communication.interface.jtag" value="2wire"/>
         <property key="communication.speed" value="${communication.speed.default}"/>
-        <property key="debugoptions.debug-startup" value="Use system settings"/>
-        <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.simultaneous.debug" value="false"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
         <property key="freeze.timers" value="false"/>
@@ -319,8 +321,6 @@
         <property key="memories.programmemory.ranges" value="0-ffff"/>
         <property key="memories.rww" value="true"/>
         <property key="poweroptions.powerenable" value="false"/>
-        <property key="programmerToGoFilePath"
-                  value="D:/Projets/SBI/c-1421-carte-controle/C-1333_-_Mesures_emissions.X/debug/default/C-1333 - Mesures emissions_ptg"/>
         <property key="programmerToGoImageName" value="C-1333 - Mesures emissions_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>

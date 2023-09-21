@@ -354,3 +354,8 @@ void measureSetLED(const gs_Parameters* Param)
     gs_sMeasPartObject.adcValue = (uint16_t) shunt;
     DAC1_Disable();
 }
+
+float measureGetInternalTemp(void)
+{
+    return gs_sMeasPartObject.m_fTemperatureCelcius;
+}

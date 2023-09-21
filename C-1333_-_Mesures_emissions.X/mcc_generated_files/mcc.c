@@ -60,6 +60,7 @@ void SYSTEM_Initialize(void)
     TMR0_Initialize();
     UART2_Initialize();
     UART1_Initialize();
+    PWM1_16BIT_Initialize();
 }
 
 void OSCILLATOR_Initialize(void)

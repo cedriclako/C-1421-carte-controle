@@ -92,6 +92,7 @@ bool measureParticlesReadyForConfig(void);
 
 void measureReset(void);
 
+float measureGetInternalTemp(void);
 
 #endif	/* MEASUREPARTICLES_H */
 

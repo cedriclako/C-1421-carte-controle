@@ -26,6 +26,9 @@
 #include "DS1775.h"
 #include "MeasureParticles.h"
 #include "ControlBridge.h"
+#include "ChillerManager.h" 
+
+
 /*
                          Main application
  */
@@ -44,7 +47,8 @@ void main(void)
     tsl2591Initialize();
     i2cInitialize();
     ControlBridgeInitialize();
-    
+    ChillerInit();
+
 
     // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
     // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global Interrupts
@@ -56,6 +60,7 @@ void main(void)
     // Disable the Global Interrupts
     //INTERRUPT_GlobalInterruptDisable();
     
+        
     while (1)
     {
         tsl2591Process();
@@ -67,6 +72,7 @@ void main(void)
         
         measureParticlesProcess();
         
+        ChillerProcess();
         // Add your application code
     }
 }

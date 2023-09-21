@@ -470,7 +470,7 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ) // Called when MeasureP
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);
     bOBJ.Lux_OFF = (uint16_t)(1000*mOBJ->m_fLuxDark);
     bOBJ.time_since_beginning = mOBJ->m_uLastRead;
-    bOBJ.temperature = (uint16_t) mOBJ->m_fTemperatureCelcius*10;
+    bOBJ.temperature = (uint16_t) (mOBJ->m_fTemperatureCelcius*10);
     //printf("DAC set to: %u\r\n", mOBJ->dacValue);
     
     DRDY = false; // Tells the state machine it can compute calculated values
