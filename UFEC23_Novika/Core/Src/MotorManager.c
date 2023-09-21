@@ -25,7 +25,7 @@
 #define Step1_2_3_SLEEP() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_SET);
 #define Step1_2_3_WAKE() HAL_GPIO_WritePin(uc_Stepper_Sleep_GPIO_Port,uc_Stepper_Sleep_Pin,GPIO_PIN_RESET);
 
-#define STEP_PERIOD 3 // ms per step
+#define STEP_PERIOD 1 // ms per step
 
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
@@ -98,7 +98,7 @@ void Motor_task(void const * argument)
 
 	  for(uint8_t i = 0;i < NumberOfMotors;i++)
 	  {
-		  if(!motor[i].bHomingRequest && !motor[i].bRecovering && StepperLimitSwitchActive(&motor[i]) && (abs(motor[i].u8Position - motor[i].u8HomePosition) > 5) && (abs(motor[i].u8SetPoint - motor[i].u8HomePosition) > 5))
+		  if(!motor[i].bHomingRequest && !motor[i].bRecovering && StepperLimitSwitchActive(&motor[i]) && (abs(motor[i].u8Position - motor[i].u8HomePosition) > 6) && (abs(motor[i].u8SetPoint - motor[i].u8HomePosition) > 6))
 		  {
 			  motor[i].bRecovering = true;
 			  motor[i].u8RecoverPosition = motor[i].u8Position;
@@ -151,7 +151,7 @@ void Motor_task(void const * argument)
 
 	  }
 
-	  osDelay(1);
+	  //osDelay(1);
   }
 
 
@@ -251,7 +251,7 @@ void StepperAdjustPosition(StepObj *motor)
     motor->u8Position += delta_pos;
 	StepperToggleOneStep(motor);
 
-    if(StepperLimitSwitchActive(motor) && motor->sDirection == motor->sHomingDirection)
+    if(StepperLimitSwitchActive(motor) && (motor->sDirection == motor->sHomingDirection))
 	{
 		motor->u8Position = motor->u8HomePosition; // On a atteint le minimum, on peut désactiver le moteur
 		StepperDisable(motor);

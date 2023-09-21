@@ -146,7 +146,7 @@ int main(void)
   Algo_taskHandle = osThreadCreate(osThread(Algo_task), NULL);
 
   /* definition and creation of MotorManager */
-  osThreadDef(MotorManager, Motor_task, osPriorityAboveNormal, 0, 128);
+  osThreadDef(MotorManager, Motor_task, osPriorityNormal, 0, 128);
   MotorManagerHandle = osThreadCreate(osThread(MotorManager), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
