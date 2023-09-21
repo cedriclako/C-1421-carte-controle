@@ -159,6 +159,7 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		{
 			nextState = RELOAD_IGNITION;
 			stove->bReloadRequested = false;
+			stove->bButtonBlinkRequired = true;
 			stove->TimeOfReloadRequest = u32CurrentTime_ms;
 		}
 	}
@@ -243,9 +244,16 @@ void Algo_stoveInit(Mobj *stove)
 	stove->u32TimeOfComputation_ms = 0;
 	stove->u32TimeSinceCombEntry_ms = 0;
 	stove->bReloadRequested = false;
+	stove->bButtonBlinkRequired = false;
 	stove->bstateJustChanged = true;
 	stove->bSafetyOn = false;
 	stove->TimeOfReloadRequest = 0;
+
+	stove->sPrimary.i8apertureCmdSteps = MOTOR_HOME_CMD;
+	stove->sGrill.i8apertureCmdSteps = MOTOR_HOME_CMD;
+	stove->sSecondary.i8apertureCmdSteps = MOTOR_HOME_CMD;
+
+	Algo_adjust_steppers_position(stove);
 }
 
 ///////////////////////// STATE MACHINE  //////////////////////////////////////////////////////////////////////

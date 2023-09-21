@@ -48,7 +48,7 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  ../Core/Inc/Algo.h ../Core/Inc/ParticlesManager.h \
  ../Core/Inc/ParamFile.h ../Core/Inc/ParameterFileLib.h \
- ../Core/Inc/DebugManager.h ../Core/Inc/Algo.h
+ ../Core/Inc/main.h ../Core/Inc/DebugManager.h ../Core/Inc/Algo.h
 
 ../Core/Inc/DebugPort.h:
 
@@ -151,6 +151,8 @@ Core/Src/DebugManager.o: ../Core/Src/DebugManager.c \
 ../Core/Inc/ParamFile.h:
 
 ../Core/Inc/ParameterFileLib.h:
+
+../Core/Inc/main.h:
 
 ../Core/Inc/DebugManager.h:
 

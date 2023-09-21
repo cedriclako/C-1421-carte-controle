@@ -8,20 +8,30 @@
 #define _PARAMETERFILEDEF_H_
 
 #include "ParameterFileLib.h"
+#include "main.h"
 #include "Algo.h"
 #define PF_UNUSED (1)
 
 #define PF_PRIMARY_MINIMUM_OPENING				6 //5.4 degres @ 0.9 deg/pas
 #define PF_PRIMARY_CLOSED  						PF_PRIMARY_MINIMUM_OPENING
 #define PF_PRIMARY_FULL_OPEN			   		97
+#define PF_PRIMARY_REST_POSITION				PF_PRIMARY_CLOSED
 
 #define PF_SECONDARY_MINIMUM_OPENING			6
 #define PF_SECONDARY_CLOSED						PF_SECONDARY_MINIMUM_OPENING
 #define PF_SECONDARY_FULL_OPEN				    97
 
-#define PF_GRILL_CLOSED                   		0
-#define PF_GRILL_MINIMUM_OPENING 				PF_GRILL_CLOSED
+#if NOVIKA_SETUP
+#define PF_SECONDARY_REST_POSITION				PF_SECONDARY_CLOSED
+#else
+#define PF_SECONDARY_REST_POSITION				PF_SECONDARY_FULL_OPEN
+#endif
+
+
+#define PF_GRILL_MINIMUM_OPENING                   		0
+#define PF_GRILL_CLOSED 				PF_GRILL_MINIMUM_OPENING
 #define PF_GRILL_FULL_OPEN                      97
+#define PF_GRILL_REST_POSITION				PF_GRILL_CLOSED
 
 typedef struct
 {

@@ -46,7 +46,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  ../Core/Inc/Algo.h ../Core/Inc/ParticlesManager.h \
  ../Core/Inc/ParamFile.h ../Core/Inc/ParameterFileLib.h \
- ../Core/Inc/Algo.h \
+ ../Core/Inc/main.h ../Core/Inc/Algo.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/message_buffer.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/stream_buffer.h
 
@@ -149,6 +149,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/ParamFile.h:
 
 ../Core/Inc/ParameterFileLib.h:
+
+../Core/Inc/main.h:
 
 ../Core/Inc/Algo.h:
 

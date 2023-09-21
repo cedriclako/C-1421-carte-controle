@@ -31,7 +31,9 @@ extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
 
 void StepperAdjustPosition(StepObj *motor);
+void StepperRecoverPosition(StepObj *motor);
 bool StepperSetToZero(StepObj *motor);
+bool StepperHome(StepObj *motor);
 
 void StepperEnable(StepObj * motor);
 void StepperDisable(StepObj * motor);
@@ -49,12 +51,18 @@ void Motor_task(void const * argument)
 	Step1_2_3_WAKE();
 
 	StepObj motor[NumberOfMotors] = {
-			STEPPER_INIT(PF_PRIMARY_MINIMUM_OPENING,PF_PRIMARY_FULL_OPEN, Step1_STEP_Pin, Step1_ENABLE_Pin, Step1_RESET_Pin, Step1_LowCurrent_Pin, Step1_DIR_Pin, Limit_switch1_Pin,
+			STEPPER_INIT(PF_PRIMARY_MINIMUM_OPENING,PF_PRIMARY_FULL_OPEN, PF_PRIMARY_REST_POSITION,Closing, Step1_STEP_Pin, Step1_ENABLE_Pin, Step1_RESET_Pin, Step1_LowCurrent_Pin, Step1_DIR_Pin, Limit_switch1_Pin,
 					Step1_STEP_GPIO_Port, Step1_ENABLE_GPIO_Port, Step1_RESET_GPIO_Port, Step1_LowCurrent_GPIO_Port, Step1_DIR_GPIO_Port, Limit_switch1_GPIO_Port),
-			STEPPER_INIT(PF_GRILL_MINIMUM_OPENING,PF_GRILL_FULL_OPEN, Step2_STEP_Pin,Step2_ENABLE_Pin,Step2_RESET_Pin,Step2_LowCurrent_Pin,Step2_DIR_Pin, Limit_switch2_Pin,
+			STEPPER_INIT(PF_GRILL_MINIMUM_OPENING,PF_GRILL_FULL_OPEN, PF_GRILL_REST_POSITION,Closing, Step2_STEP_Pin,Step2_ENABLE_Pin,Step2_RESET_Pin,Step2_LowCurrent_Pin,Step2_DIR_Pin, Limit_switch2_Pin,
 								Step2_STEP_GPIO_Port, Step2_ENABLE_GPIO_Port, Step2_RESET_GPIO_Port,Step2_LowCurrent_GPIO_Port,Step2_DIR_GPIO_Port, Limit_switch2_GPIO_Port),
-			STEPPER_INIT(PF_SECONDARY_MINIMUM_OPENING,PF_SECONDARY_FULL_OPEN, Step3_STEP_Pin,Step3_ENABLE_Pin,Step3_RESET_Pin,Step3_LowCurrent_Pin,Step3_DIR_Pin, Limit_switch3_Pin,
-										Step3_STEP_GPIO_Port,Step3_ENABLE_GPIO_Port,Step3_RESET_GPIO_Port,Step3_LowCurrent_GPIO_Port,Step3_DIR_GPIO_Port, Limit_switch3_GPIO_Port),
+#if NOVIKA_SETUP
+			STEPPER_INIT(PF_SECONDARY_MINIMUM_OPENING,PF_SECONDARY_FULL_OPEN, PF_SECONDARY_REST_POSITION, Closing, Step3_STEP_Pin,Step3_ENABLE_Pin,Step3_RESET_Pin,Step3_LowCurrent_Pin,Step3_DIR_Pin, Limit_switch3_Pin,
+					Step3_STEP_GPIO_Port,Step3_ENABLE_GPIO_Port,Step3_RESET_GPIO_Port,Step3_LowCurrent_GPIO_Port,Step3_DIR_GPIO_Port, Limit_switch3_GPIO_Port),
+#else
+			STEPPER_INIT(PF_SECONDARY_MINIMUM_OPENING,PF_SECONDARY_FULL_OPEN, PF_SECONDARY_REST_POSITION, Opening, Step3_STEP_Pin,Step3_ENABLE_Pin,Step3_RESET_Pin,Step3_LowCurrent_Pin,Step3_DIR_Pin, Limit_switch3_Pin,
+					Step3_STEP_GPIO_Port,Step3_ENABLE_GPIO_Port,Step3_RESET_GPIO_Port,Step3_LowCurrent_GPIO_Port,Step3_DIR_GPIO_Port, Limit_switch3_GPIO_Port),
+#endif
+
 			};
 
 	bool AllInPlace = true;
@@ -71,6 +79,14 @@ void Motor_task(void const * argument)
 
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
+			  if(u8cmd_buf[2*i] == MOTOR_HOME_CMD)
+			  {
+				  motor[i].bHomingRequest = true;
+				  motor[i].u8SetPoint = motor[i].u8HomePosition;
+				  motor[i].u8Position = 100;
+			  }
+			  else
+			  {
 #if NOVIKA_SETUP
 			  motor[i].u8SetPoint = 2*MIN(u8cmd_buf[2*i], motor->u8MaxValue);
 #else
@@ -78,11 +94,28 @@ void Motor_task(void const * argument)
 #endif
 
 			  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1])/10;
+			  }
+
+		  }
+
+	  }
+
+
+	  for(uint8_t i = 0;i < NumberOfMotors;i++)
+	  {
+		  if(!motor[i].bHomingRequest && !motor[i].bRecovering && StepperLimitSwitchActive(&motor[i]) && (abs(motor[i].u8Position - motor[i].u8HomePosition) > 3) && (abs(motor[i].u8SetPoint - motor[i].u8HomePosition) > 3))
+		  {
+			  motor[i].bRecovering = true;
+			  motor[i].u8RecoverPosition = motor[i].u8Position;
+			  motor[i].u8Position = motor[i].u8HomePosition;
 		  }
 	  }
 
 
-	  if(StepperAtSetpoint(&motor[PrimaryStepper]) && StepperAtSetpoint(&motor[GrillStepper]) //TODO: receive commands at every passage
+
+
+
+	  if(StepperAtSetpoint(&motor[PrimaryStepper]) && StepperAtSetpoint(&motor[GrillStepper])
 			  && StepperAtSetpoint(&motor[SecondaryStepper]))
 	  {
 		  if(!AllInPlace)
@@ -90,34 +123,44 @@ void Motor_task(void const * argument)
 			  AllInPlace = true;
 			  xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 		  }
+		  osDelay(1);
 
 	  }else
 	  {
 		  AllInPlace = false;
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
-
 			  if(!StepperAtSetpoint(&motor[i]) && (u32CurrentTime_ms - motor[i].u32LastMove_ms > STEP_PERIOD))
 			  {
-				  if((motor[i].u8SetPoint == 0) && (motor[i].fSecPerStep == 0.0))
+				  if(motor[i].bHomingRequest)
+				  {
+					  if(StepperHome(&motor[i]))
+					  {
+						  motor[i].bHomingRequest = false;
+					  }
+				  }
+				  else if((motor[i].u8SetPoint == 0) && (motor[i].fSecPerStep == 0.0))
 				  {
 					  if(StepperSetToZero(&motor[i]))
 					  {
 						  motor[i].u8SetPoint = motor[i].u8MinValue;
-						  StepperDisable(&motor[i]);
 					  }
 
-				  }else if(u32CurrentTime_ms - motor[i].u32LastMove_ms > motor[i].fSecPerStep*1000)
+				  }
+				  else if(motor[i].bRecovering)
+				  {
+					  StepperRecoverPosition(&motor[i]);
+				  }
+				  else if(u32CurrentTime_ms - motor[i].u32LastMove_ms > motor[i].fSecPerStep*1000)
 				  {
 					  StepperAdjustPosition(&motor[i]);
 				  }
 			  }
-
 		  }
 
 	  }
 
-	  osDelay(1);
+	  //osDelay(1);
   }
 
 
@@ -130,47 +173,92 @@ bool StepperAtSetpoint(StepObj *motor)
 
 bool StepperSetToZero(StepObj *motor)
 {
+	if(motor->sHomingDirection == Closing)
+	{
+		if(!StepperLimitSwitchActive(motor))
+		{
+			StepperEnable(motor);
+			StepperLowCurrentON(motor);
+			motor->sDirection = Closing;
+			StepperSetDirection(motor);
+
+			StepperToggleOneStep(motor);
+			return false;
+		}
+		StepperDisable(motor);
+		motor->u8Position = motor->u8MinValue;
+		return true;
+
+	}
+	else
+	{
+		if(motor->u8Position != motor->u8MinValue)
+		{
+			StepperAdjustPosition(motor);
+			return false;
+		}
+		return true;
+	}
+}
+
+bool StepperHome(StepObj *motor)
+{
 	if(!StepperLimitSwitchActive(motor))
 	{
 		StepperEnable(motor);
 		StepperLowCurrentON(motor);
-	    motor->sDirection = Closing;
+		if(motor->u8HomePosition > 50)
+		{
+			motor->sDirection = Opening;
+		}
+		else
+		{
+			motor->sDirection = Closing;
+		}
 	    StepperSetDirection(motor);
 
 	    StepperToggleOneStep(motor);
 	    return false;
 
 	}
-	motor->u8Position = motor->u8MinValue;
+	StepperDisable(motor);
+	motor->u8Position = motor->u8HomePosition;
 	return true;
 }
 
-/*
-void StepperResetPosition(StepObj *motor)
+void StepperRecoverPosition(StepObj *motor)
 {
-    StepperDisable(motor);
-    osDelay(80);
+	int8_t delta_pos;
 
-    if(!StepperToZero(motor))
-    {
-    	return;
-    }
+	StepperEnable(motor);
+	StepperLowCurrentOFF(motor);
 
-    motor->u8Position = motor->u8MinValue;
-    StepperLowCurrentOFF(motor);
-    motor->sDirection = Opening;
-    StepperSetDirection(motor);
-    osDelay(10);
-
-	while (!StepperAtSetpoint(motor))
-    {
-    	motor->u8Position++;
-		StepperToggleOneStep(motor);
-
-    	osDelay(50);
+	if(motor->u8RecoverPosition > motor->u8HomePosition)
+	{
+		motor->sDirection = Opening;
+		StepperSetDirection(motor);
+		delta_pos = 1;
 	}
+	else
+	{
+		motor->sDirection = Closing;
+		StepperSetDirection(motor);
+		delta_pos = -1;
+	}
+
+
+	motor->u8Position += delta_pos;
+	StepperToggleOneStep(motor);
+
+
+	if(motor->u8Position == motor->u8RecoverPosition)
+	{
+		motor->bRecovering = false;
+		StepperLowCurrentON(motor);
+	}
+
 }
-*/
+
 void StepperAdjustPosition(StepObj *motor)
 {
 
@@ -178,7 +266,7 @@ void StepperAdjustPosition(StepObj *motor)
 
     if(StepperLimitSwitchActive(motor))
     {
-    	motor->u8Position = motor->u8MinValue;
+    	motor->u8Position = motor->u8HomePosition;
     }
 
 	StepperEnable(motor);
@@ -201,15 +289,14 @@ void StepperAdjustPosition(StepObj *motor)
     motor->u8Position += delta_pos;
 	StepperToggleOneStep(motor);
 
-    if(StepperLimitSwitchActive(motor) && motor->sDirection == Closing)
+    if(StepperLimitSwitchActive(motor) && motor->sDirection == motor->sHomingDirection)
 	{
-		motor->u8Position = motor->u8MinValue; // On a atteint le minimum, on peut désactiver le moteur
+		motor->u8Position = motor->u8HomePosition; // On a atteint le minimum, on peut désactiver le moteur
 		StepperDisable(motor);
 	}
-    else if(motor->u8Position == motor->u8MinValue) // On pense qu'on est au minimum, mais on est perdu
+    else if(motor->u8Position == motor->u8HomePosition) // On pense qu'on est au minimum, mais on est perdu
     {
-    	motor->u8SetPoint = 0; 		// On demande une remise à zéro
-    	motor->fSecPerStep = 0.0;
+    	motor->bHomingRequest = true;
     }
 
     if(motor->u8Position == motor->u8SetPoint)

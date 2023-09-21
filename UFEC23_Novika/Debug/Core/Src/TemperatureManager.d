@@ -29,7 +29,7 @@ Core/Src/TemperatureManager.o: ../Core/Src/TemperatureManager.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
  ../Core/Inc/Algo.h ../Core/Inc/ParticlesManager.h \
  ../Core/Inc/ParamFile.h ../Core/Inc/ParameterFileLib.h \
- ../Core/Inc/Algo.h ../Core/Inc/TemperatureManager.h \
+ ../Core/Inc/main.h ../Core/Inc/Algo.h ../Core/Inc/TemperatureManager.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
  ../Core/Inc/FreeRTOSConfig.h \
@@ -111,6 +111,8 @@ Core/Src/TemperatureManager.o: ../Core/Src/TemperatureManager.c \
 ../Core/Inc/ParamFile.h:
 
 ../Core/Inc/ParameterFileLib.h:
+
+../Core/Inc/main.h:
 
 ../Core/Inc/Algo.h:
 
