@@ -155,7 +155,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
 
 	// Overheat parameters
-	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sOverheatParams.OverheatPlenum, 	  					220, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sOverheatParams.OverheatPlenum, 	  					420, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT, 	"", &m_sOverheatParams.OverheatPlenumExit,   				210, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_OVERHEATBAFFLE, 		"", &m_sOverheatParams.OverheatBaffle, 	 	   				1472, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		"", &m_sOverheatParams.OverheatChamber, 	 	   			1500, 		0, 		20000),

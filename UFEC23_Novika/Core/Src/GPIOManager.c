@@ -64,7 +64,7 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		u32SafetyStartTime_ms = u32CurrentTime_ms;//Initialize timer
 	}
-	else if(bSafetyActive && (u32CurrentTime_ms - u32SafetyStartTime_ms > 100)) // Software debounce
+	else if(bSafetyActive && (u32CurrentTime_ms - u32SafetyStartTime_ms < 100)) // Software debounce
 	{
 		stove->bSafetyOn = true;
 	}
