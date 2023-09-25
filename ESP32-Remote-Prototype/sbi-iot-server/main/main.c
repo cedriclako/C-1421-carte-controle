@@ -57,7 +57,7 @@ static void WIFI_Init()
     // Access point mode
     m_pWifiSoftAP = esp_netif_create_default_wifi_ap();
 
-    esp_netif_ip_info_t ipInfo;
+    esp_netif_ip_info_t ipInfo = {0};
     IP4_ADDR(&ipInfo.ip, 192, 168, 4, 1);
     IP4_ADDR(&ipInfo.gw, 192, 168, 4, 1);
     IP4_ADDR(&ipInfo.netmask, 255, 255, 255, 0);
