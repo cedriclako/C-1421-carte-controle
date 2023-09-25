@@ -1,4 +1,5 @@
 #include <time.h>
+#include <inttypes.h>
 
 #include "espnowprocess.h"
 #include "esp_log.h"
@@ -89,13 +90,13 @@ void ESPNOWPROCESS_Handler()
         SBI_iot_Cmd inCmd = SBI_iot_Cmd_init_default;
         if (!pb_decode(&recvStream, SBI_iot_Cmd_fields, &inCmd))
         {
-            ESP_LOGE(TAG, "Frame recv, unable decode, len: %d", msg.u8BufferCount);
+            ESP_LOGE(TAG, "Frame recv, unable decode, len: %"PRId32, (int32_t)msg.u8BufferCount);
             return;
         }
 
-        ESP_LOGI(TAG, "<== which_payload: %d (%s), seq_number: %d, len: %d",
-            inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload),
-            inCmd.seq_number, msg.u8BufferCount);
+        ESP_LOGI(TAG, "<== which_payload: %"PRId32" (%s), seq_number: %"PRId32", len: %"PRId32,
+            (int32_t)inCmd.which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(inCmd.which_payload),
+            (int32_t)inCmd.seq_number, (int32_t)msg.u8BufferCount);
 
         // Last transaction ID to discriminate against packet sent multiple time.
         // If the number is 0, we ignore it.
@@ -104,8 +105,8 @@ void ESPNOWPROCESS_Handler()
             if (m_sHandle.s32LastTransactionWhichPayload == inCmd.which_payload &&
                 m_sHandle.u32LastTransactionId == inCmd.transaction_id)
             {
-                ESP_LOGW(TAG, "Frame recv dropped [duplicated], payloadid: %d, transactionid: %d", 
-                    inCmd.which_payload, inCmd.transaction_id);
+                ESP_LOGW(TAG, "Frame recv dropped [duplicated], payloadid: %"PRId32", transactionid: %"PRId32, 
+                    (int32_t)inCmd.which_payload, (int32_t)inCmd.transaction_id);
                 return;
             }
             m_sHandle.s32LastTransactionWhichPayload = inCmd.which_payload;
@@ -121,7 +122,7 @@ void ESPNOWPROCESS_Handler()
                 RecvC2SChangeSettingSPHandler(&inCmd, &inCmd.payload.c2s_change_settingsp);
                 break;
             default:
-                ESP_LOGW(TAG, "Receiving transmission, seq: %d, which: %d, len: %d", inCmd.seq_number, inCmd.which_payload, msg.u8BufferCount);
+                ESP_LOGW(TAG, "Receiving transmission, seq: %"PRId32", which: %"PRId32", len: %"PRId32, (int32_t)inCmd.seq_number, (int32_t)inCmd.which_payload, (int32_t)msg.u8BufferCount);
                 // ESP_LOGE(TAG, "Unknown payload: %d", inCmd.which_payload);
                 break;
         }
@@ -220,10 +221,10 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
         else if (s32CurrFanSpeedValue >= (int32_t)SBI_iot_common_EFANSPEED_Count)
             s32CurrFanSpeedValue = (int32_t)SBI_iot_common_EFANSPEED_Count;
         pMB->sRemoteData.eFanSpeedCurr = (SBI_iot_common_EFANSPEED)s32CurrFanSpeedValue;
-        ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %d, set: %d", pC2SChangeSettingSP->fan_speed_set.curr, s32CurrFanSpeedValue);
+        ESP_LOGI(TAG, "C2SChangeSettingSP fanspeed, received: %"PRId32", set: %"PRId32, (int32_t)pC2SChangeSettingSP->fan_speed_set.curr, (int32_t)s32CurrFanSpeedValue);
     }
 
-    ESP_LOGI(TAG, "transaction id: %d", pInCmd->transaction_id);
+    ESP_LOGI(TAG, "transaction id: %"PRId32, (int32_t)pInCmd->transaction_id);
 
     SBI_iot_S2CChangeSettingSPResp resp;
     
@@ -253,9 +254,9 @@ static void SendESPNow(pb_size_t which_payload, uint32_t transaction_id, void* p
     pb_encode(&outputStream, SBI_iot_Cmd_fields, &cmdResp);
     const int len = SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN + outputStream.bytes_written;
 
-    ESP_LOGI(TAG, "==> which_payload: %d (%s), seq_number: %d, len: %d",
-        which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(which_payload),
-        cmdResp.seq_number, len);
+    ESP_LOGI(TAG, "==> which_payload: %"PRId32" (%s), seq_number: %"PRId32", len: %"PRId32,
+        (int32_t)which_payload, SBIIOTUTIL_GetCmdPayloadPrettyString(which_payload),
+        (int32_t)cmdResp.seq_number, (int32_t)len);
 
     esp_now_send(m_u8BroadcastAddr, u8OutBuffers, len);
 }
@@ -282,7 +283,7 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
 
     if (len > SBIIOTBASEPROTOCOL_MAXPAYLOADLEN)
     {
-        ESP_LOGE(TAG, "dropped RX, too big payload, len: %d", len);
+        ESP_LOGE(TAG, "dropped RX, too big payload, len: %"PRId32, (int32_t)len);
         return;
     }
 

@@ -9,8 +9,6 @@
 
 // MDNS
 #define FWCONFIG_MDNS_HOSTNAME "sbi-iot-svr"
-#define FWCONFIG_MDNS_DESCRIPTION "sbi-iot-svr"
-#define FWCONFIG_MDNS_SERVICENAME "sbi-iot-stove-svr"
 
 // Options
 #define FWCONFIG_SDCARD_ISACTIVE (1)

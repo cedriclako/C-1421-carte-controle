@@ -411,7 +411,7 @@ size_t i2cSlaveWrite(uint8_t num, const uint8_t *buf, uint32_t len, uint32_t tim
             to_queue = len;
         }
         for (size_t i = 0; i < to_queue; i++) {
-            if (xQueueSend(i2c->tx_queue, &buf[i], timeout_ms / portTICK_RATE_MS) != pdTRUE) {
+            if (xQueueSend(i2c->tx_queue, &buf[i], timeout_ms / portTICK_PERIOD_MS) != pdTRUE) {
                 xQueueReset(i2c->tx_queue);
                 to_queue = 0;
                 break;
