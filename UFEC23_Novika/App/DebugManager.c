@@ -37,6 +37,20 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function ---------------------------------------------------------*/
+static const char* StateStrings[ALGO_NB_OF_STATE] =
+{
+	"ZEROING_STEP",
+	"WAITING",
+	"RELOAD_IGNI",
+	"TEMP_RISE",
+	"COMB_HIGH",
+	"COMB_LOW",
+	"COAL_LOW",
+	"COAL_HIGH",
+	"OVERTEMP",
+	"SAFETY",
+	"MANUAL"
+};
 
 extern RTC_HandleTypeDef hrtc;
 RTC_TimeTypeDef sTime;
@@ -56,24 +70,8 @@ void DebugManager(Mobj * stove, uint32_t u32time_ms)
 	}
 }
 
-const char* StateStrings[ALGO_NB_OF_STATE] =
-{
-		"ZEROING_STEP",
-		"WAITING",
-		"RELOAD_IGNI",
-		"TEMP_RISE",
-		"COMB_HIGH",
-		"COMB_LOW",
-		"COAL_LOW",
-		"COAL_HIGH",
-		"OVERTEMP",
-		"SAFETY",
-		"MANUAL"
-};
-
 void PrintOutput(Mobj * stove, State currentState)
 {
-
 	HAL_RTC_GetTime(&hrtc,&sTime,0);
 	printf("#");
 	printf("%02i:%02i:%02i ",sTime.Hours, sTime.Minutes, sTime.Seconds);
