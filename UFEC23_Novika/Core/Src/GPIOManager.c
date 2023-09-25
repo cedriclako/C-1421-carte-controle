@@ -11,9 +11,7 @@ static uint32_t u32SafetyStartTime_ms = 0;
 
 void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
-
 	const PF_UsrParam* uParam = PB_GetUserParam();
-
 
 	// Update Thermostat boolean based on GPIO state
 	stove->bThermostatOn = (HAL_GPIO_ReadPin(Thermostat_Input_GPIO_Port,Thermostat_Input_Pin) == GPIO_PIN_RESET);
@@ -68,15 +66,14 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	if(stove->fBaffleTemp > P2F(uParam->s32FAN_KIP))
 	{
-		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,SET);
-		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,SET);
-	}else if(stove->fBaffleTemp < P2F(uParam->s32FAN_KOP))
-	{
-		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
-		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
+		HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,SET);
+		HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,SET);
 	}
-
-
+	else if(stove->fBaffleTemp < P2F(uParam->s32FAN_KOP))
+	{
+		HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
+		HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
+	}
 }
 
 bool GPIO_IsButtonPressed(void)

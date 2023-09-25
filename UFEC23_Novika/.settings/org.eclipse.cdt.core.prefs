@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1197855412/ProjDirPath/delimiter=;
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1197855412/ProjDirPath/operation=append
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1197855412/ProjDirPath/value=${ProjDirPath}
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1197855412/append=true
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1197855412/appendContributed=true
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1146585632/ProjDirPath/delimiter=;
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1146585632/ProjDirPath/operation=append
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1146585632/ProjDirPath/value=${ProjDirPath}
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1146585632/append=true
+environment/project/com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1146585632/appendContributed=true
