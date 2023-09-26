@@ -56,21 +56,6 @@ void DebugManager(Mobj * stove, uint32_t u32time_ms)
 	}
 }
 
-const char* StateStrings[ALGO_NB_OF_STATE] =
-{
-		"ZEROING_STEP",
-		"WAITING",
-		"RELOAD_IGNI",
-		"TEMP_RISE",
-		"COMB_HIGH",
-		"COMB_LOW",
-		"COAL_LOW",
-		"COAL_HIGH",
-		"OVERTEMP",
-		"SAFETY",
-		"MANUAL"
-};
-
 void PrintOutput(Mobj * stove, State currentState)
 {
 
@@ -82,7 +67,7 @@ void PrintOutput(Mobj * stove, State currentState)
 	printf("Plenum:%i ", (int) stove->fPlenumTemp);
 	printf("State:");
 
-	printf(StateStrings[currentState]);
+	printf(ALGO_GetStateString(currentState));
 
 	printf(" tStat:");
 	if (stove->bThermostatOn == true)

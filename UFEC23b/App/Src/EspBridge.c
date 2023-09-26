@@ -29,6 +29,7 @@ CR    | 2022/11/21 | -       | Creation
 */
 #include <inttypes.h>
 #include "main.h"
+#include "Algo.h"
 #include "cmsis_os.h"
 #include "FreeRTOS.h"
 #include "stm32f1xx_hal.h"
