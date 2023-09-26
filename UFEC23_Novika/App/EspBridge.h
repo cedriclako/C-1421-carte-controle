@@ -12,6 +12,8 @@
 #include <stdio.h>
 
 void ESPMANAGER_Init();
-void ESPMANAGER_Task(void);
+void ESPMANAGER_Run(void);
+
+void ESPMANAGER_SetReady(void);
 
 #endif /* SRC_ESPBRIDGE_H_ */

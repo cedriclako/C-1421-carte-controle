@@ -43,7 +43,6 @@ void STOVEMB_Init()
     m_sMemBlock.sRemoteData.bHasFanSpeed = true;
     m_sMemBlock.sRemoteData.eFanSpeedCurr = SBI_iot_common_EFANSPEED_Off;
 
-
     m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
 }
 

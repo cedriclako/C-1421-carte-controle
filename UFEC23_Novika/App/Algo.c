@@ -80,7 +80,6 @@ void Algo_Init(void const * argument)
 	ESPMANAGER_Init();
 	Particle_Init();
 
-
 	// Print all parameters into the debug file
 	for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
 	{
@@ -95,13 +94,15 @@ void Algo_Init(void const * argument)
 	  printf(tmp);
 	}
 
+	// We want to be sure the system is ready before accepting to answer to any commands
+	ESPMANAGER_SetReady();
 
     for(;;)
     {
     	GPIOManager(&UFEC23,osKernelSysTick());
     	TemperatureManager(&UFEC23,osKernelSysTick());
     	DebugManager(&UFEC23,osKernelSysTick());
-    	ESPMANAGER_Task();
+    	ESPMANAGER_Run();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
     	osDelay(1);
@@ -200,7 +201,6 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms;
 		}
 	}
-
 }
 
 void Algo_stoveInit(Mobj *stove)

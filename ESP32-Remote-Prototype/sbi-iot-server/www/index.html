@@ -17,8 +17,26 @@
             <span>wireless: rx: {{ livedata.wireless.rx }} / tx: {{ livedata.wireless.tx }}</span><br>
             <span>stove, online: {{ livedata.stove.is_connected }}</span><br>
             <span>remote, current: {{ livedata.remote.tempC_current.toFixed(2) }} C, set point: {{ livedata.remote.tempC_sp.toFixed(2) }} C, fan: {{ livedata.remote.fanspeed }} C, lastcomm (s): {{ (livedata.remote.lastcomm_ms/1000).toFixed(2) }}</span><br>
-            <span>datetime: {{ livedata.datetime }}</span>
+            <span>datetime: {{ livedata.datetime }}</span><br>
+            <span>debug: {{ livedata.stove.debug_string }}</span>
         </div>
+        <br>        
+        <h1>Debug infos</h1>
+        <table class="table1">
+            <thead>
+                <th>Name</th>
+                <th>Value</th>
+            </thead>
+            <tbody>
+                <tr v-if="debug_string_table" v-for="item in debug_string_table">
+                    <td>{{ item.name }}</td>
+                    <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
+                </tr>
+                <tr v-if="!debug_string_table">
+                    <td colspan="2">Information is not yet loaded</td>
+                </tr>
+            </tbody>
+        </table>
         <br>
         <h1>System Informations</h1>
         <table class="table1">

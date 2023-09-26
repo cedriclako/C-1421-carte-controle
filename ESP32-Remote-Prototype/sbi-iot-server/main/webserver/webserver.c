@@ -540,6 +540,7 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
     cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
     cJSON_AddItemToObject(pStove, "is_param_download_error", cJSON_CreateBool(pMemBlock->bIsAnyDownloadError));
+    cJSON_AddItemToObject(pStove, "debug_string", cJSON_CreateString(pMemBlock->szDebugJSONString));
     cJSON_AddItemToObject(pRoot, "stove", pStove);
     // Remote
     cJSON* pRemote = cJSON_CreateObject();

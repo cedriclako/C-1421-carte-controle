@@ -68,7 +68,7 @@ static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
 // UART protocol decoder buffers
 static uint8_t m_u8UARTProtocolBuffers2[UARTPROTOCOLCOMMON_MAXPAYLOAD];
 
-static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen);
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
@@ -77,7 +77,7 @@ static void UARTErrorCb(UART_HandleTypeDef *huart);
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 {
     .u8PayloadBuffers = m_u8UARTProtocolBuffers2,
-    .u16PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers2),
+    .u32PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers2),
 
     .u32FrameReceiveTimeOutMS = 50,
 
@@ -130,12 +130,12 @@ void ESPMANAGER_Task(void const * argument)
 
 		if(u16DMA_count > m_last_DMA_count)
 		{
-			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint16_t)(u16DMA_count-m_last_DMA_count));
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint32_t)(u16DMA_count-m_last_DMA_count));
 			m_last_DMA_count = u16DMA_count;
 		}
 		else if(u16DMA_count < m_last_DMA_count)
 		{
-			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint16_t)(MAX_RX_DMA_SIZE-m_last_DMA_count));
+			UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,&m_u8UART_RX_DMABuffers[m_last_DMA_count],(uint32_t)(MAX_RX_DMA_SIZE-m_last_DMA_count));
 
 			if(u16DMA_count != 0)
 				UARTPROTOCOLDEC_HandleIn(&m_sHandleDecoder,m_u8UART_RX_DMABuffers,(uint32_t)(u16DMA_count));
@@ -163,7 +163,7 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
 }
 
 
-static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen)
 {
 	switch((UFEC23PROTOCOL_FRAMEID)u8ID)
 	{
@@ -171,7 +171,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 		{
 			// Decode PING then send a response ...
 			UFEC23ENDEC_A2AReqPingAlive reqPing;
-			if (!UFEC23ENDEC_A2AReqPingAliveDecode(&reqPing, u8Payloads, u16PayloadLen))
+			if (!UFEC23ENDEC_A2AReqPingAliveDecode(&reqPing, u8Payloads, u32PayloadLen))
 			{
 				// TODO: Throw something into logging UART?
 				break;
@@ -192,7 +192,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			UFEC23ENDEC_S2CReqParameterGetResp sResp;
 
 			UFEC23ENDEC_C2SGetParameter param;
-			if(!UFEC23ENDEC_C2SGetParameterDecode(&param, u8Payloads,(uint32_t) u16PayloadLen))
+			if(!UFEC23ENDEC_C2SGetParameterDecode(&param, u8Payloads,(uint32_t) u32PayloadLen))
 			{
 				// TODO: Throw something into logging UART?
 				break;
@@ -234,14 +234,14 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 				}
 			}
 
-			const uint16_t u16Len = (uint16_t)UFEC23ENDEC_S2CGetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &sResp);
+			const int32_t u32Len = (int32_t)UFEC23ENDEC_S2CGetParameterRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &sResp);
 			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp, m_u8UARTOutputBuffers, u16Len);
 			break;
 		}
 		case UFEC23PROTOCOL_FRAMEID_C2SSetParameter:
 		{
 			UFEC23PROTOCOL_C2SSetParameter param;
-			if(!UFEC23ENDEC_C2SSetParameterDecode(&param, u8Payloads,(uint32_t) u16PayloadLen))
+			if(!UFEC23ENDEC_C2SSetParameterDecode(&param, u8Payloads,(uint32_t) u32PayloadLen))
 			{
 				// TODO: Throw something into logging UART?
 				break;

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <esp_sntp.h>
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -8,7 +9,6 @@
 #include "esp_mac.h"
 #include "esp_netif.h"
 #include "lwip/apps/netbiosns.h"
-#include <esp_sntp.h>
 #include "fwconfig.h"
 #include "spiff.h"
 #include "webserver/webserver.h"
