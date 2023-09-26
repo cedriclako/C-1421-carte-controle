@@ -112,4 +112,8 @@ typedef struct
 extern void Algo_Init(void const * argument);
 const Mobj* ALGO_GetObjData();
 
+State ALGO_GetCurrentState();
+
+const char* ALGO_GetStateString(State state);
+
 #endif /* INC_ALGO_H_ */

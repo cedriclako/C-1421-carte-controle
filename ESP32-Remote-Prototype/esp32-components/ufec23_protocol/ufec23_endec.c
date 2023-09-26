@@ -299,6 +299,6 @@ bool UFEC23ENDEC_S2CSendDebugDataRespDecode(char szJsonStrings[], uint32_t u32Js
         return false;
     strncpy( (char*)szJsonStrings, (const char*)(u8Datas+n), u32JsonLen);
     n += u16Len;
-    szJsonStrings[n] = '\0';
+    szJsonStrings[u16Len] = '\0';
     return true;
 }

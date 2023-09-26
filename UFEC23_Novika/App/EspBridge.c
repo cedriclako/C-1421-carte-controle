@@ -340,7 +340,7 @@ static void SendDebugData()
 		/*Tbaffle*/pMobj->fBaffleTemp,
 		/*Tavant*/pMobj->fChamberTemp,
 		/*Plenum*/pMobj->fPlenumTemp,
-		/*State*/"SAFETY",
+		/*State*/ALGO_GetStateString(ALGO_GetCurrentState()),
 		/*tStat*/pMobj->bThermostatOn ? "ON" : "OFF",
 		/*dTbaffle*/pMobj->fBaffleDeltaT,
 		/*FanSpeed*/(int32_t)0,

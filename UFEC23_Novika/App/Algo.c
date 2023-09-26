@@ -31,6 +31,20 @@ static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
 
+static const char* m_StateStrings[ALGO_NB_OF_STATE] =
+{
+	[(int)ZEROING_STEPPER] = "ZEROING_STEP",
+	[(int)WAITING] = "WAITING",
+	[(int)RELOAD_IGNITION] = "RELOAD_IGNI",
+	[(int)TEMPERATURE_RISE] = "TEMP_RISE",
+	[(int)COMBUSTION_HIGH] = "COMB_HIGH",
+	[(int)COMBUSTION_LOW] = "COMB_LOW",
+	[(int)COAL_LOW] = "COAL_LOW",
+	[(int)COAL_HIGH] = "COAL_HIGH",
+	[(int)OVERTEMP] = "OVERTEMP",
+	[(int)SAFETY] = "SAFETY",
+	[(int)MANUAL_CONTROL] = "MANUAL"
+};
 
 typedef void (*fnComputeAdjustment)(Mobj *stove,const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
 typedef void (*fnStateEntryAction)(Mobj *stove,const  PF_StateParam_t* sParams);
@@ -736,4 +750,16 @@ bool Algo_adjust_steppers_position(Mobj *stove)
 const Mobj* ALGO_GetObjData()
 {
 	return &UFEC23;
+}
+
+State ALGO_GetCurrentState()
+{
+	return currentState;
+}
+
+const char* ALGO_GetStateString(State state)
+{
+	if (state >= ALGO_NB_OF_STATE)
+		return "-- N/A --";
+	return m_StateStrings[currentState];
 }
