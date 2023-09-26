@@ -7,7 +7,9 @@
 
 #include "ParamFile.h"
 #include "cmsis_os.h"
+#include "stm32f1xx_hal_iwdg.h"
 #include "main.h"
+#include "WhiteBox.h"
 #include "DebugPort.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -58,6 +60,8 @@ const PF_SuperStateParam_t* sStateParams[ALGO_NB_OF_STATE];
 const PF_OverHeat_Thresholds_t *sOverheatParams;
 
 static Mobj UFEC23;
+
+extern IWDG_HandleTypeDef hiwdg;
 
 static void Algo_fill_state_functions(void);
 static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms);
@@ -136,6 +140,9 @@ void Algo_Init(void const * argument)
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
     	osDelay(1);
+		#if WHITEBOX_WATCHDOG_ISDEACTIVATED == 0
+    	HAL_IWDG_Refresh(&hiwdg);
+		#endif
     }
 
 }
