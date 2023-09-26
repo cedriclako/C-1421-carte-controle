@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Algo.h"
+#include "MotorManager.h"
 #include "message_buffer.h"
 
 /* USER CODE END Includes */
@@ -447,7 +448,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, Step2_LowCurrent_Pin|uc_Stepper_Sleep_Pin|SPEED2_COIL_Pin|SPEED3_COIL_Pin
+  HAL_GPIO_WritePin(GPIOC, Step2_LowCurrent_Pin|uc_Stepper_Sleep_Pin|SPEED2_COIL_Pin|FAN_SPEED3_Pin
                           |Step2_DIR_Pin|Step1_LowCurrent_Pin|Step2_STEP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -470,10 +471,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(Step1_DIR_GPIO_Port, Step1_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : Step2_LowCurrent_Pin Step3_RESET_Pin AFK_Speed1_Pin uc_Stepper_Sleep_Pin
-                           Step3_ENABLE_Pin SPEED2_COIL_Pin SPEED3_COIL_Pin Step2_DIR_Pin
+                           Step3_ENABLE_Pin SPEED2_COIL_Pin FAN_SPEED3_Pin Step2_DIR_Pin
                            Step1_LowCurrent_Pin Step2_RESET_Pin Step2_ENABLE_Pin */
   GPIO_InitStruct.Pin = Step2_LowCurrent_Pin|Step3_RESET_Pin|AFK_Speed1_Pin|uc_Stepper_Sleep_Pin
-                          |Step3_ENABLE_Pin|SPEED2_COIL_Pin|SPEED3_COIL_Pin|Step2_DIR_Pin
+                          |Step3_ENABLE_Pin|SPEED2_COIL_Pin|FAN_SPEED3_Pin|Step2_DIR_Pin
                           |Step1_LowCurrent_Pin|Step2_RESET_Pin|Step2_ENABLE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -486,11 +487,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : FAN_Zero_crossing_Pin Limit_switch3_Pin */
-  GPIO_InitStruct.Pin = FAN_Zero_crossing_Pin|Limit_switch3_Pin;
+  /*Configure GPIO pin : FAN_Zero_crossing_Pin */
+  GPIO_InitStruct.Pin = FAN_Zero_crossing_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(FAN_Zero_crossing_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Limit_switch3_Pin */
+  GPIO_InitStruct.Pin = Limit_switch3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(Limit_switch3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Step3_DIR_Pin Step3_LowCurrent_Pin Button_LED_Pin USB_ENABLE_Pin */
   GPIO_InitStruct.Pin = Step3_DIR_Pin|Step3_LowCurrent_Pin|Button_LED_Pin|USB_ENABLE_Pin;
@@ -540,6 +547,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(Step1_DIR_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

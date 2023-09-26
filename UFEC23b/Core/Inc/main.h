@@ -73,6 +73,7 @@ void MX_USART2_UART_Init(void);
 #define AFK_Speed1_GPIO_Port GPIOC
 #define FAN_Zero_crossing_Pin GPIO_PIN_1
 #define FAN_Zero_crossing_GPIO_Port GPIOA
+#define FAN_Zero_crossing_EXTI_IRQn EXTI1_IRQn
 #define Limit_switch3_Pin GPIO_PIN_4
 #define Limit_switch3_GPIO_Port GPIOA
 #define Step3_DIR_Pin GPIO_PIN_5
@@ -99,8 +100,8 @@ void MX_USART2_UART_Init(void);
 #define Reset_Particles_Sensor_GPIO_Port GPIOB
 #define SPEED2_COIL_Pin GPIO_PIN_6
 #define SPEED2_COIL_GPIO_Port GPIOC
-#define SPEED3_COIL_Pin GPIO_PIN_7
-#define SPEED3_COIL_GPIO_Port GPIOC
+#define FAN_SPEED3_Pin GPIO_PIN_7
+#define FAN_SPEED3_GPIO_Port GPIOC
 #define Step2_DIR_Pin GPIO_PIN_8
 #define Step2_DIR_GPIO_Port GPIOC
 #define Step1_LowCurrent_Pin GPIO_PIN_9
@@ -133,7 +134,7 @@ void MX_USART2_UART_Init(void);
 #define USB_Fault_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+#define NOVIKA_SETUP (1)
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

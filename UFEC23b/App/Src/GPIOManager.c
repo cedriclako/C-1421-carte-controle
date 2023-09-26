@@ -75,29 +75,6 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 
 
-	// Fans management
-	if(stove->bDoorOpen)
-	{
-		HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
-		if(stove->fBaffleTemp < P2F(uParam->s32FAN_KOP))
-		{
-			HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
-		}
-		return;
-	}
-
-	if(stove->fBaffleTemp > P2F(uParam->s32FAN_KIP))
-	{
-		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,SET);
-		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,SET);
-	}else if(stove->fBaffleTemp < P2F(uParam->s32FAN_KOP))
-	{
-		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
-		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
-	}
-	//HAL_GPIO_WritePin(GPIOA, Step3_DIR_Pin|Button_LED_Pin, GPIO_PIN_SET);
-
-
 }
 
 bool GPIO_IsButtonPressed(void)
