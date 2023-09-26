@@ -10,7 +10,7 @@ const API_POSTSERVERPARAMETERFILEJSON_URI = "/api/setserverparameterfile";
 
 const API_ACTION_DOWNLOADCONFIG_URI = "/action/downloadconfig";
 
-let mData = 
+let mData =
 {
     sysinfos: [],
     livedata: {
@@ -26,7 +26,8 @@ let mData =
            is_connected: false,
            param_cnt: 0,
            is_param_upload_error: false,
-           is_param_download_error: false
+           is_param_download_error: false,
+           debug_string: "---",
         },
         remote:{
            tempC_current: 0,
@@ -34,8 +35,9 @@ let mData =
            fanspeed: 0,
            lastcomm_ms: 0
         },
-        datetime: ""
+        datetime: "",
     },
+    debug_string_table: [],
     // Config JSON
     configJSON: "",
     isStringMode: false,
@@ -60,12 +62,12 @@ var app = new Vue({
                 },
                 body: data,
                 cache: 'default',
-                keepalive: false 
+                keepalive: false
               }).then((data) =>
               {
                 console.log("postAction: ", data);
               })
-              .catch((ex) => 
+              .catch((ex) =>
               {
                   console.error('url: ', url, " error: ", ex);
               });
@@ -74,17 +76,29 @@ var app = new Vue({
             fetch(API_GETLIVEDATA, { keepalive: false })
                 .then((response) => response.json())
                 .then(
-                    (data) => 
+                    (data) =>
                     {
                         this.livedata = data;
-                        // console.log("livedata: ", data);
+                        // --------------------------
+                        // Debug tables
+                        // --------------------------
+                        let debugStringObj = JSON.parse(this.livedata.stove.debug_string);
+                        let newTable = [];
+
+                        const keys = Object.keys(debugStringObj);
+                        const vals = Object.values(debugStringObj);
+
+                        for (let i = 0; i < keys.length; i++) {
+                            let newItem = { name: keys[i], value: vals[i] };
+                            newTable.push(newItem);
+                        }
+
+                        this.debug_string_table = newTable;
                         setTimeout(this.automaticUpdate, 500);
                     })
-                .catch((ex) => 
+                .catch((ex) =>
                 {
-                    console.error('getSysInfo', ex);
-                    this.sysinfos = null;
-
+                    console.error('automaticUpdate', ex);
                     setTimeout(this.automaticUpdate, 5000);
                 });
         },
@@ -95,7 +109,7 @@ var app = new Vue({
             fetch(API_GETSYSINFO, { keepalive: false })
                 .then((response) => response.json())
                 .then((data) => this.sysinfos = data.infos)
-                .catch((ex) => 
+                .catch((ex) =>
                 {
                     console.error('getSysInfo', ex);
                     this.sysinfos = null;
@@ -127,14 +141,14 @@ var app = new Vue({
                 headers: {
                   'Content-Type': 'application/json',
                 },
-                keepalive: false 
+                keepalive: false
               })
-                .then((response) => 
+                .then((response) =>
                 {
                     isOK = response.ok;
                     return response.text();
                 })
-                .then((response) => 
+                .then((response) =>
                 {
                     if (!isOK)
                         throw Error(response);
@@ -142,7 +156,7 @@ var app = new Vue({
                     this.configJSON = JSON.stringify(JSON.parse(response), null, 2);
                     this.configJSONObj = JSON.parse(response);
                 })
-                .catch((error) => 
+                .catch((error) =>
                 {
                     console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
                     this.configJSON = error;
@@ -160,7 +174,7 @@ var app = new Vue({
             }
 
             console.log("idSaveConfig_OnClick tablemode: ", bIsTableMode, "config: ", this.configJSON);
-            
+
             let isOK = false;
             fetch(API_POSTSERVERPARAMETERFILEJSON_URI, {
                 method: 'POST', // or 'PUT'
@@ -168,9 +182,9 @@ var app = new Vue({
                   'Content-Type': 'application/json',
                 },
                 body: this.configJSON,
-                keepalive: false 
+                keepalive: false
               })
-            .then((response) => 
+            .then((response) =>
             {
                 isOK = response.ok;
                 return response.text();
@@ -195,9 +209,9 @@ var app = new Vue({
                   'Content-Type': 'application/json',
                 },
                 body: "",
-                keepalive: false 
+                keepalive: false
               })
-            .then((response) => 
+            .then((response) =>
             {
                 isOK = response.ok;
                 return response.text();

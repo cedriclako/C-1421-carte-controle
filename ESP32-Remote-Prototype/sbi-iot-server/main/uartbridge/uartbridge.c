@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <inttypes.h>
 #include "uart_protocol_dec.h"
 #include "uart_protocol_enc.h"
 #include "ufec23_protocol.h"
@@ -51,12 +52,12 @@ static uint8_t m_u8UARTSendProtocols[SENDPROTOCOL_COUNT];
 static UARTPROTOCOLENC_SHandle m_sHandleEncoder;
 
 // Callbacks
-static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen);
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
-static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint16_t u16PayloadLen);
+static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint32_t u32PayloadLen);
 
 // Event loops
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
@@ -77,7 +78,7 @@ static bool SendSetParameter(const STOVEMB_SParameterEntry* psParamEntry);
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder = 
 { 
     .u8PayloadBuffers = m_u8UARTProtocolBuffers, 
-    .u16PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers),
+    .u32PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers),
 
     .u32FrameReceiveTimeOutMS = 50,
 
@@ -163,7 +164,7 @@ static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t 
         uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 }
 
-static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen)
+static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen)
 {
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMemBlock = STOVEMB_GetMemBlock();
@@ -178,10 +179,25 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     switch ((UFEC23PROTOCOL_FRAMEID)u8ID)
     {
+        case UFEC23PROTOCOL_FRAMEID_S2CSendDebugDataResp:
+        {
+            if (!UFEC23ENDEC_S2CSendDebugDataRespDecode(pMemBlock->szDebugJSONString, sizeof(pMemBlock->szDebugJSONString), u8Payloads, u32PayloadLen))
+            {
+                ESP_LOGE(TAG, "Received S2CSendDebugDataResp, len: %"PRIu32, u32PayloadLen);
+                break;
+            }
+            ESP_LOGI(TAG, "Received S2CSendDebugDataResp, json: '%s'", pMemBlock->szDebugJSONString);
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMEID_S2CEvent:
+        {
+            ESP_LOGI(TAG, "Received S2CEvent, len: %"PRIu32", payload: %"PRId32, u32PayloadLen, (int32_t)u8Payloads[0]);
+            break;
+        }
         // case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
         // {
         //     UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
-        //     if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionResp, u8Payloads, u16PayloadLen))
+        //     if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionResp, u8Payloads, u32PayloadLen))
         //     {
         //         ESP_LOGE(TAG, "Error frame S2CReqVersionResp");
         //         break;
@@ -202,7 +218,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         //     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSettingResp;
 
         //     // Receive settings ...
-        //     if (!UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u16PayloadLen))
+        //     if (!UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u32PayloadLen))
         //     {
         //         ESP_LOGE(TAG, "Error frame S2CGetRunningSettingResp");
         //         break;
@@ -222,7 +238,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
             // Received (Get Parameter Resp)
             UFEC23ENDEC_S2CReqParameterGetResp s;
-            if (!UFEC23ENDEC_S2CGetParameterRespDecode(&s, u8Payloads, u16PayloadLen))
+            if (!UFEC23ENDEC_S2CGetParameterRespDecode(&s, u8Payloads, u32PayloadLen))
             {
                 ESP_LOGE(TAG, "UFEC23ENDEC_S2CGetParameterRespDecode failed");
                 ProcParameterAbort();
@@ -249,14 +265,13 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                     psEntryChanged->bIsNeedWrite = false;
                     psEntryChanged->sWriteValue = s.uValue;
                     pMemBlock->u32ParameterCount++;
-
-                    ESP_LOGI(TAG, "S2CGetParameterResp: [%d], key: %s, def: %d, min: %d, max: %d, value: %d", 
-                        u32Index,
+                    /* ESP_LOGI(TAG, "S2CGetParameterResp: [%"PRId32"], key: %s, def: %"PRId32", min: %"PRId32", max: %"PRId32", value: %"PRId32, 
+                        (int32_t)u32Index,
                         psEntryChanged->sEntry.szKey,
-                        psEntryChanged->sEntry.uType.sInt32.s32Default,
-                        psEntryChanged->sEntry.uType.sInt32.s32Min,
-                        psEntryChanged->sEntry.uType.sInt32.s32Max,
-                        psEntryChanged->sWriteValue.s32Value);
+                        (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Default,
+                        (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Min,
+                        (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Max,
+                        (int32_t)psEntryChanged->sWriteValue.s32Value);*/
                 }
             }
 
@@ -265,7 +280,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             {
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
                 pMemBlock->bIsParameterDownloadCompleted = true;
-                ESP_LOGI(TAG, "S2CGetParameterResp: Parameter download done, entries: %d", pMemBlock->u32ParameterCount);
+                ESP_LOGI(TAG, "S2CGetParameterResp: Parameter download done, entries: %"PRId32, (int32_t)pMemBlock->u32ParameterCount);
                 break;
             }
 
@@ -285,7 +300,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
             // Received (Get Parameter Resp)
             UFEC23PROTOCOL_S2CSetParameterResp s;
-            if (!UFEC23ENDEC_S2CSetParameterRespDecode(&s, u8Payloads, u16PayloadLen))
+            if (!UFEC23ENDEC_S2CSetParameterRespDecode(&s, u8Payloads, u32PayloadLen))
             {
                 ProcParameterAbort();
                 break;
@@ -302,11 +317,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             {
                 if (!bIsError)
                 {
-                    ESP_LOGI(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+                    ESP_LOGI(TAG, "S2CSetParameterResp | key: '%s', value: %"PRId32", result: %"PRId32, pLastWriteEntry->sEntry.szKey, (int32_t)pLastWriteEntry->sWriteValue.s32Value, (int32_t)s.eResult);               
                     pLastWriteEntry->bIsNeedWrite = false;
                 }
                 else
-                    ESP_LOGE(TAG, "S2CSetParameterResp | key: '%s', value: %d, result: %d", pLastWriteEntry->sEntry.szKey, pLastWriteEntry->sWriteValue.s32Value, s.eResult);               
+                    ESP_LOGE(TAG, "S2CSetParameterResp | key: '%s', value: %"PRId32", result: %"PRId32, pLastWriteEntry->sEntry.szKey, (int32_t)pLastWriteEntry->sWriteValue.s32Value, (int32_t)s.eResult);               
             }
 
             STOVEMB_SParameterEntry sParamEntry;
@@ -328,7 +343,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         }
         default:
         {
-            ESP_LOGI(TAG, "Accepted frame, ID: %d, len: %d", u8ID, u16PayloadLen);
+            ESP_LOGI(TAG, "Accepted frame, ID: %"PRId32", len: %"PRId32, (int32_t)u8ID, (int32_t)u32PayloadLen);
             break;
         }
     }
@@ -525,7 +540,7 @@ static bool ProcParameterUpload()
     return true;
 }
 
-static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint16_t u16PayloadLen)
+static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint32_t u32PayloadLen)
 {
-    UARTPROTOCOLENC_Send(&m_sHandleEncoder, (uint8_t)eFrameID, u8Payloads, u16PayloadLen);
+    UARTPROTOCOLENC_Send(&m_sHandleEncoder, (uint8_t)eFrameID, u8Payloads, u32PayloadLen);
 }

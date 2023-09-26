@@ -5,6 +5,13 @@
 #include <stdbool.h>
 #include <string.h>
 
+typedef enum
+{
+	UFEC23PROTOCOL_EVENTID_None = 0,
+	UFEC23PROTOCOL_EVENTID_BootedUp = 1,
+	UFEC23PROTOCOL_EVENTID_Test = 2,
+} UFEC23PROTOCOL_EVENTID;
+
 typedef struct 
 {
     uint8_t u8Major;
@@ -20,7 +27,9 @@ typedef struct
 #define UFEC23ENDEC_SOFTWARENAME_LEN (12)
 #define UFEC23ENDEC_GITHASH_LEN (12)
 
-#define UFEC23ENDEC_PARAMETERITEM_KEY_LEN (30)
+#define UFEC23ENDEC_PARAMETERITEM_KEY_LEN (48)
+
+#define UFEC23ENDEC_VALUE_LEN (250)
 
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD (0x04)
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF (0x02)
@@ -115,7 +124,7 @@ typedef struct
     bool bIsFirstRecord;
 } UFEC23ENDEC_S2CReqParameterGetResp;
 
-typedef struct 
+typedef struct
 {
     char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
     UFEC23ENDEC_uValue uValue;
@@ -150,6 +159,8 @@ typedef struct
 #define UFEC23ENDEC_A2AREQPINGALIVE_COUNT (4)
 #define UFEC23ENDEC_S2CREQPINGALIVERESP_COUNT (4)
 
+#define UFEC23ENDEC_S2CEVENT_COUNT (1)
+
 void UFEC23ENDEC_Init();
 
 int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_A2AReqPingAlive* pSrc);
@@ -179,5 +190,12 @@ bool UFEC23ENDEC_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, con
 
 int32_t UFEC23ENDEC_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_S2CSetParameterResp* pSrc);
 bool UFEC23ENDEC_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+
+int32_t UFEC23ENDEC_S2CSendDebugDataRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const char* szJsonString);
+bool UFEC23ENDEC_S2CSendDebugDataRespDecode(char szJsonStrings[], uint32_t u32JsonLen, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+// Event
+int32_t UFEC23ENDEC_S2CEventEncode(uint8_t u8Dst[], uint32_t u32DstLen, UFEC23PROTOCOL_EVENTID eEventID);
 
 #endif

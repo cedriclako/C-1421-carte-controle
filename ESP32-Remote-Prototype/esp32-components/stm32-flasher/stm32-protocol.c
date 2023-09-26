@@ -297,7 +297,7 @@ esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const 
     }
 
     uint8_t uart_data[length];
-    const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, uart_data, length, 1000 / portTICK_RATE_MS);
+    const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, uart_data, length, 1000 / portTICK_PERIOD_MS);
     if (rxBytes == 0)
     {
         ESP_LOGE(TAG_STM_PRO, "No response");
@@ -339,7 +339,7 @@ esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const c
     }
 
     uint8_t uart_data[length];
-    const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, uart_data, length, 1000 / portTICK_RATE_MS);
+    const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, uart_data, length, 1000 / portTICK_PERIOD_MS);
     if (rxBytes == 0)
     {
         ESP_LOGE(TAG_STM_PRO, "No response");

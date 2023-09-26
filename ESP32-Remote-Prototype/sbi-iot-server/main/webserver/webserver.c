@@ -5,9 +5,12 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <inttypes.h>
 #include "esp_app_format.h"
 #include "assets/EmbeddedFiles.h"
 #include "esp_ota_ops.h"
+#include "esp_mac.h"
+#include "esp_chip_info.h"
 #include "cJSON.h"
 #include "freertos/FreeRTOS.h"
 #include "stm32-process.h"
@@ -537,6 +540,7 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pStove, "param_cnt", cJSON_CreateNumber(pMemBlock->u32ParameterCount));
     cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
     cJSON_AddItemToObject(pStove, "is_param_download_error", cJSON_CreateBool(pMemBlock->bIsAnyDownloadError));
+    cJSON_AddItemToObject(pStove, "debug_string", cJSON_CreateString(pMemBlock->szDebugJSONString));
     cJSON_AddItemToObject(pRoot, "stove", pStove);
     // Remote
     cJSON* pRemote = cJSON_CreateObject();
@@ -588,6 +592,8 @@ static const char* GetESPChipId(esp_chip_model_t eChipid)
             return "ESP32";
         case CHIP_ESP32S2:
             return "ESP32-S2";
+        case CHIP_ESP32C2:
+            return "ESP32-C2";
         case CHIP_ESP32C3:
             return "ESP32-C3";
         case CHIP_ESP32S3:
@@ -607,18 +613,18 @@ static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req)
 
     if (configured != running)
     {
-        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08x, but running from offset 0x%08x",
-                 configured->address, running->address);
+        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08"PRIx32", but running from offset 0x%08"PRIx32,
+            (int32_t)configured->address, (int32_t)running->address);
         ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
     }
 
-    ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08x)",
-             running->type, running->subtype, running->address);
+    ESP_LOGI(TAG, "Running partition type %"PRId32" subtype %"PRId32" (offset 0x%08"PRIx32")",
+        (int32_t)running->type, (int32_t)running->subtype, (int32_t)running->address);
 
     const esp_partition_t* update_partition = esp_ota_get_next_update_partition(NULL);
     assert(update_partition != NULL);
-    ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%x",
-             update_partition->subtype, update_partition->address);
+    ESP_LOGI(TAG, "Writing to partition subtype %"PRId32" at offset 0x%"PRIx32,
+        (int32_t)update_partition->subtype, (int32_t)update_partition->address);
 
     esp_ota_handle_t update_handle = 0;
 

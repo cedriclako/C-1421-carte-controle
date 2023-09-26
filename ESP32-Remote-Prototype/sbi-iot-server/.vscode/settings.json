@@ -4,7 +4,9 @@
         "fwconfig.h": "c",
         "apiurl.h": "c",
         "webserver.h": "c",
-        "hardwaregpio.h": "c"
+        "hardwaregpio.h": "c",
+        "espnowprocess.h": "c",
+        "embeddedfiles.h": "c"
     },
     "idf.adapterTargetName": "esp32"
 }

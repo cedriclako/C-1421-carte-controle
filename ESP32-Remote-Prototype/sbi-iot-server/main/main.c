@@ -1,14 +1,14 @@
 #include <stdio.h>
+#include <esp_sntp.h>
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/timers.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_netif.h"
-#include "mdns.h"
 #include "lwip/apps/netbiosns.h"
-#include <esp_sntp.h>
 #include "fwconfig.h"
 #include "spiff.h"
 #include "webserver/webserver.h"
@@ -57,7 +57,7 @@ static void WIFI_Init()
     // Access point mode
     m_pWifiSoftAP = esp_netif_create_default_wifi_ap();
 
-    esp_netif_ip_info_t ipInfo;
+    esp_netif_ip_info_t ipInfo = {0};
     IP4_ADDR(&ipInfo.ip, 192, 168, 4, 1);
     IP4_ADDR(&ipInfo.gw, 192, 168, 4, 1);
     IP4_ADDR(&ipInfo.netmask, 255, 255, 255, 0);
@@ -145,23 +145,6 @@ static void WIFI_Init()
 
 static void mdns_sn_init()
 {
-    ESP_LOGI(TAG, "mdns_sn_init, hostname: '%s', desc: '%s', service: '%s'", 
-        FWCONFIG_MDNS_HOSTNAME, 
-        FWCONFIG_MDNS_DESCRIPTION, 
-        FWCONFIG_MDNS_SERVICENAME);
-
-    mdns_init();
-    mdns_hostname_set(FWCONFIG_MDNS_HOSTNAME);
-    mdns_instance_name_set(FWCONFIG_MDNS_DESCRIPTION);
-
-    mdns_txt_item_t serviceTxtData[] = {
-        {"funct", "sbi-iot-svr"},
-        {"path", "/"}
-    };
-
-    ESP_ERROR_CHECK(mdns_service_add(FWCONFIG_MDNS_SERVICENAME, "_http", "_tcp", 80, serviceTxtData,
-                                     sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
-
     netbiosns_init();
     netbiosns_set_name(FWCONFIG_MDNS_HOSTNAME);
 }
@@ -207,8 +190,6 @@ void app_main(void)
     WIFI_Init();
 
     ESPNOWPROCESS_Init();
-
-    mdns_sn_init();
 
     WEBSERVER_Init();
 
@@ -262,12 +243,12 @@ static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int
 {
     if (event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-        ESP_LOGI(TAG, "station "MACSTR" join, AID=%d",
-                 MAC2STR(event->mac), event->aid);
+        ESP_LOGI(TAG, "station "MACSTR" join, AID=%"PRId32,
+                 MAC2STR(event->mac), (int32_t)event->aid);
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-        ESP_LOGI(TAG, "station "MACSTR" leave, AID=%d",
-                 MAC2STR(event->mac), event->aid);
+        ESP_LOGI(TAG, "station "MACSTR" leave, AID=%"PRId32,
+                 MAC2STR(event->mac), (int32_t)event->aid);
     }
 }
 
@@ -280,12 +261,12 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
         wifi_second_chan_t secondChan;
         uint8_t u8Primary;
         esp_wifi_get_channel(&u8Primary,  &secondChan);
-        ESP_LOGI(TAG, "Wifi STA connected to station, channel: %d", (int)u8Primary);
+        ESP_LOGI(TAG, "Wifi STA connected to station, channel: %"PRId32, (int32_t)u8Primary);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         m_bIsConnectedWiFi = false;
         esp_wifi_connect();
-        ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%d", ++m_s32ConnectWiFiCount);
+        ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%"PRId32, (int32_t)++m_s32ConnectWiFiCount);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
@@ -295,7 +276,7 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
 static void time_sync_notification_cb(struct timeval* tv)
 {
     // settimeofday(tv, NULL);
-    ESP_LOGI(TAG, "Notification of a time synchronization event, sec: %d", (int)tv->tv_sec);
+    ESP_LOGI(TAG, "Notification of a time synchronization event, sec: %"PRId32, (int32_t)tv->tv_sec);
     // Set timezone to Eastern Standard Time and print local time
     time_t now = 0;
     struct tm timeinfo = { 0 };
@@ -303,5 +284,5 @@ static void time_sync_notification_cb(struct timeval* tv)
     tzset();
     time(&now);
     localtime_r(&now, &timeinfo);
-    ESP_LOGI(TAG, "The current date/time in New York is: %2d:%2d:%2d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    ESP_LOGI(TAG, "The current date/time in New York is: %2"PRId32":%2"PRId32":%2"PRId32, (int32_t)timeinfo.tm_hour, (int32_t)timeinfo.tm_min, (int32_t)timeinfo.tm_sec);
 }

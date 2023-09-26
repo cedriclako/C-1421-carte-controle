@@ -57,6 +57,8 @@ typedef struct
     STOVEMB_SParameterEntry arrParameterEntries[STOVEMB_MAXIMUMSETTING_ENTRIES]; // 100 maximum for now
     uint32_t u32ParameterCount;
 
+    char szDebugJSONString[990+1];
+
     bool bIsAnyUploadError;
     bool bIsAnyDownloadError;
 

@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "FreeRTOS/semphr.h"
 #include "cJSON.h"
@@ -41,7 +42,6 @@ void STOVEMB_Init()
     // Fan speed
     m_sMemBlock.sRemoteData.bHasFanSpeed = true;
     m_sMemBlock.sRemoteData.eFanSpeedCurr = SBI_iot_common_EFANSPEED_Off;
-
 
     m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
 }
@@ -179,7 +179,7 @@ bool STOVEMB_InputParamFromJSON(const char* szJSON, char* szDstError, uint32_t u
         // Buffer changes
         if (pParamEntry->sWriteValue.s32Value != (int32_t)pValueJSON->valueint)
         {
-            ESP_LOGI(TAG, "Need write: '%s', value: %d => %d", pParamEntry->sEntry.szKey, pParamEntry->sWriteValue.s32Value, (int32_t)pValueJSON->valueint);
+            ESP_LOGI(TAG, "Need write: '%s', value: %"PRId32" => %" PRId32, pParamEntry->sEntry.szKey, (int32_t)pParamEntry->sWriteValue.s32Value, (int32_t)pValueJSON->valueint);
             pParamEntry->sWriteValue.s32Value = (int32_t)pValueJSON->valueint;
             pParamEntry->bIsNeedWrite = true;
         }

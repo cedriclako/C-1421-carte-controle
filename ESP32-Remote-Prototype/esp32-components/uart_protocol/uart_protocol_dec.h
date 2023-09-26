@@ -24,14 +24,14 @@ typedef struct _UARTPROTOCOLDEC_SHandle UARTPROTOCOLDEC_SHandle;
 // ------------------------------------
 // Callbacks
 // ------------------------------------
-typedef void (*FnAcceptFrame)(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint16_t u16PayloadLen);
+typedef void (*FnAcceptFrame)(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen);
 typedef void (*FnDropFrame)(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
 typedef int64_t (*FnGetTimerCountMS)(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 typedef struct 
 {
     uint8_t* u8PayloadBuffers;
-    uint16_t u16PayloadBufferLen;
+    uint32_t u32PayloadBufferLen;
 
     uint32_t u32FrameReceiveTimeOutMS;
 
@@ -45,13 +45,13 @@ struct _UARTPROTOCOLDEC_SHandle
 {
     // Current step
     UARTPROTOCOLDEC_ESTEP eStep;
-    uint16_t u16PayloadCount;
+    uint32_t u32PayloadCount;
 
     int64_t s64StartTimeMS;
 
     // Frame payload len. 
     uint8_t u8CurrentFrameID;
-    uint16_t u16CurrentFramePayloadLen;
+    uint32_t u32CurrentFramePayloadLen;
 
     // On the fly checksum calculation
     uint8_t u8ChecksumCalculation;
@@ -63,6 +63,6 @@ void UARTPROTOCOLDEC_Init(UARTPROTOCOLDEC_SHandle* psHandle, const UARTPROTOCOLD
 
 void UARTPROTOCOLDEC_Reset(UARTPROTOCOLDEC_SHandle* psHandle);
 
-void UARTPROTOCOLDEC_HandleIn(UARTPROTOCOLDEC_SHandle* psHandle, const uint8_t* u8Datas, uint16_t u16DataLen);
+void UARTPROTOCOLDEC_HandleIn(UARTPROTOCOLDEC_SHandle* psHandle, const uint8_t* u8Datas, uint32_t u32DataLen);
 
 #endif
