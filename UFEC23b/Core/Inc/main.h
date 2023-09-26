@@ -52,6 +52,9 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
+void MX_I2C1_Init(void);
+void MX_USART3_UART_Init(void);
+void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -128,17 +131,8 @@ void Error_Handler(void);
 #define Button_Input_GPIO_Port GPIOB
 #define USB_Fault_Pin GPIO_PIN_9
 #define USB_Fault_GPIO_Port GPIOB
-void   MX_I2C1_Init(void);
-void   MX_USART3_UART_Init(void);
-void   MX_USART2_UART_Init(void);
+
 /* USER CODE BEGIN Private defines */
-
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-#define RANGE(min,val,max) MAX(min,MIN(val,max))
-#define NOVIKA_SETUP (1)
-
-#define MOTOR_HOME_CMD 0xEE
 
 /* USER CODE END Private defines */
 
@@ -147,5 +141,3 @@ void   MX_USART2_UART_Init(void);
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

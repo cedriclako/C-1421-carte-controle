@@ -30,6 +30,6 @@ $gitFileOutput += "#define GITCOMMIT_ISDIRTY $gitIsDirty`r`n"
 $gitFileOutput += "`r`n"
 $gitFileOutput += "#endif`r`n"
 
-Write-Output $gitFileOutput | Out-File -Encoding utf8 $env:ProjDirPath\App\GitCommit.h
+Write-Output $gitFileOutput | Out-File -Encoding utf8 $env:ProjDirPath\App\Inc\GitCommit.h
 
 Exit 0

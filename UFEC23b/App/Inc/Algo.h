@@ -109,12 +109,12 @@ typedef struct
 } Mobj; // Main application object
 
 /***** Fonctions ******/
+#define MOTOR_HOME_CMD 0xEE
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define RANGE(min,val,max) MAX(min,MIN(val,max))
+#define UNUSED_PARAM(param)  (void)(param)
 
 extern void Algo_Init(void const * argument);
-const Mobj* ALGO_GetObjData();
-
-State ALGO_GetCurrentState();
-
-const char* ALGO_GetStateString(State state);
 
 #endif /* INC_ALGO_H_ */
