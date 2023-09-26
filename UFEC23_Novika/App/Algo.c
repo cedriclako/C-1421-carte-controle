@@ -42,6 +42,8 @@ const PF_StateParam_t* sStateParams[ALGO_NB_OF_STATE];
 static PF_StateParam_t sStatedummy;
 const PF_OverHeat_Thresholds_t *sOverheatParams;
 
+static Mobj UFEC23;
+
 static void Algo_fill_state_functions(void);
 static void Algo_reload_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
 static void Algo_Waiting_action(Mobj* stove, const PF_StateParam_t* sParams, uint32_t u32CurrentTime_ms);
@@ -71,7 +73,6 @@ void Algo_stoveInit(Mobj *stove);
 
 void Algo_Init(void const * argument)
 {
-	static Mobj UFEC23;
 	Algo_fill_state_functions();
 
 	PARAMFILE_Init();
@@ -725,4 +726,9 @@ bool Algo_adjust_steppers_position(Mobj *stove)
 		return false;
 	}
 	return true;
+}
+
+const Mobj* ALGO_GetObjData()
+{
+	return &UFEC23;
 }

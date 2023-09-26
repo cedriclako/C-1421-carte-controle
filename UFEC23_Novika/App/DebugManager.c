@@ -53,7 +53,6 @@ static const char* StateStrings[ALGO_NB_OF_STATE] =
 };
 
 extern RTC_HandleTypeDef hrtc;
-RTC_TimeTypeDef sTime;
 
 void DebugManager(Mobj * stove, uint32_t u32time_ms)
 {
@@ -72,6 +71,7 @@ void DebugManager(Mobj * stove, uint32_t u32time_ms)
 
 void PrintOutput(Mobj * stove, State currentState)
 {
+	RTC_TimeTypeDef sTime;
 	HAL_RTC_GetTime(&hrtc,&sTime,0);
 	printf("#");
 	printf("%02i:%02i:%02i ",sTime.Hours, sTime.Minutes, sTime.Seconds);

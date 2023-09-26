@@ -18,7 +18,6 @@
             <span>stove, online: {{ livedata.stove.is_connected }}</span><br>
             <span>remote, current: {{ livedata.remote.tempC_current.toFixed(2) }} C, set point: {{ livedata.remote.tempC_sp.toFixed(2) }} C, fan: {{ livedata.remote.fanspeed }} C, lastcomm (s): {{ (livedata.remote.lastcomm_ms/1000).toFixed(2) }}</span><br>
             <span>datetime: {{ livedata.datetime }}</span><br>
-            <span>debug: {{ livedata.stove.debug_string }}</span>
         </div>
         <br>        
         <h1>Debug infos</h1>

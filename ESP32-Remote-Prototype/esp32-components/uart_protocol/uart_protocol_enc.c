@@ -14,7 +14,6 @@ bool UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
     if (u32PayloadLen > UARTPROTOCOLCOMMON_MAXPAYLOAD)
         return false;
 
-
     uint8_t u8Checksum = 0;
     uint8_t u8TxBuffer[UARTPROTOCOLCOMMON_MAXPAYLOAD+6] = {0x00};
 
@@ -30,7 +29,6 @@ bool UARTPROTOCOLENC_Send(UARTPROTOCOLENC_SHandle* psHandle, uint8_t u8ID, const
     	{
     		u8TxBuffer[i+4] = u8Payloads[i];
     	}
-
     }
 
     for(uint16_t i = 1; i < u32PayloadLen + 4; i++)

@@ -98,9 +98,7 @@ var app = new Vue({
                     })
                 .catch((ex) =>
                 {
-                    console.error('getSysInfo', ex);
-                    this.sysinfos = null;
-
+                    console.error('automaticUpdate', ex);
                     setTimeout(this.automaticUpdate, 5000);
                 });
         },

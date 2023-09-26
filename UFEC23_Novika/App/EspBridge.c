@@ -27,12 +27,14 @@ By    |   Date     | Version | Description
 CR    | 2022/11/21 | -       | Creation
 ===========================================================================
 */
-
+#include <inttypes.h>
 #include "main.h"
 #include "cmsis_os.h"
 #include "FreeRTOS.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
+#include "Algo.h"
+#include "TemperatureManager.h"
 #include "../esp32/uart_protocol/uart_protocol_enc.h"
 #include "../esp32/uart_protocol/uart_protocol_dec.h"
 #include "../esp32/ufec23_protocol/ufec23_endec.h"
@@ -70,7 +72,9 @@ static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
 
 // =======
 // UART protocol decoder buffers
-static uint8_t m_u8UARTProtocolBuffers2[UARTPROTOCOLCOMMON_MAXPAYLOAD];
+static uint8_t m_u8UARTPayloadBuffers[UARTPROTOCOLCOMMON_MAXPAYLOAD];
+
+static char m_szDebugStringJSON[990+1];
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen);
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason);
@@ -83,8 +87,8 @@ static void SendDebugData();
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 {
-    .u8PayloadBuffers = m_u8UARTProtocolBuffers2,
-    .u32PayloadBufferLen = sizeof(m_u8UARTProtocolBuffers2),
+    .u8PayloadBuffers = m_u8UARTPayloadBuffers,
+    .u32PayloadBufferLen = sizeof(m_u8UARTPayloadBuffers),
 
     .u32FrameReceiveTimeOutMS = 50,
 
@@ -96,6 +100,8 @@ static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
 static volatile bool m_bNeedRestartDMA = false;
+
+extern RTC_HandleTypeDef hrtc;
 
 // --------
 // Bridge state
@@ -320,7 +326,49 @@ static void SendEvent(UFEC23PROTOCOL_EVENTID eEventID)
 
 static void SendDebugData()
 {
-	const char* szJsonString = "{ \"#\" : \"00:14:13\",	\"Tbaffle:\" : \"-4484225\",\"Tavant\" : \"-4484225\",\"Plenum\" : 332,\"State\" : \"SAFETY\",\"tStat\" : \"OFF\",\"dTbaffle\" : 73.8,\"FanSpeed\" : 0,\"Grille\" : 0,\"Prim\" : 5,\"Sec\" : 5,\"Tboard\" : 31,\"Door\" : \"OPEN\",\"PartCH0ON\" : 0,\"PartCH1ON\" : 0,\"PartCH0OFF\" : 0,\"PartCH1OFF\" : 0,\"PartVar\" : 0,\"PartSlope\" : 0.0,\"TPart\" : 0,\"PartCurr\" : 0.0,\"PartLuxON\" : 0,\"PartLuxOFF\" : 0,\"PartTime\" : 0,\"dTavant\" : \"78.9*\" }";
-	const uint32_t u32Len = (uint32_t)UFEC23ENDEC_S2CSendDebugDataRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, szJsonString);
+	/* Technically I can use cJson instead, but it's lighter to just use a plain old string. */
+	RTC_TimeTypeDef sTime;
+	HAL_RTC_GetTime(&hrtc, &sTime,0);
+	char rtcTimeString[12+1];
+	sprintf(rtcTimeString, "%02i:%02i:%02i",sTime.Hours, sTime.Minutes, sTime.Seconds);
+
+	const Mobj* pMobj = ALGO_GetObjData();
+
+	int n = snprintf(m_szDebugStringJSON, sizeof(m_szDebugStringJSON)-1,
+		"{ \"#\":\"%s\",\"Tbaffle\":%f,\"Tavant\":%f,\"Plenum\":%f,\"State\":\"%s\",\"tStat\":\"%s\",\"dTbaffle\":%f,\"FanSpeed\":%"PRId32",\"Grille\":%"PRId32",\"Prim\":%"PRId32",\"Sec\":%"PRId32",\"Tboard\":%.0f,\"Door\":\"%s\",\"PartCH0ON\":%"PRId32",\"PartCH1ON\":%"PRId32",\"PartCH0OFF\":%"PRId32",\"PartCH1OFF\":%"PRId32",\"PartVar\":%"PRId32",\"PartSlope\":%f,\"TPart\":%"PRId32",\"PartCurr\":%f,\"PartLuxON\":%"PRId32",\"PartLuxOFF\":%"PRId32",\"PartTime\":%"PRId32",\"dTavant\":%f }",
+		/*#*/rtcTimeString,
+		/*Tbaffle*/pMobj->fBaffleTemp,
+		/*Tavant*/pMobj->fChamberTemp,
+		/*Plenum*/pMobj->fPlenumTemp,
+		/*State*/"SAFETY",
+		/*tStat*/pMobj->bThermostatOn ? "ON" : "OFF",
+		/*dTbaffle*/pMobj->fBaffleDeltaT,
+		/*FanSpeed*/(int32_t)0,
+		/*Grille*/(int32_t)(pMobj->sGrill.i8aperturePosSteps*9/10),
+		/*Prim*/(int32_t)(pMobj->sPrimary.i8aperturePosSteps*9/10),
+		/*Sec*/(int32_t)(pMobj->sSecondary.i8aperturePosSteps*9/10),
+		/*Tboard*/get_BoardTemp(),
+		/*Door*/pMobj->bDoorOpen ? "OPEN" : "CLOSED",
+		/*PartCH0ON*/(int32_t)pMobj->sParticles->u16ch0_ON,
+		/*PartCH1ON*/(int32_t)pMobj->sParticles->u16ch1_ON,
+		/*PartCH0OFF*/(int32_t)pMobj->sParticles->u16ch0_OFF,
+		/*PartCH1OFF*/(int32_t)pMobj->sParticles->u16ch1_OFF,
+		/*PartVar*/(int32_t)pMobj->sParticles->u16stDev,
+		/*PartSlope*/pMobj->sParticles->fslope,
+		/*TPart*/(int32_t)pMobj->sParticles->u16temperature,
+		/*PartCurr*/pMobj->sParticles->fLED_current_meas,
+		/*PartLuxON*/(int32_t)pMobj->sParticles->u16Lux_ON,
+		/*PartLuxOFF*/(int32_t)pMobj->sParticles->u16Lux_OFF,
+		/*PartTime*/(int32_t)pMobj->sParticles->u16TimeSinceInit,
+		/*dTavant*/pMobj->fChamberDeltaT
+	);
+	if (n <= 0)
+	{
+		strcpy(m_szDebugStringJSON, "{ \"error\" : \"buffer overflow\" }");
+		return;
+	}
+	m_szDebugStringJSON[n] = '\0';
+
+	const uint32_t u32Len = (uint32_t)UFEC23ENDEC_S2CSendDebugDataRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, m_szDebugStringJSON);
 	UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CSendDebugDataResp, m_u8UARTOutputBuffers, u32Len);
 }

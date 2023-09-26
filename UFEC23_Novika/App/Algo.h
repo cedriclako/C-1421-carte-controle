@@ -110,5 +110,6 @@ typedef struct
 /***** Fonctions ******/
 
 extern void Algo_Init(void const * argument);
+const Mobj* ALGO_GetObjData();
 
 #endif /* INC_ALGO_H_ */
