@@ -146,7 +146,7 @@ int main(void)
   Algo_taskHandle = osThreadCreate(osThread(Algo_task), NULL);
 
   /* definition and creation of MotorManager */
-  osThreadDef(MotorManager, Motor_task, osPriorityAboveNormal, 0, 128);
+  osThreadDef(MotorManager, Motor_task, osPriorityNormal, 0, 128);
   MotorManagerHandle = osThreadCreate(osThread(MotorManager), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -499,9 +499,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Limit_switch_Door_Pin Thermostat_Input_Pin Safety_ON_Pin Interlock_Input_Pin
+  /*Configure GPIO pins : Limit_switch_Door_Pin Safety_ON_Pin Thermostat_Input_Pin Interlock_Input_Pin
                            Button_Input_Pin USB_Fault_Pin */
-  GPIO_InitStruct.Pin = Limit_switch_Door_Pin|Thermostat_Input_Pin|Safety_ON_Pin|Interlock_Input_Pin
+  GPIO_InitStruct.Pin = Limit_switch_Door_Pin|Safety_ON_Pin|Thermostat_Input_Pin|Interlock_Input_Pin
                           |Button_Input_Pin|USB_Fault_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;

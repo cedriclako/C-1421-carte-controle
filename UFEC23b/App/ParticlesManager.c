@@ -234,6 +234,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 		break;
 	case Data_ready:
 		nextState = Idle;
+		u32LastReqTime = u32Time_ms;
 		if((RX_BUFFER[1] & 0xC0) == READ_CMD)
 		{
 			ParticleDevice.u16ch0_ON = (uint16_t)(RX_BUFFER[2] << 8) + (uint16_t)RX_BUFFER[3];

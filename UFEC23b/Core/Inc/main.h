@@ -84,12 +84,12 @@ void Error_Handler(void);
 #define Limit_switch_Door_GPIO_Port GPIOB
 #define Step3_STEP_Pin GPIO_PIN_1
 #define Step3_STEP_GPIO_Port GPIOB
-#define Safety_Out_Pin GPIO_PIN_2
-#define Safety_Out_GPIO_Port GPIOB
+#define Safety_ON_Pin GPIO_PIN_2
+#define Safety_ON_GPIO_Port GPIOB
 #define Thermostat_Input_Pin GPIO_PIN_12
 #define Thermostat_Input_GPIO_Port GPIOB
-#define Safety_ON_Pin GPIO_PIN_13
-#define Safety_ON_GPIO_Port GPIOB
+#define Safety_Out_Pin GPIO_PIN_13
+#define Safety_Out_GPIO_Port GPIOB
 #define Interlock_Input_Pin GPIO_PIN_14
 #define Interlock_Input_GPIO_Port GPIOB
 #define Reset_Particles_Sensor_Pin GPIO_PIN_15
@@ -136,6 +136,9 @@ void   MX_USART2_UART_Init(void);
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define RANGE(min,val,max) MAX(min,MIN(val,max))
+#define NOVIKA_SETUP (1)
+
+#define MOTOR_HOME_CMD 0xEE
 
 /* USER CODE END Private defines */
 

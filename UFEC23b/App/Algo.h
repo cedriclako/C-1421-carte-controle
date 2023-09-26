@@ -102,6 +102,7 @@ typedef struct
 	uint32_t u32TimeOfComputation_ms;
 
 	bool bReloadRequested;
+	bool bButtonBlinkRequired;
 	uint32_t TimeOfReloadRequest;
 	///////////////////////////////////////////////////
 
