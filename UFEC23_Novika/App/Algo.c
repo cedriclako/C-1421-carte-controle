@@ -21,7 +21,7 @@
 #include "TemperatureManager.h"
 #include "DebugManager.h"
 #include "Algo.h"
-
+#include "GitCommit.h"
 
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
@@ -73,6 +73,12 @@ void Algo_stoveInit(Mobj *stove);
 
 void Algo_Init(void const * argument)
 {
+	printf("\r\n\r\n");
+	printf("--------------------------------\r\n");
+	printf("BOOTING APP\r\n");
+	printf("Commitid: %s, Branch: %s, Dirty: %d\r\n", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, GITCOMMIT_ISDIRTY);
+	printf("--------------------------------\r\n");
+
 	Algo_fill_state_functions();
 
 	PARAMFILE_Init();
@@ -82,18 +88,17 @@ void Algo_Init(void const * argument)
 	Particle_Init();
 
 	// Print all parameters into the debug file
-	for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
+	/*for(uint32_t ix = 0; ix < PARAMFILE_GetParamEntryCount(); ix++)
 	{
 	  const PFL_SParameterItem* pParamItem = PARAMFILE_GetParamEntryByIndex(ix);
 	  if (pParamItem == NULL)
 		  continue;
-
 	  char tmp[128+1];
 	  int32_t s32Value;
 	  PFL_GetValueInt32(&PARAMFILE_g_sHandle, pParamItem->szKey, &s32Value);
-	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)", pParamItem->szKey, (int)s32Value, (int)pParamItem->uType.sInt32.s32Default, (int)pParamItem->uType.sInt32.s32Min, (int)pParamItem->uType.sInt32.s32Max);
+	  snprintf(tmp, sizeof(tmp), "%s | %d (default: %d, min: %d, max: %d)\r\n", pParamItem->szKey, (int)s32Value, (int)pParamItem->uType.sInt32.s32Default, (int)pParamItem->uType.sInt32.s32Min, (int)pParamItem->uType.sInt32.s32Max);
 	  printf(tmp);
-	}
+	}*/
 
 	// We want to be sure the system is ready before accepting to answer to any commands
 	ESPMANAGER_SetReady();
