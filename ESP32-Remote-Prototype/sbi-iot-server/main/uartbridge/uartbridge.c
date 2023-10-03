@@ -331,6 +331,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             if (s32NextWritableIndex < 0)
             {
                 m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_None;
+
+                SendFrame(UFEC23PROTOCOL_FRAMEID_C2SCommitParameter, NULL, 0);
                 ESP_LOGI(TAG, "Parameter upload process done");
             }
             else

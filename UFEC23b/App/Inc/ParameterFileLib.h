@@ -16,7 +16,7 @@
 typedef enum
 {
 	//PFL_TYPE_Float,
-PFL_TYPE_Int32
+	PFL_TYPE_Int32
 } PFL_TYPE;
 
 typedef struct
@@ -75,8 +75,6 @@ typedef enum
 void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries, uint32_t u32ParameterEntryCount, const PFL_SConfig* psConfig);
 
 void PFL_LoadAll(PFL_SHandle* pHandle);
-
-void PFL_LoadAllDefault(PFL_SHandle* pHandle);
 
 void PFL_CommitAll(PFL_SHandle* pHandle);
 

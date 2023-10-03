@@ -13,9 +13,11 @@
 #include "DebugPort.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <math.h>
 #include "message_buffer.h"
 #include "GPIOManager.h"
+#include "FlashMap.h"
 //#include "ProdTest.h"
 //#include "MotorManager.h"
 #include "ParticlesManager.h"
@@ -104,12 +106,15 @@ void Algo_Init(void const * argument)
 	printf("\r\n\r\n");
 	printf("--------------------------------\r\n");
 	printf("BOOTING APP\r\n");
-	printf("Commitid: %s, Branch: %s, Dirty: %d\r\n", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, GITCOMMIT_ISDIRTY);
+	printf("Git commit ID: %s, branch: '%s', dirty: %s\r\n", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
+	printf("Internal flash: %"PRIu32" KB\r\n", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
 	printf("--------------------------------\r\n");
+
+	PARAMFILE_Init();
+	PARAMFILE_Load();
 
 	Algo_fill_state_functions();
 
-	PARAMFILE_Init();
 	Algo_stoveInit(&UFEC23);
 	Temperature_Init();
 	ESPMANAGER_Init();

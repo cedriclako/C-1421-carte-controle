@@ -23,8 +23,8 @@ $gitFileOutput = "#ifndef _GITCOMMIT_ID_H_`r`n"
 $gitFileOutput += "#define _GITCOMMIT_ID_H_`r`n"
 $gitFileOutput += "`r`n"
 
-$gitFileOutput += "#define GITCOMMIT_COMMITID `"$gitBranch`"`r`n"
-$gitFileOutput += "#define GITCOMMIT_BRANCH `"$gitCommitID`"`r`n"
+$gitFileOutput += "#define GITCOMMIT_COMMITID `"$gitCommitID`"`r`n"
+$gitFileOutput += "#define GITCOMMIT_BRANCH `"$gitBranch`"`r`n"
 $gitFileOutput += "#define GITCOMMIT_ISDIRTY $gitIsDirty`r`n"
 
 $gitFileOutput += "`r`n"

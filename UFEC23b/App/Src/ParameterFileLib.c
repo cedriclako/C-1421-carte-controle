@@ -24,6 +24,7 @@ void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries,
 
 void PFL_LoadAll(PFL_SHandle* pHandle)
 {
+	// We expect the process to load values, doesn't matter if they are valid or not.
 	if (pHandle->psConfig->ptrLoadAll != NULL)
 		pHandle->psConfig->ptrLoadAll(pHandle);
 
@@ -40,24 +41,6 @@ void PFL_LoadAll(PFL_SHandle* pHandle)
 			{
 				*ps32Value = pEnt->uType.sInt32.s32Default;
 			}
-		}
-	}
-}
-
-void PFL_LoadAllDefault(PFL_SHandle* pHandle)
-{
-	if (pHandle->psConfig->ptrLoadAll != NULL)
-		pHandle->psConfig->ptrLoadAll(pHandle);
-
-	// Verify variables and load default value if necessary
-	for(int i = 0; i < pHandle->u32ParameterEntryCount; i++)
-	{
-		const PFL_SParameterItem* pEnt = &pHandle->pParameterEntries[i];
-
-		if (pEnt->eType == PFL_TYPE_Int32)
-		{
-			int32_t* ps32Value = ((int32_t*)pEnt->vdVar);
-			*ps32Value = pEnt->uType.sInt32.s32Default;
 		}
 	}
 }

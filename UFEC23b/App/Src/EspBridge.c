@@ -297,8 +297,9 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CSetParameterResp, m_u8UARTOutputBuffers, u32Len);
 			break;
 		}
-		//case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:
-		//	break;
+		case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:
+			PFL_CommitAll(&PARAMFILE_g_sHandle);
+			break;
 		default:
 			// TODO: Not a valid protocol ID... Do something? Throw into UART log?
 			break;
