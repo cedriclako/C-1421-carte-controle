@@ -33,11 +33,11 @@ typedef enum
   EF_EFILE_MNT_INDEX_HTML = 0,                                  /*!< @brief file: mnt-index.html, size: 5167 */
   EF_EFILE_MNT_OTA_HTML = 1,                                    /*!< @brief file: mnt-ota.html, size: 781 */
   EF_EFILE_USER_INDEX_HTML = 2,                                 /*!< @brief file: user-index.html, size: 991 */
-  EF_EFILE_CSS_MNT_CONTENT_CSS = 3,                             /*!< @brief file: css/mnt-content.css, size: 941 */
-  EF_EFILE_CSS_USER_CONTENT_CSS = 4,                            /*!< @brief file: css/user-content.css, size: 780 */
+  EF_EFILE_CSS_MNT_CONTENT_CSS = 3,                             /*!< @brief file: css/mnt-content.css, size: 1181 */
+  EF_EFILE_CSS_USER_CONTENT_CSS = 4,                            /*!< @brief file: css/user-content.css, size: 778 */
   EF_EFILE_JS_MNT_APP_JS = 5,                                   /*!< @brief file: js/mnt-app.js, size: 7813 */
   EF_EFILE_JS_MNT_OTA_JS = 6,                                   /*!< @brief file: js/mnt-ota.js, size: 1032 */
-  EF_EFILE_JS_USER_APP_JS = 7,                                  /*!< @brief file: js/user-app.js, size: 141 */
+  EF_EFILE_JS_USER_APP_JS = 7,                                  /*!< @brief file: js/user-app.js, size: 275 */
   EF_EFILE_JS_VUE_MIN_JS = 8,                                   /*!< @brief file: js/vue.min.js, size: 107165 */
   EF_EFILE_FAVICON_ICO = 9,                                     /*!< @brief file: favicon.ico, size: 1673 */
   EF_EFILE_IMG_LOGO_SBI_350X256_PNG = 10,                       /*!< @brief file: img/logo-sbi-350x256.png, size: 14236 */

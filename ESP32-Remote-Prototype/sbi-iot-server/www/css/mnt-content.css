@@ -1,7 +1,19 @@
 body {
-    font-family: system-ui;
+    font-family: 'Roboto', sans-serif;
 }
 
+@font-face {
+    font-family: "Roboto";
+    src: url("/font/Roboto-Regular.ttf");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "Roboto";
+    src: url("/font/Roboto-Bold.ttf");
+    font-weight: bold;
+}
+  
 h1 {
     font-size: 20px;
 }
