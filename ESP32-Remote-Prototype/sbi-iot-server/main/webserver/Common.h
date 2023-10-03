@@ -8,6 +8,7 @@
 #include <string.h>
 #include <time.h>
 #include <esp_http_server.h>
+#include "esp_log.h"
 #include "apiurl.h"
 #include "esp_log.h"
 #include "assets/EmbeddedFiles.h"
