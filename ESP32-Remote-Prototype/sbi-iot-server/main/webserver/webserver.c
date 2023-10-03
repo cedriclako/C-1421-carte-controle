@@ -175,6 +175,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
 
     if (pFile == NULL)
     {
+        httpd_resp_set_hdr(req, "Connection", "close");
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
         return ESP_FAIL;
     }
@@ -240,12 +241,12 @@ static esp_err_t file_post_handler(httpd_req_t *req)
     }
  
     httpd_resp_set_hdr(req, "Connection", "close");
-    ESP_LOGI(TAG, "file_post_handler, url: %s | #4", req->uri);
+    httpd_resp_send(req, NULL, 0);
     return ESP_OK;
     ERROR:
     ESP_LOGE(TAG, "Invalid request");
-    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
     httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
     return ESP_FAIL;
 }
 
@@ -260,8 +261,16 @@ static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
     }
 
     ESP_LOGI(TAG, "api_get_handler, url: '%s', query: '%s'", req->uri, queryString);
-    m_bHasAccess = true;
 
+    // UFEC23SBI
+    char password[16+1] = {0};
+    if (ESP_OK != httpd_query_key_value(queryString, "password", password, sizeof(password)-1))
+    {
+        ESP_LOGE(TAG, "invalid query, password key field is not there");
+        goto ERROR;
+    }
+
+    m_bHasAccess = true;
     CHECK_FOR_ACCESS_OR_RETURN();
     
     httpd_resp_set_status(req, "302 Moved Permanently");
@@ -270,8 +279,8 @@ static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
     httpd_resp_send(req, NULL, 0);
     return ESP_OK;
     ERROR:
-    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
     httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
     return ESP_FAIL;
 }
 
@@ -452,8 +461,9 @@ static const EF_SFile* GetFileByURL(const char* strFilename, EF_EFILE* pOutEFile
         const EF_SFile* pFile = &EF_g_sFiles[i];
         if (strcmp(pFile->strFilename, strFilename) == 0)
         {
-            if (pOutEFile)
+            if (pOutEFile) {
                 *pOutEFile = (EF_EFILE)i;
+            }
             return pFile; 
         }
     }
@@ -753,6 +763,7 @@ static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req)
     esp_restart();
 
     httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send(req, NULL, 0);
     return ESP_OK;
     ERROR:
     httpd_resp_set_hdr(req, "Connection", "close");
@@ -824,6 +835,7 @@ static esp_err_t file_postotauploadSTM32_handler(httpd_req_t *req)
         goto ERROR;
     }
 
+    httpd_resp_send(req, NULL, 0);
     err = ESP_OK;
     goto END;
     ERROR:
