@@ -198,6 +198,8 @@ void app_main(void)
     sntp_set_time_sync_notification_cb(time_sync_notification_cb);
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_init();
+
+    mdns_sn_init();
     
     // Just print task list
     char* szAllTask = (char*)malloc(4096);

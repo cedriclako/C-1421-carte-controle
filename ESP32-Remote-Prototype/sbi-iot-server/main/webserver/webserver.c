@@ -58,7 +58,12 @@ static uint8_t m_u8Buffers[HTTPSERVER_BUFFERSIZE];
 /*! @brief this variable is set by linker script, don't rename it. It contains app image informations. */
 extern const esp_app_desc_t esp_app_desc;
 
-static bool m_bIsPairing = false, m_bHasAccess = false;
+static bool m_bIsPairing = false;
+#if FWCONFIG_MAINTENANCEACCESS_NOPASSWORD != 0
+static bool m_bHasAccess = true;
+#else
+static bool m_bHasAccess = false;
+#endif
 
 static const httpd_uri_t m_sHttpUI = {
     .uri       = "/*",
@@ -261,16 +266,20 @@ static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
     }
 
     ESP_LOGI(TAG, "api_get_handler, url: '%s', query: '%s'", req->uri, queryString);
-
-    // UFEC23SBI
     char password[16+1] = {0};
-    if (ESP_OK != httpd_query_key_value(queryString, "password", password, sizeof(password)-1))
+    // It seems it already handle the trailing 0. So no need to add -1.
+    if (ESP_OK != httpd_query_key_value(queryString, "password", password, sizeof(password)))
     {
         ESP_LOGE(TAG, "invalid query, password key field is not there");
         goto ERROR;
     }
 
-    m_bHasAccess = true;
+    m_bHasAccess = false;
+    if (strcmp(password, FWCONFIG_MAINTENANCEACCESS_PASSWORD) == 0)
+    {
+        m_bHasAccess = true;
+    }
+
     CHECK_FOR_ACCESS_OR_RETURN();
     
     httpd_resp_set_status(req, "302 Moved Permanently");
