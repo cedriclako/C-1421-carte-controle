@@ -8,8 +8,8 @@
 #define API_GETSETTINGSJSON_URI "/api/getsettingsjson"
 #define API_POSTSETTINGSJSON_URI "/api/setsettingsjson"
 
-#define ACTION_POST_ESPNOW_STARTPAIRING "/action/espnow_startpairing"
-#define ACTION_POST_ESPNOW_STOPPAIRING "/action/espnow_stoppairing"
+//#define ACTION_POST_ESPNOW_STARTPAIRING "/action/espnow_startpairing"
+//#define ACTION_POST_ESPNOW_STOPPAIRING "/action/espnow_stoppairing"
 
 #define ACTION_POST_REBOOT "/action/reboot"
 #define ACTION_POST_DOWNLOADCONFIG "/action/downloadconfig"

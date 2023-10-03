@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <time.h>
 #include <esp_http_server.h>
 #include "apiurl.h"
 #include "esp_log.h"

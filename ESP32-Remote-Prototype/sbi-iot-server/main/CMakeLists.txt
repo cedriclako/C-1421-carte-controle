@@ -1,6 +1,6 @@
 idf_component_register(SRCS "log.c" "main.c" "spiff.c" "settings.c" "espnowprocess.c" 
     "webserver/webserver.c" 
-    "webserver/StaticFileServe.c" "webserver/OTAUploadSTM32.c" "webserver/OTAUploadESP32.c"
+    "webserver/StaticFileServe.c" "webserver/OTAUploadSTM32.c" "webserver/OTAUploadESP32.c""webserver/APIGet.c"
     "hardwaregpio.c" "uartbridge/uartbridge.c" "uartbridge/stovemb.c" "event.c"
     "assets/EmbeddedFilesBin.c" "assets/EmbeddedFiles.c"
     INCLUDE_DIRS "."
