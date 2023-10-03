@@ -3,6 +3,8 @@
 
 #define DEFAULT_RELATIVE_URI "/index.html"
 
+#define API_GET_ACCESSMAINTENANCEREDIRECT_URI "/api/access-maintenance-redirect"
+
 #define API_GETSETTINGSJSON_URI "/api/getsettingsjson"
 #define API_POSTSETTINGSJSON_URI "/api/setsettingsjson"
 

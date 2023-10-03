@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <inttypes.h>
+#include <string.h>
 #include "esp_app_format.h"
 #include "assets/EmbeddedFiles.h"
 #include "esp_ota_ops.h"
@@ -42,7 +43,10 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
 static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req);
 static esp_err_t file_postotauploadSTM32_handler(httpd_req_t *req);
 
-static const EF_SFile* GetFile(const char* strFilename);
+static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req);
+
+static const EF_SFile* GetFileByURL(const char* strFilename, EF_EFILE* pOutEFile);
+static const EF_SFile* GetFile(EF_EFILE eFile);
 
 static char* GetSysInfo();
 static char* GetLiveData();
@@ -54,7 +58,7 @@ static uint8_t m_u8Buffers[HTTPSERVER_BUFFERSIZE];
 /*! @brief this variable is set by linker script, don't rename it. It contains app image informations. */
 extern const esp_app_desc_t esp_app_desc;
 
-static bool m_bIsPairing = false;
+static bool m_bIsPairing = false, m_bHasAccess = false;
 
 static const httpd_uri_t m_sHttpUI = {
     .uri       = "/*",
@@ -69,6 +73,15 @@ static const httpd_uri_t m_sHttpGetAPI = {
     .uri       = "/api/*",
     .method    = HTTP_GET,
     .handler   = api_get_handler,
+    /* Let's pass response string in user
+     * context to demonstrate it's usage */
+    .user_ctx  = ""
+};
+
+static const httpd_uri_t m_sHttpGetAccessMaintenanceRedirectAPI = {
+    .uri       = API_GET_ACCESSMAINTENANCEREDIRECT_URI,
+    .method    = HTTP_GET,
+    .handler   = api_getaccessmaintenanceredirect_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = ""
@@ -109,6 +122,14 @@ static const httpd_uri_t m_sHttpOTAUploadSTM32Post = {
     .user_ctx  = ""
 };
 
+#define CHECK_FOR_ACCESS_OR_RETURN() do { \
+    if (!m_bHasAccess) { \
+        httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "You don't have access to these resources"); \
+        httpd_resp_set_hdr(req, "Connection", "close"); \
+        return ESP_FAIL; \
+    } \
+} while(0)
+
 void WEBSERVER_Init()
 {
     httpd_handle_t server = NULL;
@@ -124,6 +145,7 @@ void WEBSERVER_Init()
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
+        httpd_register_uri_handler(server, &m_sHttpGetAccessMaintenanceRedirectAPI);
         httpd_register_uri_handler(server, &m_sHttpActionPost);
         httpd_register_uri_handler(server, &m_sHttpGetAPI);
         httpd_register_uri_handler(server, &m_sHttpPostAPI);
@@ -138,22 +160,27 @@ void WEBSERVER_Init()
 static esp_err_t file_get_handler(httpd_req_t *req)
 {
     const EF_SFile* pFile = NULL;
+    EF_EFILE eFile;
 
-    ESP_LOGI(TAG, "Opening file uri: %s", req->uri);
-
-    // Redirect root to index.html
-    if (strcmp(req->uri, "/") == 0)
-    {
-        pFile = GetFile(DEFAULT_RELATIVE_URI+1);
+    ESP_LOGI(TAG, "Opening file uri: '%s'", req->uri);
+    
+    if (strcmp(req->uri, "/") == 0 || strcmp(req->uri, DEFAULT_RELATIVE_URI) == 0) {
+        // Redirect root to index.html
+        eFile = EF_EFILE_USER_INDEX_HTML;
+        pFile = GetFile(eFile);
     }
     else {
-        pFile = GetFile(req->uri+1);
+        pFile = GetFileByURL(req->uri+1, &eFile);
     }
 
     if (pFile == NULL)
     {
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
         return ESP_FAIL;
+    }
+    else if (eFile == EF_EFILE_MNT_INDEX_HTML)
+    {
+        CHECK_FOR_ACCESS_OR_RETURN();
     }
 
     set_content_type_from_file(req, pFile->strFilename);
@@ -186,6 +213,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
 static esp_err_t file_post_handler(httpd_req_t *req)
 {
     ESP_LOGI(TAG, "file_post_handler, url: %s", req->uri);
+    CHECK_FOR_ACCESS_OR_RETURN();
 
     if (strcmp(req->uri, ACTION_POST_REBOOT) == 0)
     {
@@ -211,16 +239,39 @@ static esp_err_t file_post_handler(httpd_req_t *req)
         goto ERROR;
     }
  
-    ESP_LOGI(TAG, "file_post_handler, url: %s | #3", req->uri);
     httpd_resp_set_hdr(req, "Connection", "close");
     ESP_LOGI(TAG, "file_post_handler, url: %s | #4", req->uri);
-    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
     ERROR:
     ESP_LOGE(TAG, "Invalid request");
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
     httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_FAIL;
+}
+
+static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
+{
+    char queryString[64+1] = {0};
+    esp_err_t get_query_err;
+    if (ESP_OK != (get_query_err = httpd_req_get_url_query_str(req, queryString, sizeof(queryString)-1)))
+    {
+        ESP_LOGE(TAG, "invalid query string, error: %s", esp_err_to_name(get_query_err));
+        goto ERROR;
+    }
+
+    ESP_LOGI(TAG, "api_get_handler, url: '%s', query: '%s'", req->uri, queryString);
+    m_bHasAccess = true;
+
+    CHECK_FOR_ACCESS_OR_RETURN();
+    
+    httpd_resp_set_status(req, "302 Moved Permanently");
+    httpd_resp_set_hdr(req, "Location", "/mnt-index.html");
+    httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+    ERROR:
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
+    httpd_resp_set_hdr(req, "Connection", "close");
     return ESP_FAIL;
 }
 
@@ -228,30 +279,32 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 {
     esp_err_t esperr = ESP_OK;
 
-    //ESP_LOGI(TAG, "api_get_handler, url: %s", req->uri);
     char szError[128+1] = {0,};
     char* pExportJSON = NULL;
-    
-    httpd_resp_set_type(req, "application/json");
-    
+
+    CHECK_FOR_ACCESS_OR_RETURN();
+
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {
         pExportJSON = NVSJSON_ExportJSON(&g_sSettingHandle);
 
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
+        httpd_resp_set_type(req, "application/json");
     }
     else if (strcmp(req->uri, API_GETSYSINFOJSON_URI) == 0)
     {
         pExportJSON = GetSysInfo();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
+        httpd_resp_set_type(req, "application/json");
     }
     else if (strcmp(req->uri, API_GETLIVEDATAJSON_URI) == 0)
     {
         pExportJSON = GetLiveData();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
+        httpd_resp_set_type(req, "application/json");
     }
     else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
     {
@@ -260,6 +313,7 @@ static esp_err_t api_get_handler(httpd_req_t *req)
         {
             strcpy(szError, "Server parameter file is not available");
             goto ERROR;
+            httpd_resp_set_type(req, "application/json");
         }
     }
     else
@@ -290,6 +344,9 @@ static esp_err_t api_get_handler(httpd_req_t *req)
 static esp_err_t api_post_handler(httpd_req_t *req)
 {
     esp_err_t esperr = ESP_OK;
+    
+    CHECK_FOR_ACCESS_OR_RETURN(); // STOP THERE is the user doesn't have access
+
     char szError[128+1] = {0,};
 
     const int total_len = req->content_len;
@@ -388,16 +445,28 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
     return httpd_resp_set_type(req, "text/plain");
 }
 
-static const EF_SFile* GetFile(const char* strFilename)
+static const EF_SFile* GetFileByURL(const char* strFilename, EF_EFILE* pOutEFile)
 {
     for(int i = 0; i < EF_EFILE_COUNT; i++)
     {
         const EF_SFile* pFile = &EF_g_sFiles[i];
         if (strcmp(pFile->strFilename, strFilename) == 0)
-            return pFile;
+        {
+            if (pOutEFile)
+                *pOutEFile = (EF_EFILE)i;
+            return pFile; 
+        }
     }
 
     return NULL;
+}
+
+static const EF_SFile* GetFile(EF_EFILE eFile)
+{
+    if (eFile >= EF_EFILE_COUNT)
+        return NULL;
+    const EF_SFile* pFile = &EF_g_sFiles[(int)eFile];
+    return pFile;
 }
 
 static char* GetSysInfo()
@@ -608,6 +677,8 @@ static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req)
 {
     ESP_LOGI(TAG, "file_postotauploadESP32_handler / uri: %s", req->uri);
 
+    CHECK_FOR_ACCESS_OR_RETURN();
+
     const esp_partition_t *configured = esp_ota_get_boot_partition();
     const esp_partition_t *running = esp_ota_get_running_partition();
 
@@ -693,6 +764,8 @@ static esp_err_t file_postotauploadESP32_handler(httpd_req_t *req)
 static esp_err_t file_postotauploadSTM32_handler(httpd_req_t *req)
 {
     esp_err_t err = ESP_FAIL;
+    CHECK_FOR_ACCESS_OR_RETURN();
+
     const char* szError = NULL;
 
     FILE* flash_file = NULL;
