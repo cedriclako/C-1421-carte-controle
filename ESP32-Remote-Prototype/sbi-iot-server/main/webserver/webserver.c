@@ -100,7 +100,7 @@ static const httpd_uri_t m_sHttpActionPost = {
 };
 
 static const httpd_uri_t m_sHttpOTAUploadESP32Post = {
-    .uri       = "/ota/upload_esp32",
+    .uri       = API_POST_OTAUPLOADESP32_URI,
     .method    = HTTP_POST,
     .handler   = file_postotauploadESP32_handler,
     /* Let's pass response string in user
@@ -109,7 +109,7 @@ static const httpd_uri_t m_sHttpOTAUploadESP32Post = {
 };
 
 static const httpd_uri_t m_sHttpOTAUploadSTM32Post = {
-    .uri       = "/ota/upload_stm32",
+    .uri       = API_POST_OTAUPLOADSTM32_URI,
     .method    = HTTP_POST,
     .handler   = OTAUPLOADSTM32_postotauploadSTM32_handler,
     /* Let's pass response string in user

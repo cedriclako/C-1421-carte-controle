@@ -20,4 +20,8 @@
 #define API_GETSERVERPARAMETERFILEJSON_URI "/api/getserverparameterfile"
 #define API_POSTSERVERPARAMETERFILEJSON_URI "/api/setserverparameterfile"
 
+#define API_POST_OTAUPLOADSTM32_URI "/ota/upload_stm32"
+
+#define API_POST_OTAUPLOADESP32_URI "/ota/upload_esp32"
+
 #endif

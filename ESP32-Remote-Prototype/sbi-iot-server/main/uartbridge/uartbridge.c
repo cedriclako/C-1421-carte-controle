@@ -124,6 +124,7 @@ void UARTBRIDGE_Init()
 void UARTBRIDGE_SetSilenceMode(bool bIsSilent)
 {
     m_sStateMachine.bIsSilentMode = bIsSilent;
+    
 }
 
 void UARTBRIDGE_Handler()

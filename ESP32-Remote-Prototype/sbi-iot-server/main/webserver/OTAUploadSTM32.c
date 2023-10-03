@@ -12,7 +12,7 @@
 esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
 {
     esp_err_t err = ESP_FAIL;
-    //CHECK_FOR_ACCESS_OR_RETURN();
+    CHECK_FOR_ACCESS_OR_RETURN();
 
     const char* szError = NULL;
 

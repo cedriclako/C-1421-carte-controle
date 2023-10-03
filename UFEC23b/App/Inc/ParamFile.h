@@ -324,6 +324,8 @@ extern PFL_SHandle PARAMFILE_g_sHandle;
 
 void PARAMFILE_Init();
 
+void PARAMFILE_Load();
+
 uint32_t PARAMFILE_GetParamEntryCount();
 
 const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index);
