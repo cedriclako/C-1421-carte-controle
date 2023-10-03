@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <esp_http_server.h>
+#include "apiurl.h"
+#include "esp_log.h"
+#include "assets/EmbeddedFiles.h"
 
 #define CHECK_FOR_ACCESS_OR_RETURN() do { \
     if (!g_bHasAccess) { \

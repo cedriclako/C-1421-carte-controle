@@ -1,4 +1,3 @@
-#include "Common.h"
 #include "OTAUploadSTM32.h"
 #include "hardwaregpio.h"
 #include "stm32-process.h"
