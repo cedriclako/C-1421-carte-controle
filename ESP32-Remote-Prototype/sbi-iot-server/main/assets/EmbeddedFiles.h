@@ -30,15 +30,19 @@ typedef struct
 
 typedef enum
 {
-  EF_EFILE_INDEX_HTML = 0,                                      /*!< @brief file: index.html, size: 5159 */
-  EF_EFILE_OTA_HTML = 1,                                        /*!< @brief file: ota.html, size: 769 */
-  EF_EFILE_CSS_CONTENT_CSS = 2,                                 /*!< @brief file: css/content.css, size: 941 */
-  EF_EFILE_JS_APP_JS = 3,                                       /*!< @brief file: js/app.js, size: 7853 */
-  EF_EFILE_JS_OTA_JS = 4,                                       /*!< @brief file: js/ota.js, size: 1032 */
-  EF_EFILE_JS_VUE_MIN_JS = 5,                                   /*!< @brief file: js/vue.min.js, size: 107165 */
-  EF_EFILE_FAVICON_ICO = 6,                                     /*!< @brief file: favicon.ico, size: 1673 */
-  EF_EFILE_IMG_LOGO_SBI_350X256_PNG = 7,                        /*!< @brief file: img/logo-sbi-350x256.png, size: 14236 */
-  EF_EFILE_COUNT = 8
+  EF_EFILE_MNT_INDEX_HTML = 0,                                  /*!< @brief file: mnt-index.html, size: 5167 */
+  EF_EFILE_MNT_OTA_HTML = 1,                                    /*!< @brief file: mnt-ota.html, size: 781 */
+  EF_EFILE_USER_INDEX_HTML = 2,                                 /*!< @brief file: user-index.html, size: 864 */
+  EF_EFILE_CSS_MNT_CONTENT_CSS = 3,                             /*!< @brief file: css/mnt-content.css, size: 941 */
+  EF_EFILE_CSS_USER_CONTENT_CSS = 4,                            /*!< @brief file: css/user-content.css, size: 778 */
+  EF_EFILE_JS_MNT_APP_JS = 5,                                   /*!< @brief file: js/mnt-app.js, size: 7813 */
+  EF_EFILE_JS_MNT_OTA_JS = 6,                                   /*!< @brief file: js/mnt-ota.js, size: 1032 */
+  EF_EFILE_JS_VUE_MIN_JS = 7,                                   /*!< @brief file: js/vue.min.js, size: 107165 */
+  EF_EFILE_FAVICON_ICO = 8,                                     /*!< @brief file: favicon.ico, size: 1673 */
+  EF_EFILE_IMG_LOGO_SBI_350X256_PNG = 9,                        /*!< @brief file: img/logo-sbi-350x256.png, size: 14236 */
+  EF_EFILE_FONT_ROBOTO_BOLD_TTF = 10,                           /*!< @brief file: font/Roboto-Bold.ttf, size: 167336 */
+  EF_EFILE_FONT_ROBOTO_REGULAR_TTF = 11,                        /*!< @brief file: font/Roboto-Regular.ttf, size: 168260 */
+  EF_EFILE_COUNT = 12
 } EF_EFILE;
 
 /*! @brief Check if compressed flag is active */
