@@ -78,6 +78,8 @@ void MX_USART2_UART_Init(void);
 #define Limit_switch3_GPIO_Port GPIOA
 #define Step3_DIR_Pin GPIO_PIN_5
 #define Step3_DIR_GPIO_Port GPIOA
+#define AFK_SpeedPWM_Pin GPIO_PIN_6
+#define AFK_SpeedPWM_GPIO_Port GPIOA
 #define Step3_LowCurrent_Pin GPIO_PIN_7
 #define Step3_LowCurrent_GPIO_Port GPIOA
 #define uc_Stepper_Sleep_Pin GPIO_PIN_4

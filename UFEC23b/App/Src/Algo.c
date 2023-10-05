@@ -82,14 +82,14 @@ static void Algo_combHigh_entry(Mobj *stove);
 static void Algo_coalLow_entry(Mobj *stove);
 static void Algo_coalHigh_entry(Mobj *stove);
 
-static void Algo_waiting_exit(Mobj *stove);
+//static void Algo_waiting_exit(Mobj *stove);
 static void Algo_reload_exit(Mobj *stove);
-static void Algo_zeroing_exit(Mobj *stove);
+//static void Algo_zeroing_exit(Mobj *stove);
 static void Algo_tempRise_exit(Mobj *stove);
 static void Algo_combLow_exit(Mobj *stove);
 static void Algo_combHigh_exit(Mobj *stove);
-static void Algo_coalLow_exit(Mobj *stove);
-static void Algo_coalHigh_exit(Mobj *stove);
+//static void Algo_coalLow_exit(Mobj *stove);
+//static void Algo_coalHigh_exit(Mobj *stove);
 
 void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
 bool Algo_adjust_steppers_position(Mobj *stove);
@@ -123,7 +123,9 @@ void Algo_Init(void const * argument)
     	ESPMANAGER_Run();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
-    	osDelay(1);
+    	Fan_Process(&UFEC23, osKernelSysTick());
+
+    	//osDelay(1);
     }
 
 }
@@ -162,7 +164,7 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	}
 	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
-			currentState == COAL_LOW || currentState == COAL_HIGH))
+			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE))
 	{
 		if(!stove->bInterlockOn)
 		{
@@ -288,10 +290,10 @@ static void Algo_zeroing_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 }
 
-static void Algo_zeroing_exit(Mobj *stove)
-{
+//static void Algo_zeroing_exit(Mobj *stove)
+//{
 
-}
+//}
 //** END: ZEROING STEPPER **//
 
 //** STATE: WAITING **//
@@ -320,10 +322,10 @@ static void Algo_Waiting_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 }
 
-static void Algo_waiting_exit(Mobj *stove)
-{
+//static void Algo_waiting_exit(Mobj *stove)
+//{
 
-}
+//}
 
 //** END: ZEROING STEPPER **//
 
@@ -695,10 +697,10 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 }
 
-static void Algo_coalLow_exit(Mobj *stove)
-{
+//static void Algo_coalLow_exit(Mobj *stove)
+//{
 
-}
+//}
 //** END: COAL LOW **//
 
 //** STATE: COAL HIGH **//
@@ -712,10 +714,10 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	//const PF_CoalParam_t *sParams = PB_GetCoalHighParams();
 }
 
-static void Algo_coalHigh_exit(Mobj *stove)
-{
+//static void Algo_coalHigh_exit(Mobj *stove)
+//{
 
-}
+//}
 //** END: COAL HIGH **//
 
 static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)

@@ -5,9 +5,10 @@
  *      Author: mcarrier
  */
 #include "ParamFile.h"
+#include "ParameterFileLib.h"
 #include "Algo.h"
 
-static PF_SuperStateParam_t m_sSuperParams[ALGO_NB_OF_STATE];
+static PF_SuperStateParam_t m_sSuperParams[ALGO_NB_OF_STATE] = {0x00};
 
 static PF_WaitingParam_t m_sWaitingParams;
 static PF_ReloadParam_t m_sReloadParams;
@@ -33,6 +34,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_ALGO_PERIOD, 			"", &m_sMemBlock.s32TimeBetweenComputations_ms, 		    5000, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_FANKIP,			 		"", &m_sMemBlock.s32FAN_KIP,   	 					   		650, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_FANKOP,			 	    "", &m_sMemBlock.s32FAN_KOP,		 				   		350, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_FANL_SPD,			 	"", &m_sMemBlock.s32FANL_SPD,		 				   		60, 		0, 		100),
+	PFL_INIT_SINT32(PFD_AFK_SPD,			 	"", &m_sMemBlock.s32AFK_SPD,		 				   		95, 		0, 		100),
 
 	// Waiting parameters
 	PFL_INIT_SINT32(PFD_WA_T_TARGET,    	    "", &m_sWaitingParams.fTempToQuitWaiting, 				150, 		0, 		20000),
@@ -162,7 +165,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 
 	// Motor Speed params
-	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				"", &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				"", &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000), // Sec per step* 10
 	PFL_INIT_SINT32(PFD_SPS_SLOW, 				"", &m_sSpeedParams.fSlow, 	  								150, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			"", &m_sSpeedParams.fNormal, 	  							100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								60, 		0, 		20000),
@@ -184,6 +187,7 @@ void PARAMFILE_Init()
 	//PFL_LoadAll(&PARAMFILE_g_sHandle);
 	PFL_LoadAllDefault(&PARAMFILE_g_sHandle);
 
+	/*
 	m_sSuperParams[ZEROING_STEPPER].i32EntryWaitTimeSeconds = 0;
 	m_sSuperParams[ZEROING_STEPPER].i32MaximumTimeInStateMinutes = 0;
 	m_sSuperParams[ZEROING_STEPPER].i32MinimumTimeInStateMinutes = 0;
@@ -207,7 +211,7 @@ void PARAMFILE_Init()
 	m_sSuperParams[MANUAL_CONTROL].i32EntryWaitTimeSeconds = 0;
 	m_sSuperParams[MANUAL_CONTROL].i32MaximumTimeInStateMinutes = 0;
 	m_sSuperParams[MANUAL_CONTROL].i32MinimumTimeInStateMinutes = 0;
-
+*/
 }
 
 uint32_t PARAMFILE_GetParamEntryCount()
@@ -221,6 +225,16 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
 		return NULL;
 	return &PARAMFILE_g_sHandle.pParameterEntries[u32Index];
 }
+
+uint16_t PARAMFILE_GetParamValueByKey(const char* key)
+{
+	int32_t tempValue;
+	PFL_GetValueInt32(&PARAMFILE_g_sHandle, key, &tempValue);
+
+
+	return (uint16_t) tempValue;
+}
+
 
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
