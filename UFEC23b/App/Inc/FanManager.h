@@ -46,6 +46,9 @@ typedef struct Fan
 	Fan_pin_set_t sPins;
 	Fan_Speed_t eSpeed;
 
+	TIM_HandleTypeDef* sStartTimer;
+	TIM_HandleTypeDef* sStopTimer;
+
 	const char* szSpeedKey;
 	uint16_t u16SpeedPercent;
 
@@ -63,10 +66,10 @@ typedef struct Fan
 }FanObj;
 
 
-#define FAN_INIT(_low, _med, _high, _key, _PM, _GM) {.u16LowSpeedPercent = _low, .u16MedSpeedPercent = _med, .u16HighSpeedPercent = _high, .szSpeedKey = _key, .bEnabled = false, .u16SpeedPercent = 0, .u32PulseStart_ms = 0, .eSpeed = FSPEED_OFF,  .sPins = {.MODULATION_PIN = _PM,.MODULATION_PORT = _GM}}
+#define FAN_INIT(_low, _med, _high, _key, _uTimer, _dTimer, _PM, _GM) {.u16LowSpeedPercent = _low, .u16MedSpeedPercent = _med, .u16HighSpeedPercent = _high, .szSpeedKey = _key, .sStartTimer = _uTimer, .sStopTimer = _dTimer, .bEnabled = false, .u16SpeedPercent = 0, .u32PulseStart_ms = 0, .eSpeed = FSPEED_OFF,  .sPins = {.MODULATION_PIN = _PM,.MODULATION_PORT = _GM}}
 
 
-void Fan_Process(Mobj *stove, uint32_t u32CurrentTime_ms);
+void Fan_Process(Mobj *stove);
 
 void Fan_Init(void);
 

@@ -123,7 +123,7 @@ void Algo_Init(void const * argument)
     	ESPMANAGER_Run();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
-    	Fan_Process(&UFEC23, osKernelSysTick());
+    	Fan_Process(&UFEC23);
 
     	//osDelay(1);
     }
