@@ -77,6 +77,8 @@ void Fan_SetToManual(void);
 void Fan_SetOutOfManual(void);
 void Fan_StartPulseSPEED3(void);
 void Fan_StopPulseSPEED3(void);
+void Fan_StartPulseSPEED1(void);
+void Fan_StopPulseSPEED1(void);
 
 
 #endif /* INC_FANMANAGER_H_ */

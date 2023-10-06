@@ -13,8 +13,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define FAN_PULSE_WIDTH		1  // in ms
-
 typedef enum
 {
 	FANSTATE_IDLE,
@@ -39,15 +37,13 @@ void Fan_DisableFan(FanObj *fan);
 void Fan_EnableAuto(FanObj *fan);
 void Fan_ManualOperation(Fan_t FanID, Mobj *stove);
 void Fan_ManageSpeed(FanObj *fan);
-void Fan_GeneratePulse(FanObj *fan, uint32_t u32CurrentTime_ms);
-
 
 static FAN_states eFANstate = FANSTATE_IDLE;
 
 static FanObj sFans[FAN_NUM_OF_FANS] =
 {
-	FAN_INIT(60,90,100,PFD_AFK_SPD, &htim2, &htim3, AFK_Speed1_Pin,AFK_Speed1_GPIO_Port),
-	FAN_INIT(60,90,100,PFD_FANL_SPD, &htim4, &htim5, FAN_SPEED3_Pin,FAN_SPEED3_GPIO_Port),
+	FAN_INIT(60,90,100,PFD_AFK_SPD, &htim4, &htim5, AFK_Speed1_Pin,AFK_Speed1_GPIO_Port),
+	FAN_INIT(60,90,100,PFD_FANL_SPD, &htim2, &htim3, FAN_SPEED3_Pin,FAN_SPEED3_GPIO_Port),
 
 };
 
@@ -256,8 +252,32 @@ void Fan_StartPulseSPEED3(void)
 void Fan_StopPulseSPEED3(void)
 {
 	HAL_TIM_Base_Stop(sFans[FAN_FAN_L].sStopTimer);
-	HAL_GPIO_WritePin(sFans[FAN_FAN_L].sPins.MODULATION_PORT,sFans[FAN_FAN_L].sPins.MODULATION_PIN,GPIO_PIN_RESET);
+
+	if(sFans[FAN_FAN_L].u16SpeedPercent !=100)
+	{
+		HAL_GPIO_WritePin(sFans[FAN_FAN_L].sPins.MODULATION_PORT,sFans[FAN_FAN_L].sPins.MODULATION_PIN,GPIO_PIN_RESET);
+	}
+
 }
+
+void Fan_StartPulseSPEED1(void)
+{
+	HAL_TIM_Base_Stop(sFans[FAN_AFK].sStartTimer);
+	HAL_TIM_Base_Start_IT(sFans[FAN_AFK].sStopTimer);
+	HAL_GPIO_WritePin(sFans[FAN_AFK].sPins.MODULATION_PORT,sFans[FAN_AFK].sPins.MODULATION_PIN,GPIO_PIN_SET);
+}
+
+void Fan_StopPulseSPEED1(void)
+{
+	HAL_TIM_Base_Stop(sFans[FAN_AFK].sStopTimer);
+
+	if(sFans[FAN_AFK].u16SpeedPercent !=100)
+	{
+		HAL_GPIO_WritePin(sFans[FAN_AFK].sPins.MODULATION_PORT,sFans[FAN_AFK].sPins.MODULATION_PIN,GPIO_PIN_RESET);
+	}
+
+}
+
 
 void Fan_EnableZeroDetect(void)
 {
