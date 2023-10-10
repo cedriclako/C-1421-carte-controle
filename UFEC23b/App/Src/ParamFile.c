@@ -5,6 +5,7 @@
  *      Author: mcarrier
  */
 #include "ParamFile.h"
+#include "ParameterFileLib.h"
 #include "Algo.h"
 #include "FlashMap.h"
 
@@ -37,6 +38,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_ALGO_PERIOD, 			"", &m_sMemBlock.s32TimeBetweenComputations_ms, 		    5000, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_FANKIP,			 		"", &m_sMemBlock.s32FAN_KIP,   	 					   		650, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_FANKOP,			 	    "", &m_sMemBlock.s32FAN_KOP,		 				   		350, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_FANL_SPD,			 	"", &m_sMemBlock.s32FANL_SPD,		 				   		60, 		0, 		100),
+	PFL_INIT_SINT32(PFD_AFK_SPD,			 	"", &m_sMemBlock.s32AFK_SPD,		 				   		95, 		0, 		100),
 
 	// Waiting parameters
 	PFL_INIT_SINT32(PFD_WA_T_TARGET,    	    "", &m_sWaitingParams.fTempToQuitWaiting, 					150, 		0, 		20000),
@@ -195,7 +198,7 @@ void PARAMFILE_Load()
 	//PFL_LoadAll(&PARAMFILE_g_sHandle);
 	PFL_LoadAll(&PARAMFILE_g_sHandle);
 
-	/*TODO: Il faut enlever ça, PFL s'occupe déjà de tout mettre par défaut */
+	/*
 	m_sSuperParams[ZEROING_STEPPER].i32EntryWaitTimeSeconds = 0;
 	m_sSuperParams[ZEROING_STEPPER].i32MaximumTimeInStateMinutes = 0;
 	m_sSuperParams[ZEROING_STEPPER].i32MinimumTimeInStateMinutes = 0;
@@ -219,6 +222,7 @@ void PARAMFILE_Load()
 	m_sSuperParams[MANUAL_CONTROL].i32EntryWaitTimeSeconds = 0;
 	m_sSuperParams[MANUAL_CONTROL].i32MaximumTimeInStateMinutes = 0;
 	m_sSuperParams[MANUAL_CONTROL].i32MinimumTimeInStateMinutes = 0;
+*/
 }
 
 uint32_t PARAMFILE_GetParamEntryCount()
@@ -232,6 +236,16 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
 		return NULL;
 	return &PARAMFILE_g_sHandle.pParameterEntries[u32Index];
 }
+
+uint16_t PARAMFILE_GetParamValueByKey(const char* key)
+{
+	int32_t tempValue;
+	PFL_GetValueInt32(&PARAMFILE_g_sHandle, key, &tempValue);
+
+
+	return (uint16_t) tempValue;
+}
+
 
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {

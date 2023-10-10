@@ -13,12 +13,13 @@ static uint32_t u32SafetyStartTime_ms = 0;
 void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
 
-	const PF_UsrParam* uParam = PB_GetUserParam();
+	//const PF_UsrParam* uParam = PB_GetUserParam();
 	static uint8_t u8BlinkCounter = 0;
 	static uint32_t u32ButtonBlinkStartTime_ms = 0;
 
 	// Update Thermostat boolean based on GPIO state
 	stove->bThermostatOn = (HAL_GPIO_ReadPin(Thermostat_Input_GPIO_Port,Thermostat_Input_Pin) == GPIO_PIN_RESET);
+
 	// Update Interlock boolean based on GPIO state
 	//stove->bInterlockOn = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
 	// Update Door state boolean based on GPIO state
@@ -39,6 +40,7 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	else if(!bButtonPressed) // Not pressed? Reset timer
 	{
 		u32PressStartTime_ms = 0;
+		stove->bReloadRequested = false;
 	}
 
 	if(stove->bButtonBlinkRequired)
@@ -73,29 +75,6 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 		u32SafetyStartTime_ms = 0;
 		stove->bSafetyOn = false;
 	}
-
-
-	// Fans management
-	if(stove->bDoorOpen)
-	{
-		HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
-		if(stove->fBaffleTemp < P2F(uParam->s32FAN_KOP))
-		{
-			HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
-		}
-		return;
-	}
-
-	if(stove->fBaffleTemp > P2F(uParam->s32FAN_KIP))
-	{
-		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,SET);
-		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,SET);
-	}else if(stove->fBaffleTemp < P2F(uParam->s32FAN_KOP))
-	{
-		  HAL_GPIO_WritePin(SPEED2_COIL_GPIO_Port,SPEED2_COIL_Pin,RESET);
-		  HAL_GPIO_WritePin(SPEED3_COIL_GPIO_Port,SPEED3_COIL_Pin,RESET);
-	}
-	//HAL_GPIO_WritePin(GPIOA, Step3_DIR_Pin|Button_LED_Pin, GPIO_PIN_SET);
 
 
 }

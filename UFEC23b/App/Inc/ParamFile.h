@@ -38,6 +38,9 @@ typedef struct
 
 	int32_t s32FAN_KIP;
 	int32_t s32FAN_KOP;
+	int32_t s32AFK_SPD;
+	int32_t s32FANL_SPD;
+
 	int32_t s32ManualOverride;
 	int32_t s32ManualPrimary;
 	int32_t s32ManualSecondary;
@@ -175,6 +178,9 @@ typedef struct
 
 #define PFD_FANKIP				"usr_FansKickInPoint"
 #define PFD_FANKOP				"usr_FansKickOutPoint"
+#define PFD_AFK_SPD				"usr_AFKSpeed"
+#define PFD_FANL_SPD			"usr_FanLSpeed"
+
 #define PFD_MANUALBOOL			"usr_ManualOverride"
 #define PFD_MANUALPRIM			"usr_PrimaryOverrideValue"
 #define PFD_MANUALSEC			"usr_SecondaryOverrideValue"
@@ -330,7 +336,7 @@ uint32_t PARAMFILE_GetParamEntryCount();
 
 const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index);
 
-
+uint16_t PARAMFILE_GetParamValueByKey(const char* key);
 
 const PF_UsrParam* PB_GetUserParam();
 
