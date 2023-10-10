@@ -44,8 +44,8 @@ typedef enum {
 
 typedef struct {
 
-	int8_t i8apertureCmdSteps;
-	int8_t i8aperturePosSteps;
+	uint8_t u8apertureCmdSteps;
+	uint8_t u8aperturePosSteps;
 	float fSecPerStep;
 
 } AirInput;
