@@ -168,6 +168,10 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		if(!stove->bInterlockOn)
 		{
+			if(currentState == WAITING)
+			{
+				Particle_requestZero();
+			}
 			nextState = RELOAD_IGNITION;
 			stove->bReloadRequested = false;
 			stove->bButtonBlinkRequired = true;
