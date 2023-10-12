@@ -42,8 +42,8 @@ static FAN_states eFANstate = FANSTATE_IDLE;
 
 static FanObj sFans[FAN_NUM_OF_FANS] =
 {
-	FAN_INIT(60,90,100,PFD_AFK_SPD, &htim4, &htim5, AFK_Speed1_Pin,AFK_Speed1_GPIO_Port),
-	FAN_INIT(60,90,100,PFD_FANL_SPD, &htim2, &htim3, FAN_SPEED3_Pin,FAN_SPEED3_GPIO_Port),
+	FAN_INIT(60, PFD_AFK_SPD, &htim4, &htim5, AFK_Speed1_Pin,AFK_Speed1_GPIO_Port), //Amélioration possible... Remapper sur timer 3 pour utilisation des fonctions OnePulse à délai
+	FAN_INIT(60, PFD_FANL_SPD, &htim2, &htim3, FAN_SPEED3_Pin,FAN_SPEED3_GPIO_Port),
 
 };
 
@@ -140,21 +140,11 @@ void Fan_ManualOperation(Fan_t FanID, Mobj *stove)
 			sFans[FanID].bEnabled = true;
 		}
 		break;
-	case FSPEED_MED:
-		if(!sFans[FanID].bEnabled)
-		{
-			Fan_EnableZeroDetect();
-			sFans[FanID].u16SpeedPercent = sFans[FanID].u16MedSpeedPercent;
-			Fan_ManageSpeed(&sFans[FanID]);
-			sFans[FanID].bEnabled = true;
-		}
-
-		break;
 	case FSPEED_HIGH:
 		if(!sFans[FanID].bEnabled)
 		{
 			Fan_EnableZeroDetect();
-			sFans[FanID].u16SpeedPercent = sFans[FanID].u16HighSpeedPercent;
+			sFans[FanID].u16SpeedPercent = 100;
 			Fan_ManageSpeed(&sFans[FanID]);
 			sFans[FanID].bEnabled = true;
 		}
