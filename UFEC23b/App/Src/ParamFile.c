@@ -18,6 +18,7 @@ static PF_CombustionParam_t m_sCombHighParams;
 static PF_CoalParam_t m_sCoalLowParams;
 static PF_CoalParam_t m_sCoalHighParams;
 
+static PF_RemoteParams_t m_sRemoteParams = {0};
 static PF_OverHeat_Thresholds_t m_sOverheatParams = {0x00};
 
 static PF_UsrParam m_sMemBlock = {0x00};
@@ -171,6 +172,11 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_VFAST, 				"", &m_sSpeedParams.fVeryFast, 	  							15, 		0, 		20000),
 
+	PFL_INIT_SINT32(PFD_RMT_TSTAT, 				"", &m_sRemoteParams.bThermostat, 	  							150, 		0, 		1),
+	PFL_INIT_SINT32(PFD_RMT_BOOST, 				"", &m_sRemoteParams.bBoostReq, 	  							100, 		0, 		1),
+	PFL_INIT_SINT32(PFD_RMT_LOWFAN, 			"", &m_sRemoteParams.i32LowerSpeed, 	  					60, 		0, 		100),
+	PFL_INIT_SINT32(PFD_RMT_DISTFAN, 			"", &m_sRemoteParams.i32DistribSpeed, 	  				15, 		0, 		100),
+
 };
 
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )
@@ -294,4 +300,9 @@ const PF_StepperStepsPerSec_t *PB_SpeedParams(void)
 const PF_SuperStateParam_t *PB_GetSuperStateParams(uint8_t state)
 {
 	return &m_sSuperParams[state];
+}
+
+const PF_RemoteParams_t *PB_GetRemoteParams(void)
+{
+	return &m_sRemoteParams;
 }

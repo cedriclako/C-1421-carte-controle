@@ -174,6 +174,19 @@ typedef struct
 
 }PF_StepperStepsPerSec_t;
 
+typedef struct
+{
+	int32_t bThermostat;
+	int32_t bBoostReq;
+	int32_t i32LowerSpeed;
+	int32_t i32DistribSpeed;
+
+}PF_RemoteParams_t;
+
+#define PFD_RMT_TSTAT			"rmt_TstatReqBool"
+#define PFD_RMT_BOOST			"rmt_BoostBool"
+#define PFD_RMT_LOWFAN			"rmt_LowerFanSpeed"
+#define PFD_RMT_DISTFAN			"rmt_DistribFanSpeed"
 
 
 #define PFD_FANKIP				"usr_FansKickInPoint"
@@ -349,6 +362,8 @@ const PF_CoalParam_t *PB_GetCoalLowParams(void);
 const PF_CoalParam_t *PB_GetCoalHighParams(void);
 
 const PF_StepperStepsPerSec_t *PB_SpeedParams(void);
+
+const PF_RemoteParams_t *PB_GetRemoteParams(void);
 
 const PF_SuperStateParam_t *PB_GetSuperStateParams(uint8_t state);
 
