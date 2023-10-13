@@ -60,7 +60,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_TR_TS_TOL, 				"", &m_sTriseParams.sTempSlope.fTolerance, 					50, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_TS_ABS, 				"", &m_sTriseParams.sTempSlope.fAbsMaxDiff, 				100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_P_TARGET, 			"", &m_sTriseParams.sParticles.fTarget, 					80, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_P_TOL, 				"", &m_sTriseParams.sParticles.fTolerance, 					30, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_P_TOL, 				"", &m_sTriseParams.sParticles.fTolerance, 					50, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_P_ABS, 				"", &m_sTriseParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_PS_TOL, 				"", &m_sTriseParams.sPartStdev.fTolerance, 					10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_PS_ABS, 				"", &m_sTriseParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
@@ -106,7 +106,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_CBH_PM_MIN,    	    	"", &m_sCombHighParams.sPrimary.i32Min, 					17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBH_SM_MAX,    	    	"", &m_sCombHighParams.sSecondary.i32Max, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBH_SM_MIN,    	    	"", &m_sCombHighParams.sSecondary.i32Min, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_CBH_GM_MAX,    	    	"", &m_sCombHighParams.sGrill.i32Max, 						48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_CBH_GM_MAX,    	    	"", &m_sCombHighParams.sGrill.i32Max, 						60, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBH_GM_MIN,    	    	"", &m_sCombHighParams.sGrill.i32Min, 		 				0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// Coal low parameters
@@ -144,7 +144,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	PFL_INIT_SINT32(PFD_CBL_ENTRY_TIME, 		"", &m_sSuperParams[COMBUSTION_LOW].i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 		30, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000),// TODO: confirmer le temps du timeout de l'état
 
 	PFL_INIT_SINT32(PFD_CBH_ENTRY_TIME, 		"", &m_sSuperParams[COMBUSTION_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_MIN_TIME, 			"", &m_sSuperParams[COMBUSTION_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
@@ -152,11 +152,11 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		"", &m_sSuperParams[COAL_LOW].i32EntryWaitTimeSeconds, 				0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 		20, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000),
 
 	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		"", &m_sSuperParams[COAL_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_MIN_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000),
 
 	// Overheat parameters
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sOverheatParams.OverheatPlenum, 	  					420, 		0, 		20000),
@@ -166,7 +166,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 
 	// Motor Speed params
-	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				"", &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000), // Sec per step* 10
+	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				"", &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_SLOW, 				"", &m_sSpeedParams.fSlow, 	  								150, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			"", &m_sSpeedParams.fNormal, 	  							100, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								60, 		0, 		20000),

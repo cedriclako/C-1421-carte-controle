@@ -19,7 +19,7 @@
 
 #define PF_SECONDARY_MINIMUM_OPENING			6
 #define PF_SECONDARY_CLOSED						PF_SECONDARY_MINIMUM_OPENING
-#define PF_SECONDARY_FULL_OPEN				    97
+#define PF_SECONDARY_FULL_OPEN				    90
 
 #if NOVIKA_SETUP
 #define PF_SECONDARY_REST_POSITION				PF_SECONDARY_CLOSED
@@ -30,7 +30,8 @@
 
 #define PF_GRILL_MINIMUM_OPENING                   		0
 #define PF_GRILL_CLOSED 				PF_GRILL_MINIMUM_OPENING
-#define PF_GRILL_FULL_OPEN                      97
+// 85 est la valeur max pour ne pas frapper la vis en tout temps
+#define PF_GRILL_FULL_OPEN                      85
 #define PF_GRILL_REST_POSITION				PF_GRILL_CLOSED
 
 typedef struct

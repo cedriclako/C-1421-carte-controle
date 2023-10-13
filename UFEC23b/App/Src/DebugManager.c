@@ -56,7 +56,22 @@ void DebugManager(Mobj * stove, uint32_t u32time_ms)
 	}
 }
 
-void PrintOutput(Mobj * stove, State currentState)
+const char* StateStrings[ALGO_NB_OF_STATE] =
+{
+		"ZEROING_STEP",
+		"WAITING",
+		"RELOAD_IGNI",
+		"TEMP_RISE",
+		"COMB_HIGH",
+		"COMB_LOW",
+		"COAL_LOW",
+		"COAL_HIGH",
+		"OVERTEMP",
+		"SAFETY",
+		"MANUAL"
+};
+
+void PrintOutput(Mobj * stove, State currentState , State lastState , State nextState)
 {
 
 	HAL_RTC_GetTime(&hrtc,&sTime,0);
@@ -67,9 +82,10 @@ void PrintOutput(Mobj * stove, State currentState)
 	printf("Plenum:%i ", (int) stove->fPlenumTemp);
 	printf("State:");
 
-	printf(ALGO_GetStateString(currentState));
+	printf(StateStrings[currentState]);
 
 	printf(" tStat:");
+
 	if (stove->bThermostatOn == true)
 	{
 		printf("ON ");
@@ -107,7 +123,26 @@ void PrintOutput(Mobj * stove, State currentState)
 	printf("PartLuxON:%u ", stove->sParticles->u16Lux_ON);
 	printf("PartLuxOFF:%u ", stove->sParticles->u16Lux_OFF);
 	printf("PartTime:%lu ", stove->sParticles->u16TimeSinceInit);
-	printf("dTavant: %.1f", stove->fChamberDeltaT);
+	printf("dTavant: %.1f ", stove->fChamberDeltaT);
+
+
+
+	if(print_debug_setup)
+	{
+		if(stove->bSafetyOn == true)
+		{
+			printf("bSafetyOn ");
+		}
+		else
+		{
+			printf("bSafetyNotOn ");
+		}
+
+		printf("Last State:");
+		printf(StateStrings[lastState]);
+		printf(" Next State:");
+		printf(StateStrings[nextState]);
+		}
 
 	printf("*\n\r");
 }

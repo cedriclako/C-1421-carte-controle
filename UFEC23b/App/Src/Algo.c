@@ -29,6 +29,7 @@ extern QueueHandle_t MotorInPlaceHandle;
 static bool motors_ready_for_req = false;
 static bool bStepperAdjustmentNeeded = false;
 static bool bStateExitConditionMet = false;
+static bool tRiseEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
@@ -96,6 +97,17 @@ bool Algo_adjust_steppers_position(Mobj *stove);
 void Algo_update_steppers_inPlace_flag(void);
 void Algo_stoveInit(Mobj *stove);
 
+int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
+		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target);
+
+
+
+
+void printDebugStr(char str[], _Bool debugisOn) {
+  if(debugisOn){
+    printf(" %s \n\n", str);
+  }
+}
 void Algo_Init(void const * argument)
 {
 	printf("\r\n\r\n");
@@ -153,6 +165,7 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		nextState = OVERTEMP;
 	}
+	// STATE ENTRY ACTION
 	else if(stove->bstateJustChanged) // If first loop in state, perform entry action
 	{
 		stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
@@ -165,9 +178,9 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	}
 	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
-			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE))
+			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE ))  /////// test condition bouton, MC 25-09-23
 	{
-		if(!stove->bInterlockOn)
+		if(!stove->bInterlockOn) // Will need to be changed when we switch back interlock and start button
 		{
 			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
 			{
@@ -179,7 +192,8 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			stove->TimeOfReloadRequest = u32CurrentTime_ms;
 		}
 	}
-	else // When we get here, check if it's time to compute an adjustment
+	// STATE EXECUTION
+	else // When we get here, check if it's time to compute an adjustment // to perform a state loop action
 	{
 		if((u32CurrentTime_ms - stove->u32TimeOfComputation_ms) > UsrParam->s32TimeBetweenComputations_ms)
 		{
@@ -192,14 +206,17 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 				}
 			}
 			stove->u32TimeOfComputation_ms = u32CurrentTime_ms;
-			PrintOutput(stove, nextState);
-		}else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
+			PrintOutput(stove, currentState, nextState, lastState);
+		}
+
+		else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
 		{										// But we still loop in the first 'if' once per computation period (to print output)
 			if(AlgoComputeAdjustment[currentState] != NULL)
 			{
 				AlgoComputeAdjustment[currentState](stove, u32CurrentTime_ms);
 			}
 		}
+		// STATE EXIT ACTION
 		// Check if state timed out or if exit conditions are met
 		if((((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) && bStateExitConditionMet) ||
 				((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))))
@@ -242,6 +259,7 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms;
 		}
 	}
+
 }
 
 void Algo_stoveInit(Mobj *stove)
@@ -376,16 +394,39 @@ static void Algo_reload_exit(Mobj *stove)
 static void Algo_tempRise_entry(Mobj* stove)
 {
 
+	// prend les params de moteur specifique à Trise et les met dans le pointer sParam pour les moteurs
 	const PF_TriseParam_t *sParam = PB_GetTRiseParams();
 
-	stove->u32TimeSinceCombEntry_ms = 0;
+	stove->u32TimeSinceCombEntry_ms = 0; // set le temps à zero
 
-	stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
+
+	// ----------------- set les vitesses et ouvertures pour les moteurs pour le début de l'état -------------------------------
 	stove->sPrimary.fSecPerStep = 0; // force aperture
 	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
 	stove->sGrill.fSecPerStep = 0; // force aperture
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
+	// --------------------------------------------------------------------------------------------
+
+	bStepperAdjustmentNeeded = true; // leve le flag, donc la queue des stepper devrait le lire et faire l'action
+
+	tRiseEntry = true;
+
+}
+// normalement on devrait à 525 rentrer dans ce cas
+static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
+{
+	//TODO : définir cas où la température est plus basse, genre est-ce qu'on retourne en reload ?
+
+	const PF_TriseParam_t *sParam = PB_GetTRiseParams(); // va chercher les paramètres de l'état
+	static uint32_t u32MajorCorrectionTime_ms = 0;
+	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams(); // aller chercher les paramètres de vitesse de stepper selon l'état
+	static int smoke_detected = 0;
+	int cycle_time = 60;
+
+	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > SECONDS(cycle_time))&& tRiseEntry)
+	{
+		stove->sPrimary.i8apertureCmdSteps = 76;
 	bStepperAdjustmentNeeded = true;
 }
 
