@@ -13,17 +13,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-typedef enum
-{
-	FANSTATE_IDLE,
-	FANSTATE_AUTO_RUN,
-	FANSTATE_MANUAL_RUN,
-
-
-	FANSTATE_NUM_OF_STATES
-
-}FAN_states;
-
 EXTI_HandleTypeDef hexti;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
@@ -56,18 +45,29 @@ void Fan_Process(Mobj *stove)
 {
 	const PF_UsrParam* uParam = PB_GetUserParam();
 
-	if((stove->fBaffleTemp > P2F(uParam->s32FAN_KIP)) && !stove->bDoorOpen)
+
+	if(stove->bDoorOpen)
+	{
+		Fan_DisableAll();
+		return;
+	}
+	else if((stove->fBaffleTemp > P2F(uParam->s32FAN_KIP)))
 	{
 		for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
 		{
+			sFans[i].eSpeed = (Fan_Speed_t) MIN(2, PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey));
 			Fan_EnableFan(&sFans[i]);
 		}
-
+	}
+	else if((stove->fBaffleTemp < P2F(uParam->s32FAN_KOP)) )//Add flag for manual fan control here
+	{
+		Fan_DisableAll();
+		return;
 	}
 
 	for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
 	{
-		sFans[i].eSpeed = (Fan_Speed_t) PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey);
+		sFans[i].eSpeed = (Fan_Speed_t) MIN(2, PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey));
 
 		if(sFans[i].bEnabled)
 		{
@@ -76,10 +76,6 @@ void Fan_Process(Mobj *stove)
 		else if((sFans[i].eSpeed != 0) && (sFans[i].eSpeed != 3))
 		{
 			sFans[i].bEnabled = true;
-		}
-		else if(stove)
-		{
-
 		}
 	}
 }
