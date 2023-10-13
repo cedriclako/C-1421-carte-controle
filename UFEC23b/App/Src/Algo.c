@@ -137,13 +137,14 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
 
-	if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
-	{
-		nextState = MANUAL_CONTROL;
-	}
-	else if((currentState != SAFETY) && stove->bSafetyOn)
+	if((currentState != SAFETY) && stove->bSafetyOn)
 	{
 		nextState = SAFETY;
+	}
+	else if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
+	{
+
+		nextState = MANUAL_CONTROL;
 	}
 	else if((currentState != OVERTEMP) && (currentState != SAFETY) && (
 			(stove->fBaffleTemp > P2F(OvrhtParams->OverheatBaffle))  ||
@@ -731,6 +732,12 @@ static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(!(sManParam->s32ManualOverride == 1)) // TODO: Put this in task function
 	{
 		nextState = lastState;
+
+		if(nextState == SAFETY)
+		{
+			nextState = ZEROING_STEPPER;
+		}
+
 		if(nextState == ZEROING_STEPPER)
 		{
 			motors_ready_for_req = false;
