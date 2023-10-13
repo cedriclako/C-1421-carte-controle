@@ -85,7 +85,13 @@ void measureParticlesProcess(void)
     {
         case eMEASURE_PARTICLES_NOT_STARTED:
         {
-            if (tsl2591IsStarted() && ds1775IsStarted()) // give time to drivers to configure the ICs at startup
+            if(DAC1CON != 0xA0)
+            {
+                DAC1_SetOutput(0xFF);
+                DAC1_Enable();
+            }
+            
+            if (tsl2591IsStarted() && ds1775IsStarted() && (gs_sMeasPartObject.m_uMillisCounter > 10000)) // give time to drivers to configure the ICs at startup
             {
                 //DAC1_SetOutput(MP_Param->DAC_value); //Set DAC to arbitrary value
                 measureSetLED(MP_Param); // Configure DAC value to approach Led current requested value

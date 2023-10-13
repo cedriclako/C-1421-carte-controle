@@ -85,7 +85,7 @@ void PF_IncrementFireCount(void) // How many fires monitored since installation
 
 uint16_t PF_GetFireCount(void)
 {
-    (uint16_t)((DATAEE_ReadByte(EE_FIRE_COUNTER_MSB) << 8) + DATAEE_ReadByte(EE_FIRE_COUNTER_LSB));
+    return (uint16_t)((DATAEE_ReadByte(EE_FIRE_COUNTER_MSB) << 8) + DATAEE_ReadByte(EE_FIRE_COUNTER_LSB));
 }
 
 void PF_Update_MemParams(uint16_t FireCount, uint16_t zero, uint8_t current, uint8_t temperature)  
