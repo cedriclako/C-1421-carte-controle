@@ -178,9 +178,9 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
     }
 
     // esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
-    switch ((UFEC23PROTOCOL_FRAMEID)u8ID)
+    switch (u8ID)
     {
-        case UFEC23PROTOCOL_FRAMEID_S2CSendDebugDataResp:
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DebugDataString):
         {
             if (!UFEC23ENDEC_S2CSendDebugDataRespDecode(pMemBlock->szDebugJSONString, sizeof(pMemBlock->szDebugJSONString), u8Payloads, u32PayloadLen))
             {
@@ -195,18 +195,6 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             ESP_LOGI(TAG, "Received S2CEvent, len: %"PRIu32", payload: %"PRId32, u32PayloadLen, (int32_t)u8Payloads[0]);
             break;
         }
-        // case UFEC23PROTOCOL_FRAMEID_S2CReqVersionResp:
-        // {
-        //     UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
-        //     if (!UFEC23ENDEC_S2CReqVersionRespDecode(&sS2CReqVersionResp, u8Payloads, u32PayloadLen))
-        //     {
-        //         ESP_LOGE(TAG, "Error frame S2CReqVersionResp");
-        //         break;
-        //     }
-        //     pMemBlock->sS2CReqVersionResp = sS2CReqVersionResp;
-        //     pMemBlock->sS2CReqVersionRespIsSet = true;
-        //     break;
-        // }
         case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
         {
             //ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
@@ -214,22 +202,6 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
         }
-        // case UFEC23PROTOCOL_FRAMEID_S2CGetRunningSettingResp:
-        // {
-        //     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSettingResp;
-
-        //     // Receive settings ...
-        //     if (!UFEC23ENDEC_S2CGetRunningSettingRespDecode(&s2CGetRunningSettingResp, u8Payloads, u32PayloadLen))
-        //     {
-        //         ESP_LOGE(TAG, "Error frame S2CGetRunningSettingResp");
-        //         break;
-        //     }
-        //     pMemBlock->s2CGetRunningSetting = s2CGetRunningSettingResp;
-        //     pMemBlock->s2CGetRunningSettingIsSet = true;
-        //     ESP_LOGI(TAG, "Received frame S2CGetRunningSettingResp");
-        //     break;
-        // }
-
         case UFEC23PROTOCOL_FRAMEID_S2CGetParameterResp:
         {                    
             if (m_sStateMachine.eProcParameterProcess != EPARAMETERPROCESS_Downloading)
@@ -266,13 +238,14 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                     psEntryChanged->bIsNeedWrite = false;
                     psEntryChanged->sWriteValue = s.uValue;
                     pMemBlock->u32ParameterCount++;
-                    /* ESP_LOGI(TAG, "S2CGetParameterResp: [%"PRId32"], key: %s, def: %"PRId32", min: %"PRId32", max: %"PRId32", value: %"PRId32, 
-                        (int32_t)u32Index,
-                        psEntryChanged->sEntry.szKey,
-                        (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Default,
-                        (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Min,
-                        (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Max,
-                        (int32_t)psEntryChanged->sWriteValue.s32Value);*/
+                    // ESP_LOGI(TAG, "S2CGetParameterResp: [%"PRId32"], key: %s, def: %"PRId32", min: %"PRId32", max: %"PRId32", opt: %"PRId32", value: %"PRId32, 
+                    //     (int32_t)u32Index,
+                    //     psEntryChanged->sEntry.szKey,
+                    //     (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Default,
+                    //     (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Min,
+                    //     (int32_t)psEntryChanged->sEntry.uType.sInt32.s32Max,
+                    //     (int32_t)psEntryChanged->sEntry.eEntryFlag,
+                    //     (int32_t)psEntryChanged->sWriteValue.s32Value);
                 }
             }
 
@@ -344,9 +317,16 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
             break;
         }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_StatRmt):
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_BoostStatRmt):
+        {
+            break;
+        }
         default:
         {
-            ESP_LOGI(TAG, "Accepted frame, ID: %"PRId32", len: %"PRId32, (int32_t)u8ID, (int32_t)u32PayloadLen);
+            ESP_LOGI(TAG, "Accepted frame, not handled, ID: %"PRId32", len: %"PRId32, (int32_t)u8ID, (int32_t)u32PayloadLen);
             break;
         }
     }
@@ -392,7 +372,9 @@ static void ManageServerConnection()
             ServerConnected();
         }
     }
-    
+
+    HARDWAREGPIO_SetStatusLED(HARDWAREGPIO_ESTATUSLED_2, m_sStateMachine.bIsConnected);
+
     // Send keep alive if no communication happened for some time ...
     if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS) &&
         (xTaskGetTickCount() - m_sStateMachine.ttLastKeepAliveSent) > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))

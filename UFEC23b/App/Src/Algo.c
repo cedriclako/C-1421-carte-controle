@@ -6,6 +6,7 @@
  */
 
 #include "ParamFile.h"
+#include "HelperMacro.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal_iwdg.h"
 #include "main.h"
@@ -28,6 +29,8 @@
 #include "Algo.h"
 #include "GitCommit.h"
 
+#define TAG "Algo"
+
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
 static bool motors_ready_for_req = false;
@@ -39,17 +42,17 @@ static State nextState = ZEROING_STEPPER;
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
 {
-	[(int)ZEROING_STEPPER] = "ZEROING_STEP",
-	[(int)WAITING] = "WAITING",
-	[(int)RELOAD_IGNITION] = "RELOAD_IGNI",
-	[(int)TEMPERATURE_RISE] = "TEMP_RISE",
-	[(int)COMBUSTION_HIGH] = "COMB_HIGH",
-	[(int)COMBUSTION_LOW] = "COMB_LOW",
-	[(int)COAL_LOW] = "COAL_LOW",
-	[(int)COAL_HIGH] = "COAL_HIGH",
-	[(int)OVERTEMP] = "OVERTEMP",
-	[(int)SAFETY] = "SAFETY",
-	[(int)MANUAL_CONTROL] = "MANUAL"
+	HELPERMACRO_DEFSTRING(ZEROING_STEPPER),
+	HELPERMACRO_DEFSTRING(WAITING),
+	HELPERMACRO_DEFSTRING(RELOAD_IGNITION),
+	HELPERMACRO_DEFSTRING(TEMPERATURE_RISE),
+	HELPERMACRO_DEFSTRING(COMBUSTION_HIGH),
+	HELPERMACRO_DEFSTRING(COMBUSTION_LOW),
+	HELPERMACRO_DEFSTRING(COAL_LOW),
+	HELPERMACRO_DEFSTRING(COAL_HIGH),
+	HELPERMACRO_DEFSTRING(OVERTEMP),
+	HELPERMACRO_DEFSTRING(SAFETY),
+	HELPERMACRO_DEFSTRING(MANUAL_CONTROL)
 };
 
 typedef void (*fnComputeAdjustment)(Mobj *stove, uint32_t u32CurrentTime_ms);
@@ -104,25 +107,31 @@ void Algo_stoveInit(Mobj *stove);
 
 void Algo_Init(void const * argument)
 {
-	printf("\r\n\r\n");
-	printf("--------------------------------\r\n");
-	printf("BOOTING APP\r\n");
-	printf("Git commit ID: %s, branch: '%s', dirty: %s\r\n", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
-	printf("Internal flash: %"PRIu32" KB\r\n", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
-	printf("--------------------------------\r\n");
+	LOG(TAG, "\r\n\r\n");
+	LOG(TAG, "--------------------------------");
+	LOG(TAG, "BOOTING APP");
+	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
+	LOG(TAG, "Internal flash: %"PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
+	LOG(TAG, "--------------------------------");
 
 	PARAMFILE_Init();
 	PARAMFILE_Load();
+	LOG(TAG, "Parameter file initialized");
 
 	Algo_fill_state_functions();
 
 	Algo_stoveInit(&UFEC23);
 	Temperature_Init();
+	LOG(TAG, "Temperature initialized");
 	ESPMANAGER_Init();
+	LOG(TAG, "ESP Manager initialized");
 	Particle_Init();
+	LOG(TAG, "Particle initialized");
+
 	Fan_Init();
 	// We want to be sure the system is ready before accepting to answer to any commands
 	ESPMANAGER_SetReady();
+	LOG(TAG, "Ready");
 
     for(;;)
     {

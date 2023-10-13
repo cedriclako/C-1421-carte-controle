@@ -34,13 +34,17 @@ CR    | 2022/11/21 | -       | Creation
 #include "FreeRTOS.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
+#include "DebugPort.h"
 #include "Algo.h"
 #include "TemperatureManager.h"
 #include "../esp32/uart_protocol/uart_protocol_enc.h"
 #include "../esp32/uart_protocol/uart_protocol_dec.h"
 #include "../esp32/ufec23_protocol/ufec23_endec.h"
 #include "../esp32/ufec23_protocol/ufec23_protocol.h"
+#include "../esp32/ufec23_protocol/ufec_stream.h"
 #include "ParamFile.h"
+
+#define TAG "ESPBridge"
 
 typedef struct
 {
@@ -49,6 +53,25 @@ typedef struct
 
 	bool bIsBridgeReady;
 } SBridgeState;
+
+typedef struct _SScheduler SScheduler;
+
+typedef void (*FPReadFrame)(const SScheduler* pSchContext);
+typedef void (*FPWriteFrame)(const SScheduler* pSchContext, uint8_t* pu8Data, uint32_t u32Len);
+
+typedef struct _SScheduler
+{
+	const char* szName;
+	UFEC23PROTOCOL_FRAMEID eFrameID;
+	uint16_t u16DelayMS;
+	FPReadFrame fpRead;
+	FPWriteFrame fpWrite;
+
+	// State
+	TickType_t ttLastSend;
+} SScheduler;
+
+#define SSCHEDULER_INIT(_frameID, _delayMS, _fpRead, _fpWrite) { .szName = #_frameID, .eFrameID = _frameID, .u16DelayMS =_delayMS, .fpRead = _fpRead, .fpWrite = _fpWrite, .ttLastSend = 0 }
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 extern UART_HandleTypeDef huart1;
@@ -82,25 +105,42 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 
 static void UARTErrorCb(UART_HandleTypeDef *huart);
+static void UARTTXCompleteCb(UART_HandleTypeDef *huart);
 
+// Read / Write variable and events
 static void SendEvent(UFEC23PROTOCOL_EVENTID eEventID);
-static void SendDebugData();
+
+static void SendDebugData(const SScheduler* pSchContext);
+static void ReadVariableFrame(const SScheduler* pSchContext);
+static void WriteVariableFrame(const SScheduler* pSchContext, uint8_t* pu8Data, uint32_t u32Len);
+
+static SScheduler m_sSchedulers[] =
+{
+	// Frame												Delay (ms)      Read   				Write
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_StatRmt, 			  500, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, 		  500, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt,  	  500, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, 		  500, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DebugDataString, 	 5000, 		SendDebugData, 		NULL)
+};
+#define SSCHEDULER_COUNT (sizeof(m_sSchedulers)/sizeof(m_sSchedulers[0]))
 
 static UARTPROTOCOLDEC_SConfig m_sConfigDecoder =
 {
-    .u8PayloadBuffers = m_u8UARTPayloadBuffers,
-    .u32PayloadBufferLen = sizeof(m_u8UARTPayloadBuffers),
+	.u8PayloadBuffers = m_u8UARTPayloadBuffers,
+	.u32PayloadBufferLen = sizeof(m_u8UARTPayloadBuffers),
 
-    .u32FrameReceiveTimeOutMS = 50,
+	.u32FrameReceiveTimeOutMS = 50,
 
-    // Callbacks
-    .fnAcceptFrameCb = DecAcceptFrame,
-    .fnDropFrameCb = DecDropFrame,
-    .fnGetTimerCountMSCb = GetTimerCountMS
+	// Callbacks
+	.fnAcceptFrameCb = DecAcceptFrame,
+	.fnDropFrameCb = DecDropFrame,
+	.fnGetTimerCountMSCb = GetTimerCountMS
 };
 
 static UARTPROTOCOLDEC_SHandle m_sHandleDecoder;
 static volatile bool m_bNeedRestartDMA = false;
+static volatile bool m_TransmitInProgress = false;
 
 extern RTC_HandleTypeDef hrtc;
 
@@ -125,6 +165,7 @@ void ESPMANAGER_Init()
 
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
 	HAL_UART_RegisterCallback(&huart1, HAL_UART_ERROR_CB_ID, UARTErrorCb);
+	HAL_UART_RegisterCallback(&huart1, HAL_UART_TX_COMPLETE_CB_ID, UARTTXCompleteCb);
 }
 
 void ESPMANAGER_SetReady(void)
@@ -167,11 +208,21 @@ void ESPMANAGER_Run(void)
 		m_last_DMA_count = u16DMA_count;
 	}
 
-	static TickType_t ttSendDebugData = 0;
-	if ( (xTaskGetTickCount() - ttSendDebugData) > pdMS_TO_TICKS(5000) )
+	// Don't send anything until the bridge is ready.
+	if (m_sBridgeState.bIsBridgeReady)
 	{
-		ttSendDebugData = xTaskGetTickCount();
-		SendDebugData();
+		// Scheduler, period data sent
+		for(int i = 0; i < SSCHEDULER_COUNT; i++)
+		{
+			SScheduler* pSch = &m_sSchedulers[i];
+
+			if ( (xTaskGetTickCount() - pSch->ttLastSend) > pdMS_TO_TICKS(pSch->u16DelayMS) )
+			{
+				pSch->ttLastSend = xTaskGetTickCount();
+				if (pSch->fpRead != NULL)
+					pSch->fpRead(pSch);
+			}
+		}
 	}
 }
 
@@ -180,13 +231,21 @@ static void UARTErrorCb(UART_HandleTypeDef *huart)
 	// If there is not enough activity it seems to trigger an error
 	// in that case we need to restart the DMA
 	m_bNeedRestartDMA = true;
+	m_TransmitInProgress = false;
+}
+
+static void UARTTXCompleteCb(UART_HandleTypeDef *huart)
+{
+	m_TransmitInProgress = false;
 }
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     //uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
 	// Write byte into UART ...
+	m_TransmitInProgress = true;
 	HAL_UART_Transmit_IT(&huart1, (uint8_t*)u8Datas, (uint16_t)u32DataLen);
+	while(m_TransmitInProgress);
 }
 
 
@@ -216,17 +275,6 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
 			const uint32_t u32Len = (uint32_t)UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &reqPing);
 			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp, m_u8UARTOutputBuffers, u32Len);
-			break;
-		}
-		//case UFEC23PROTOCOL_FRAMEID_C2SReqVersion:
-		//	break;
-		//case UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting:
-		//	break;
-		//case UFEC23PROTOCOL_FRAMEID_C2SSetRunningSetting:
-		//	break;
-		case UFEC23PROTOCOL_FRAMEID_C2SSendDebugData:
-		{
-			SendDebugData();
 			break;
 		}
 		case UFEC23PROTOCOL_FRAMEID_C2SGetParameter:
@@ -265,6 +313,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 					sResp.bIsEOF = false;
 
 					sResp.sEntry.eParamType = UFEC23ENDEC_EPARAMTYPE_Int32;
+					sResp.sEntry.eEntryFlag = ((pParamItem->eOpt & PFL_EOPT_IsVolatile) == PFL_EOPT_IsVolatile) ?
+							UFEC23ENDEC_EENTRYFLAGS_Volatile : UFEC23ENDEC_EENTRYFLAGS_None;
 					sResp.sEntry.uType.sInt32.s32Default = pParamItem->uType.sInt32.s32Default;
 					sResp.sEntry.uType.sInt32.s32Min = pParamItem->uType.sInt32.s32Min;
 					sResp.sEntry.uType.sInt32.s32Max = pParamItem->uType.sInt32.s32Max;
@@ -307,12 +357,13 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
 	return;
 	ERROR:
-	printf("ESPBRIDGE: , error: %s", szErrorString);
+	LOG(TAG, "ESPBRIDGE: error: %s", szErrorString);
 }
 
 static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* szReason)
 {
     // Exists mostly for debug purpose
+	LOG(TAG, "Dropped frame: %s", szReason);
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -326,7 +377,70 @@ static void SendEvent(UFEC23PROTOCOL_EVENTID eEventID)
 	UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CEvent, m_u8UARTOutputBuffers, u32Len);
 }
 
-static void SendDebugData()
+static void ReadVariableFrame(const SScheduler* pSchContext)
+{
+	int32_t s32Count = 0;
+	int32_t s32Value = 0;
+	switch(pSchContext->eFrameID)
+	{
+		case UFEC23PROTOCOL_FRAMEID_StatRmt:
+		{
+			if (PFL_GetValueInt32(&PARAMFILE_g_sHandle, PFD_RMT_TSTAT, &s32Value) == PFL_ESETRET_OK)
+				s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, s32Value);
+			break;
+		}
+		case UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt:
+		{
+			if (PFL_GetValueInt32(&PARAMFILE_g_sHandle, PFD_RMT_LOWFAN, &s32Value) == PFL_ESETRET_OK)
+				s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, s32Value);
+			break;
+		}
+		case UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt:
+		{
+			if (PFL_GetValueInt32(&PARAMFILE_g_sHandle, PFD_RMT_DISTFAN, &s32Value) == PFL_ESETRET_OK)
+				s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, s32Value);
+			break;
+		}
+		case UFEC23PROTOCOL_FRAMEID_BoostStatRmt:
+		{
+			if (PFL_GetValueInt32(&PARAMFILE_g_sHandle, PFD_RMT_BOOST, &s32Value) == PFL_ESETRET_OK)
+				s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, s32Value);
+			break;
+		}
+		default:
+			LOG(TAG, "Read is not implemented for %s", pSchContext->szName);
+			break;
+	}
+
+	if (s32Count > 0)
+		UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMESVRRESP(pSchContext->eFrameID), m_u8UARTOutputBuffers, s32Count);
+	else
+		LOG(TAG, "ReadVariable seems not implemented for: %s", pSchContext->szName);
+}
+
+static void WriteVariableFrame(const SScheduler* pSchContext, uint8_t* pu8Data, uint32_t u32Len)
+{
+	switch(pSchContext->eFrameID)
+	{
+		case UFEC23PROTOCOL_FRAMEID_StatRmt:
+			// TODO: Where it come from?
+			break;
+		case UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt:
+			// TODO: Where it come from?
+			break;
+		case UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt:
+			// TODO: Where it come from?
+			break;
+		case UFEC23PROTOCOL_FRAMEID_BoostStatRmt:
+			// TODO: Where it come from?
+			break;
+		default:
+			LOG(TAG, "Write is not implemented for %s, count: %"PRIu32, pSchContext->szName, u32Len);
+			break;
+	}
+}
+
+static void SendDebugData(const SScheduler* pSchContext)
 {
 	/* Technically I can use cJson instead, but it's lighter to just use a plain old string. */
 	RTC_TimeTypeDef sTime;
@@ -372,5 +486,5 @@ static void SendDebugData()
 	m_szDebugStringJSON[n] = '\0';
 
 	const uint32_t u32Len = (uint32_t)UFEC23ENDEC_S2CSendDebugDataRespEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, m_szDebugStringJSON);
-	UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CSendDebugDataResp, m_u8UARTOutputBuffers, u32Len);
+	UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMESVRRESP(pSchContext->eFrameID), m_u8UARTOutputBuffers, u32Len);
 }

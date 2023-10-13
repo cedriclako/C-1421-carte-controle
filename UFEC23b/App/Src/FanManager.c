@@ -84,7 +84,9 @@ void Fan_Process(Mobj *stove)
 		{
 			if(sFans[i].bEnabled)
 			{
-				u16tmp = PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey);
+				int32_t s32Value = 0;
+				PFL_GetValueInt32(&PARAMFILE_g_sHandle, sFans[i].szSpeedKey, &s32Value);
+				u16tmp = (uint16_t)s32Value;
 				if(sFans[i].u16SpeedPercent != u16tmp)
 				{
 					sFans[i].u16SpeedPercent = u16tmp;
@@ -205,8 +207,9 @@ void Fan_DisableFan(FanObj *fan)
 
 void Fan_EnableAuto(FanObj *fan)
 {
-
-	fan->u16SpeedPercent = PARAMFILE_GetParamValueByKey(fan->szSpeedKey);
+	int32_t s32Value = 0;
+	PFL_GetValueInt32(&PARAMFILE_g_sHandle, fan->szSpeedKey, &s32Value);
+	fan->u16SpeedPercent = (uint16_t)s32Value;
 
 	if(fan->u16SpeedPercent == 100)
 	{

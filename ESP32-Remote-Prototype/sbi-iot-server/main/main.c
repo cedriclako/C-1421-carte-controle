@@ -210,7 +210,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Starting ...");
 
     static bool isActive = false;
-    TickType_t ttLed = xTaskGetTickCount();
+    TickType_t ttSanityLed = xTaskGetTickCount();
 
     // Run main loop at 200 hz
     const int loopPeriodMS = 1000/200;
@@ -228,9 +228,9 @@ void app_main(void)
         LOG_Handler();
 
         // Sanity LED process
-        if ( (xTaskGetTickCount() - ttLed) > pdMS_TO_TICKS(m_bIsConnectedWiFi ? 150 : 500) )
+        if ( (xTaskGetTickCount() - ttSanityLed) > pdMS_TO_TICKS(m_bIsConnectedWiFi ? 150 : 500) )
         {
-            ttLed = xTaskGetTickCount();
+            ttSanityLed = xTaskGetTickCount();
             HARDWAREGPIO_SetSanity(isActive);
             isActive = !isActive;
         }

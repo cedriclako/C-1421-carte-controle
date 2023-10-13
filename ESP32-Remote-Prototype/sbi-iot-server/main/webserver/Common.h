@@ -22,7 +22,7 @@
 } while(0)
 
 /* Max length a file path can have on storage */
-#define HTTPSERVER_BUFFERSIZE (1024*10)
+#define HTTPSERVER_BUFFERSIZE (1024*15)
 
 extern bool g_bHasAccess;
 

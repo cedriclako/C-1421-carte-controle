@@ -40,11 +40,11 @@ void LOG_Handler()
         return;
 
     const uint32_t u32DelayMS = pdTICKS_TO_MS(xTaskGetTickCount() - m_xLastWrite);
-    if (u32DelayMS >= 1000)
+    /*if (u32DelayMS >= 1000)
     {
         m_xLastWrite = xTaskGetTickCount();
 
         const char* test = "test\r\n";
         fwrite(test, strlen(test), 1, m_currRecordFile);
-    }
+    }*/
 }
