@@ -143,7 +143,7 @@ void Fan_ManualOperation(Fan_t FanID, Mobj *stove)
 	case FSPEED_HIGH:
 		if(!sFans[FanID].bEnabled)
 		{
-			Fan_EnableZeroDetect();
+			//Fan_EnableZeroDetect();
 			sFans[FanID].u16SpeedPercent = 100;
 			Fan_ManageSpeed(&sFans[FanID]);
 			sFans[FanID].bEnabled = true;
@@ -179,10 +179,6 @@ void Fan_ManageSpeed(FanObj *fan)
 
 	fan->sStartTimer->Instance->ARR = (uint32_t) (8330 * ((float)(100 - fan->u16SpeedPercent)/100));
 	fan->sStopTimer->Instance->ARR = (uint32_t) (3500 * ((float)(fan->u16SpeedPercent)/100));
-	//htim2.Instance->ARR = (uint32_t) (8330 * ((float)(100 - uParam->s32FANL_SPD)/100));
-	//htim3.Instance->ARR = (uint32_t) (3500 * ((float)(uParam->s32FANL_SPD)/100));
-
-
 
 }
 

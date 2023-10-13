@@ -38,8 +38,8 @@ typedef struct
 
 	int32_t s32FAN_KIP;
 	int32_t s32FAN_KOP;
-	int32_t s32AFK_SPD;
-	int32_t s32FANL_SPD;
+	int32_t s32AFK_LOW_SPD;
+	int32_t s32FANL_LOW_SPD;
 
 	int32_t s32ManualOverride;
 	int32_t s32ManualPrimary;
