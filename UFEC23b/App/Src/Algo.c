@@ -101,13 +101,14 @@ int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, in
 		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target);
 
 
+//void printDebugStr(char str[], _Bool debugisOn);
 
+//void printDebugStr(char str[], _Bool debugisOn) {
+//  if(debugisOn){
+//    printf(" %s \n\n", str);
+//  }
+//}
 
-void printDebugStr(char str[], _Bool debugisOn) {
-  if(debugisOn){
-    printf(" %s \n\n", str);
-  }
-}
 void Algo_Init(void const * argument)
 {
 	printf("\r\n\r\n");
@@ -414,21 +415,7 @@ static void Algo_tempRise_entry(Mobj* stove)
 
 }
 // normalement on devrait à 525 rentrer dans ce cas
-static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
-{
-	//TODO : définir cas où la température est plus basse, genre est-ce qu'on retourne en reload ?
 
-	const PF_TriseParam_t *sParam = PB_GetTRiseParams(); // va chercher les paramètres de l'état
-	static uint32_t u32MajorCorrectionTime_ms = 0;
-	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams(); // aller chercher les paramètres de vitesse de stepper selon l'état
-	static int smoke_detected = 0;
-	int cycle_time = 60;
-
-	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > SECONDS(cycle_time))&& tRiseEntry)
-	{
-		stove->sPrimary.i8apertureCmdSteps = 76;
-	bStepperAdjustmentNeeded = true;
-}
 
 static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
