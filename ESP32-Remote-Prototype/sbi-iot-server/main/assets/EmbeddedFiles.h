@@ -30,7 +30,7 @@ typedef struct
 
 typedef enum
 {
-  EF_EFILE_MNT_INDEX_HTML = 0,                                  /*!< @brief file: mnt-index.html, size: 5167 */
+  EF_EFILE_MNT_INDEX_HTML = 0,                                  /*!< @brief file: mnt-index.html, size: 5295 */
   EF_EFILE_MNT_OTA_HTML = 1,                                    /*!< @brief file: mnt-ota.html, size: 781 */
   EF_EFILE_USER_INDEX_HTML = 2,                                 /*!< @brief file: user-index.html, size: 991 */
   EF_EFILE_CSS_MNT_CONTENT_CSS = 3,                             /*!< @brief file: css/mnt-content.css, size: 1181 */

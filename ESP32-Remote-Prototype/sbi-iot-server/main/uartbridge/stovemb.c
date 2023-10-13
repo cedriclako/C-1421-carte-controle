@@ -17,6 +17,7 @@
 #define JSON_ENTRY_INFO_MIN_NAME "min"
 #define JSON_ENTRY_INFO_MAX_NAME "max"
 #define JSON_ENTRY_INFO_TYPE_NAME "type"
+#define JSON_ENTRY_INFO_ISVOLATILE "flag_isvolatile"
 
 static STOVEMB_SMemBlock m_sMemBlock = {0};
 static SemaphoreHandle_t m_xSemaphoreExt = NULL;
@@ -102,6 +103,8 @@ char* STOVEMB_ExportParamToJSON()
             cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_MAX_NAME, cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Max));
             cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_VALUE_NAME, cJSON_CreateNumber(pEntryChanged->sWriteValue.s32Value));
             cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_TYPE_NAME, cJSON_CreateString("int32"));
+            const bool bIsVolatile = ((pEntryChanged->sEntry.eEntryFlag & UFEC23ENDEC_EENTRYFLAGS_Volatile) == UFEC23ENDEC_EENTRYFLAGS_Volatile);
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_ISVOLATILE, cJSON_CreateBool(bIsVolatile));
         }
         
         cJSON_AddItemToArray(pEntries, pEntryJSON);

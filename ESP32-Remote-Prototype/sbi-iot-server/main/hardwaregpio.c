@@ -197,6 +197,8 @@ void HARDWAREGPIO_SetStatusLED(HARDWAREGPIO_ESTATUSLED eStatusLED, bool bIsActiv
         gpio_set_level(HWGPIO_STATUSLED0_PIN, !bIsActive);
     else if (eStatusLED == HARDWAREGPIO_ESTATUSLED_1)
         gpio_set_level(HWGPIO_STATUSLED1_PIN, !bIsActive);
+    else if (eStatusLED == HARDWAREGPIO_ESTATUSLED_2)
+        gpio_set_level(HWGPIO_STATUSLED2_PIN, !bIsActive);
 }
 
 bool HARDWAREGPIO_GetISSDCardAvailable() { return m_bIsSDCardAvailable; }

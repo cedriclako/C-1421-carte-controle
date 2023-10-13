@@ -86,6 +86,12 @@ typedef enum
     // UFEC23ENDEC_EPARAMTYPE_Float = 1
 } UFEC23ENDEC_EPARAMTYPE;
 
+typedef enum
+{
+	UFEC23ENDEC_EENTRYFLAGS_None = 0,
+	UFEC23ENDEC_EENTRYFLAGS_Volatile = 1,
+} UFEC23ENDEC_EENTRYFLAGS;
+
 typedef union
 {
     struct
@@ -113,6 +119,7 @@ typedef struct
     char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
     UFEC23ENDEC_EPARAMTYPE eParamType;
     UFEC23ENDEC_uType uType;
+    UFEC23ENDEC_EENTRYFLAGS eEntryFlag;
 } UFEC23ENDEC_SEntry;
 
 typedef struct 
@@ -142,7 +149,7 @@ typedef struct
 } UFEC23PROTOCOL_S2CSetParameterResp;
 
 // Maximum size for messages
-#define UFEC23ENDEC_S2CREQPARAMETERGETRESP_MAX_COUNT (2 + 1 + sizeof(UFEC23ENDEC_uType)*3 + sizeof(UFEC23ENDEC_uValue) + 1 + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1)
+#define UFEC23ENDEC_S2CREQPARAMETERGETRESP_MAX_COUNT (2 + 1 + 1 + sizeof(UFEC23ENDEC_uType)*3 + sizeof(UFEC23ENDEC_uValue) + 1 + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1)
 
 #define UFEC23ENDEC_S2CREQVERSIONRESP_COUNT (3 + 1 + UFEC23ENDEC_SOFTWARENAME_LEN + 1 + 1 + UFEC23ENDEC_GITHASH_LEN + 1)
 
@@ -194,6 +201,10 @@ bool UFEC23ENDEC_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* p
 
 int32_t UFEC23ENDEC_S2CSendDebugDataRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const char* szJsonString);
 bool UFEC23ENDEC_S2CSendDebugDataRespDecode(char szJsonStrings[], uint32_t u32JsonLen, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+int32_t UFEC23ENDEC_S2CEncodeU16(uint8_t u8Dst[], uint32_t u32DstLen, uint16_t u16Value);
+
+int32_t UFEC23ENDEC_S2CEncodeS32(uint8_t u8Dst[], uint32_t u32DstLen, int32_t s32Value);
 
 // Event
 int32_t UFEC23ENDEC_S2CEventEncode(uint8_t u8Dst[], uint32_t u32DstLen, UFEC23PROTOCOL_EVENTID eEventID);

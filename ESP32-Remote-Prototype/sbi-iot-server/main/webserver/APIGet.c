@@ -197,7 +197,6 @@ static char* GetSysInfo()
 static char* GetLiveData()
 {
     cJSON* pRoot = NULL;
-
     pRoot = cJSON_CreateObject();
     if (pRoot == NULL)
         goto ERROR;
