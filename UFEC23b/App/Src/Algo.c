@@ -169,7 +169,7 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		if(!stove->bInterlockOn)
 		{
-			if(stove->fBaffleTemp < 120.0)
+			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
 			{
 				Particle_requestZero();
 			}
