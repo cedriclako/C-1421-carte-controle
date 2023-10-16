@@ -14,6 +14,7 @@
 
 static char* GetSysInfo();
 static char* GetLiveData();
+static char* GetPairingSettingToJSON();
 static void ToHexString(char *dstHexString, const uint8_t* data, uint8_t len);
 static const char* GetESPChipId(esp_chip_model_t eChipid);
 
@@ -27,10 +28,9 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
     char szError[128+1] = {0,};
     char* pExportJSON = NULL;
 
-    CHECK_FOR_ACCESS_OR_RETURN();
-
     if (strcmp(req->uri, API_GETSETTINGSJSON_URI) == 0)
     {
+        CHECK_FOR_ACCESS_OR_RETURN();
         pExportJSON = NVSJSON_ExportJSON(&g_sSettingHandle);
 
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
@@ -39,6 +39,7 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
     }
     else if (strcmp(req->uri, API_GETSYSINFOJSON_URI) == 0)
     {
+        CHECK_FOR_ACCESS_OR_RETURN();
         pExportJSON = GetSysInfo();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
@@ -46,6 +47,7 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
     }
     else if (strcmp(req->uri, API_GETLIVEDATAJSON_URI) == 0)
     {
+        CHECK_FOR_ACCESS_OR_RETURN();
         pExportJSON = GetLiveData();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
@@ -53,13 +55,21 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
     }
     else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
     {
+        CHECK_FOR_ACCESS_OR_RETURN();
         pExportJSON = STOVEMB_ExportParamToJSON();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
         {
             strcpy(szError, "Server parameter file is not available");
             goto ERROR;
-            httpd_resp_set_type(req, "application/json");
         }
+        httpd_resp_set_type(req, "application/json");
+    }
+    else if (strcmp(req->uri, API_GETPAIRINGSETTING_URI) == 0)
+    {
+        pExportJSON = GetPairingSettingToJSON();
+        if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
+            goto ERROR;
+        httpd_resp_set_type(req, "application/json");
     }
     else
     {
@@ -67,7 +77,6 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown request");
         goto END;
     }
-
     goto END;
     ERROR:
     esperr = ESP_FAIL;
@@ -259,6 +268,29 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pRoot, "datetime", cJSON_CreateString(text));
 
     STOVEMB_Give();
+
+    char* pStr =  cJSON_PrintUnformatted(pRoot);
+    cJSON_Delete(pRoot);
+    return pStr;
+    ERROR:
+    cJSON_Delete(pRoot);
+    return NULL;
+}
+
+static char* GetPairingSettingToJSON()
+{ 
+    cJSON* pRoot = NULL;
+    pRoot = cJSON_CreateObject();
+    if (pRoot == NULL)
+        goto ERROR;
+
+    size_t n = SETTINGS_ESPNOWREMOTEMAC_LEN;
+    char szMacAddr[SETTINGS_ESPNOWREMOTEMAC_LEN];
+    NVSJSON_GetValueString(&g_sSettingHandle, SETTINGS_EENTRY_ESPNowRemoteMac, (char*)szMacAddr, &n);
+    if (n >= SETTINGS_ESPNOWREMOTEMAC_LEN)
+        goto ERROR;
+
+    cJSON_AddItemToObject(pRoot, "mac_addr", cJSON_CreateString(szMacAddr));
 
     char* pStr =  cJSON_PrintUnformatted(pRoot);
     cJSON_Delete(pRoot);

@@ -7,22 +7,26 @@
     <link rel="stylesheet" type="text/css" href="css/user-content.css">
 </head>
 <body>
-    <div class="container">
-        <img src="img/logo-sbi-350x256.png">
+    <div id="app">
+        <div class="container">
+            <img src="img/logo-sbi-350x256.png">
+        </div>
+        <div class="container">
+            <label for="idTxtMacAddress">Remote MAC Address:&nbsp;</label>
+            <input id="idTxtMacAddress" type="text" v-model="pairingsetting.mac_addr"></input>
+        </div>
+        <div class="container" style="margin-top: 10px;">
+            <button id="idSavePairingSetting" 
+                class="btn-orange" style="font-weight: bold;" 
+                :disabled="idSavePairingSetting_IsDisabled"    
+                @click="idSavePairingSetting_Click()">Pair your devices !</button>
+        </div>
+        <div class="container" style="margin-top: 10px;">
+            <button class="btn-orange" @click="idTroubleshoot_Click()">Troubleshoot</button>
+        </div>
     </div>
-
-    <div class="container">
-        <label for="idTxtMacAddress">Remote MAC Address:&nbsp;</label>
-        <input id="idTxtMacAddress" type="text"></input>
-    </div>
-    <div class="container" style="margin-top: 10px;">
-        <button class="btn-orange" style="font-weight: bold;">Pair your devices !</button>
-    </div>
-    <div class="container" style="margin-top: 10px;">
-        <button class="btn-orange" onclick="gotoTroubleshoot()">Troubleshoot</button>
-    </div>
-
     <script type="text/javascript" src="js/vue.min.js"></script>
+    <script type="text/javascript" src="js/api-def.js"></script>
     <script type="text/javascript" src="js/user-app.js"></script>
 </body>
 </html>
