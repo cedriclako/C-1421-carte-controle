@@ -25,8 +25,8 @@
 
 ESP_EVENT_DEFINE_BASE(MAINAPP_EVENT);
 
-static esp_netif_t* m_pWifiSoftAP;
-static esp_netif_t* m_pWifiSTA;
+static esp_netif_t* m_pWifiSoftAP = NULL;
+static esp_netif_t* m_pWifiSTA = NULL;
 
 static volatile bool m_bIsConnectedWiFi = false;
 static volatile int32_t m_s32ConnectWiFiCount = 0;
@@ -107,6 +107,7 @@ static void WIFI_Init()
 
         esp_event_handler_instance_t instance_any_id;
         esp_event_handler_instance_t instance_got_ip;
+        esp_event_handler_instance_t instance_got_ip6;
         ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                             ESP_EVENT_ANY_ID,
                                                             &wifistation_event_handler,
@@ -117,6 +118,11 @@ static void WIFI_Init()
                                                             &wifistation_event_handler,
                                                             NULL,
                                                             &instance_got_ip));
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                            IP_EVENT_GOT_IP6,
+                                                            &wifistation_event_handler,
+                                                            NULL,
+                                                            &instance_got_ip6));
 
         wifi_config_t wifi_configSTA = {
             .sta = {
@@ -166,14 +172,14 @@ void app_main(void)
 
     HARDWAREGPIO_Init();
 
-    SPIFF_Init();
-
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK( nvs_flash_erase() );
         ret = nvs_flash_init();
     }
+
+    SPIFF_Init();
 
     ESP_ERROR_CHECK( ret );
 
@@ -264,6 +270,7 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
         uint8_t u8Primary;
         esp_wifi_get_channel(&u8Primary,  &secondChan);
         ESP_LOGI(TAG, "Wifi STA connected to station, channel: %"PRId32, (int32_t)u8Primary);
+        esp_netif_create_ip6_linklocal(m_pWifiSTA);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         m_bIsConnectedWiFi = false;
@@ -272,6 +279,9 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_GOT_IP6) {
+        ip_event_got_ip6_t *event = (ip_event_got_ip6_t *)event_data;
+        ESP_LOGI(TAG, "Got IPv6 address " IPV6STR, IPV62STR(event->ip6_info.ip));
     }
 }
 

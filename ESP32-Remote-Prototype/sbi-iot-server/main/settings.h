@@ -14,6 +14,8 @@ typedef enum
 
     SETTINGS_EENTRY_ESPNowRemoteMac,
 
+    SETTINGS_EENTRY_AutoSaveDebugString,
+
     SETTINGS_EENTRY_Count
 } SETTINGS_EENTRY;
 
