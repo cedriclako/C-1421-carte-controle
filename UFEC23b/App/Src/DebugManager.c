@@ -82,9 +82,9 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	}
 	printf("dTbaffle:%.1f ", stove->fBaffleDeltaT);
 	printf("FanSpeed:%i ", 0);
-	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps*9/10));
-	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps*9/10));
-	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps*9/10));
+	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps/**9/10*/));
+	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps/**9/10*/));
+	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps/**9/10*/));
 	printf("Tboard:%.0f ", get_BoardTemp());
 	printf("Door:");
 
