@@ -59,6 +59,8 @@ static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint32_t u32PayloadLen);
 
+static void SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value);
+
 // Event loops
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 static void RequestConfigWriteEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
@@ -124,7 +126,6 @@ void UARTBRIDGE_Init()
 void UARTBRIDGE_SetSilenceMode(bool bIsSilent)
 {
     m_sStateMachine.bIsSilentMode = bIsSilent;
-    
 }
 
 void UARTBRIDGE_Handler()
@@ -318,10 +319,27 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_StatRmt):
-        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
-        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):
+        {
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_TstatReqBool.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_TstatReqBool.bHasValue = true;
+            break;
+        }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_BoostStatRmt):
         {
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BoostBool.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_BoostBool.bHasValue = true;
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
+        {
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_LowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_LowerFanSpeed.bHasValue = true;
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):
+        {
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_DistribFanSpeed.bHasValue = true;
             break;
         }
         default:
@@ -361,6 +379,9 @@ static void ManageServerConnection()
         if (m_sStateMachine.bIsConnected)
         {
             m_sStateMachine.bIsConnected = false;
+            STOVEMB_Take(portMAX_DELAY);
+            STOVEMB_Reset();
+            STOVEMB_Give();
             ServerDisconnected();
         }
     }
@@ -372,7 +393,11 @@ static void ManageServerConnection()
             ServerConnected();
         }
     }
-
+    // TODO: To change config send these values
+    // SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_StatRmt, s32Value % 2); 
+    // SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, s32Value+10); 
+    // SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt, s32Value+10); 
+    // SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, s32Value % 2); 
     HARDWAREGPIO_SetStatusLED(HARDWAREGPIO_ESTATUSLED_2, m_sStateMachine.bIsConnected);
 
     // Send keep alive if no communication happened for some time ...
@@ -523,6 +548,14 @@ static bool ProcParameterUpload()
     m_sStateMachine.eProcParameterProcess = EPARAMETERPROCESS_Uploading;
     m_sStateMachine.ttParameterStartDownTicks = xTaskGetTickCount();
     return true;
+}
+
+static void SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value)
+{
+    const int32_t s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, s32Value);
+    SendFrame(eFrameID, m_u8UARTSendProtocols, s32Count);
+    
+    ESP_LOGI(TAG, "SendFrameInt32Value, value: %"PRId32", count: %"PRId32, s32Value, s32Count);
 }
 
 static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint32_t u32PayloadLen)

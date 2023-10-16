@@ -12,6 +12,12 @@
 
 #define STOVEMB_MAXIMUMSETTING_ENTRIES (150)
 
+typedef struct 
+{
+    bool bHasValue;
+    int32_t s32Value;    
+} STOVEMB_S32Value;
+
 typedef struct
 {
     UFEC23ENDEC_SEntry sEntry;
@@ -24,6 +30,16 @@ typedef struct
 typedef struct 
 {
     // Temperature setpoint
+    STOVEMB_S32Value sRMT_TstatReqBool;
+    STOVEMB_S32Value sRMT_BoostBool;
+    STOVEMB_S32Value sRMT_LowerFanSpeed;
+    STOVEMB_S32Value sRMT_DistribFanSpeed;
+
+    // Last communication ticks
+    TickType_t ttLastCommunicationTicks; 
+
+    // TODO: EVERYTHING BEYOND THIS POINT WILL BE DISCARDED
+    // Temperature setpoint
     bool bHasTempSetPoint;
     SBI_iot_common_TemperatureSetPoint sTempSetpoint;
     
@@ -34,9 +50,6 @@ typedef struct
     // Fan
     bool bHasFanSpeed;
     SBI_iot_common_EFANSPEED eFanSpeedCurr;
-
-    // Last communication ticks
-    TickType_t ttLastCommunicationTicks; 
 } STOVEMB_SRemoteData;
 
 typedef struct 
@@ -72,6 +85,8 @@ void STOVEMB_Init();
 bool STOVEMB_Take(TickType_t xTicksToWait);
 
 void STOVEMB_Give();
+
+void STOVEMB_Reset();
 
 STOVEMB_SMemBlock* STOVEMB_GetMemBlock();
 

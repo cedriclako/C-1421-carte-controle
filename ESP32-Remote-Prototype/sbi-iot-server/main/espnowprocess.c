@@ -201,7 +201,7 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 {
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-
+    
     if (pC2SChangeSettingSP->has_temperature_setp)
     {
         pMB->sRemoteData.bHasTempSetPoint = true;

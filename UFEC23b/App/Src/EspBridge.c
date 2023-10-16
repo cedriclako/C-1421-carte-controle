@@ -57,7 +57,7 @@ typedef struct
 typedef struct _SScheduler SScheduler;
 
 typedef void (*FPReadFrame)(const SScheduler* pSchContext);
-typedef void (*FPWriteFrame)(const SScheduler* pSchContext, uint8_t* pu8Data, uint32_t u32Len);
+typedef void (*FPWriteFrame)(const SScheduler* pSchContext, const uint8_t* pu8Data, uint32_t u32Len);
 
 typedef struct _SScheduler
 {
@@ -112,15 +112,15 @@ static void SendEvent(UFEC23PROTOCOL_EVENTID eEventID);
 
 static void SendDebugData(const SScheduler* pSchContext);
 static void ReadVariableFrame(const SScheduler* pSchContext);
-static void WriteVariableFrame(const SScheduler* pSchContext, uint8_t* pu8Data, uint32_t u32Len);
+static void WriteVariableFrame(const SScheduler* pSchContext, const uint8_t* pu8Data, uint32_t u32Len);
 
 static SScheduler m_sSchedulers[] =
 {
 	// Frame												Delay (ms)      Read   				Write
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_StatRmt, 			  500, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, 		  500, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt,  	  500, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, 		  500, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_StatRmt, 			 1000, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, 		 1000, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt,  	 1000, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, 		 1000, 		ReadVariableFrame, 	WriteVariableFrame),
 	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DebugDataString, 	 5000, 		SendDebugData, 		NULL)
 };
 #define SSCHEDULER_COUNT (sizeof(m_sSchedulers)/sizeof(m_sSchedulers[0]))
@@ -351,7 +351,18 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			PFL_CommitAll(&PARAMFILE_g_sHandle);
 			break;
 		default:
+			// Check if any values related to the scheduler can be written
+			for(int i = 0; i < SSCHEDULER_COUNT; i++)
+			{
+				SScheduler* pSch = &m_sSchedulers[i];
+				if (pSch->eFrameID == u8ID && pSch->fpWrite != NULL)
+				{
+					pSch->fpWrite(pSch, u8Payloads,(uint32_t) u32PayloadLen);
+					break;
+				}
+			}
 			// TODO: Not a valid protocol ID... Do something? Throw into UART log?
+			GOTO_ERROR("Unhandled frameID");
 			break;
 	}
 
@@ -381,6 +392,7 @@ static void ReadVariableFrame(const SScheduler* pSchContext)
 {
 	int32_t s32Count = 0;
 	int32_t s32Value = 0;
+
 	switch(pSchContext->eFrameID)
 	{
 		case UFEC23PROTOCOL_FRAMEID_StatRmt:
@@ -418,21 +430,37 @@ static void ReadVariableFrame(const SScheduler* pSchContext)
 		LOG(TAG, "ReadVariable seems not implemented for: %s", pSchContext->szName);
 }
 
-static void WriteVariableFrame(const SScheduler* pSchContext, uint8_t* pu8Data, uint32_t u32Len)
+static void WriteVariableFrame(const SScheduler* pSchContext, const uint8_t* pu8Data, uint32_t u32Len)
 {
+	#define SetValue(_szName) do { \
+		int32_t s32Value; \
+		if (UFEC23ENDEC_S2CDecodeS32(&s32Value, pu8Data, u32Len)) { \
+			PFL_ESETRET ret; \
+			if ((ret = PFL_SetValueInt32(&PARAMFILE_g_sHandle, _szName, s32Value)) != PFL_ESETRET_OK) { \
+				LOG(TAG, "Unable to set value: %s, result: %" PRId32, pSchContext->szName, (int32_t)ret); \
+			} \
+			else {\
+				LOG(TAG, "Wiring value: %s, value: %" PRId32, pSchContext->szName, s32Value); \
+				ReadVariableFrame(pSchContext); \
+			} \
+		} else { \
+			LOG(TAG, "Failed decoding: %s", pSchContext->szName); \
+		} \
+	} while(0);
+
 	switch(pSchContext->eFrameID)
 	{
 		case UFEC23PROTOCOL_FRAMEID_StatRmt:
-			// TODO: Where it come from?
+			SetValue(PFD_RMT_TSTAT);
 			break;
 		case UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt:
-			// TODO: Where it come from?
+			SetValue(PFD_RMT_LOWFAN);
 			break;
 		case UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt:
-			// TODO: Where it come from?
+			SetValue(PFD_RMT_DISTFAN);
 			break;
 		case UFEC23PROTOCOL_FRAMEID_BoostStatRmt:
-			// TODO: Where it come from?
+			SetValue(PFD_RMT_BOOST);
 			break;
 		default:
 			LOG(TAG, "Write is not implemented for %s, count: %"PRIu32, pSchContext->szName, u32Len);

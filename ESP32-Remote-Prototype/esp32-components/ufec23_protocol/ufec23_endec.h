@@ -206,6 +206,8 @@ int32_t UFEC23ENDEC_S2CEncodeU16(uint8_t u8Dst[], uint32_t u32DstLen, uint16_t u
 
 int32_t UFEC23ENDEC_S2CEncodeS32(uint8_t u8Dst[], uint32_t u32DstLen, int32_t s32Value);
 
+bool UFEC23ENDEC_S2CDecodeS32(int32_t* ps32Value, const uint8_t u8Datas[], uint32_t u32DataLen);
+
 // Event
 int32_t UFEC23ENDEC_S2CEventEncode(uint8_t u8Dst[], uint32_t u32DstLen, UFEC23PROTOCOL_EVENTID eEventID);
 

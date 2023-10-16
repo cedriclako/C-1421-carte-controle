@@ -100,10 +100,10 @@ static void Algo_combHigh_exit(Mobj *stove);
 //static void Algo_coalLow_exit(Mobj *stove);
 //static void Algo_coalHigh_exit(Mobj *stove);
 
-void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
-bool Algo_adjust_steppers_position(Mobj *stove);
-void Algo_update_steppers_inPlace_flag(void);
-void Algo_stoveInit(Mobj *stove);
+static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
+static bool Algo_adjust_steppers_position(Mobj *stove);
+static void Algo_update_steppers_inPlace_flag(void);
+static void Algo_stoveInit(Mobj *stove);
 
 void Algo_Init(void const * argument)
 {
@@ -152,7 +152,7 @@ void Algo_Init(void const * argument)
 
 }
 
-void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
+static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_UsrParam* UsrParam =  PB_GetUserParam();
 	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
@@ -261,7 +261,7 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 }
 
-void Algo_stoveInit(Mobj *stove)
+static void Algo_stoveInit(Mobj *stove)
 {
 	stove->sParticles = ParticlesGetObject(); // Get pointer to particles Structure
 	sOverheatParams = PB_GetOverheatParams();
@@ -835,7 +835,7 @@ void Algo_fill_state_functions(void)
 
 }
 
-void Algo_update_steppers_inPlace_flag(void)
+static void Algo_update_steppers_inPlace_flag(void)
 {
 	if(!motors_ready_for_req)
 	{
@@ -843,7 +843,7 @@ void Algo_update_steppers_inPlace_flag(void)
 	}
 }
 
-bool Algo_adjust_steppers_position(Mobj *stove)
+static bool Algo_adjust_steppers_position(Mobj *stove)
 {
 	uint8_t cmd[NUMBER_OF_STEPPER_CMDS] =
 	{

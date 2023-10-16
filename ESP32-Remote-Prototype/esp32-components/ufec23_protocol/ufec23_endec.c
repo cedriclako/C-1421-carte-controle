@@ -320,3 +320,12 @@ int32_t UFEC23ENDEC_S2CEncodeS32(uint8_t u8Dst[], uint32_t u32DstLen, int32_t s3
     memcpy(u8Dst, &s32Value, sizeof(int32_t));
 	return sizeof(int32_t);
 }
+
+
+bool UFEC23ENDEC_S2CDecodeS32(int32_t* ps32Value, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+    if (u32DataLen < sizeof(int32_t))
+        return 0;
+    memcpy(ps32Value, u8Datas, sizeof(int32_t));
+    return true;
+}

@@ -228,9 +228,15 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pRoot, "stove", pStove);
     // Remote
     cJSON* pRemote = cJSON_CreateObject();
+    cJSON_AddItemToObject(pRemote, "rmt_TstatReqBool", cJSON_CreateBool(pMemBlock->sRemoteData.sRMT_TstatReqBool.s32Value));
+    cJSON_AddItemToObject(pRemote, "rmt_BoostBool", cJSON_CreateBool(pMemBlock->sRemoteData.sRMT_BoostBool.s32Value));
+    cJSON_AddItemToObject(pRemote, "rmt_LowerFanSpeed", cJSON_CreateNumber(pMemBlock->sRemoteData.sRMT_LowerFanSpeed.s32Value));
+    cJSON_AddItemToObject(pRemote, "rmt_DistribFanSpeed", cJSON_CreateNumber(pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value));
+    
     cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.fTempCurrentC));
     cJSON_AddItemToObject(pRemote, "tempC_sp", cJSON_CreateNumber(pMemBlock->sRemoteData.sTempSetpoint.temp));
     cJSON_AddItemToObject(pRemote, "fanspeed", cJSON_CreateNumber((int)pMemBlock->sRemoteData.eFanSpeedCurr));
+
     const TickType_t ttLastCommTicks = xTaskGetTickCount() - pMemBlock->sRemoteData.ttLastCommunicationTicks;
     cJSON_AddItemToObject(pRemote, "lastcomm_ms", cJSON_CreateNumber(pdTICKS_TO_MS(ttLastCommTicks)));
 
