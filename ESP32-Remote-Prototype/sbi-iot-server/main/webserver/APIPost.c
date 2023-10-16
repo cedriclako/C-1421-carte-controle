@@ -116,7 +116,6 @@ static bool PostPairingSetting(const char* szJSON)
         ESP_LOGE(TAG, "Cannot find JSON mac_addr element");
         goto ERROR;
     }
-
     NVSJSON_ESETRET eSetRet;
     if ((eSetRet = NVSJSON_SetValueString(&g_sSettingHandle, SETTINGS_EENTRY_ESPNowRemoteMac, false, pEntryJSON->valuestring)) != NVSJSON_ESETRET_OK)
     {
@@ -146,11 +145,13 @@ static bool HandleMaintenancePasswordRequest(const char* szJSON)
         ESP_LOGE(TAG, "Cannot find JSON password element");
         goto ERROR;
     }
+    #if FWCONFIG_MAINTENANCEACCESS_NOPASSWORD == 0
     if (strcmp((const char*)pEntryJSON->valuestring, FWCONFIG_MAINTENANCEACCESS_PASSWORD) != 0)
     {
         ESP_LOGE(TAG, "Wrong password");
         goto ERROR;
     }
+    #endif
     bRet = true;
     goto END; 
     ERROR:
