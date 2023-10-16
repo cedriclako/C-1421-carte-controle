@@ -6,10 +6,12 @@
 #include "../Event.h"
 #include "esp_log.h"
 #include "cJson.h"
+#include "fwconfig.h"
 
 #define TAG "APIPOST"
 
 static bool PostPairingSetting(const char* szJSON);
+static bool HandleMaintenancePasswordRequest(const char* szJSON);
 
 esp_err_t APIPOST_post_handler(httpd_req_t *req)
 {
@@ -63,6 +65,19 @@ esp_err_t APIPOST_post_handler(httpd_req_t *req)
         }
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, NULL, 0, 0);
     }
+    else if (strcmp(req->uri, API_POST_ACCESSMAINTENANCEREDIRECT_URI) == 0)
+    {
+        if (!HandleMaintenancePasswordRequest((const char*)g_u8Buffers))
+        {
+            g_bHasAccess = false;
+            snprintf(szError, sizeof(szError), "%s", "Invalid password");
+            goto ERROR;
+        }
+        g_bHasAccess = true;
+        CHECK_FOR_ACCESS_OR_RETURN();
+        httpd_resp_set_status(req, "302 Moved Permanently");
+        httpd_resp_set_hdr(req, "Location", "/mnt-index.html");
+    }
     else if (strcmp(req->uri, API_POSTPAIRINGSETTING_URI) == 0)
     {
         if (!PostPairingSetting((const char*)g_u8Buffers))
@@ -91,6 +106,9 @@ static bool PostPairingSetting(const char* szJSON)
 {
     bool bRet = true;
     cJSON* pRoot = cJSON_Parse(szJSON);
+    if (pRoot == NULL)
+        goto ERROR;
+
     const cJSON* pEntryJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "mac_addr");
 
     if (pEntryJSON == NULL || !cJSON_IsString(pEntryJSON))
@@ -110,6 +128,35 @@ static bool PostPairingSetting(const char* szJSON)
     ERROR:
     bRet = false;
     END:
-    cJSON_free(pRoot);
+    if (pRoot != NULL)
+        cJSON_free(pRoot);
+    return bRet;
+}
+
+static bool HandleMaintenancePasswordRequest(const char* szJSON)
+{
+    bool bRet = true;
+    cJSON* pRoot = cJSON_Parse(szJSON);
+    if (pRoot == NULL)
+        goto ERROR;
+
+    const cJSON* pEntryJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "password");
+    if (pEntryJSON == NULL || !cJSON_IsString(pEntryJSON))
+    {
+        ESP_LOGE(TAG, "Cannot find JSON password element");
+        goto ERROR;
+    }
+    if (strcmp((const char*)pEntryJSON->valuestring, FWCONFIG_MAINTENANCEACCESS_PASSWORD) != 0)
+    {
+        ESP_LOGE(TAG, "Wrong password");
+        goto ERROR;
+    }
+    bRet = true;
+    goto END; 
+    ERROR:
+    bRet = false;
+    END:
+    if (pRoot != NULL)
+        cJSON_free(pRoot);
     return bRet;
 }

@@ -27,6 +27,10 @@ var app = new Vue({
               })
               .then((response) => 
               {
+                // Follow redirection ...
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
                 // Get response within two promises ....
                 reponseStatus = response.status;
                 return response.text();
@@ -64,8 +68,15 @@ var app = new Vue({
         idTroubleshoot_Click() {
             let password = prompt("Please your password", "");
             if (password != null) {
-                const url = '/api/access-maintenance-redirect?password=' + encodeURIComponent(password);
-                window.location.href = url;
+                this.postAction(
+                    "/api/access-maintenance-redirect",
+                    JSON.stringify({ password: password }),
+                    {
+                        onError: e => { 
+                            alert(e); 
+                        },
+                        onSuccess: () => { /* If it succeed, it will automatically redirect */}
+                    });
             }
         },        
         idSavePairingSetting_Click()

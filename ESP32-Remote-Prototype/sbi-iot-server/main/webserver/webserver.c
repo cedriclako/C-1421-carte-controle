@@ -24,8 +24,6 @@
 
 static esp_err_t file_post_handler(httpd_req_t *req);
 
-static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req);
-
 uint8_t g_u8Buffers[HTTPSERVER_BUFFERSIZE];
 
 // static bool m_bIsPairing = false;
@@ -48,15 +46,6 @@ static const httpd_uri_t m_sHttpGetAPI = {
     .uri       = "/api/*",
     .method    = HTTP_GET,
     .handler   = APIGET_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx  = ""
-};
-
-static const httpd_uri_t m_sHttpGetAccessMaintenanceRedirectAPI = {
-    .uri       = API_GET_ACCESSMAINTENANCEREDIRECT_URI,
-    .method    = HTTP_GET,
-    .handler   = api_getaccessmaintenanceredirect_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = ""
@@ -112,7 +101,6 @@ void WEBSERVER_Init()
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &m_sHttpGetAccessMaintenanceRedirectAPI);
         httpd_register_uri_handler(server, &m_sHttpActionPost);
         httpd_register_uri_handler(server, &m_sHttpGetAPI);
         httpd_register_uri_handler(server, &m_sHttpPostAPI);
@@ -162,8 +150,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
     return ESP_FAIL;
 }
 
-static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
-{
+/*
     char queryString[64+1] = {0};
     esp_err_t get_query_err;
     if (ESP_OK != (get_query_err = httpd_req_get_url_query_str(req, queryString, sizeof(queryString)-1)))
@@ -172,7 +159,7 @@ static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
         goto ERROR;
     }
 
-    ESP_LOGI(TAG, "api_getaccessmaintenanceredirect_handler, url: '%s', query: '%s'", req->uri, queryString);
+    ESP_LOGI(TAG, "api_postaccessmaintenanceredirect_handler, url: '%s', query: '%s'", req->uri, queryString);
     char password[16+1] = {0};
     // It seems it already handle the trailing 0. So no need to add -1.
     if (ESP_OK != httpd_query_key_value(queryString, "password", password, sizeof(password)))
@@ -180,22 +167,4 @@ static esp_err_t api_getaccessmaintenanceredirect_handler(httpd_req_t *req)
         ESP_LOGE(TAG, "invalid query, password key field is not there");
         goto ERROR;
     }
-
-    g_bHasAccess = false;
-    if (strcmp(password, FWCONFIG_MAINTENANCEACCESS_PASSWORD) == 0)
-    {
-        g_bHasAccess = true;
-    }
-
-    CHECK_FOR_ACCESS_OR_RETURN();
-    
-    httpd_resp_set_status(req, "302 Moved Permanently");
-    httpd_resp_set_hdr(req, "Location", "/mnt-index.html");
-    httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send(req, NULL, 0);
-    return ESP_OK;
-    ERROR:
-    httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "unknown error");
-    return ESP_FAIL;
-}
+*/

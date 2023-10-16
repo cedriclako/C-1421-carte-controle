@@ -3,7 +3,7 @@
 
 #define DEFAULT_RELATIVE_URI "/index.html"
 
-#define API_GET_ACCESSMAINTENANCEREDIRECT_URI "/api/access-maintenance-redirect"
+#define API_POST_ACCESSMAINTENANCEREDIRECT_URI "/api/access-maintenance-redirect"
 
 #define API_GETPAIRINGSETTING_URI "/api/getpairingsetting"
 #define API_POSTPAIRINGSETTING_URI "/api/setpairingsetting"
