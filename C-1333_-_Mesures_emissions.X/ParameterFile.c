@@ -3,7 +3,7 @@ Solutions Novika.
 Copyright 2023
 ===========================================================================
 
-Filename :      ParameterFile.c
+Filename :      arameterFile.c
 
 Author(s):      Charles Richard, CPI # 6045522
 
