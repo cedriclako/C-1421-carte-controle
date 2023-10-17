@@ -486,7 +486,25 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// Section regulating (chg rapides)
 	if(stove->fBaffleTemp >P2F(sParam->fTempToStartReg))
 	{
-		printDebugStr("t is over 500, regulating ", print_debug_setup_states);
+		printDebugStr("t is over 500, regulating, we should be managing smoke here ", print_debug_setup_states);
+
+		if(Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
+				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,P2F1DEC(sParam->sTempSlope.fTarget) +
+				P2F1DEC(sParam->sTempSlope.fTolerance)))
+		{
+			smoke_detected = 1;
+			return;
+		}
+		else
+		{
+			smoke_detected = 0;
+			printDebugStr("Eta 11 E \n", print_debug_setup_states);
+
+			bStepperAdjustmentNeeded = true;
+			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
+			return;
+		}
+	}
 
 /*
 		// si particules > 80+50 && baffle delta T > 5 +5
@@ -526,23 +544,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 */
 
-		if(Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
-				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,P2F1DEC(sParam->sTempSlope.fTarget) +
-				P2F1DEC(sParam->sTempSlope.fTolerance)))
-		{
-			smoke_detected = 1;
-			return;
-		}
-		else
-		{
-			smoke_detected = 0;
-			printDebugStr("Eta 11 E \n", print_debug_setup_states);
 
-			bStepperAdjustmentNeeded = true;
-			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
-			return;
-		}
-	}
 
 	if(motors_ready_for_req)
 	{
@@ -1063,19 +1065,40 @@ const char* ALGO_GetStateString(State state)
  int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff, int particles_target,int particles_tolerance,
 		 uint32_t* correction_time, int deltaT_target )
 {
-	const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
-	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+	// const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
+	// const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 	bool delay_period_passed = (u32CurrentTime_ms - *correction_time) > SECONDS(cycle_time);
 
-	if (currentState == TEMPERATURE_RISE){const PF_TriseParam_t *sParam = PB_GetTRiseParams();}
+	const PF_TriseParam_t *sParam = PB_GetTRiseParams();
+/*
+ *
+ * ajouter cette partie après
+ *
+	if (currentState == TEMPERATURE_RISE){PF_TriseParam_t *sParam = PB_GetTRiseParams();}
 
-	else if(currentState ==  COMBUSTION_LOW){const PF_CombustionParam_t *sParam = PB_GetCombLowParams();}
+	else if(currentState ==  COMBUSTION_LOW){PF_CombustionParam_t *sParam = PB_GetCombLowParams();}
 
-	else if(currentState ==  COMBUSTION_HIGH){const PF_CombustionParam_t *sParam = PB_GetCombHighParams();}
+	else if(currentState ==  COMBUSTION_HIGH){PF_CombustionParam_t *sParam = PB_GetCombHighParams();}
 
-	else if(currentState ==  COAL_LOW){const PF_CoalParam_t *sParam = PB_GetCoalLowParams();}
+	else if(currentState ==  COAL_LOW){PF_CoalParam_t *sParam = PB_GetCoalLowParams();}
 
-	else if(currentState ==  COAL_HIGH){const PF_CoalParam_t *sParam = PB_GetCoalHighParams();}
+	else if(currentState ==  COAL_HIGH){PF_CoalParam_t *sParam = PB_GetCoalHighParams();}
+
+*/
+
+	/*
+	stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
+	stove->sPrimary.fSecPerStep = 0; // force aperture
+	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
+	stove->sGrill.fSecPerStep = 0; // force aperture
+	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
+	stove->sSecondary.fSecPerStep = 0; // force aperture
+	 */
+
+
+
+
+
 
 
 
