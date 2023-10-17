@@ -37,6 +37,7 @@ static bool motors_ready_for_req = false;
 static bool bStepperAdjustmentNeeded = false;
 static bool bStateExitConditionMet = false;
 static bool tRiseEntry = false;
+static bool reloadEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
@@ -109,8 +110,6 @@ static void Algo_stoveInit(Mobj *stove);
 int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
 		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target);
 
-
-//void printDebugStr(char str[], _Bool debugisOn);
 
 void printDebugStr(char str[], _Bool debugisOn) {
   if(debugisOn){
@@ -389,7 +388,7 @@ static void Algo_reload_entry(Mobj* stove)
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
-	stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
+	reloadEntry = true;
 
 
 	if((stove->fBaffleTemp > P2F(sParam->fTempToSkipReload))) // NORMALEMENT 1000
@@ -403,10 +402,20 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_ReloadParam_t *sParam = PB_GetReloadParams();
 
+	if(reloadEntry){
+		// do something
+		reloadEntry= false;
+
+	}
+
+
+
 
 	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60))
 	{
+
 		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup_states);
+		if(print_debug_setup_states){printf("\n%i",(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000);}
 		return;
 	}
 
