@@ -113,7 +113,7 @@ int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, in
 
 void printDebugStr(char str[], _Bool debugisOn) {
   if(debugisOn){
-    printf(" %s \n\n", str);
+    printf(" %s \n", str);
   }
 }
 
@@ -401,6 +401,7 @@ static void Algo_reload_entry(Mobj* stove)
 static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_ReloadParam_t *sParam = PB_GetReloadParams();
+	int32_t time = 0;
 
 	if(reloadEntry){
 		// do something
@@ -409,13 +410,13 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 
 
-
+time = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000;
 
 	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60))
 	{
 
 		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup_states);
-		if(print_debug_setup_states){printf("\n%i",(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000);}
+		if(print_debug_setup_states){printf("\n%i\n",time);}
 		return;
 	}
 
