@@ -112,11 +112,11 @@ int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, in
 
 //void printDebugStr(char str[], _Bool debugisOn);
 
-void printDebugStr(char str[], _Bool debugisOn) {
-  if(debugisOn){
-    printf(" %s \n\n", str);
-  }
-}
+//void printDebugStr(char str[], _Bool debugisOn) {
+//  if(debugisOn){
+//    printf(" %s \n\n", str);
+//  }
+//}
 
 void Algo_Init(void const * argument)
 {
@@ -464,7 +464,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	//if hot enough, or if primary <=75 go to comb states
 	if((stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombHigh)) ||
 			(!stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombLow))||
-			stove->sPrimary.u8apertureCmdSteps <= 75 )
+			stove->sPrimary.i8apertureCmdSteps <= 75 )
 	{
 		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		printDebugStr("Trise Eta 11B exit to combustion", print_debug_setup_states);
@@ -496,17 +496,17 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 						P2F1DEC(sParam->sTempSlope.fTolerance)) )||stove->fChamberTemp>1100))
 		{
 
-			if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
+			if(stove->sGrill.i8apertureCmdSteps > sParam->sGrill.i32Min)
 			{
 				printDebugStr("etat 11D deltat > 10 && smoke", print_debug_setup_states);
 
-				if (stove->sGrill.u8apertureCmdSteps > 15)
+				if (stove->sGrill.i8apertureCmdSteps > 15)
 				{
-					stove->sGrill.u8apertureCmdSteps /=2;
+					stove->sGrill.i8apertureCmdSteps /=2;
 				}
 				else
 				{
-					stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
+					stove->sGrill.i8apertureCmdSteps = sParam->sGrill.i32Min;
 				}
 				stove->sGrill.fSecPerStep = 0;
 			}
@@ -515,7 +515,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			else
 			{
 				printDebugStr("Eta 11 E \n", print_debug_setup_states);
-				stove->sPrimary.u8apertureCmdSteps = 76;
+				stove->sPrimary.i8apertureCmdSteps = 76;
 				stove->sPrimary.fSecPerStep = 0;
 			}
 
@@ -539,7 +539,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			printDebugStr("Eta 11 E \n", print_debug_setup_states);
 
 			bStepperAdjustmentNeeded = true;
-			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
+			u32TimeOfMajorCorr = u32CurrentTime_ms;
 			return;
 		}
 	}
@@ -556,7 +556,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 			printDebugStr("eta 12 B : decrement primary ", print_debug_setup_states);
 
-			stove->sPrimary.u8apertureCmdSteps--;
+			stove->sPrimary.i8apertureCmdSteps--;
 
 			stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
 		}
@@ -582,8 +582,8 @@ static void Algo_combLow_entry(Mobj *stove)
 
 	//TODO filtrer les valeurs d'ouverture précédentes pour que ce soit dans les valeurs acceptables
 	// pour l'état dans lequel on rentre et si oui, garder les mêmes
-	stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps,sParam->sPrimary.i32Max);
-	// stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
+	stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.i8apertureCmdSteps,sParam->sPrimary.i32Max);
+	// stove->sPrimary.i8apertureCmdSteps = sParam->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
 
 	if(lastState == TEMPERATURE_RISE)
@@ -592,14 +592,14 @@ static void Algo_combLow_entry(Mobj *stove)
 	}
 	else
 	{
-		stove->sGrill.u8apertureCmdSteps = RANGE(sParam->sGrill.i32Min,stove->sGrill.u8apertureCmdSteps,sParam->sGrill.i32Max);
+		stove->sGrill.u8apertureCmdSteps = RANGE(sParam->sGrill.i32Min,stove->sGrill.i8apertureCmdSteps,sParam->sGrill.i32Max);
 	}
 
 	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
 	stove->sGrill.fSecPerStep = 0; // force aperture
 
-	stove->sSecondary.u8apertureCmdSteps = RANGE(sParam->sSecondary.i32Min,stove->sSecondary.u8apertureCmdSteps,sParam->sSecondary.i32Max);
-	//stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
+	stove->sSecondary.i8apertureCmdSteps = RANGE(sParam->sSecondary.i32Min,stove->sSecondary.i8apertureCmdSteps,sParam->sSecondary.i32Max);
+	//stove->sSecondary.i8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
 }
@@ -665,7 +665,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			printDebugStr("\n Eta 10 B \n under temp slope target (-5)", print_debug_setup_states);
 
 			// TODO setter une variable pour 36 dans ce cas
-			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 36);
+			stove->sPrimary.i8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.i8apertureCmdSteps * 2, 36);
 			stove->sPrimary.fSecPerStep = 0; // force aperture
 			bStepperAdjustmentNeeded = true;
 			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
@@ -1082,23 +1082,23 @@ const char* ALGO_GetStateString(State state)
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target ||stove->fChamberTemp>1100))
 	{
 		if(delay_period_passed ){
-//		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
+//		if(stove->sGrill.i8apertureCmdSteps > sParam->sGrill.i32Min)
 	//	{
 			printDebugStr("SMOKE HOT", print_debug_setup_states);
 
-			if (stove->sGrill.u8apertureCmdSteps > 15)
+			if (stove->sGrill.i8apertureCmdSteps > 15)
 			{
-				stove->sGrill.u8apertureCmdSteps /=2;
+				stove->sGrill.i8apertureCmdSteps /=2;
 			}
-			else if(stove->sPrimary.u8apertureCmdSteps> 76 && stove->sGrill.u8apertureCmdSteps >  sParam->sGrill.i32Min)
+			else if(stove->sPrimary.i8apertureCmdSteps> 76 && stove->sGrill.i8apertureCmdSteps >  sParam->sGrill.i32Min)
 			{
-				stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
-				stove->sPrimary.u8apertureCmdSteps = 76;
+				stove->sGrill.i8apertureCmdSteps = sParam->sGrill.i32Min;
+				stove->sPrimary.i8apertureCmdSteps = 76;
 			}
 			else
 			{
-				stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
-				stove->sPrimary.u8apertureCmdSteps /=2;
+				stove->sGrill.i8apertureCmdSteps = sParam->sGrill.i32Min;
+				stove->sPrimary.i8apertureCmdSteps /=2;
 			}
 
 
@@ -1120,14 +1120,14 @@ const char* ALGO_GetStateString(State state)
 		// take action if the 30 seconds have passed
 		if(delay_period_passed){
 			printDebugStr("\n\nSMOKE COLD", print_debug_setup_states);
-		if(stove->sGrill.u8apertureCmdSteps < 30)
+		if(stove->sGrill.i8apertureCmdSteps < 30)
 		{
-			stove->sGrill.u8apertureCmdSteps = 30;
+			stove->sGrill.i8apertureCmdSteps = 30;
 			printDebugStr("smoke && grille < 30 : set grill to 30", print_debug_setup_states);
 		}
 		else
 		{
-			stove->sGrill.u8apertureCmdSteps  = RANGE(sParam->sGrill.i32Min, stove->sGrill.u8apertureCmdSteps *2,sParam->sGrill.i32Max);
+			stove->sGrill.i8apertureCmdSteps  = RANGE(sParam->sGrill.i32Min, stove->sGrill.i8apertureCmdSteps *2,sParam->sGrill.i32Max);
 			printDebugStr("smoke && grille >= 30 : set grill *=2 ", print_debug_setup_states);
 		}
 
@@ -1139,7 +1139,7 @@ const char* ALGO_GetStateString(State state)
 		return 1 ;
 	}
 
-	//RANGE()
+	RANGE()
 	return 0; // no smoke return 0
 
 }
