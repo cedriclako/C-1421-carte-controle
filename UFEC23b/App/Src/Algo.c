@@ -30,6 +30,7 @@
 #include "GitCommit.h"
 
 #define TAG "Algo"
+#define LEN(x)  (sizeof(x) / sizeof((x)[0]))
 
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
@@ -41,6 +42,9 @@ static bool reloadEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
+static int smoke_events_counter[] = {0,0,0,0,0,0,0,0,0,0};
+static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
+
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
 {
@@ -116,6 +120,34 @@ void printDebugStr(char str[], _Bool debugisOn) {
     printf(" %s \n", str);
   }
 }
+
+int smoke_array_shifter(int array[], int l,int newval){
+
+  int i = 0;
+  for (i = 0; i <l; i++ )
+    {
+        if (i+1 <l)
+          //printf("i is %i\n",i);
+        {
+           array[i] =array[i+1];
+          //array_printer(array,l);
+        }
+      else{
+        array[i] = newval;
+        // printf("breaking, array[i] is :%i, i is :%i, newval is %i\n",array[i],i,newval );
+        //array_printer(array,l);
+        break;}
+    }
+}
+
+void array_printer(int array[],int l){
+
+    int loop = 0;
+         for(loop = 0; loop < l; loop++)
+           { printf("%d ", array[loop]);
+           } printf("\n"); }
+
+
 
 void Algo_Init(void const * argument)
 {
@@ -401,7 +433,7 @@ static void Algo_reload_entry(Mobj* stove)
 static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_ReloadParam_t *sParam = PB_GetReloadParams();
-	int32_t time = 0;
+	int32_t time_reload_entry = 0;
 
 	if(reloadEntry){
 		// do something
@@ -410,13 +442,12 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 
 
-time = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000;
+	time_reload_entry = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000;
 
 	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60))
 	{
-
 		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup_states);
-		if(print_debug_setup_states){printf("\n%i\n",time);}
+		if(print_debug_setup_states){printf("\n%i\n",time_reload_entry);}
 		return;
 	}
 
@@ -508,22 +539,12 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	{
 		printDebugStr("t is over 500, regulating, we should be managing smoke here ", print_debug_setup_states);
 
-		if(Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
+		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,P2F1DEC(sParam->sTempSlope.fTarget) +
-				P2F1DEC(sParam->sTempSlope.fTolerance)))
-		{
-			smoke_detected = 1;
-			return;
-		}
-		else
-		{
-			smoke_detected = 0;
-			printDebugStr("Eta 11 E \n", print_debug_setup_states);
+				P2F1DEC(sParam->sTempSlope.fTolerance));
 
-			bStepperAdjustmentNeeded = true;
-			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
-			return;
-		}
+		if(smoke_detected){return;}
+
 	}
 
 /*
@@ -661,19 +682,12 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-	// addition mc 11-10-2023, gestion generale des particules, mit également la déviation dans ce cas
+	// SMOKE MANAGEMENT CALL
 
+	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
+			sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,5);
 
-
-	if(Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
-			sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,5))
-	{
-		smoke_detected = 1;
-		printDebugStr("SMOKE ACTION\n\n", print_debug_setup_states);
-		return;}
-
-	else {
-		smoke_detected = 0;}
+	if(smoke_detected){return;}
 
 
 	// if temperature is under 620 (630-10)
@@ -1079,7 +1093,27 @@ const char* ALGO_GetStateString(State state)
 	if (state >= ALGO_NB_OF_STATE)
 		return "-- N/A --";
 	return m_StateStrings[currentState];
+
 }
+/*
+int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
+
+	int smoke_events_counter[6] = {0,0,0,0,0,0};
+
+	sizeof(smoke_events_counter)
+
+	int i;
+	for (i = sizeof(smoke_events_counter); i >0; i-- )
+	{
+
+		smoke_events_counter(i) = 1
+
+	}
+
+
+}*/
+
+
 
 
  int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff, int particles_target,int particles_tolerance,
@@ -1090,7 +1124,13 @@ const char* ALGO_GetStateString(State state)
 	bool delay_period_passed = (u32CurrentTime_ms - *correction_time) > SECONDS(cycle_time);
 
 	const PF_TriseParam_t *sParam = PB_GetTRiseParams();
-/*
+	int l = LEN(smoke_events_counter);
+	int lgrill = LEN(grill_history);
+	int i = 0;
+	int index_of_grill = 999;
+
+
+	/*
  *
  * ajouter cette partie après
  *
@@ -1152,6 +1192,9 @@ const char* ALGO_GetStateString(State state)
 		*correction_time = u32CurrentTime_ms;
 
 		}
+		printDebugStr("SMOKE ACTION\n\n", print_debug_setup_states);
+		smoke_array_shifter(smoke_events_counter,l,1);
+		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 		return 1 ;
 	}
 
@@ -1179,10 +1222,48 @@ const char* ALGO_GetStateString(State state)
 		bStepperAdjustmentNeeded = true;
 		*correction_time = u32CurrentTime_ms;
 		}
+
+		printDebugStr("SMOKE ACTION\n\n", print_debug_setup_states);
+		smoke_array_shifter(smoke_events_counter,l,1);
+		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 		return 1 ;
 	}
 
-	//RANGE()
+
+
+
+
+
+
+	// find the last good grill value before smoke event
+	  for (i = l;i>=0;i--){
+	    if (!smoke_events_counter[i] && !smoke_events_counter[i-1] ){
+	    	if(print_debug_setup_states){
+	    		printf("position of last good val is %i \n\n using : %i",i,grill_history[index_of_grill]);
+	    	}
+	      index_of_grill = i;
+	    break;
+	    }
+	    else{
+			printDebugStr("out of history bounds \n\n using 0", print_debug_setup_states);
+
+	    }
+	    }
+
+
+
+	  printDebugStr("normal action, no smoke", print_debug_setup_states);
+
+
+	stove->sGrill.u8apertureCmdSteps  = RANGE(sParam->sGrill.i32Min, grill_history[index_of_grill],sParam->sGrill.i32Max);
+
+	smoke_array_shifter(smoke_events_counter,l,0);
+	smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
+
+	if(print_debug_setup_states){
+		array_printer(smoke_events_counter,l);}
+
+
 	return 0; // no smoke return 0
 
 }
