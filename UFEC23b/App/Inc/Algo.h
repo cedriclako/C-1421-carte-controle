@@ -23,7 +23,7 @@
 #define P2F1DEC(x) ((float)x/10) //Parameter to float with 1 decimal precision
 #define P2F2DEC(x) ((float)x/100) //Parameter to float with 2 decimal precision
 #define print_debug_setup (1)
-#define print_debug_setup_states (1)
+
 
 
 

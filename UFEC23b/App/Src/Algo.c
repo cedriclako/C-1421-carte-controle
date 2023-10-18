@@ -205,7 +205,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	if((currentState != SAFETY) && stove->bSafetyOn)
 	{
-        printDebugStr("switching to safety", print_debug_setup_states);
+        printDebugStr("switching to safety", print_debug_setup);
 		nextState = SAFETY;
 	}
 	else if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
@@ -446,8 +446,8 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60))
 	{
-		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup_states);
-		if(print_debug_setup_states){printf("\n%i\n",time_reload_entry);}
+		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup);
+		if(print_debug_setup){printf("\n%i\n",time_reload_entry);}
 		return;
 	}
 
@@ -507,7 +507,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		stove->sPrimary.fSecPerStep = 0;
 		bStepperAdjustmentNeeded = true;
 		tRiseEntry = false;
-		printDebugStr("trise entry ! eta 11 A, set primary at 76", print_debug_setup_states);
+		printDebugStr("trise entry ! eta 11 A, set primary at 76", print_debug_setup);
 	}
 
 
@@ -518,7 +518,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			stove->sPrimary.u8apertureCmdSteps <= 75 )
 	{
 		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
-		printDebugStr("Trise Eta 11B exit to combustion", print_debug_setup_states);
+		printDebugStr("Trise Eta 11B exit to combustion", print_debug_setup);
 		return;
 	}
 
@@ -528,7 +528,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			(stove->fBaffleDeltaT < (1 + P2F1DEC(sParam->sTempSlope.fTarget) -
 					P2F1DEC(sParam->sTempSlope.fTolerance))))
 	{
-		printDebugStr("eta 11C, delta t < 1,  i waited, next loop !", print_debug_setup_states);
+		printDebugStr("eta 11C, delta t < 1,  i waited, next loop !", print_debug_setup);
 		return;
 	}
 
@@ -537,7 +537,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// Section regulating (chg rapides)
 	if(stove->fBaffleTemp >P2F(sParam->fTempToStartReg))
 	{
-		printDebugStr("t is over 500, regulating, we should be managing smoke here ", print_debug_setup_states);
+		printDebugStr("t is over 500, regulating, we should be managing smoke here ", print_debug_setup);
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,P2F1DEC(sParam->sTempSlope.fTarget) +
@@ -557,7 +557,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 			{
-				printDebugStr("etat 11D deltat > 10 && smoke", print_debug_setup_states);
+				printDebugStr("etat 11D deltat > 10 && smoke", print_debug_setup);
 
 				if (stove->sGrill.u8apertureCmdSteps > 15)
 				{
@@ -573,7 +573,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			else
 			{
-				printDebugStr("Eta 11 E \n", print_debug_setup_states);
+				printDebugStr("Eta 11 E \n", print_debug_setup);
 				stove->sPrimary.u8apertureCmdSteps = 76;
 				stove->sPrimary.fSecPerStep = 0;
 			}
@@ -591,13 +591,13 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	{
 		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 		{
-			printDebugStr("etat 12 A : decrement grill \n\n", print_debug_setup_states);
+			printDebugStr("etat 12 A : decrement grill \n\n", print_debug_setup);
 
 			stove->sGrill.u8apertureCmdSteps--;
 			stove->sGrill.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
 		}else
 		{
-			printDebugStr("eta 12 B : decrement primary ", print_debug_setup_states);
+			printDebugStr("eta 12 B : decrement primary ", print_debug_setup);
 
 			stove->sPrimary.u8apertureCmdSteps--;
 
@@ -668,7 +668,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
-		printDebugStr("exit to coal hi or low", print_debug_setup_states);
+		printDebugStr("exit to coal hi or low", print_debug_setup);
 		return;
 	}
 
@@ -678,7 +678,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)) &&
 					fabs(stove->fBaffleDeltaT) <= 1  ) )
 	{
-		printDebugStr("cas 10 A wait until next loop", print_debug_setup_states);
+		printDebugStr("cas 10 A wait until next loop", print_debug_setup);
 		return;
 	}
 
@@ -693,12 +693,12 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// if temperature is under 620 (630-10)
 	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)))
 	{
-		printDebugStr("TBaffle under 620", print_debug_setup_states);
+		printDebugStr("TBaffle under 620", print_debug_setup);
 
 		// si baffle deltaT < -5
 		if(stove->fBaffleDeltaT < (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fAbsMaxDiff)))
 		{
-			printDebugStr("\n Eta 10 B \n under temp slope target (-5)", print_debug_setup_states);
+			printDebugStr("\n Eta 10 B \n under temp slope target (-5)", print_debug_setup);
 
 			// TODO setter une variable pour 36 dans ce cas
 			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 36);
@@ -712,7 +712,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		// cas Comb_Low_eta 10 C: (-5 < delta T baffle < -1 )
 		else if(stove->fBaffleDeltaT < (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fTolerance)))
 		{
-			printDebugStr("cas Comb_Low_eta 10 C ", print_debug_setup_states);
+			printDebugStr("cas Comb_Low_eta 10 C ", print_debug_setup);
 
 
 			if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow))
@@ -740,14 +740,14 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// if baffle temp is < 630 + 50
 	else if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) + P2F(sParam->sTemperature.fAbsMaxDiff)))
 	{
-		printDebugStr("baffletemp under 680", print_debug_setup_states);
+		printDebugStr("baffletemp under 680", print_debug_setup);
 
 
 		// cas 10E : abs(baffledeltaT) < 1
 		if(fabs(stove->fBaffleDeltaT) < (P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance)))
 		{
 
-			printDebugStr(" cas 10D", print_debug_setup_states);
+			printDebugStr(" cas 10D", print_debug_setup);
 
 			if(motors_ready_for_req)
 			{
@@ -758,16 +758,16 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 				if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
 				{
-					printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup_states);
+					printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup);
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
 				}else if(stove->sParticles->fparticles > P2F(sParam->sParticles.fTarget + sParam->sParticles.fTolerance))
 				{
-					printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup_states);
+					printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup);
 
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
 				}else
 				{
-					printDebugStr(" decrementing to slow down combustion with no particulate speed", print_debug_setup_states);
+					printDebugStr(" decrementing to slow down combustion with no particulate speed", print_debug_setup);
 
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fVerySlow);
 				}
@@ -786,7 +786,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		if(stove->fBaffleDeltaT > P2F1DEC(sParam->sTempSlope.fTarget + sParam->sTempSlope.fAbsMaxDiff))
 		{
 
-			printDebugStr("Cas 10 E", print_debug_setup_states);
+			printDebugStr("Cas 10 E", print_debug_setup);
 
 
 			if(motors_ready_for_req || (stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow)) || (stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow)))
@@ -799,7 +799,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
 				{
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
-					printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup_states);
+					printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup);
 
 				}
 				else
@@ -816,7 +816,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		if(stove->fBaffleDeltaT > P2F1DEC(sParam->sTempSlope.fTarget - sParam->sTempSlope.fTolerance))
 		{
 
-			printDebugStr("baffleDeltaT > 1, cas 10F ", print_debug_setup_states);
+			printDebugStr("baffleDeltaT > 1, cas 10F ", print_debug_setup);
 
 			if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow))
 			{
@@ -988,7 +988,7 @@ static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 static void Algo_safety_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
-	printDebugStr("Safety condition activated", print_debug_setup_states);
+	printDebugStr("Safety condition activated", print_debug_setup);
 
 	if(!stove->bSafetyOn)
 	{
@@ -1167,7 +1167,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 		if(delay_period_passed ){
 //		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 	//	{
-			printDebugStr("SMOKE HOT", print_debug_setup_states);
+			printDebugStr("SMOKE HOT", print_debug_setup);
 
 			if (stove->sGrill.u8apertureCmdSteps > 15)
 			{
@@ -1192,7 +1192,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 		*correction_time = u32CurrentTime_ms;
 
 		}
-		printDebugStr("SMOKE ACTION\n\n", print_debug_setup_states);
+		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 		smoke_array_shifter(smoke_history,l,1);// setting value 1 for smoke hot
 		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 		return 1 ;
@@ -1205,16 +1205,16 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 		// take action if the 30 seconds have passed
 		if(delay_period_passed){
-			printDebugStr("\n\nSMOKE COLD", print_debug_setup_states);
+			printDebugStr("\n\nSMOKE COLD", print_debug_setup);
 		if(stove->sGrill.u8apertureCmdSteps < 30)
 		{
 			stove->sGrill.u8apertureCmdSteps = 30;
-			printDebugStr("smoke && grille < 30 : set grill to 30", print_debug_setup_states);
+			printDebugStr("smoke && grille < 30 : set grill to 30", print_debug_setup);
 		}
 		else
 		{
 			stove->sGrill.u8apertureCmdSteps  = RANGE(sParam->sGrill.i32Min, stove->sGrill.u8apertureCmdSteps *2,sParam->sGrill.i32Max);
-			printDebugStr("smoke && grille >= 30 : set grill *=2 ", print_debug_setup_states);
+			printDebugStr("smoke && grille >= 30 : set grill *=2 ", print_debug_setup);
 		}
 
 
@@ -1223,7 +1223,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 		*correction_time = u32CurrentTime_ms;
 		}
 
-		printDebugStr("SMOKE ACTION\n\n", print_debug_setup_states);
+		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 		smoke_array_shifter(smoke_history,l,-1); // setting value -1 in history for smoke cold
 		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 		return 1 ;
@@ -1238,7 +1238,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 	// find the last good grill value before smoke event
 	  for (i = l;i>=1;i--){
 	    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i-+1] == -1 ){ // last smoke event was cold
-	    	if(print_debug_setup_states){
+	    	if(print_debug_setup){
 	    		printf("position of last good val is %i \n\n using : %i",i,grill_history[index_of_grill]);
 	    	}
 	      index_of_grill = i;
@@ -1247,7 +1247,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 	    }
 
 	    else{
-			printDebugStr("either out of history bounds or hot smoke, \n\n in either case we need to be using last val", print_debug_setup_states);
+			printDebugStr("either out of history bounds or hot smoke, \n\n in either case we need to be using last val", print_debug_setup);
 			index_of_grill = 999;
 		      reset_to_last_good_position_needed = false;
 		      // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
@@ -1256,7 +1256,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 
 
-	  printDebugStr("normal action, no smoke", print_debug_setup_states);
+	  printDebugStr("normal action, no smoke", print_debug_setup);
 
 	  if(reset_to_last_good_position_needed){
 
@@ -1274,7 +1274,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 
 
-	if(print_debug_setup_states){
+	if(print_debug_setup){
 		array_printer(smoke_history,l);
 		array_printer(grill_history,lgrill);}
 
