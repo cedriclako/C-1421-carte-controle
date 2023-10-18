@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <link rel="stylesheet" type="text/css" href="css/content.css">
+    <link rel="stylesheet" type="text/css" href="css/mnt-content.css">
 </head>
 <body>
     <div id="app">
@@ -19,7 +19,7 @@
             <span>remote, current: {{ livedata.remote.tempC_current.toFixed(2) }} C, set point: {{ livedata.remote.tempC_sp.toFixed(2) }} C, fan: {{ livedata.remote.fanspeed }} C, lastcomm (s): {{ (livedata.remote.lastcomm_ms/1000).toFixed(2) }}</span><br>
             <span>datetime: {{ livedata.datetime }}</span><br>
         </div>
-        <br>        
+        <br>
         <h1>Debug infos</h1>
         <table class="table1">
             <thead>
@@ -76,24 +76,26 @@
                         <th>Key</th>
                         <th>Min</th>
                         <th>Default</th>
-                        <th>Max</th>
                         <th>Value</th>
+                        <th>Max</th>
+                        <th>Desc</th>
                         <th><button id="idSaveConfig" @click="idSaveConfig_OnClick($event, 1)">Save (table)</button></th>
                     </thead>
                     <tbody>
                         <tr v-if="configJSONObj"
-                            :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" 
+                            :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }"
                             v-for="item in configJSONObj?.entries">
                             <td>{{ item.key }}</td>
                             <td>{{ item.min }}</td>
                             <td>{{ item.def }}</td>
-                            <td>{{ item.max }}</td>
-                            <td colspan="2"><input type="number" :min="item.min" :max="item.max" 
+                            <td><input type="number" :min="item.min" :max="item.max"
                                 :value="item.value"
                                 @input="(event) => item.value = parseInt(event.target.value)"></td>
+                                <td>{{ item.max }}</td>
+                            <td colspan="2">{{ (item.flag_isvolatile ? "Volatile" : "") }}</td>
                         </tr>
                         <tr v-if="!configJSONObj">
-                            <td colspan="6">Parameter are not yet downloaded</td>
+                            <td colspan="7">Parameter are not yet downloaded</td>
                         </tr>
                     </tbody>
                 </table>
@@ -101,7 +103,7 @@
 
             <!-- String mode config -->
             <div v-show="isStringMode">
-                <textarea id="idConfigFileText" rows="40" cols="100" :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }" 
+                <textarea id="idConfigFileText" rows="40" cols="100" :class="{ error_text: livedata.stove.is_param_download_error | livedata.stove.is_param_upload_error }"
                     v-model="configJSON"></textarea>
                 <br>
                 <button id="idSaveConfig" @click="idSaveConfig_OnClick($event, 0)">Save (string)</button>
@@ -110,6 +112,7 @@
     </div>
 
     <script type="text/javascript" src="js/vue.min.js"></script>
-    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="js/api-def.js"></script>
+    <script type="text/javascript" src="js/mnt-app.js"></script>
 </body>
 </html>

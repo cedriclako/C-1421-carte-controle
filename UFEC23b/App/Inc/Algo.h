@@ -22,9 +22,6 @@
 #define P2F(x) ((float)x) //Parameter to float
 #define P2F1DEC(x) ((float)x/10) //Parameter to float with 1 decimal precision
 #define P2F2DEC(x) ((float)x/100) //Parameter to float with 2 decimal precision
-#define print_debug_setup (1)
-#define print_debug_setup_states (1)
-
 
 
 /***** Variables ******/
@@ -99,7 +96,7 @@ typedef struct
 
 	bool bstateJustChanged;
 	uint32_t u32TimeOfStateEntry_ms;
-	uint32_t u32TimeSinceCombEntry_ms; // Time since combustion entry
+	uint32_t u32TimeSinceCombEntry_ms;
 
 	uint32_t u32TimeOfAdjustment_ms;
 	uint32_t u32TimeOfComputation_ms;

@@ -16,8 +16,14 @@
 typedef enum
 {
 	//PFL_TYPE_Float,
-PFL_TYPE_Int32
+	PFL_TYPE_Int32
 } PFL_TYPE;
+
+typedef enum
+{
+	PFL_EOPT_None = 0,
+	PFL_EOPT_IsVolatile = 1,
+} PFL_EOPT;
 
 typedef struct
 {
@@ -40,6 +46,7 @@ typedef struct
 			int32_t s32Max;
 		} sInt32;
 	} uType;
+	PFL_EOPT eOpt;
 } PFL_SParameterItem;
 
 typedef struct _PFL_SHandle PFL_SHandle;
@@ -58,6 +65,8 @@ struct _PFL_SHandle
 	const PFL_SParameterItem* pParameterEntries;
 	uint32_t u32ParameterEntryCount;
 
+	bool bIsNonVolatileChanged;
+
 	const PFL_SConfig* psConfig;
 };
 
@@ -70,19 +79,19 @@ typedef enum
 	PFL_ESETRET_EntryNoFound = 4,
 } PFL_ESETRET;
 
-#define PFL_INIT_SINT32(_key,_desc,_ptrvdvar,_defaultValue,_minValue,_maxValue) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} } }
+#define PFL_INIT_SINT32(_key,_desc,_ptrvdvar,_defaultValue,_minValue,_maxValue) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} }, .eOpt = PFL_EOPT_None }
+
+#define PFL_INIT_SINT32_VOLATILE(_key,_desc,_ptrvdvar,_defaultValue,_minValue,_maxValue) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} }, .eOpt = PFL_EOPT_IsVolatile }
 
 void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries, uint32_t u32ParameterEntryCount, const PFL_SConfig* psConfig);
 
 void PFL_LoadAll(PFL_SHandle* pHandle);
 
-void PFL_LoadAllDefault(PFL_SHandle* pHandle);
-
 void PFL_CommitAll(PFL_SHandle* pHandle);
 
 PFL_ESETRET PFL_GetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t* psOut32Value);
 
-PFL_ESETRET PFL_SetValueInt32(const PFL_SHandle* pHandle, const char* szName, int32_t s32NewValue);
+PFL_ESETRET PFL_SetValueInt32(PFL_SHandle* pHandle, const char* szName, int32_t s32NewValue);
 
 // int32_t PFL_ExportToJSON(const PFL_SHandle* pHandle, char* szBuffer, int32_t s32MaxLen);
 

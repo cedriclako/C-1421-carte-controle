@@ -6,14 +6,19 @@
  */
 
 #include "ParamFile.h"
+#include "HelperMacro.h"
 #include "cmsis_os.h"
+#include "stm32f1xx_hal_iwdg.h"
 #include "main.h"
+#include "WhiteBox.h"
 #include "DebugPort.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <math.h>
 #include "message_buffer.h"
 #include "GPIOManager.h"
+#include "FlashMap.h"
 #include "FanManager.h"
 //#include "ProdTest.h"
 //#include "MotorManager.h"
@@ -24,29 +29,30 @@
 #include "Algo.h"
 #include "GitCommit.h"
 
+#define TAG "Algo"
+
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
 static bool motors_ready_for_req = false;
 static bool bStepperAdjustmentNeeded = false;
 static bool bStateExitConditionMet = false;
-static bool tRiseEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
 {
-	[(int)ZEROING_STEPPER] = "ZEROING_STEP",
-	[(int)WAITING] = "WAITING",
-	[(int)RELOAD_IGNITION] = "RELOAD_IGNI",
-	[(int)TEMPERATURE_RISE] = "TEMP_RISE",
-	[(int)COMBUSTION_HIGH] = "COMB_HIGH",
-	[(int)COMBUSTION_LOW] = "COMB_LOW",
-	[(int)COAL_LOW] = "COAL_LOW",
-	[(int)COAL_HIGH] = "COAL_HIGH",
-	[(int)OVERTEMP] = "OVERTEMP",
-	[(int)SAFETY] = "SAFETY",
-	[(int)MANUAL_CONTROL] = "MANUAL"
+	HELPERMACRO_DEFSTRING(ZEROING_STEPPER),
+	HELPERMACRO_DEFSTRING(WAITING),
+	HELPERMACRO_DEFSTRING(RELOAD_IGNITION),
+	HELPERMACRO_DEFSTRING(TEMPERATURE_RISE),
+	HELPERMACRO_DEFSTRING(COMBUSTION_HIGH),
+	HELPERMACRO_DEFSTRING(COMBUSTION_LOW),
+	HELPERMACRO_DEFSTRING(COAL_LOW),
+	HELPERMACRO_DEFSTRING(COAL_HIGH),
+	HELPERMACRO_DEFSTRING(OVERTEMP),
+	HELPERMACRO_DEFSTRING(SAFETY),
+	HELPERMACRO_DEFSTRING(MANUAL_CONTROL)
 };
 
 typedef void (*fnComputeAdjustment)(Mobj *stove, uint32_t u32CurrentTime_ms);
@@ -60,6 +66,8 @@ const PF_SuperStateParam_t* sStateParams[ALGO_NB_OF_STATE];
 const PF_OverHeat_Thresholds_t *sOverheatParams;
 
 static Mobj UFEC23;
+
+extern IWDG_HandleTypeDef hiwdg;
 
 static void Algo_fill_state_functions(void);
 static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms);
@@ -92,41 +100,38 @@ static void Algo_combHigh_exit(Mobj *stove);
 //static void Algo_coalLow_exit(Mobj *stove);
 //static void Algo_coalHigh_exit(Mobj *stove);
 
-void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
-bool Algo_adjust_steppers_position(Mobj *stove);
-void Algo_update_steppers_inPlace_flag(void);
-void Algo_stoveInit(Mobj *stove);
-
-int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
-		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target);
-
-
-//void printDebugStr(char str[], _Bool debugisOn);
-
-//void printDebugStr(char str[], _Bool debugisOn) {
-//  if(debugisOn){
-//    printf(" %s \n\n", str);
-//  }
-//}
+static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
+static bool Algo_adjust_steppers_position(Mobj *stove);
+static void Algo_update_steppers_inPlace_flag(void);
+static void Algo_stoveInit(Mobj *stove);
 
 void Algo_Init(void const * argument)
 {
-	printf("\r\n\r\n");
-	printf("--------------------------------\r\n");
-	printf("BOOTING APP\r\n");
-	printf("Commitid: %s, Branch: %s, Dirty: %d\r\n", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, GITCOMMIT_ISDIRTY);
-	printf("--------------------------------\r\n");
+	LOG(TAG, "\r\n\r\n");
+	LOG(TAG, "--------------------------------");
+	LOG(TAG, "BOOTING APP");
+	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
+	LOG(TAG, "Internal flash: %"PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
+	LOG(TAG, "--------------------------------");
+
+	PARAMFILE_Init();
+	PARAMFILE_Load();
+	LOG(TAG, "Parameter file initialized");
 
 	Algo_fill_state_functions();
 
-	PARAMFILE_Init();
 	Algo_stoveInit(&UFEC23);
 	Temperature_Init();
+	LOG(TAG, "Temperature initialized");
 	ESPMANAGER_Init();
+	LOG(TAG, "ESP Manager initialized");
 	Particle_Init();
+	LOG(TAG, "Particle initialized");
+
 	Fan_Init();
 	// We want to be sure the system is ready before accepting to answer to any commands
 	ESPMANAGER_SetReady();
+	LOG(TAG, "Ready");
 
     for(;;)
     {
@@ -136,6 +141,10 @@ void Algo_Init(void const * argument)
     	ESPMANAGER_Run();
     	ParticlesManager(osKernelSysTick());
     	Algo_task(&UFEC23, osKernelSysTick());
+    	osDelay(1);
+		#if WHITEBOX_WATCHDOG_ISDEACTIVATED == 0
+    	HAL_IWDG_Refresh(&hiwdg);
+		#endif
     	Fan_Process(&UFEC23);
 
     	//osDelay(1);
@@ -143,21 +152,20 @@ void Algo_Init(void const * argument)
 
 }
 
-void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
+static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_UsrParam* UsrParam =  PB_GetUserParam();
 	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
 
 	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
 
-	if((currentState != SAFETY) && stove->bSafetyOn)
+	if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
+	{
+		nextState = MANUAL_CONTROL;
+	}
+	else if((currentState != SAFETY) && stove->bSafetyOn)
 	{
 		nextState = SAFETY;
-	}
-	else if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
-	{
-
-		nextState = MANUAL_CONTROL;
 	}
 	else if((currentState != OVERTEMP) && (currentState != SAFETY) && (
 			(stove->fBaffleTemp > P2F(OvrhtParams->OverheatBaffle))  ||
@@ -166,7 +174,6 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		nextState = OVERTEMP;
 	}
-	// STATE ENTRY ACTION
 	else if(stove->bstateJustChanged) // If first loop in state, perform entry action
 	{
 		stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
@@ -179,22 +186,17 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 	}
 	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
-			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE ))  /////// test condition bouton, MC 25-09-23
+			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE))
 	{
-		if(!stove->bInterlockOn) // Will need to be changed when we switch back interlock and start button
+		if(!stove->bInterlockOn)
 		{
-			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
-			{
-				Particle_requestZero();
-			}
 			nextState = RELOAD_IGNITION;
 			stove->bReloadRequested = false;
 			stove->bButtonBlinkRequired = true;
 			stove->TimeOfReloadRequest = u32CurrentTime_ms;
 		}
 	}
-	// STATE EXECUTION
-	else // When we get here, check if it's time to compute an adjustment // to perform a state loop action
+	else // When we get here, check if it's time to compute an adjustment
 	{
 		if((u32CurrentTime_ms - stove->u32TimeOfComputation_ms) > UsrParam->s32TimeBetweenComputations_ms)
 		{
@@ -207,17 +209,14 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 				}
 			}
 			stove->u32TimeOfComputation_ms = u32CurrentTime_ms;
-			PrintOutput(stove, currentState, nextState, lastState);
-		}
-
-		else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
+			PrintOutput(stove, nextState);
+		}else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
 		{										// But we still loop in the first 'if' once per computation period (to print output)
 			if(AlgoComputeAdjustment[currentState] != NULL)
 			{
 				AlgoComputeAdjustment[currentState](stove, u32CurrentTime_ms);
 			}
 		}
-		// STATE EXIT ACTION
 		// Check if state timed out or if exit conditions are met
 		if((((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) && bStateExitConditionMet) ||
 				((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))))
@@ -260,10 +259,9 @@ void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms;
 		}
 	}
-
 }
 
-void Algo_stoveInit(Mobj *stove)
+static void Algo_stoveInit(Mobj *stove)
 {
 	stove->sParticles = ParticlesGetObject(); // Get pointer to particles Structure
 	sOverheatParams = PB_GetOverheatParams();
@@ -395,27 +393,18 @@ static void Algo_reload_exit(Mobj *stove)
 static void Algo_tempRise_entry(Mobj* stove)
 {
 
-	// prend les params de moteur specifique à Trise et les met dans le pointer sParam pour les moteurs
 	const PF_TriseParam_t *sParam = PB_GetTRiseParams();
 
-	stove->u32TimeSinceCombEntry_ms = 0; // set le temps à zero
+	stove->u32TimeSinceCombEntry_ms = 0;
 
-
-	// ----------------- set les vitesses et ouvertures pour les moteurs pour le début de l'état -------------------------------
+	stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
 	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
 	stove->sGrill.fSecPerStep = 0; // force aperture
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
-	// --------------------------------------------------------------------------------------------
-
-	bStepperAdjustmentNeeded = true; // leve le flag, donc la queue des stepper devrait le lire et faire l'action
-
-	tRiseEntry = true;
-
+	bStepperAdjustmentNeeded = true;
 }
-// normalement on devrait à 525 rentrer dans ce cas
-
 
 static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
@@ -760,12 +749,6 @@ static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(!(sManParam->s32ManualOverride == 1)) // TODO: Put this in task function
 	{
 		nextState = lastState;
-
-		if(nextState == SAFETY)
-		{
-			nextState = ZEROING_STEPPER;
-		}
-
 		if(nextState == ZEROING_STEPPER)
 		{
 			motors_ready_for_req = false;
@@ -852,7 +835,7 @@ void Algo_fill_state_functions(void)
 
 }
 
-void Algo_update_steppers_inPlace_flag(void)
+static void Algo_update_steppers_inPlace_flag(void)
 {
 	if(!motors_ready_for_req)
 	{
@@ -860,7 +843,7 @@ void Algo_update_steppers_inPlace_flag(void)
 	}
 }
 
-bool Algo_adjust_steppers_position(Mobj *stove)
+static bool Algo_adjust_steppers_position(Mobj *stove)
 {
 	uint8_t cmd[NUMBER_OF_STEPPER_CMDS] =
 	{

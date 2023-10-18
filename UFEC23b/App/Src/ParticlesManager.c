@@ -273,7 +273,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			setZero = false;
 			ParticleDevice.u16zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
 			//zero_current = RX_BUFFER[7];
-			ParticleDevice.fnormalized_zero = (float)ParticleDevice.u16zero/((float)RX_BUFFER[7]/10);
+			//ParticleDevice.normalized_zero = (float)ParticleDevice.u16zero/(float)zero_current;
 		}else
 		{
 			if(uartErrorCount <= COMM_ERR_LIMIT)
