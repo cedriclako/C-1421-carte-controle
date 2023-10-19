@@ -44,14 +44,14 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	// Waiting parameters
 	PFL_INIT_SINT32(PFD_WA_T_TARGET,    	    "", &m_sWaitingParams.fTempToQuitWaiting, 					150, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_WA_T_SKIP,    	        "", &m_sWaitingParams.fTempToSkipWaiting, 					800, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_WA_T_SKIP,    	        "", &m_sWaitingParams.fTempToSkipWaiting, 					525, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_WA_PM_POS,    	    	"", &m_sWaitingParams.sPrimary.i32Max, 						PF_PRIMARY_MINIMUM_OPENING, 			PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_WA_SM_POS,    	    	"", &m_sWaitingParams.sSecondary.i32Max, 					PF_SECONDARY_MINIMUM_OPENING, 			PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_WA_GM_POS,    	    	"", &m_sWaitingParams.sGrill.i32Max, 						PF_GRILL_MINIMUM_OPENING, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// Reload parameters
 	PFL_INIT_SINT32(PFD_REL_T_TARGET,    	    "", &m_sReloadParams.fTempToQuitReload, 					525, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_REL_T_SKIP,    	        "", &m_sReloadParams.fTempToSkipReload, 					1000, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_REL_T_SKIP,    	        "", &m_sReloadParams.fTempToSkipReload, 					750, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_REL_PM_POS,    	    	"", &m_sReloadParams.sPrimary.i32Max, 						PF_PRIMARY_FULL_OPEN, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_REL_SM_POS,    	    	"", &m_sReloadParams.sSecondary.i32Max, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_REL_GM_POS,    	    	"", &m_sReloadParams.sGrill.i32Max, 						PF_GRILL_FULL_OPEN, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
@@ -144,23 +144,23 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	//SuperStateParameters
 	PFL_INIT_SINT32(PFD_TR_ENTRY_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_MIN_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32MinimumTimeInStateMinutes, 	1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32MaximumTimeInStateMinutes, 	10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32MaximumTimeInStateMinutes, 	60, 		0, 		20000),
 
 	PFL_INIT_SINT32(PFD_CBL_ENTRY_TIME, 		"", &m_sSuperParams[COMBUSTION_LOW].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 		30, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000),
 
 	PFL_INIT_SINT32(PFD_CBH_ENTRY_TIME, 		"", &m_sSuperParams[COMBUSTION_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_MIN_TIME, 			"", &m_sSuperParams[COMBUSTION_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_HIGH].i32MaximumTimeInStateMinutes, 		10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBH_MAX_TIME, 			"", &m_sSuperParams[COMBUSTION_HIGH].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000),
 
 	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		"", &m_sSuperParams[COAL_LOW].i32EntryWaitTimeSeconds, 					0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 			20, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			"", &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 			600, 		0, 		20000),
 
 	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		"", &m_sSuperParams[COAL_HIGH].i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_MIN_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 			10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			"", &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 			600, 		0, 		20000),
 
 	// Overheat parameters
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		"", &m_sOverheatParams.OverheatPlenum, 	  								420, 		0, 		20000),
