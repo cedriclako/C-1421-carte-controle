@@ -507,28 +507,35 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		stove->sPrimary.fSecPerStep = 0;
 		bStepperAdjustmentNeeded = true;
 		tRiseEntry = false;
-		printDebugStr("trise entry ! eta 11 A, set primary at 76", print_debug_setup);
+		printDebugStr("trise entry : set primary at 76", print_debug_setup);
 	}
 
 
 	// EXIT CONDITIONs TO COMBUSTION
-	//if hot enough, or if primary <=75 go to comb states
+	//if Tbaffle > 710 or 630, or if primary <=75 go to comb states
 	if((stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombHigh)) ||
 			(!stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombLow))||
 			stove->sPrimary.u8apertureCmdSteps <= 75 )
 	{
 		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
-		printDebugStr("Trise Eta 11B exit to combustion", print_debug_setup);
+		printDebugStr("Trise exit to combustion", print_debug_setup);
 		return;
 	}
 
 	// WAIT FOR NEXT LOOP
-	// delta T baffle < 1 or time of correction < 60s
-	if((u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) ||
-			(stove->fBaffleDeltaT < (1 + P2F1DEC(sParam->sTempSlope.fTarget) -
+	// time of correction < 60s
+	if((u32MajorCorrectionTime_ms != 0 && ((u32CurrentTime_ms - u32MajorCorrectionTime_ms) < SECONDS(cycle_time))) )
+	{
+		printDebugStr("there was a major correction,  wait: skip to next loop !", print_debug_setup);
+		return;
+	}
+
+	// WAIT FOR NEXT LOOP
+	// delta T baffle < 1
+	if((stove->fBaffleDeltaT < (1 + P2F1DEC(sParam->sTempSlope.fTarget) -
 					P2F1DEC(sParam->sTempSlope.fTolerance))))
 	{
-		printDebugStr("eta 11C, delta t < 1,  i waited, next loop !", print_debug_setup);
+		printDebugStr("delta t < 1,  wait: skip to next loop !", print_debug_setup);
 		return;
 	}
 
@@ -537,7 +544,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// Section regulating (chg rapides)
 	if(stove->fBaffleTemp >P2F(sParam->fTempToStartReg))
 	{
-		printDebugStr("t is over 500, regulating, we should be managing smoke here ", print_debug_setup);
+		printDebugStr("t > 500, regulating smoke here ", print_debug_setup);
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,P2F1DEC(sParam->sTempSlope.fTarget) +
@@ -546,45 +553,6 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		if(smoke_detected){return;}
 
 	}
-
-/*
-		// si particules > 80+50 && baffle delta T > 5 +5
-		if((stove->sParticles->fparticles >
-	(P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))) &&
-				((stove->fBaffleDeltaT > (P2F1DEC(sParam->sTempSlope.fTarget) +
-						P2F1DEC(sParam->sTempSlope.fTolerance)) )||stove->fChamberTemp>1100))
-		{
-
-			if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
-			{
-				printDebugStr("etat 11D deltat > 10 && smoke", print_debug_setup);
-
-				if (stove->sGrill.u8apertureCmdSteps > 15)
-				{
-					stove->sGrill.u8apertureCmdSteps /=2;
-				}
-				else
-				{
-					stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
-				}
-				stove->sGrill.fSecPerStep = 0;
-			}
-
-
-			else
-			{
-				printDebugStr("Eta 11 E \n", print_debug_setup);
-				stove->sPrimary.u8apertureCmdSteps = 76;
-				stove->sPrimary.fSecPerStep = 0;
-			}
-
-			bStepperAdjustmentNeeded = true;
-			u32TimeOfMajorCorr = u32CurrentTime_ms;
-			return;
-		}
-	}
-*/
-
 
 
 	if(motors_ready_for_req)
