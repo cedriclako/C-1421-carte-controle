@@ -239,8 +239,9 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		{
 			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
 			{
-				Particle_requestZero();
+				Particle_requestZero(); // TODO : valider pourquoi ce bout là s'est pas pas fait MC:19/10
 			}
+
 			nextState = RELOAD_IGNITION;
 			stove->bReloadRequested = false;
 			stove->bButtonBlinkRequired = true;
@@ -1214,7 +1215,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 	printDebugStr("Looking for last good aperture value if relevant", print_debug_setup);
 
 	  for (i = l;i>=1;i--){
-	    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i-+1] == -1 ){ // last smoke event was cold
+	    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i+1] == -1 ){ // last smoke event was cold
 	    	if(print_debug_setup){
 	    		printf("position of last good val is %i \n\n using : %i",i,grill_history[index_of_grill]);
 	    	}
