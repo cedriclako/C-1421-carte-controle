@@ -129,6 +129,8 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 		printf(" Next State:");
 		printf(ALGO_GetStateString(nextState));
 		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
+		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
+
 		}
 
 	printf("*\n\r");
