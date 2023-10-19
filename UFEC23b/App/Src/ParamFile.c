@@ -88,9 +88,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_CBL_PS_TOL, 			"", &m_sCombLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PS_ABS, 			"", &m_sCombLowParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_PM_MAX,    	    	"", &m_sCombLowParams.sPrimary.i32Max, 						85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_CBL_PM_MIN,    	    	"", &m_sCombLowParams.sPrimary.i32Min, 						17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_CBL_PM_MIN,    	    	"", &m_sCombLowParams.sPrimary.i32Min, 						15, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBL_SM_MAX,    	    	"", &m_sCombLowParams.sSecondary.i32Max, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_CBL_SM_MIN,    	    	"", &m_sCombLowParams.sSecondary.i32Min, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_CBL_SM_MIN,    	    	"", &m_sCombLowParams.sSecondary.i32Min, 					35, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBL_GM_MAX,    	    	"", &m_sCombLowParams.sGrill.i32Max, 						48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_CBL_GM_MIN,    	    	"", &m_sCombLowParams.sGrill.i32Min, 		 				0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 

@@ -792,6 +792,12 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				if(stove->sPrimary.u8apertureCmdSteps-- < sParam->sPrimary.i32Min)
 				{
 					stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Min;
+
+					// NOUVELLE ADDITION, test controle du secondaire si on a trop de potentiel de combustion
+					if(stove->sSecondary.u8apertureCmdSteps-- < (sParam->sSecondary.i32Min+15))
+									{
+						stove->sSecondary.u8apertureCmdSteps = (sParam->sSecondary.i32Min+15);
+									}
 				}
 
 				if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
@@ -1130,7 +1136,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 
 
-
+// delta T > 0 pour comb
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target ||stove->fChamberTemp>1100))
 	{
 		if(delay_period_passed ){
@@ -1150,7 +1156,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 			else
 			{
 				stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
-				stove->sPrimary.u8apertureCmdSteps /=2;
+				stove->sPrimary.u8apertureCmdSteps /=2; //TODO : limit decrease to state min, start regulating secondary
 			}
 
 
@@ -1173,7 +1179,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
-			|| (stove->sParticles->u16stDev > dev_maxDiff))&& stove->fBaffleDeltaT <= -10	){
+			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= -10) && !(stove->bDoorOpen)	){
 
 		// take action if the 30 seconds have passed
 		if(delay_period_passed){
