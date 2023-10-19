@@ -117,7 +117,7 @@ int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, in
 
 void printDebugStr(char str[], _Bool debugisOn) {
   if(debugisOn){
-    printf(" %s \n", str);
+    printf(" %s \n\r", str);
   }
 }
 
@@ -145,7 +145,7 @@ void array_printer(int array[],int l){
     int loop = 0;
          for(loop = 0; loop < l; loop++)
            { printf("%d ", array[loop]);
-           } printf("\n"); }
+           } printf("\n\r"); }
 
 
 
@@ -1195,6 +1195,9 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 		smoke_array_shifter(smoke_history,l,1);// setting value 1 for smoke hot
 		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
+		if(print_debug_setup){
+			array_printer(smoke_history,l);
+			array_printer(grill_history,lgrill);}
 		return 1 ;
 	}
 
@@ -1226,6 +1229,10 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 		smoke_array_shifter(smoke_history,l,-1); // setting value -1 in history for smoke cold
 		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
+		if(print_debug_setup){
+			array_printer(smoke_history,l);
+			array_printer(grill_history,lgrill);}
+
 		return 1 ;
 	}
 
@@ -1236,6 +1243,8 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 
 	// find the last good grill value before smoke event
+	printDebugStr("Looking for last good aperture value if relevant", print_debug_setup);
+
 	  for (i = l;i>=1;i--){
 	    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i-+1] == -1 ){ // last smoke event was cold
 	    	if(print_debug_setup){
@@ -1256,7 +1265,7 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 
 
 
-	  printDebugStr("normal action, no smoke", print_debug_setup);
+
 
 	  if(reset_to_last_good_position_needed){
 
@@ -1264,16 +1273,21 @@ int Algo_smoke_ini(tMobj* stove,uint32_t u32CurrentTime_ms,int cycle_time){
 	  }
 
 
-		stove->sGrill.fSecPerStep = 0; // force aperture
+	  // else : the last smoke event was not cold smoke or we are out of bounds. Leaving aperture as is.
+	  //TODO : Flag it if we are out of bounds
+
+
+		stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
 		bStepperAdjustmentNeeded = true;
 		*correction_time = u32CurrentTime_ms;
 
 
-	smoke_array_shifter(smoke_history,l,0);
-	smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
+		// (array, length, value to append)
+		smoke_array_shifter(smoke_history,l,0);
+		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 
 
-
+ printDebugStr("normal action, no smoke", print_debug_setup);
 	if(print_debug_setup){
 		array_printer(smoke_history,l);
 		array_printer(grill_history,lgrill);}
