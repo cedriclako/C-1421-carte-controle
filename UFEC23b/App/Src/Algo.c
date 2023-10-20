@@ -274,8 +274,8 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			}
 		}
 		// STATE EXIT ACTION
-		// Check if state timed out or if exit conditions are met
-		if((((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) && bStateExitConditionMet) ||
+		// Check if state timed out or if exit conditions are met // added state entry time skip
+		if(((state_entry_delays_skip||(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) && bStateExitConditionMet) ||
 				((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))))
 		{
 
@@ -444,7 +444,7 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	time_reload_entry = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000;
 
-	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60))
+	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60) && !state_entry_delays_skip)
 	{
 		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup);
 		if(print_debug_setup){printf("\n%i\n",time_reload_entry);}
@@ -499,7 +499,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	static int smoke_detected = 0;
 	int cycle_time = 60;
 
-	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > SECONDS(cycle_time))&& tRiseEntry)
+	if(((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > SECONDS(cycle_time))||state_entry_delays_skip)&& tRiseEntry)
 	{
 		stove->sPrimary.u8apertureCmdSteps = 76;
 		stove->sPrimary.fSecPerStep = 0;
@@ -1106,7 +1106,7 @@ const char* ALGO_GetStateString(State state)
 
 
 // delta T > 0 pour comb
-	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target ||stove->fChamberTemp>1100))
+	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
 	{
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 
@@ -1123,11 +1123,22 @@ const char* ALGO_GetStateString(State state)
 				stove->sGrill.u8apertureCmdSteps = g_min;
 				stove->sPrimary.u8apertureCmdSteps = 76;
 			}
-			else
+			else if(stove->sGrill.u8apertureCmdSteps == g_min && stove->sPrimary.u8apertureCmdSteps > p_min)
 			{
 				stove->sGrill.u8apertureCmdSteps = g_min;
 				stove->sPrimary.u8apertureCmdSteps  = RANGE(p_min,stove->sPrimary.u8apertureCmdSteps /2 ,p_max); // 20-10 MC, Changed, validate effect
 			}
+
+			/*else {
+
+				stove->sGrill.u8apertureCmdSteps = g_min;
+				stove->sPrimary.u8apertureCmdSteps  = p_min+5;
+				stove->sSecondary.u8apertureCmdSteps -=2;
+
+
+
+
+			}*/
 
 			stove->sPrimary.fSecPerStep = 0;
 			stove->sGrill.fSecPerStep = 0;
