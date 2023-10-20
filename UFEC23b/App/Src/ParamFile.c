@@ -122,6 +122,17 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COL_T_TOL, 				"", &m_sCoalLowParams.sTemperature.fTolerance, 	  			0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_T_ABS, 				"", &m_sCoalLowParams.sTemperature.fAbsMaxDiff, 			0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COL_PS_TOL, 			"", &m_sCoalLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
+
+
+	PFL_INIT_SINT32(PFD_COL_P_TARGET, 			"", &m_sCoalLowParams.sParticles.fTarget, 					80, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_P_TOL, 				"", &m_sCoalLowParams.sParticles.fTolerance, 				30, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_P_ABS, 				"", &m_sCoalLowParams.sParticles.fAbsMaxDiff, 				100, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_PS_TOL, 			"", &m_sCoalLowParams.sPartStdev.fTolerance, 				10, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_COL_PS_ABS, 			"", &m_sCoalLowParams.sPartStdev.fAbsMaxDiff, 				50, 		0, 		20000),
+
+
+
+
 	PFL_INIT_SINT32(PFD_COL_PM_MAX,    	    	"", &m_sCoalLowParams.sPrimary.i32Max, 						85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COL_PM_MIN,    	    	"", &m_sCoalLowParams.sPrimary.i32Min, 						6, 			PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COL_SM_MAX,    	    	"", &m_sCoalLowParams.sSecondary.i32Max, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
