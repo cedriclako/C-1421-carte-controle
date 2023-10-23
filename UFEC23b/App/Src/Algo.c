@@ -629,7 +629,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 	//EXIT CONDITIONS TODO : Vérifier avec Guillaume
-	if((stove->fBaffleTemp < 500 && (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)) /*|| // partie suivante ajoutée par charles, valider pertinence
+	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
 
@@ -1206,7 +1206,7 @@ const char* ALGO_GetStateString(State state)
 	    }
 
 	    else{
-			printDebugStr("either out of history bounds or hot smoke, \n\n in either case we need to be using last val", print_debug_setup);
+			printDebugStr("no cold smoke detected", print_debug_setup);
 			index_of_grill = 999;
 		      reset_to_last_good_position_needed = false;
 		      // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
@@ -1216,14 +1216,17 @@ const char* ALGO_GetStateString(State state)
 	  if(reset_to_last_good_position_needed){
 
 		  stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, grill_history[index_of_grill],g_max);
+			stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
+			bStepperAdjustmentNeeded = true;
+
+
 	  }
 
 
 	  // else : the last smoke event was not cold smoke or we are out of bounds. Leaving aperture as is.
 	  //TODO : Flag it if we are out of bounds
 
-		stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
-		bStepperAdjustmentNeeded = true;
+
 		// *correction_time = u32CurrentTime_ms;
 
 		// (array, length, value to append)
