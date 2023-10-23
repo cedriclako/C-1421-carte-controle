@@ -629,8 +629,8 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 	//EXIT CONDITIONS TODO : Vérifier avec Guillaume
-	if((stove->fBaffleTemp < 500 && (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)) || // partie suivante ajoutée par charles, valider pertinence
-			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff)) && !smoke_detected))
+	if((stove->fBaffleTemp < 500 && (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)) /*|| // partie suivante ajoutée par charles, valider pertinence
+			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
 
 		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
@@ -1224,7 +1224,7 @@ const char* ALGO_GetStateString(State state)
 
 		stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
 		bStepperAdjustmentNeeded = true;
-		*correction_time = u32CurrentTime_ms;
+		// *correction_time = u32CurrentTime_ms;
 
 		// (array, length, value to append)
 		smoke_array_shifter(smoke_history,l,0);
