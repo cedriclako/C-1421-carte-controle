@@ -110,6 +110,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
 static bool Algo_adjust_steppers_position(Mobj *stove);
 static void Algo_update_steppers_inPlace_flag(void);
 static void Algo_stoveInit(Mobj *stove);
+static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int no_part_change_speed, bool additional_condition);
 
 int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
 		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target,
@@ -601,22 +602,24 @@ static void Algo_combLow_entry(Mobj *stove)
 		stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
 	}
 	else
-	{
+	{	// pas sûr qu'il y ait un contexte dans lequel on voudrait pas mettre la grille à min en rentrant en comb.
 		stove->sGrill.u8apertureCmdSteps = RANGE(sParam->sGrill.i32Min,stove->sGrill.u8apertureCmdSteps,sParam->sGrill.i32Max);
 	}
 
-	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
+	// TODO : mettre de quoi ici pour le cas où on arrive de coal. i.e. gérer le primaire.
+
+
+	// stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
 	stove->sGrill.fSecPerStep = 0; // force aperture
 
 	stove->sSecondary.u8apertureCmdSteps = RANGE(sParam->sSecondary.i32Min,stove->sSecondary.u8apertureCmdSteps,sParam->sSecondary.i32Max);
 	//stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
+
 }
 
-/*
-TODO : le cas de fumée doit être uniformisé pour chaque état principal de la machine
-*/
+
 static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
@@ -628,11 +631,11 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
-	//EXIT CONDITIONS TODO : Vérifier avec Guillaume
+	//EXIT CONDITIONS
+
 	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
-
 		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal hi or low", print_debug_setup);
@@ -683,26 +686,23 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 			printDebugStr("cas Comb_Low_eta 10 C ", print_debug_setup);
 
-
 			if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow))
 			{
 				if(stove->sPrimary.u8apertureCmdSteps++ > sParam->sPrimary.i32Max)//Open by one step
 				{
 					stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
 				}
-
 				if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
 				{
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
-				}else
+				}
+				else
 				{
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
 				}
 
 				bStepperAdjustmentNeeded = true;
-				//est-ce qu'on devrait ajouter un write sur time of major correction ici ?
 			}
-
 		}
 	}
 
@@ -710,7 +710,6 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	else if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) + P2F(sParam->sTemperature.fAbsMaxDiff)))
 	{
 		printDebugStr("baffletemp under 680", print_debug_setup);
-
 
 		// cas 10E : abs(baffledeltaT) < 1
 		if(fabs(stove->fBaffleDeltaT) < (P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance)))
@@ -729,33 +728,39 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				{
 					printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup);
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
-				}else if(stove->sParticles->fparticles > P2F(sParam->sParticles.fTarget + sParam->sParticles.fTolerance))
+				}
+				else if(stove->sParticles->fparticles > P2F(sParam->sParticles.fTarget + sParam->sParticles.fTolerance))
 				{
 					printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup);
 
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
-				}else
+				}
+				else
 				{
 					printDebugStr(" decrementing to slow down combustion with no particulate speed", print_debug_setup);
 
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fVerySlow);
 				}
 
-
 				bStepperAdjustmentNeeded = true;
-				//est-ce qu'on devrait ajouter un write sur time of major correction ici ?
 			}
-
 		}
 	}
 
 	//T baffle > 670 vu qu'on est dans else, on est pas plus petit que 620 ou 680,
 	else
-	{
-		if(stove->fBaffleDeltaT > P2F1DEC(sParam->sTempSlope.fTarget + sParam->sTempSlope.fAbsMaxDiff))
+	{	// cas où delta T > 5
+		if(stove->fBaffleDeltaT > (P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fAbsMaxDiff)))
 		{
+			printDebugStr("Cas 10 E : delta T > 5", print_debug_setup);
+			comb_aperture_slow_adjust(stove,  -1,  sSpeedParams->fFast ,
+					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow));
 
-			printDebugStr("Cas 10 E", print_debug_setup);
+
+			/*
+
+
+
 
 
 			if(motors_ready_for_req || (stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow)) || (stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow)))
@@ -763,6 +768,12 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				if(stove->sPrimary.u8apertureCmdSteps-- < sParam->sPrimary.i32Min)
 				{
 					stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Min;
+
+					// NOUVELLE ADDITION, test controle du secondaire si on a trop de potentiel de combustion
+					if(stove->sSecondary.u8apertureCmdSteps-- < (sParam->sSecondary.i32Min+15))
+					{
+						stove->sSecondary.u8apertureCmdSteps = (sParam->sSecondary.i32Min+15);
+					}
 				}
 
 				if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
@@ -773,20 +784,27 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				}
 				else
 				{
-					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
+					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
 				}
 
 				bStepperAdjustmentNeeded = true;
 				//est-ce qu'on devrait ajouter un write sur time of major correction ici ?
 				return;
 			}
-		}
+		*/}
 
-		if(stove->fBaffleDeltaT > P2F1DEC(sParam->sTempSlope.fTarget - sParam->sTempSlope.fTolerance))
+
+
+		// delta T > -1 et < 5
+		else if(stove->fBaffleDeltaT > (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fTolerance)))
 		{
 
-			printDebugStr("baffleDeltaT > 1, cas 10F ", print_debug_setup);
+			comb_aperture_slow_adjust(stove,  -1,  sSpeedParams->fSlow , 0);
 
+			printDebugStr("cas 10F : -1 < baffleDeltaT  < 5,  ", print_debug_setup);
+
+
+			/*
 			if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow))
 			{
 				if(stove->sPrimary.u8apertureCmdSteps-- < sParam->sPrimary.i32Min)
@@ -803,14 +821,16 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
 				{
 					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
-				}else
-				{
-					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fNormal);
-				}
+					printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup);
 
+				}
+				else
+				{
+					stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
+				}
 				bStepperAdjustmentNeeded = true;
 
-			}
+			} */
 		}
 	}
 
@@ -833,7 +853,33 @@ static void Algo_combLow_exit(Mobj *stove)
 //** STATE: COMBUSTION HIGH **//
 static void Algo_combHigh_entry(Mobj *stove)
 {
-	//const PF_CombustionParam_t *sParam = PB_GetCombHighParams();
+	const PF_CombustionParam_t *sParam = PB_GetCombHighParams();
+
+
+	//TODO filtrer les valeurs d'ouverture précédentes pour que ce soit dans les valeurs acceptables
+	// pour l'état dans lequel on rentre et si oui, garder les mêmes
+	stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps,sParam->sPrimary.i32Max);
+	// stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
+	stove->sPrimary.fSecPerStep = 0; // force aperture
+
+	if(lastState == TEMPERATURE_RISE)
+	{
+		stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
+	}
+	else
+	{	// pas sûr qu'il y ait un contexte dans lequel on voudrait pas mettre la grille à min en rentrant en comb.
+		stove->sGrill.u8apertureCmdSteps = RANGE(sParam->sGrill.i32Min,stove->sGrill.u8apertureCmdSteps,sParam->sGrill.i32Max);
+	}
+	// TODO : mettre de quoi ici pour le cas où on arrive de coal. i.e. gérer le primaire.
+
+	// stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
+	stove->sGrill.fSecPerStep = 0; // force aperture
+
+	stove->sSecondary.u8apertureCmdSteps = RANGE(sParam->sSecondary.i32Min,stove->sSecondary.u8apertureCmdSteps,sParam->sSecondary.i32Max);
+	//stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
+	stove->sSecondary.fSecPerStep = 0; // force aperture
+	bStepperAdjustmentNeeded = true;
+
 
 
 }
@@ -841,11 +887,23 @@ static void Algo_combHigh_entry(Mobj *stove)
 
 static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
-	//const PF_CombustionParam_t *sParam = PB_GetCombHighParams();
+	const PF_CombustionParam_t *sParam = PB_GetCombHighParams();
+
 }
 
 static void Algo_combHigh_exit(Mobj *stove)
 {
+
+	if(bStateExitConditionMet)
+	{
+		nextState = COAL_HIGH;
+	}
+	else
+	{
+		nextState = ZEROING_STEPPER;
+	}
+
+
 
 }
 
@@ -1242,3 +1300,59 @@ const char* ALGO_GetStateString(State state)
 	return 0; // no smoke return 0
 
 }
+
+
+ bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int no_part_change_speed , bool additional_condition)
+ {
+	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+	const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
+
+
+
+
+
+
+		if(motors_ready_for_req || stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow || additional_condition ))
+		{
+
+			// mettre change_var négative dans le call pour les cas de decrement
+			stove->sPrimary.u8apertureCmdSteps = stove->sPrimary.u8apertureCmdSteps + change_var;
+			if(stove->sPrimary.u8apertureCmdSteps  < sParam->sPrimary.i32Min)
+			{
+				stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Min;
+
+				// NOUVELLE ADDITION, test controle du secondaire si on a trop de potentiel de combustion
+
+				stove->sSecondary.u8apertureCmdSteps = stove->sSecondary.u8apertureCmdSteps + change_var;
+				if(stove->sSecondary.u8apertureCmdSteps < (sParam->sSecondary.i32Min+15))
+								{
+					stove->sSecondary.u8apertureCmdSteps = (sParam->sSecondary.i32Min+15);
+								}
+			}
+
+			if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
+			{
+				stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
+				printDebugStr(" decrementing to slow down combustion at particulate deviation speed", print_debug_setup);
+
+			}
+			else
+			{
+				stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
+			}
+			bStepperAdjustmentNeeded = true;
+			return 1;
+		}
+
+ return 0;
+ }
+
+
+
+
+
+
+
+
+
+
