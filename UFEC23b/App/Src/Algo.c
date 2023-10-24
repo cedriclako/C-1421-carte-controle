@@ -657,11 +657,9 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
-	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) ||
-			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)) &&
-					fabs(stove->fBaffleDeltaT) <= 1  ) )
+	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time)))  )
 	{
-		printDebugStr("cas 10 A wait until next loop", print_debug_setup);
+		printDebugStr("there was a major correction wait until next loop", print_debug_setup);
 		return;
 	}
 
@@ -679,6 +677,14 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)))
 	{
 		printDebugStr("TBaffle under 620", print_debug_setup);
+
+
+		if(fabs(stove->fBaffleDeltaT) <= 1  )
+				{
+					printDebugStr("cas 10 A : deltaTBaffle est ([ +- 1F]/30sec) && "
+							" Tbaffle< 620 : do nothing", print_debug_setup);
+					return;
+				}
 
 		// si baffle deltaT < -5
 		if(stove->fBaffleDeltaT < (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fAbsMaxDiff)))
@@ -786,8 +792,6 @@ static void Algo_combHigh_entry(Mobj *stove)
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
 
-
-
 }
 
 
@@ -801,8 +805,6 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	static int smoke_detected = 0;
 	int cycle_time = 30;
 
-
-
 	// EXIT CONDITIONS
 
 	if((stove->fBaffleTemp < 550 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
@@ -814,8 +816,6 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-
-
 	if(!stove->bThermostatOn)
 	{
 		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
@@ -824,12 +824,9 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
-	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) /*||
-			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)) &&
-					fabs(stove->fBaffleDeltaT) <= 1  )*/ )
+	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))))
 	{
 		printDebugStr("wait until next loop", print_debug_setup);
 		return;
@@ -843,8 +840,6 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
 
 	if(smoke_detected){return;}
-
-
 
 	// if temperature is under 630 (710 - 2 * 40)
 	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff)))
@@ -870,24 +865,21 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 		}
 
-
-
-
 	}
 	// if temperature is under 700 (710 - 10)
 	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) -  P2F(sParam->sTemperature.fTolerance)))
 	{
 		printDebugStr("TBaffle under 700", print_debug_setup);
 
-		// Si Tbaffle diminue [-5;-1°F]/30sec] && Tbaffle <700
-
 		if ((stove->fBaffleDeltaT > -5) && (stove->fBaffleDeltaT < -1) ){
 
 			printDebugStr("-5 < fBaffleDeltaT < -1  && Tbaffle < 700", print_debug_setup);
 
-//			static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
+//			static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed,
+			// int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
-			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fSlow) , stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
+			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fSlow) ,
+					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
 
 
 		}
@@ -895,9 +887,8 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		else if(fabs(stove->fBaffleDeltaT) < 1)
 
 		{
-
-			printDebugStr("-1 < fBaffleDeltaT < 1  && Tbaffle < 700 : supposed to be doing nothing but added slow incrementing  ", print_debug_setup);
-
+			printDebugStr("-1 < fBaffleDeltaT < 1  && Tbaffle < 700 : supposed to be doing nothing "
+					"but added slow incrementing  ", print_debug_setup);
 			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fSlow), -1, P2F1DEC(sSpeedParams->fVerySlow) , 0,0);
 
 			return;
@@ -924,9 +915,8 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			//	static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
 			comb_aperture_slow_adjust(stove,  -1, P2F1DEC(sSpeedParams->fFast) ,-1,sSpeedParams->fSlow ,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow), 0);
-
-
 		}
+
 		else if (stove->fBaffleDeltaT > 5)
 		{
 
@@ -934,52 +924,16 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			comb_aperture_slow_adjust(stove,  -1,  sSpeedParams->fFast ,-1,sSpeedParams->fFast,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),
 					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow));
-
-
-
 		}
 
-
-
-		else{
-
-			printDebugStr(" fBaffleDeltaT < -5 : doing nothing", print_debug_setup);
-
-
+		else
+		{
+			printDebugStr(" T > 750 & fBaffleDeltaT < -5 : doing nothing", print_debug_setup);
 		}
-
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
+
+// END COMB HIGH ACTION
 
 static void Algo_combHigh_exit(Mobj *stove)
 {
@@ -994,9 +948,9 @@ static void Algo_combHigh_exit(Mobj *stove)
 		nextState = ZEROING_STEPPER;
 	}
 
-
-
 }
+
+
 
 //** END: COMBUSTION HIGH **//
 
@@ -1015,6 +969,8 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	int cycle_time = 30;
 
 
+	// THERMOSTAT SWITCHING
+
 	if(stove->bThermostatOn)
 	{
 		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
@@ -1023,22 +979,15 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
+	// WAITING FOR NEXT LOOP WHEN MAJOR CORRECTION
 
-
-	/*
-	if(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance)
-	{
-		nextState = COMBUSTION_LOW;
-		return;
-	}*/
-
-	// WAIT FOR NEXT LOOP
-	// time of correction < 60s
 	if((u32MajorCorrectionTime_ms != 0 && ((u32CurrentTime_ms - u32MajorCorrectionTime_ms) < SECONDS(cycle_time))) )
 	{
 		printDebugStr("there was a major correction,  wait: skip to next loop !", print_debug_setup);
 		return;}
 
+
+	// SMOKE ACTION
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
@@ -1046,6 +995,7 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 				sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
 
 	if(smoke_detected){return;}
+
 
 
 	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != sParam->sGrill.i32Max)
