@@ -96,9 +96,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	// Comb high parameters
 	PFL_INIT_SINT32(PFD_CBH_T_TARGET, 			"", &m_sCombHighParams.sTemperature.fTarget, 		  		710, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_T_TOL, 				"", &m_sCombHighParams.sTemperature.fTolerance, 	  		0, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_T_ABS, 				"", &m_sCombHighParams.sTemperature.fAbsMaxDiff, 			0, 			0, 		20000),
-	PFL_INIT_SINT32(PFD_CBH_TS_TARGET, 			"", &m_sCombHighParams.sTempSlope.fTarget, 		  			50, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_CBH_T_TOL, 				"", &m_sCombHighParams.sTemperature.fTolerance, 	  		10, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_CBH_T_ABS, 				"", &m_sCombHighParams.sTemperature.fAbsMaxDiff, 			40, 			0, 		20000),
+	PFL_INIT_SINT32(PFD_CBH_TS_TARGET, 			"", &m_sCombHighParams.sTempSlope.fTarget, 		  			0, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_TS_TOL, 			"", &m_sCombHighParams.sTempSlope.fTolerance, 				10, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_TS_ABS, 			"", &m_sCombHighParams.sTempSlope.fAbsMaxDiff, 				50, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBH_P_TARGET, 			"", &m_sCombHighParams.sParticles.fTarget, 					0, 		0, 		20000),
