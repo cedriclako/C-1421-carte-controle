@@ -57,7 +57,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_REL_GM_POS,    	    	"", &m_sReloadParams.sGrill.i32Max, 						PF_GRILL_FULL_OPEN, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// TempRise parameters
-	PFL_INIT_SINT32(PFD_TR_T_TARGETH, 			"", &m_sTriseParams.fTempToCombHigh, 		  				710, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_TR_T_TARGETH, 			"", &m_sTriseParams.fTempToCombHigh, 		  				630, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_T_TARGETL, 			"", &m_sTriseParams.fTempToCombLow, 		  				630, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_T_TOL, 				"", &m_sTriseParams.fTempToStartReg,				  		500, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_TR_TS_TARGET, 			"", &m_sTriseParams.sTempSlope.fTarget, 		  			50, 		0, 		20000),

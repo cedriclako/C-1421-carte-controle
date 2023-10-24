@@ -256,7 +256,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		if((u32CurrentTime_ms - stove->u32TimeOfComputation_ms) > UsrParam->s32TimeBetweenComputations_ms)
 		{
 			Temperature_update_deltaT(stove,(u32CurrentTime_ms - stove->u32TimeOfComputation_ms));
-			if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds))
+			if(state_entry_delays_skip||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
 			{
 				if(AlgoComputeAdjustment[currentState] != NULL)
 				{
@@ -642,6 +642,19 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
+
+	if(stove->bThermostatOn)
+	{
+		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("exit to comb high", print_debug_setup);
+		return;
+	}
+
+
+
+
+
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
 	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) ||
@@ -726,17 +739,20 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 }
 
+
 static void Algo_combLow_exit(Mobj *stove)
 {
 	if(bStateExitConditionMet)
 	{
-		nextState = COAL_LOW;
+		// nextState = COAL_LOW;
 	}
 	else
 	{
+		// case for timeout or error
 		nextState = ZEROING_STEPPER;
 	}
 }
+
 
 //** END: COMBUSTION LOW **//
 
@@ -798,13 +814,24 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
+
+
+	if(!stove->bThermostatOn)
+	{
+		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("exit to comb low", print_debug_setup);
+		return;
+	}
+
+
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
-	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) ||
+	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) /*||
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)) &&
-					fabs(stove->fBaffleDeltaT) <= 1  ) )
+					fabs(stove->fBaffleDeltaT) <= 1  )*/ )
 	{
-		printDebugStr("cas 10 A wait until next loop", print_debug_setup);
+		printDebugStr("wait until next loop", print_debug_setup);
 		return;
 	}
 
@@ -837,13 +864,18 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 			return;
 		}
 
-
+		else{
 
 		printDebugStr("TBaffle under 630 but dtbaffle > -5 : undefined case, doing nothing. \n\n", print_debug_setup);
 
+		}
+
+
+
+
 	}
 	// if temperature is under 700 (710 - 10)
-	else if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) -  P2F(sParam->sTemperature.fTolerance)))
+	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) -  P2F(sParam->sTemperature.fTolerance)))
 	{
 		printDebugStr("TBaffle under 700", print_debug_setup);
 
@@ -864,7 +896,9 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 		{
 
-			printDebugStr("-1 < fBaffleDeltaT < 1  && Tbaffle < 700 : doing nothing ", print_debug_setup);
+			printDebugStr("-1 < fBaffleDeltaT < 1  && Tbaffle < 700 : supposed to be doing nothing but added slow incrementing  ", print_debug_setup);
+
+			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fSlow), -1, P2F1DEC(sSpeedParams->fVerySlow) , 0,0);
 
 			return;
 		}
@@ -874,7 +908,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// if temperature is over 700 (710 + 40)
 
 	else if (stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) +  P2F(sParam->sTemperature.fAbsMaxDiff)) ){
-		printDebugStr("TBaffle under 750 : undefined case, doing nothing. \n\n", print_debug_setup);
+		printDebugStr("TBaffle under 750 : doing nothing. \n\n", print_debug_setup);
 
 	}
 
@@ -952,10 +986,11 @@ static void Algo_combHigh_exit(Mobj *stove)
 
 	if(bStateExitConditionMet)
 	{
-		nextState = COAL_HIGH;
+		// nextState = COAL_HIGH;
 	}
 	else
 	{
+		// case for timeout or error
 		nextState = ZEROING_STEPPER;
 	}
 
@@ -978,6 +1013,16 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	static uint32_t u32MajorCorrectionTime_ms = 0;
 	static int smoke_detected = 0;
 	int cycle_time = 30;
+
+
+	if(stove->bThermostatOn)
+	{
+		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("exit to coal high", print_debug_setup);
+		return;
+	}
+
 
 
 	/*
@@ -1050,6 +1095,23 @@ static void Algo_coalHigh_entry(Mobj *stove)
 static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	//const PF_CoalParam_t *sParams = PB_GetCoalHighParams();
+
+
+
+	if(!stove->bThermostatOn)
+	{
+		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("exit to coal low", print_debug_setup);
+		return;
+	}
+
+
+
+
+
+
+
 }
 
 //static void Algo_coalHigh_exit(Mobj *stove)
@@ -1408,7 +1470,7 @@ const char* ALGO_GetStateString(State state)
 				printDebugStr(" particulate deviation speed", print_debug_setup);
 				stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
 			}
-			else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > P2F(sParam->sParticles.fTarget + sParam->sParticles.fTolerance)))
+			else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
 			{
 				printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup);
                 stove->sPrimary.fSecPerStep = w_part_change_speed;
