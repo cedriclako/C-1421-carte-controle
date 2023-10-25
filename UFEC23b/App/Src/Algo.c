@@ -422,7 +422,7 @@ static void Algo_tempRise_entry(Mobj* stove)
 
 	bStepperAdjustmentNeeded = true; // leve le flag, donc la queue des stepper devrait le lire et faire l'action
 
-	tRiseEntry = true;
+	//tRiseEntry = true;
 
 }
 // normalement on devrait à 525 rentrer dans ce cas

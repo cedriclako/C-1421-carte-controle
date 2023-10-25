@@ -202,31 +202,6 @@ void PARAMFILE_Load()
 	//PFL_LoadAll(&PARAMFILE_g_sHandle);
 	PFL_LoadAll(&PARAMFILE_g_sHandle);
 
-	/*
-	m_sSuperParams[ZEROING_STEPPER].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[ZEROING_STEPPER].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[ZEROING_STEPPER].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[WAITING].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[WAITING].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[WAITING].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[RELOAD_IGNITION].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[RELOAD_IGNITION].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[RELOAD_IGNITION].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[OVERTEMP].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[OVERTEMP].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[OVERTEMP].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[SAFETY].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[SAFETY].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[SAFETY].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[MANUAL_CONTROL].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[MANUAL_CONTROL].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[MANUAL_CONTROL].i32MinimumTimeInStateMinutes = 0;
-*/
 }
 
 uint32_t PARAMFILE_GetParamEntryCount()
@@ -239,6 +214,15 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
 	if (u32Index >= PARAMETERITEM_COUNT)
 		return NULL;
 	return &PARAMFILE_g_sHandle.pParameterEntries[u32Index];
+}
+
+uint16_t PARAMFILE_GetParamValueByKey(const char* key)
+{
+	int32_t tempValue;
+	PFL_GetValueInt32(&PARAMFILE_g_sHandle, key, &tempValue);
+
+
+	return (uint16_t) tempValue;
 }
 
 static void LoadAllCallback(const PFL_SHandle* psHandle)

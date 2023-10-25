@@ -56,7 +56,6 @@ void DebugManager(Mobj * stove, uint32_t u32time_ms)
 	}
 }
 
-void PrintOutput(Mobj * stove, State currentState)
 void PrintOutput(Mobj * stove, State currentState , State lastState , State nextState)
 {
 
