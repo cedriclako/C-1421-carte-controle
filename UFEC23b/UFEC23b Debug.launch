@@ -61,7 +61,11 @@
     <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="Release\UFEC23b.elf"/>
     <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="UFEC23b"/>
     <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
+<<<<<<< HEAD
     <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1146585632"/>
+=======
+    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1197855412"/>
+>>>>>>> MergeIssue
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
         <listEntry value="/UFEC23b"/>
     </listAttribute>

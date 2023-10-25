@@ -119,7 +119,11 @@ void Fan_Process(Mobj *stove)
 	default:
 		break;
 	}
-}
+	//else if((stove->fBaffleTemp < P2F(uParam->s32FAN_KOP)) )//Add flag for manual fan control here
+	//{
+	//	Fan_DisableAll();
+	//	return;
+	//}
 
 void Fan_ManualOperation(Fan_t FanID, Mobj *stove)
 {
@@ -182,18 +186,36 @@ void Fan_SetOutOfManual(void)
 void Fan_ManageSpeed(FanObj *fan)
 {
 
-	if(fan->u16SpeedPercent == 100)
+	if(fan->ePreviousSpeed != fan->eSpeed)
 	{
 		HAL_GPIO_WritePin(fan->sPins.MODULATION_PORT,fan->sPins.MODULATION_PIN,GPIO_PIN_SET);
 		return;
 	}
 
+		switch(fan->eSpeed)
+		{
+			case FSPEED_OFF:
+				Fan_DisableFan(fan);
+				fan->ePreviousSpeed = FSPEED_OFF;
+				break;
+			case FSPEED_LOW:
 
-	fan->sStartTimer->Instance->ARR = (uint32_t) (8330 * ((float)(100 - fan->u16SpeedPercent)/100));
-	fan->sStopTimer->Instance->ARR = (uint32_t) (3500 * ((float)(fan->u16SpeedPercent)/100));
-	//htim2.Instance->ARR = (uint32_t) (8330 * ((float)(100 - uParam->s32FANL_SPD)/100));
-	//htim3.Instance->ARR = (uint32_t) (3500 * ((float)(uParam->s32FANL_SPD)/100));
+				fan->u16SpeedPercent = PARAMFILE_GetParamValueByKey(fan->szLowSpeedKey);
+				fan->sStartTimer->Instance->ARR = (uint32_t) (8330 * ((float)(100 - fan->u16SpeedPercent)/100));
+				fan->sStopTimer->Instance->ARR = (uint32_t) (3500 * ((float)(fan->u16SpeedPercent)/100));
+				Fan_EnableZeroDetect();
+				fan->ePreviousSpeed = FSPEED_LOW;
+				break;
+			case FSPEED_HIGH:
 
+				fan->u16SpeedPercent = 100;
+				HAL_GPIO_WritePin(fan->sPins.MODULATION_PORT,fan->sPins.MODULATION_PIN,GPIO_PIN_SET);
+				fan->ePreviousSpeed = FSPEED_HIGH;
+				break;
+			default:
+				break;
+		}
+	}
 
 
 }
@@ -202,6 +224,7 @@ void Fan_DisableFan(FanObj *fan)
 {
 
 	fan->bEnabled = false;
+	fan->ePreviousSpeed = FSPEED_OFF;
 	HAL_GPIO_WritePin(fan->sPins.MODULATION_PORT,fan->sPins.MODULATION_PIN,GPIO_PIN_RESET);
 }
 

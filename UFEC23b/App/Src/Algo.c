@@ -104,6 +104,8 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
 static bool Algo_adjust_steppers_position(Mobj *stove);
 static void Algo_update_steppers_inPlace_flag(void);
 static void Algo_stoveInit(Mobj *stove);
+int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
+		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target);
 
 void Algo_Init(void const * argument)
 {
@@ -403,7 +405,12 @@ static void Algo_tempRise_entry(Mobj* stove)
 	stove->sGrill.fSecPerStep = 0; // force aperture
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
-	bStepperAdjustmentNeeded = true;
+	// --------------------------------------------------------------------------------------------
+
+	bStepperAdjustmentNeeded = true; // leve le flag, donc la queue des stepper devrait le lire et faire l'action
+
+	//tRiseEntry = true;
+
 }
 
 static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)

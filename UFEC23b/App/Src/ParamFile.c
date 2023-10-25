@@ -177,10 +177,10 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  				 60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_VFAST, 				"", &m_sSpeedParams.fVeryFast, 	  			 15, 		0, 		20000),
 
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_TSTAT, 	"", &m_sRemoteParams.bThermostat, 	  		  0, 		0, 		1),
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_BOOST, 	"", &m_sRemoteParams.bBoostReq, 	  	      0, 		0, 		1),
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_LOWFAN, 	"", &m_sRemoteParams.i32LowerSpeed, 	  	 60, 		0, 		100),
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_DISTFAN, 	"", &m_sRemoteParams.i32DistribSpeed, 	  	 15, 		0, 		100),
+	PFL_INIT_SINT32(PFD_RMT_TSTAT, 				"", &m_sRemoteParams.bThermostat, 	  						0, 		0, 		1),
+	PFL_INIT_SINT32(PFD_RMT_BOOST, 				"", &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1),
+	PFL_INIT_SINT32(PFD_RMT_LOWFAN, 			"", &m_sRemoteParams.i32LowerSpeed, 	  					3, 		0, 		3), //0:OFF, 1:LO, 2: HI, 3: AUTO (HI based on temp)
+	PFL_INIT_SINT32(PFD_RMT_DISTFAN, 			"", &m_sRemoteParams.i32DistribSpeed, 	  					3, 		0, 		3),
 };
 
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )
@@ -203,31 +203,6 @@ void PARAMFILE_Load()
 	//PFL_LoadAll(&PARAMFILE_g_sHandle);
 	PFL_LoadAll(&PARAMFILE_g_sHandle);
 
-	/*
-	m_sSuperParams[ZEROING_STEPPER].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[ZEROING_STEPPER].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[ZEROING_STEPPER].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[WAITING].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[WAITING].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[WAITING].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[RELOAD_IGNITION].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[RELOAD_IGNITION].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[RELOAD_IGNITION].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[OVERTEMP].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[OVERTEMP].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[OVERTEMP].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[SAFETY].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[SAFETY].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[SAFETY].i32MinimumTimeInStateMinutes = 0;
-
-	m_sSuperParams[MANUAL_CONTROL].i32EntryWaitTimeSeconds = 0;
-	m_sSuperParams[MANUAL_CONTROL].i32MaximumTimeInStateMinutes = 0;
-	m_sSuperParams[MANUAL_CONTROL].i32MinimumTimeInStateMinutes = 0;
-*/
 }
 
 uint32_t PARAMFILE_GetParamEntryCount()
@@ -241,6 +216,20 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
 		return NULL;
 	return &PARAMFILE_g_sHandle.pParameterEntries[u32Index];
 }
+
+static void LoadAllCallback(const PFL_SHandle* psHandle)
+{
+	const uint8_t* pStartAddr = FMAP_GetMemoryAddr(FMAP_EPARTITION_Parameters);
+
+	uint32_t u32RelativeAddr = 0;
+	for(uint32_t i = 0; i < PARAMFILE_GetParamEntryCount(); i++)
+	{
+		const PFL_SParameterItem* pItem = PARAMFILE_GetParamEntryByIndex(i);
+		const bool bIsVolatile = (pItem->eOpt & PFL_EOPT_IsVolatile) == PFL_EOPT_IsVolatile;
+
+		if (pItem->eType == PFL_TYPE_Int32)
+		{
+			int32_t* ps32RAMValue = ((int32_t*)pItem->vdVar);
 
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
