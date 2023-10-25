@@ -211,7 +211,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 				}
 			}
 			stove->u32TimeOfComputation_ms = u32CurrentTime_ms;
-			PrintOutput(stove, nextState);
+			PrintOutput(stove, currentState, nextState, lastState);
 		}else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
 		{										// But we still loop in the first 'if' once per computation period (to print output)
 			if(AlgoComputeAdjustment[currentState] != NULL)
