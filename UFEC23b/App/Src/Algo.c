@@ -1381,58 +1381,55 @@ const char* ALGO_GetStateString(State state)
 
 
 
-	if(motors_ready_for_req || /*stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow)*/
-			add_condition1 || add_condition2 )
+	if(motors_ready_for_req || add_condition1 || add_condition2 )
 	{
-
-		// mettre change_var négative dans le call pour les cas de decrement
-		stove->sPrimary.u8apertureCmdSteps = stove->sPrimary.u8apertureCmdSteps + change_var;
-
 
     if(change_var == -1){
 	printDebugStr(" decrementing ", print_debug_setup);
 
-    	if(stove->sPrimary.u8apertureCmdSteps  < sParam->sPrimary.i32Min)
+	stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
+			stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
+
+    	if(stove->sPrimary.u8apertureCmdSteps  <= sParam->sPrimary.i32Min)
 		{
-    		stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Min;
 
-			// NOUVELLE ADDITION, test controle du secondaire si on a trop de potentiel de combustion
-			stove->sSecondary.u8apertureCmdSteps = stove->sSecondary.u8apertureCmdSteps + change_var;
-
-			if(stove->sSecondary.u8apertureCmdSteps < (sParam->sSecondary.i32Min+15))
-			{
-				stove->sSecondary.u8apertureCmdSteps = (sParam->sSecondary.i32Min+15);
-			}
+	    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min + 15,
+	    			stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
 		}
     }
+
     else if(change_var == 1)
     {
     	printDebugStr(" incrementing ", print_debug_setup);
 
-    	if(stove->sPrimary.u8apertureCmdSteps > sParam->sPrimary.i32Max)
+    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min + 15,
+    			stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
+
+    	if(stove->sSecondary.u8apertureCmdSteps >= sParam->sSecondary.i32Max)
     	{
-    		stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
+        	stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
+        			stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
     	}
     }
 
-			if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
-			{
-				printDebugStr(" particulate deviation speed", print_debug_setup);
-				stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
-			}
-			else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
-			{
-				printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup);
-                stove->sPrimary.fSecPerStep = w_part_change_speed;
-			}
-			else if (!(no_part_change_speed == -1))
-			{
-				stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
-			}
-			bStepperAdjustmentNeeded = true;
-
-		return 1;
+		if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
+		{
+			printDebugStr(" particulate deviation speed", print_debug_setup);
+			stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
 		}
+		else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
+		{
+			printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup);
+			stove->sPrimary.fSecPerStep = w_part_change_speed;
+		}
+		else if (!(no_part_change_speed == -1))
+		{
+			stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
+		}
+		bStepperAdjustmentNeeded = true;
+
+	return 1;
+	}
 
  return 0;
  }
