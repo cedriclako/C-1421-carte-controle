@@ -6,7 +6,11 @@
         "webserver.h": "c",
         "hardwaregpio.h": "c",
         "espnowprocess.h": "c",
-        "embeddedfiles.h": "c"
+        "embeddedfiles.h": "c",
+        "uartbridge.h": "c",
+        "otauploadstm32.h": "c",
+        "settings.h": "c",
+        "stovemb.h": "c"
     },
     "idf.adapterTargetName": "esp32"
 }

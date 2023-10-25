@@ -7,18 +7,22 @@
 #include "ParamFile.h"
 #include "ParameterFileLib.h"
 #include "Algo.h"
+#include "FlashMap.h"
 
-static PF_SuperStateParam_t m_sSuperParams[ALGO_NB_OF_STATE] = {0x00};
+// Could be literally anything except 0 or FFFFFFFF
+#define PF_MAGIC_MASK (0x55555555)
 
-static PF_WaitingParam_t m_sWaitingParams;
-static PF_ReloadParam_t m_sReloadParams;
-static PF_TriseParam_t m_sTriseParams;
-static PF_CombustionParam_t m_sCombLowParams;
-static PF_CombustionParam_t m_sCombHighParams;
-static PF_CoalParam_t m_sCoalLowParams;
-static PF_CoalParam_t m_sCoalHighParams;
+static PF_SuperStateParam_t m_sSuperParams[ALGO_NB_OF_STATE] = {0};
 
 static PF_RemoteParams_t m_sRemoteParams = {0};
+static PF_WaitingParam_t m_sWaitingParams = {0};
+static PF_ReloadParam_t m_sReloadParams = {0};
+static PF_TriseParam_t m_sTriseParams = {0};
+static PF_CombustionParam_t m_sCombLowParams = {0};
+static PF_CombustionParam_t m_sCombHighParams = {0};
+static PF_CoalParam_t m_sCoalLowParams = {0};
+static PF_CoalParam_t m_sCoalHighParams = {0};
+
 static PF_OverHeat_Thresholds_t m_sOverheatParams = {0x00};
 
 static PF_UsrParam m_sMemBlock = {0x00};
@@ -176,7 +180,6 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_RMT_BOOST, 				"", &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1),
 	PFL_INIT_SINT32(PFD_RMT_LOWFAN, 			"", &m_sRemoteParams.i32LowerSpeed, 	  					3, 		0, 		3), //0:OFF, 1:LO, 2: HI, 3: AUTO (HI based on temp)
 	PFL_INIT_SINT32(PFD_RMT_DISTFAN, 			"", &m_sRemoteParams.i32DistribSpeed, 	  					3, 		0, 		3),
-
 };
 
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )
@@ -187,11 +190,17 @@ static void CommitAllCallback(const PFL_SHandle* psHandle);
 PFL_SHandle PARAMFILE_g_sHandle;
 const PFL_SConfig m_sConfig = { .ptrLoadAll = LoadAllCallback, .ptrCommitAll = CommitAllCallback };
 
+static_assert( (PARAMETERITEM_COUNT * sizeof(int32_t) * 2) < FMAP_PARAMETER_SECTOR_LEN, "Too many parameter to fit into flash memory" );
+
 void PARAMFILE_Init()
 {
 	PFL_Init(&PARAMFILE_g_sHandle,  m_sParameterItems, PARAMETERITEM_COUNT, &m_sConfig);
+}
+
+void PARAMFILE_Load()
+{
 	//PFL_LoadAll(&PARAMFILE_g_sHandle);
-	PFL_LoadAllDefault(&PARAMFILE_g_sHandle);
+	PFL_LoadAll(&PARAMFILE_g_sHandle);
 
 	/*
 	m_sSuperParams[ZEROING_STEPPER].i32EntryWaitTimeSeconds = 0;
@@ -232,24 +241,66 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
 	return &PARAMFILE_g_sHandle.pParameterEntries[u32Index];
 }
 
-uint16_t PARAMFILE_GetParamValueByKey(const char* key)
-{
-	int32_t tempValue;
-	PFL_GetValueInt32(&PARAMFILE_g_sHandle, key, &tempValue);
-
-
-	return (uint16_t) tempValue;
-}
-
-
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
-	// TODO: Flash reading is not yet implemented
+	const uint8_t* pStartAddr = FMAP_GetMemoryAddr(FMAP_EPARTITION_Parameters);
+
+	uint32_t u32RelativeAddr = 0;
+	for(uint32_t i = 0; i < PARAMFILE_GetParamEntryCount(); i++)
+	{
+		const PFL_SParameterItem* pItem = PARAMFILE_GetParamEntryByIndex(i);
+		const bool bIsVolatile = (pItem->eOpt & PFL_EOPT_IsVolatile) == PFL_EOPT_IsVolatile;
+
+		if (pItem->eType == PFL_TYPE_Int32)
+		{
+			int32_t* ps32RAMValue = ((int32_t*)pItem->vdVar);
+
+			*ps32RAMValue = pItem->uType.sInt32.s32Default;
+
+			// If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
+			if (!bIsVolatile)
+			{
+				const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
+				const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
+
+				// If the magic mask fit, we load the value. If not we just ignore it.
+				// the rest of the process will handle it and put it back to the default value.
+				if (s32SavedValue == (s32SavedValueInv ^ PF_MAGIC_MASK))
+				{
+					*ps32RAMValue = s32SavedValue;
+				}
+			}
+
+			// We need to still increase the address even if we don't write into flash to ensure all settings stay coherent
+			u32RelativeAddr += sizeof(int32_t)*2;
+		}
+	}
 }
 
 static void CommitAllCallback(const PFL_SHandle* psHandle)
 {
-	// TODO: Flash writing is not yet implemented
+	FMAP_ErasePartition(FMAP_EPARTITION_Parameters);
+
+	uint32_t u32RelativeAddr = 0;
+	for(uint32_t i = 0; i < PARAMFILE_GetParamEntryCount(); i++)
+	{
+		const PFL_SParameterItem* pItem = PARAMFILE_GetParamEntryByIndex(i);
+		const bool bIsVolatile = (pItem->eOpt & PFL_EOPT_IsVolatile) == PFL_EOPT_IsVolatile;
+
+		if (!bIsVolatile && pItem->eType == PFL_TYPE_Int32)
+		{
+			// We save the value twice for more safety.
+			// the second save is computed with a MASK to be sure the default erase value (FF)
+			// cannot be confused with a real value.
+			const int32_t s32Value = *((int32_t*)pItem->vdVar);
+			FMAP_WriteAtPartition(FMAP_EPARTITION_Parameters, u32RelativeAddr, (uint8_t*)&s32Value, sizeof(int32_t));
+			const int32_t s32ValueInv = *((int32_t*)pItem->vdVar) ^ PF_MAGIC_MASK;
+			FMAP_WriteAtPartition(FMAP_EPARTITION_Parameters, u32RelativeAddr+sizeof(int32_t), (uint8_t*)&s32ValueInv, sizeof(int32_t));
+		}
+
+		// We need to still increase the address even if we don't write into flash to ensure all settings stay coherent
+		u32RelativeAddr += sizeof(int32_t)*2;
+	}
 }
 
 
@@ -283,10 +334,12 @@ const PF_CombustionParam_t *PB_GetCombHighParams(void)
 {
 	return &m_sCombHighParams;
 }
+
 const PF_CoalParam_t *PB_GetCoalLowParams(void)
 {
 	return &m_sCoalLowParams;
 }
+
 const PF_CoalParam_t *PB_GetCoalHighParams(void)
 {
 	return &m_sCoalHighParams;

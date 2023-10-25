@@ -1,0 +1,46 @@
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("/font/Roboto-Regular.ttf");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("/font/Roboto-Bold.ttf");
+  font-weight: bold;
+}
+
+.btn-orange {
+    background: #F77D24;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+.btn-orange:hover {
+    background: #FFA07A;
+}
+
+input[type="text"], textarea {
+  background-color: #fff;
+  border-width: 1px;
+  border-color: #F77D24;
+  border-radius: 5px;
+  font-size: medium;
+  color: black;
+  padding: 10px;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+}

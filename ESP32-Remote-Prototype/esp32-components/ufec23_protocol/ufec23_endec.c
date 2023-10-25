@@ -149,6 +149,7 @@ int32_t UFEC23ENDEC_S2CGetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLe
                            (pSrc->bIsEOF ? (uint8_t)UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_EOF : 0x00)) |
                            (pSrc->bIsFirstRecord ? (uint8_t)UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD : 0x00);
 	u8Dst[n++] = (uint8_t)psEntry->eParamType;
+	u8Dst[n++] = (uint8_t)psEntry->eEntryFlag;
 	const uint8_t u8KeyLen = (uint8_t)strnlen(psEntry->szKey, UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1);
 	if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
 		return 0;
@@ -185,6 +186,7 @@ bool UFEC23ENDEC_S2CGetParameterRespDecode(UFEC23ENDEC_S2CReqParameterGetResp* p
     pDst->bIsFirstRecord = (u8Datas[n] & UFEC23ENDEC_S2CREQPARAMETERGETRESPFLAGS_ISFIRSTRECORD) != 0; // Flags
     n++;
     pDst->sEntry.eParamType = (UFEC23ENDEC_EPARAMTYPE)u8Datas[n++];
+    pDst->sEntry.eEntryFlag = (UFEC23ENDEC_EENTRYFLAGS)u8Datas[n++];
     const uint8_t u8KeyLen = u8Datas[n++];
     if (u8KeyLen > UFEC23ENDEC_PARAMETERITEM_KEY_LEN)
         return false;
@@ -300,5 +302,30 @@ bool UFEC23ENDEC_S2CSendDebugDataRespDecode(char szJsonStrings[], uint32_t u32Js
     strncpy( (char*)szJsonStrings, (const char*)(u8Datas+n), u32JsonLen);
     n += u16Len;
     szJsonStrings[u16Len] = '\0';
+    return true;
+}
+
+int32_t UFEC23ENDEC_S2CEncodeU16(uint8_t u8Dst[], uint32_t u32DstLen, uint16_t u16Value)
+{
+	if (u32DstLen < sizeof(uint16_t))
+		return false;
+    memcpy(u8Dst, &u16Value, sizeof(uint16_t));
+	return sizeof(uint16_t);
+}
+
+int32_t UFEC23ENDEC_S2CEncodeS32(uint8_t u8Dst[], uint32_t u32DstLen, int32_t s32Value)
+{
+	if (u32DstLen < sizeof(int32_t))
+		return false;
+    memcpy(u8Dst, &s32Value, sizeof(int32_t));
+	return sizeof(int32_t);
+}
+
+
+bool UFEC23ENDEC_S2CDecodeS32(int32_t* ps32Value, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+    if (u32DataLen < sizeof(int32_t))
+        return 0;
+    memcpy(ps32Value, u8Datas, sizeof(int32_t));
     return true;
 }

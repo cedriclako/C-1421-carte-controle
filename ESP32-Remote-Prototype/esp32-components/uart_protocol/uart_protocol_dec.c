@@ -126,7 +126,7 @@ static void AddByte(UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8)
             const uint8_t u8CurrChecksum = ~psHandle->u8ChecksumCalculation;
             if (u8CurrChecksum != u8)
             {
-                char tmp[96+1];
+                char tmp[128+1];
                 snprintf(tmp, sizeof(tmp), "Invalid checksum, frameID: %"PRId32", expected: %2"PRIx32", got: %2"PRIx32", len: %"PRIx32, 
                     (int32_t)psHandle->u8CurrentFrameID,
                     (int32_t)u8CurrChecksum, (int32_t)u8, (int32_t)psHandle->u32CurrentFramePayloadLen);

@@ -17,6 +17,7 @@
 #define JSON_ENTRY_INFO_MIN_NAME "min"
 #define JSON_ENTRY_INFO_MAX_NAME "max"
 #define JSON_ENTRY_INFO_TYPE_NAME "type"
+#define JSON_ENTRY_INFO_ISVOLATILE "flag_isvolatile"
 
 static STOVEMB_SMemBlock m_sMemBlock = {0};
 static SemaphoreHandle_t m_xSemaphoreExt = NULL;
@@ -28,22 +29,7 @@ void STOVEMB_Init()
     m_xSemaphoreExt = xSemaphoreCreateRecursiveMutex();
     assert(m_xSemaphoreExt != NULL);
 
-    memset(&m_sMemBlock, 0, sizeof(STOVEMB_SMemBlock));
-
-    // Default values ...
-    m_sMemBlock.sRemoteData.bHasTempCurrentC = false;
-    m_sMemBlock.sRemoteData.fTempCurrentC = 0.0f;
-
-    // Remove data
-    m_sMemBlock.sRemoteData.bHasTempSetPoint = true;
-    m_sMemBlock.sRemoteData.sTempSetpoint.temp = 21.0f;
-    m_sMemBlock.sRemoteData.sTempSetpoint.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
-
-    // Fan speed
-    m_sMemBlock.sRemoteData.bHasFanSpeed = true;
-    m_sMemBlock.sRemoteData.eFanSpeedCurr = SBI_iot_common_EFANSPEED_Off;
-
-    m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
+    STOVEMB_Reset();
 }
 
 STOVEMB_SMemBlock* STOVEMB_GetMemBlock()
@@ -66,6 +52,26 @@ void STOVEMB_Give()
 {
     //ESP_LOGI(TAG, "STOVEMB_Give");
     xSemaphoreGiveRecursive( m_xSemaphoreExt);
+}
+
+void STOVEMB_Reset()
+{
+    memset(&m_sMemBlock, 0, sizeof(STOVEMB_SMemBlock));
+    
+    // Default values ...
+    m_sMemBlock.sRemoteData.bHasTempCurrentC = false;
+    m_sMemBlock.sRemoteData.fTempCurrentC = 0.0f;
+
+    // Remove data
+    m_sMemBlock.sRemoteData.bHasTempSetPoint = true;
+    m_sMemBlock.sRemoteData.sTempSetpoint.temp = 21.0f;
+    m_sMemBlock.sRemoteData.sTempSetpoint.unit = SBI_iot_common_ETEMPERATUREUNIT_Celcius;
+
+    // Fan speed
+    m_sMemBlock.sRemoteData.bHasFanSpeed = true;
+    m_sMemBlock.sRemoteData.eFanSpeedCurr = SBI_iot_common_EFANSPEED_Off;
+
+    m_sMemBlock.sRemoteData.ttLastCommunicationTicks = 0;
 }
 
 char* STOVEMB_ExportParamToJSON()
@@ -102,6 +108,8 @@ char* STOVEMB_ExportParamToJSON()
             cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_MAX_NAME, cJSON_CreateNumber(pEntryChanged->sEntry.uType.sInt32.s32Max));
             cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_VALUE_NAME, cJSON_CreateNumber(pEntryChanged->sWriteValue.s32Value));
             cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_TYPE_NAME, cJSON_CreateString("int32"));
+            const bool bIsVolatile = ((pEntryChanged->sEntry.eEntryFlag & UFEC23ENDEC_EENTRYFLAGS_Volatile) == UFEC23ENDEC_EENTRYFLAGS_Volatile);
+            cJSON_AddItemToObject(pEntryJSON, JSON_ENTRY_INFO_ISVOLATILE, cJSON_CreateBool(bIsVolatile));
         }
         
         cJSON_AddItemToArray(pEntries, pEntryJSON);

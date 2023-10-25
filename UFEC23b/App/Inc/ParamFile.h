@@ -39,8 +39,8 @@ typedef struct
 
 	int32_t s32FAN_KIP;
 	int32_t s32FAN_KOP;
-	int32_t s32AFK_LOW_SPD;
-	int32_t s32FANL_LOW_SPD;
+	int32_t s32AFK_SPD;
+	int32_t s32FANL_SPD;
 
 	int32_t s32ManualOverride;
 	int32_t s32ManualPrimary;
@@ -343,6 +343,8 @@ typedef struct
 extern PFL_SHandle PARAMFILE_g_sHandle;
 
 void PARAMFILE_Init();
+
+void PARAMFILE_Load();
 
 uint32_t PARAMFILE_GetParamEntryCount();
 

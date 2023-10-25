@@ -70,6 +70,7 @@ esp_err_t STM32PROTOCOL_SetupSTM(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
     
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_ResetSTM(pContext, true));
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdSync(pContext));
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdGet(pContext));
@@ -98,7 +99,7 @@ esp_err_t STM32PROTOCOL_ResetSTM(const STM32PROTOCOL_SContext* pContext, bool bI
 	gpio_set_level(pContext->psConfig->reset_pin, LOW);
 	vTaskDelay(pdMS_TO_TICKS(100));
 	gpio_set_level(pContext->psConfig->reset_pin, HIGH);
-	vTaskDelay(pdMS_TO_TICKS(500));
+	vTaskDelay(pdMS_TO_TICKS(1000));
 	ESP_LOGI(TAG_STM_PRO, "Finished RESET Procedure");
     return ESP_OK;
 }
@@ -434,7 +435,7 @@ static esp_err_t SendReceiveBytes(const STM32PROTOCOL_SContext* pContext, const 
     
     if (u8RecvData[0] != STM32PROTOCOL_ACK)
     {
-        ESP_LOGE(TAG_STM_PRO, "Serial receive error (unknown data received)");
+        ESP_LOGE(TAG_STM_PRO, "Serial receive error (unknown data received) 0x%"PRIX8, u8RecvData[0]);
         return ESP_FAIL;
     }
 

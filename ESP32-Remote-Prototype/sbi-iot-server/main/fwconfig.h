@@ -7,6 +7,10 @@
 // Wi-Fi (Soft Access Point)
 #define FWCONFIG_STAAP_WIFI_SSID "SBI-Iot-Svr-%02X%02X%02X"
 
+// Maintenance access
+#define FWCONFIG_MAINTENANCEACCESS_PASSWORD "UFEC23SBI"
+#define FWCONFIG_MAINTENANCEACCESS_NOPASSWORD (1)
+
 // MDNS
 #define FWCONFIG_MDNS_HOSTNAME "sbi-iot-svr"
 

@@ -9,6 +9,10 @@ extern "C" {
 
 extern int _write(int file, char *ptr, int len);
 
+void LOG(const char* tag, const char *format, ...);
+
+#define LOG(_moduleTag, _format, ...) LOG(_moduleTag, _format,  ##__VA_ARGS__)
+
 #ifdef __cplusplus
 }
 #endif

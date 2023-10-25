@@ -56,7 +56,7 @@ void DebugManager(Mobj * stove, uint32_t u32time_ms)
 	}
 }
 
-
+void PrintOutput(Mobj * stove, State currentState)
 void PrintOutput(Mobj * stove, State currentState , State lastState , State nextState)
 {
 
@@ -71,7 +71,6 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	printf(ALGO_GetStateString(currentState));
 
 	printf(" tStat:");
-
 	if (stove->bThermostatOn == true)
 	{
 		printf("ON ");

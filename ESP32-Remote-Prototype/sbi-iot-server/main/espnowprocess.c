@@ -35,7 +35,7 @@ typedef struct
 } SHandle;
 
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
-static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
+static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len);
 
 static uint8_t m_u8BroadcastAddr[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
@@ -201,7 +201,7 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 {
     STOVEMB_Take(portMAX_DELAY);
     STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-
+    
     if (pC2SChangeSettingSP->has_temperature_setp)
     {
         pMB->sRemoteData.bHasTempSetPoint = true;
@@ -274,20 +274,20 @@ static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_
     m_sHandle.sESPNowInfo.u32TX++;
 }
 
-static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
+static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len)
 {
-    if (mac_addr == NULL || data == NULL || len <= 0) {
+    if (esp_now_info == NULL || data == NULL || data_len <= 0) {
         ESP_LOGE(TAG, "Receive cb arg error");
         return;
     }
 
-    if (len > SBIIOTBASEPROTOCOL_MAXPAYLOADLEN)
+    if (data_len > SBIIOTBASEPROTOCOL_MAXPAYLOADLEN)
     {
-        ESP_LOGE(TAG, "dropped RX, too big payload, len: %"PRId32, (int32_t)len);
+        ESP_LOGE(TAG, "dropped RX, too big payload, len: %"PRId32, (int32_t)data_len);
         return;
     }
 
-    if (len < SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN)
+    if (data_len < SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN)
     {
         ESP_LOGE(TAG, "dropped RX, no magic");
         return;
@@ -304,8 +304,8 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
 
     // Put into receive queue
     ESPNOWPROCESS_SMsg msg;
-    msg.u8BufferCount = len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
-    memcpy(msg.u8SrcMACs, mac_addr, ESP_NOW_ETH_ALEN);
+    msg.u8BufferCount = data_len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
+    memcpy(msg.u8SrcMACs, esp_now_info->src_addr, ESP_NOW_ETH_ALEN);
     memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
     xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
 }
