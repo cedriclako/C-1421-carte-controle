@@ -37,7 +37,7 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		stove->bReloadRequested = true; // Button is pressed, Update Reload Requested boolean
 	}
-	else if(!bButtonPressed) // Not pressed? Reset timer
+	else if(!bButtonPressed && (u32PressStartTime_ms != 0)) // Not pressed? Reset timer
 	{
 		u32PressStartTime_ms = 0;
 		stove->bReloadRequested = false;
