@@ -352,6 +352,8 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index);
 
 uint16_t PARAMFILE_GetParamValueByKey(const char* key);
 
+void PARAMFILE_SetParamValueByKey(int32_t newValue, const char* szName);
+
 const PF_UsrParam* PB_GetUserParam();
 
 const PF_OverHeat_Thresholds_t* PB_GetOverheatParams(void);

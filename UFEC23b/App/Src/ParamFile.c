@@ -225,6 +225,14 @@ uint16_t PARAMFILE_GetParamValueByKey(const char* key)
 	return (uint16_t) tempValue;
 }
 
+void PARAMFILE_SetParamValueByKey(int32_t newValue, const char* szName)
+{
+    if(PFL_SetValueInt32(&PARAMFILE_g_sHandle, szName, newValue) == PFL_ESETRET_OK)
+    {
+        PFL_CommitAll(&PARAMFILE_g_sHandle);
+    }
+}
+
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
 	const uint8_t* pStartAddr = FMAP_GetMemoryAddr(FMAP_EPARTITION_Parameters);

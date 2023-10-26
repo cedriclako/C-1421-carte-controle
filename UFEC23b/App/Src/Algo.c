@@ -31,6 +31,19 @@
 
 #define TAG "Algo"
 
+typedef struct
+{
+	uint8_t u8prim_pos;
+	uint8_t u8sec_pos;
+	uint8_t u8grill_pos;
+
+	uint32_t u32StateEntryMem_ms;
+
+	Fan_Speed_t eFanDistSpeed;
+	Fan_Speed_t eFanLowSpeed;
+
+}Boost_mem_t;
+
 extern MessageBufferHandle_t MotorControlsHandle;
 extern QueueHandle_t MotorInPlaceHandle;
 static bool motors_ready_for_req = false;
@@ -39,6 +52,7 @@ static bool bStateExitConditionMet = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
+static Boost_mem_t sBoostConfMem;
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
 {
@@ -52,7 +66,8 @@ static const char* m_StateStrings[ALGO_NB_OF_STATE] =
 	HELPERMACRO_DEFSTRING(COAL_HIGH),
 	HELPERMACRO_DEFSTRING(OVERTEMP),
 	HELPERMACRO_DEFSTRING(SAFETY),
-	HELPERMACRO_DEFSTRING(MANUAL_CONTROL)
+	HELPERMACRO_DEFSTRING(MANUAL_CONTROL),
+	HELPERMACRO_DEFSTRING(BOOST)
 };
 
 typedef void (*fnComputeAdjustment)(Mobj *stove, uint32_t u32CurrentTime_ms);
@@ -81,6 +96,7 @@ static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms);
 static void Algo_zeroing_action(Mobj* stove, uint32_t u32CurrentTime_ms);
 static void Algo_safety_action(Mobj* stove, uint32_t u32CurrentTime_ms);
 static void Algo_overtemp_action(Mobj* stove, uint32_t u32CurrentTime_ms);
+static void Algo_boost_action(Mobj* stove, uint32_t u32CurrentTime_ms);
 
 static void Algo_waiting_entry(Mobj *stove);
 static void Algo_reload_entry(Mobj *stove);
@@ -90,6 +106,7 @@ static void Algo_combLow_entry(Mobj *stove);
 static void Algo_combHigh_entry(Mobj *stove);
 static void Algo_coalLow_entry(Mobj *stove);
 static void Algo_coalHigh_entry(Mobj *stove);
+static void Algo_boost_entry(Mobj *stove);
 
 //static void Algo_waiting_exit(Mobj *stove);
 static void Algo_reload_exit(Mobj *stove);
@@ -97,6 +114,7 @@ static void Algo_reload_exit(Mobj *stove);
 static void Algo_tempRise_exit(Mobj *stove);
 static void Algo_combLow_exit(Mobj *stove);
 static void Algo_combHigh_exit(Mobj *stove);
+static void Algo_boost_exit(Mobj *stove);
 //static void Algo_coalLow_exit(Mobj *stove);
 //static void Algo_coalHigh_exit(Mobj *stove);
 
@@ -158,16 +176,23 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_UsrParam* UsrParam =  PB_GetUserParam();
 	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
+	const PF_RemoteParams_t* RmtParams = PB_GetRemoteParams();
 
 	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
 
-	if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
-	{
-		nextState = MANUAL_CONTROL;
-	}
-	else if((currentState != SAFETY) && stove->bSafetyOn)
+	if((currentState != SAFETY) && stove->bSafetyOn)
 	{
 		nextState = SAFETY;
+	}
+	else if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
+	{
+
+		nextState = MANUAL_CONTROL;
+	}
+	else if((currentState != BOOST) && RmtParams->bBoostReq == 1)
+	{
+		sBoostConfMem.u32StateEntryMem_ms = stove->u32TimeOfStateEntry_ms;
+		nextState = BOOST;
 	}
 	else if((currentState != OVERTEMP) && (currentState != SAFETY) && (
 			(stove->fBaffleTemp > P2F(OvrhtParams->OverheatBaffle))  ||
@@ -178,7 +203,11 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 	else if(stove->bstateJustChanged) // If first loop in state, perform entry action
 	{
-		stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
+		if(lastState != BOOST)
+		{
+			stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
+		}
+
 		stove->bstateJustChanged = false;
 
 		if(AlgoStateEntryAction[currentState] != NULL)
@@ -749,6 +778,55 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 //}
 //** END: COAL HIGH **//
 
+//** STATE: BOOST **//
+static void Algo_boost_entry(Mobj *stove)
+{
+	sBoostConfMem.u8grill_pos = stove->sGrill.u8aperturePosSteps;
+	sBoostConfMem.u8prim_pos = stove->sPrimary.u8aperturePosSteps;
+	sBoostConfMem.u8sec_pos = stove->sSecondary.u8aperturePosSteps;
+
+	sBoostConfMem.eFanDistSpeed = PARAMFILE_GetParamValueByKey(PFD_RMT_DISTFAN);
+	sBoostConfMem.eFanLowSpeed = PARAMFILE_GetParamValueByKey(PFD_RMT_LOWFAN);
+
+	PARAMFILE_SetParamValueByKey(FSPEED_HIGH,PFD_RMT_DISTFAN);
+	PARAMFILE_SetParamValueByKey(FSPEED_HIGH,PFD_RMT_LOWFAN);
+
+	stove->sPrimary.u8apertureCmdSteps = PF_PRIMARY_FULL_OPEN;
+	stove->sPrimary.fSecPerStep = 0; // force aperture
+	stove->sGrill.u8apertureCmdSteps = PF_GRILL_FULL_OPEN;
+	stove->sGrill.fSecPerStep = 0; // force aperture
+	stove->sSecondary.u8apertureCmdSteps = PF_SECONDARY_FULL_OPEN;
+	stove->sSecondary.fSecPerStep = 0; // force aperture
+	bStepperAdjustmentNeeded = true;
+
+}
+
+static void Algo_boost_action(Mobj* stove, uint32_t u32CurrentTime_ms)
+{
+	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(1))
+	{
+		nextState = lastState;
+		bStateExitConditionMet = true;
+	}
+
+}
+
+static void Algo_boost_exit(Mobj *stove)
+{
+	PARAMFILE_SetParamValueByKey(0,PFD_RMT_BOOST);
+	stove->u32TimeOfStateEntry_ms = sBoostConfMem.u32StateEntryMem_ms;
+
+	PARAMFILE_SetParamValueByKey(sBoostConfMem.eFanDistSpeed,PFD_RMT_DISTFAN);
+	PARAMFILE_SetParamValueByKey(sBoostConfMem.eFanLowSpeed,PFD_RMT_LOWFAN);
+
+
+	stove->sPrimary.u8apertureCmdSteps = sBoostConfMem.u8prim_pos;
+	stove->sSecondary.u8apertureCmdSteps = sBoostConfMem.u8sec_pos;
+	stove->sGrill.u8apertureCmdSteps = sBoostConfMem.u8grill_pos;
+	bStepperAdjustmentNeeded = true;
+}
+//** END: BOOST **//
+
 static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_UsrParam* sManParam = PB_GetUserParam();
@@ -815,6 +893,7 @@ void Algo_fill_state_functions(void)
 	AlgoComputeAdjustment[OVERTEMP] = Algo_overtemp_action;
 	AlgoComputeAdjustment[SAFETY] = Algo_safety_action;
 	AlgoComputeAdjustment[MANUAL_CONTROL] = Algo_manual_action;
+	AlgoComputeAdjustment[BOOST] = Algo_boost_action;
 
 	AlgoStateEntryAction[ZEROING_STEPPER] = Algo_zeroing_entry;
 	AlgoStateEntryAction[WAITING] = Algo_waiting_entry;
@@ -827,6 +906,7 @@ void Algo_fill_state_functions(void)
 	AlgoStateEntryAction[OVERTEMP] = Algo_zeroing_entry;
 	AlgoStateEntryAction[SAFETY] = Algo_zeroing_entry;
 	AlgoStateEntryAction[MANUAL_CONTROL] = NULL;
+	AlgoStateEntryAction[BOOST] = Algo_boost_entry;
 
 	AlgoStateExitAction[ZEROING_STEPPER] = NULL;
 	AlgoStateExitAction[WAITING] = NULL;
@@ -839,6 +919,7 @@ void Algo_fill_state_functions(void)
 	AlgoStateExitAction[OVERTEMP] = NULL;
 	AlgoStateExitAction[SAFETY] = NULL;
 	AlgoStateExitAction[MANUAL_CONTROL] = NULL;
+	AlgoStateExitAction[BOOST] = Algo_boost_exit;
 
 }
 

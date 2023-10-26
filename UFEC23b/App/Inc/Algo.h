@@ -38,6 +38,7 @@ typedef enum {
   OVERTEMP,
   SAFETY,
   MANUAL_CONTROL,
+  BOOST,
 
   ALGO_NB_OF_STATE
 } State;
