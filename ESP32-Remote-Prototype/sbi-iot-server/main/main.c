@@ -160,6 +160,13 @@ void MAIN_GetWiFiSTAIP(esp_netif_ip_info_t* ip)
     esp_netif_get_ip_info(m_pWifiSTA, ip);
 }
 
+int32_t MAIN_GetWiFiSTAIPv6(esp_ip6_addr_t if_ip6[CONFIG_LWIP_IPV6_NUM_ADDRESSES])
+{
+    if (m_pWifiSTA != NULL)
+        return esp_netif_get_all_ip6(m_pWifiSTA, if_ip6);
+    return 0;
+}
+
 void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip)
 {
     esp_netif_get_ip_info(m_pWifiSoftAP, ip);

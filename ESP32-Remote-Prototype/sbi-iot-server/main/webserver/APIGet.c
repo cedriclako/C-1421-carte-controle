@@ -186,6 +186,19 @@ static char* GetSysInfo()
     cJSON_AddItemToObject(pEntryJSON9, "value", cJSON_CreateString(buff));
     cJSON_AddItemToArray(pEntries, pEntryJSON9);
 
+    esp_ip6_addr_t if_ip6[CONFIG_LWIP_IPV6_NUM_ADDRESSES] = {0};
+    const int32_t s32IPv6Count = MAIN_GetWiFiSTAIPv6(if_ip6);
+    for(int i = 0; i < s32IPv6Count; i++)
+    {
+        char ipv6String[45+1] = {0,};
+        snprintf(ipv6String, sizeof(ipv6String)-1, IPV6STR, IPV62STR(if_ip6[i]));
+
+        cJSON* pEntryJSONIPv6 = cJSON_CreateObject();
+        cJSON_AddItemToObject(pEntryJSONIPv6, "name", cJSON_CreateString("WiFi (STA) IPv6"));
+        cJSON_AddItemToObject(pEntryJSONIPv6, "value", cJSON_CreateString(ipv6String));
+        cJSON_AddItemToArray(pEntries, pEntryJSONIPv6);
+    }
+
     // WiFi-Soft AP (IP address)
     cJSON* pEntryJSON10 = cJSON_CreateObject();
     cJSON_AddItemToObject(pEntryJSON10, "name", cJSON_CreateString("WiFi (Soft-AP)"));

@@ -7,6 +7,8 @@
 
 void MAIN_GetWiFiSTAIP(esp_netif_ip_info_t* ip);
 
+int32_t MAIN_GetWiFiSTAIPv6(esp_ip6_addr_t if_ip6[CONFIG_LWIP_IPV6_NUM_ADDRESSES]);
+
 void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip);
 
 #endif
