@@ -71,6 +71,7 @@ typedef struct
     uint32_t u32ParameterCount;
 
     char szDebugJSONString[990+1];
+    TickType_t ttDebugJSONLastTicks;
 
     bool bIsAnyUploadError;
     bool bIsAnyDownloadError;

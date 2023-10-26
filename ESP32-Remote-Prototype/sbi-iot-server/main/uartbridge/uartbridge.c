@@ -188,6 +188,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 ESP_LOGE(TAG, "Received S2CSendDebugDataResp, len: %"PRIu32, u32PayloadLen);
                 break;
             }
+            pMemBlock->ttDebugJSONLastTicks = xTaskGetTickCount();
             ESP_LOGI(TAG, "Received S2CSendDebugDataResp, json: '%s'", pMemBlock->szDebugJSONString);
             break;
         }
