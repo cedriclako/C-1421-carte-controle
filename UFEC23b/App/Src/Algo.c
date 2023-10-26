@@ -705,7 +705,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 
 			printDebugStr("cas Comb_Low_eta 10 C: (-5 < delta T baffle < -1 && TBaffle under 620 ", print_debug_setup);
-
+			// incrementing too fast here, need to verify
 			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fNormal) , stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
 		}
 	}
@@ -1393,7 +1393,7 @@ const char* ALGO_GetStateString(State state)
     	if(stove->sPrimary.u8apertureCmdSteps  <= sParam->sPrimary.i32Min)
 		{
 
-	    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min + 15,
+	    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
 	    			stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
 		}
     }
@@ -1402,7 +1402,7 @@ const char* ALGO_GetStateString(State state)
     {
     	printDebugStr(" incrementing ", print_debug_setup);
 
-    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min + 15,
+    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
     			stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
 
     	if(stove->sSecondary.u8apertureCmdSteps >= sParam->sSecondary.i32Max)
@@ -1419,12 +1419,13 @@ const char* ALGO_GetStateString(State state)
 		}
 		else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
 		{
-			printDebugStr(" decrementing to slow down combustion at particulate over target speed", print_debug_setup);
+			printDebugStr(" particulate target speed", print_debug_setup);
 			stove->sPrimary.fSecPerStep = w_part_change_speed;
 		}
 		else if (!(no_part_change_speed == -1))
 		{
 			stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
+			printDebugStr(" no particulate target speed", print_debug_setup);
 		}
 		bStepperAdjustmentNeeded = true;
 
