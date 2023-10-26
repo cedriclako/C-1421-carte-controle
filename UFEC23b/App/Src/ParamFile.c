@@ -176,10 +176,10 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_VFAST, 				"", &m_sSpeedParams.fVeryFast, 	  							15, 		0, 		20000),
 
-	PFL_INIT_SINT32(PFD_RMT_TSTAT, 				"", &m_sRemoteParams.bThermostat, 	  						0, 		0, 		1),
-	PFL_INIT_SINT32(PFD_RMT_BOOST, 				"", &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1),
-	PFL_INIT_SINT32(PFD_RMT_LOWFAN, 			"", &m_sRemoteParams.i32LowerSpeed, 	  					3, 		0, 		3), //0:OFF, 1:LO, 2: HI, 3: AUTO (HI based on temp)
-	PFL_INIT_SINT32(PFD_RMT_DISTFAN, 			"", &m_sRemoteParams.i32DistribSpeed, 	  					3, 		0, 		3),
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_TSTAT, 				"", &m_sRemoteParams.bThermostat, 	  						0, 		0, 		1),
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_BOOST, 				"", &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1),
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_LOWFAN, 			"", &m_sRemoteParams.i32LowerSpeed, 	  					3, 		0, 		3), //0:OFF, 1:LO, 2: HI, 3: AUTO (HI based on temp)
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_DISTFAN, 			"", &m_sRemoteParams.i32DistribSpeed, 	  					3, 		0, 		3),
 };
 
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )
