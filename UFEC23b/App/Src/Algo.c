@@ -802,6 +802,14 @@ static void Algo_boost_entry(Mobj *stove)
 
 static void Algo_boost_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
+	const PF_RemoteParams_t* sParam = PB_GetRemoteParams();
+
+	if((sParam->i32DistribSpeed != FSPEED_HIGH) || (sParam->i32LowerSpeed != FSPEED_HIGH))
+	{
+		PARAMFILE_SetParamValueByKey(FSPEED_HIGH,PFD_RMT_DISTFAN);
+		PARAMFILE_SetParamValueByKey(FSPEED_HIGH,PFD_RMT_LOWFAN);
+	}
+
 	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(1))
 	{
 		nextState = lastState;

@@ -27,6 +27,7 @@ typedef enum
 	FSPEED_OFF,
 	FSPEED_LOW,
 	FSPEED_HIGH,
+	FSPEED_AUTO,
 
 	FSPEED_NUM_OF_SPEEDS
 }Fan_Speed_t;

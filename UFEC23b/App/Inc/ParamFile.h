@@ -37,8 +37,9 @@
 typedef struct
 {
 
-	int32_t s32FAN_KIP;
-	int32_t s32FAN_KOP;
+	int32_t s32FAN_LO_KIP;
+	int32_t s32FAN_LO_KOP;
+	int32_t s32FAN_HI_KIP;
 	int32_t s32AFK_LOW_SPD;
 	int32_t s32FANL_LOW_SPD;
 
@@ -190,8 +191,9 @@ typedef struct
 #define PFD_RMT_DISTFAN			"rmt_DistribFanSpeed"
 
 
-#define PFD_FANKIP				"usr_FansKickInPoint"
-#define PFD_FANKOP				"usr_FansKickOutPoint"
+#define PFD_FAN_LO_KIP			"usr_FansLowSpeedKIP"
+#define PFD_FAN_LO_KOP			"usr_FansLowSpeedKOP"
+#define PFD_FAN_HI_KIP			"usr_FansHighSpeedKIP"
 #define PFD_AFK_SPD				"usr_AFKSpeed"
 #define PFD_FANL_SPD			"usr_FanLSpeed"
 
