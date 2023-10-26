@@ -44,6 +44,8 @@ void Fan_Init(void)
 void Fan_Process(Mobj *stove)
 {
 	const PF_UsrParam* uParam = PB_GetUserParam();
+	static bool bHiTriggered = false;
+	static bool bLoTriggered = false;
 
 
 	if(stove->bDoorOpen)
@@ -51,29 +53,57 @@ void Fan_Process(Mobj *stove)
 		Fan_DisableAll();
 		return;
 	}
-	else if((stove->fBaffleTemp > P2F(uParam->s32FAN_KIP)))
-	{
-		for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
-		{
-			sFans[i].eSpeed = (Fan_Speed_t) MIN(2, PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey));
-			Fan_EnableFan(&sFans[i]);
-		}
-	}
-	//else if((stove->fBaffleTemp < P2F(uParam->s32FAN_KOP)) )//Add flag for manual fan control here
-	//{
-	//	Fan_DisableAll();
-	//	return;
-	//}
 
 	for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
 	{
-		sFans[i].eSpeed = (Fan_Speed_t) MIN(2, PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey));
+		sFans[i].eSpeed = (Fan_Speed_t) PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey);
+
+		if((sFans[i].eSpeed == FSPEED_AUTO))
+		{
+			if(stove->fBaffleTemp >= P2F(uParam->s32FAN_HI_KIP))
+			{
+				sFans[i].eSpeed = FSPEED_HIGH;
+				bHiTriggered = true;
+				bLoTriggered = true;
+			}
+			else if(stove->fBaffleTemp <= P2F(uParam->s32FAN_LO_KOP))
+			{
+				sFans[i].eSpeed = FSPEED_OFF;
+				bLoTriggered = false;
+				bHiTriggered = false;
+			}
+			else if(stove->fBaffleTemp > P2F(uParam->s32FAN_LO_KIP))
+			{
+				if(bHiTriggered)
+				{
+					sFans[i].eSpeed = FSPEED_HIGH;
+				}
+				else
+				{
+					bLoTriggered = true;
+					sFans[i].eSpeed = FSPEED_LOW;
+				}
+			}
+			else
+			{
+				bHiTriggered = false;
+				if(bLoTriggered)
+				{
+					sFans[i].eSpeed = FSPEED_LOW;
+				}
+				else
+				{
+					sFans[i].eSpeed = FSPEED_OFF;
+				}
+			}
+		}
+
 
 		if(sFans[i].bEnabled)
 		{
 			Fan_ManageSpeed(&sFans[i]);
 		}
-		else if((sFans[i].eSpeed != 0) && (sFans[i].eSpeed != 3))
+		else if((sFans[i].eSpeed != FSPEED_OFF))
 		{
 			sFans[i].bEnabled = true;
 		}

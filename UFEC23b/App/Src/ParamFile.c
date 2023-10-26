@@ -32,13 +32,14 @@ static PF_StepperStepsPerSec_t m_sSpeedParams = {0x00};
 static const PFL_SParameterItem m_sParameterItems[] =
 {
 	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
-	PFL_INIT_SINT32(PFD_MANUALBOOL, 			"", &m_sMemBlock.s32ManualOverride, 		                0, 			0, 		1),
+	PFL_INIT_SINT32(PFD_MANUALBOOL, 			"1 = ON,0 = OFF", &m_sMemBlock.s32ManualOverride, 		                0, 			0, 		1),
 	PFL_INIT_SINT32(PFD_MANUALPRIM, 			"", &m_sMemBlock.s32ManualPrimary, 			                50, 		0, 		PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_MANUALSEC,		 		"", &m_sMemBlock.s32ManualSecondary, 		                50, 		0,	 	PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_MANUALGRILL, 			"", &m_sMemBlock.s32ManualGrill, 		    	            50, 		0, 		PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_ALGO_PERIOD, 			"", &m_sMemBlock.s32TimeBetweenComputations_ms, 		    5000, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_FANKIP,			 		"", &m_sMemBlock.s32FAN_KIP,   	 					   		650, 		0, 		20000),
-	PFL_INIT_SINT32(PFD_FANKOP,			 	    "", &m_sMemBlock.s32FAN_KOP,		 				   		350, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_FAN_LO_KIP,			 		"OFF to LO;Hi to LO", &m_sMemBlock.s32FAN_LO_KIP,   	 					   		500, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_FAN_LO_KOP,			 	    "Lo to OFF", &m_sMemBlock.s32FAN_LO_KOP,		 				   		300, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_FAN_HI_KIP,			 		"x to HI", &m_sMemBlock.s32FAN_HI_KIP,   	 					   		650, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_FANL_SPD,			 	"", &m_sMemBlock.s32FANL_LOW_SPD,		 				   		55, 		0, 		100),
 	PFL_INIT_SINT32(PFD_AFK_SPD,			 	"", &m_sMemBlock.s32AFK_LOW_SPD,		 				   		55, 		0, 		100),
 
