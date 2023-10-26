@@ -184,12 +184,12 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		nextState = SAFETY;
 	}
-	else if((currentState != MANUAL_CONTROL) && UsrParam->s32ManualOverride == 1)
+	else if((currentState != MANUAL_CONTROL) && (UsrParam->s32ManualOverride == 1))
 	{
 
 		nextState = MANUAL_CONTROL;
 	}
-	else if((currentState != BOOST) && RmtParams->bBoostReq == 1)
+	else if((currentState != BOOST) && (currentState != ZEROING_STEPPER) && (RmtParams->bBoostReq == 1))
 	{
 		sBoostConfMem.u32StateEntryMem_ms = stove->u32TimeOfStateEntry_ms;
 		nextState = BOOST;
@@ -206,14 +206,13 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		if(lastState != BOOST)
 		{
 			stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
-		}
 
+			if(AlgoStateEntryAction[currentState] != NULL)
+			{
+				AlgoStateEntryAction[currentState](stove);
+			}
+		}
 		stove->bstateJustChanged = false;
-
-		if(AlgoStateEntryAction[currentState] != NULL)
-		{
-			AlgoStateEntryAction[currentState](stove);
-		}
 
 	}
 	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
