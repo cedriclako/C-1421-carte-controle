@@ -28,7 +28,7 @@ typedef enum
 
 void SETTINGS_Init();
 
-bool SETTINGS_ParseMacAddr(const char* szMacAddr, uint8_t outMACAddr[6]);
+bool SETTINGS_ParseMacAddr(const char* szMacAddr, uint8_t outMACAddr[MACADDR_LEN]);
 
 extern NVSJSON_SHandle g_sSettingHandle;
 

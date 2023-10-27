@@ -11,6 +11,8 @@
 #define TAG "APIPOST"
 
 static bool PostPairingSetting(const char* szJSON);
+static bool PostWifiSetting(const char* szJSON);
+
 static bool HandleMaintenancePasswordRequest(const char* szJSON);
 
 esp_err_t APIPOST_post_handler(httpd_req_t *req)
@@ -46,19 +48,16 @@ esp_err_t APIPOST_post_handler(httpd_req_t *req)
     if (strcmp(req->uri, API_POSTSETTINGSJSON_URI) == 0)
     {
         CHECK_FOR_ACCESS_OR_RETURN(); // STOP THERE is the user doesn't have access
-
         if (!NVSJSON_ImportJSON(&g_sSettingHandle, (const char*)g_u8Buffers))
         {
             snprintf(szError, sizeof(szError), "%s", "Unable to import JSON");
             goto ERROR;
         }
     }
-    else if (strcmp(req->uri, API_POSTSERVERPARAMETERFILEJSON_URI) == 0)
+    else if (strcmp(req->uri, API_GETPOST_SERVERPARAMETERFILEJSON_URI) == 0)
     {
         CHECK_FOR_ACCESS_OR_RETURN(); // STOP THERE is the user doesn't have access
-
         ESP_LOGI(TAG, "api_post_handler, url: %s, json len: %d", req->uri, n);
-
         if (!STOVEMB_InputParamFromJSON((const char*)g_u8Buffers, szError, sizeof(szError)))
         {
             goto ERROR;
@@ -78,11 +77,19 @@ esp_err_t APIPOST_post_handler(httpd_req_t *req)
         httpd_resp_set_status(req, "302 Moved Permanently");
         httpd_resp_set_hdr(req, "Location", "/mnt-index.html");
     }
-    else if (strcmp(req->uri, API_POSTPAIRINGSETTING_URI) == 0)
+    else if (strcmp(req->uri, API_GETPOST_PAIRINGSETTINGS) == 0)
     {
         if (!PostPairingSetting((const char*)g_u8Buffers))
         {
             snprintf(szError, sizeof(szError), "%s", "Invalid mac address");
+            goto ERROR;
+        }
+    }
+    else if (strcmp(req->uri, API_GETPOST_WIFISETTINGS_URI) == 0)
+    {
+        if (!PostWifiSetting((const char*)g_u8Buffers))
+        {
+            snprintf(szError, sizeof(szError), "%s", "Invalid Wi-Fi settings");
             goto ERROR;
         }
     }
@@ -108,9 +115,7 @@ static bool PostPairingSetting(const char* szJSON)
     cJSON* pRoot = cJSON_Parse(szJSON);
     if (pRoot == NULL)
         goto ERROR;
-
     const cJSON* pEntryJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "mac_addr");
-
     if (pEntryJSON == NULL || !cJSON_IsString(pEntryJSON))
     {
         ESP_LOGE(TAG, "Cannot find JSON mac_addr element");
@@ -122,6 +127,59 @@ static bool PostPairingSetting(const char* szJSON)
         ESP_LOGE(TAG, "Unable to set value, ret: %"PRId32, (int32_t)eSetRet);
         goto ERROR;
     }
+    bRet = true;
+    goto END;
+    ERROR:
+    bRet = false;
+    END:
+    if (pRoot != NULL)
+        cJSON_free(pRoot);
+    return bRet;
+}
+
+static bool PostWifiSetting(const char* szJSON)
+{
+    bool bRet = true;
+    cJSON* pRoot = cJSON_Parse(szJSON);
+    if (pRoot == NULL)
+        goto ERROR;
+
+    ESP_LOGI(TAG, "test: %s", szJSON);
+
+    const cJSON* pEnableJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "en");
+    const cJSON* pSSIDJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "ssid");
+    const cJSON* pPassJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "pass");
+
+    // Invalid JSON file
+    if (pEnableJSON == NULL || !cJSON_IsBool(pEnableJSON) ||
+        pSSIDJSON == NULL || !cJSON_IsString(pSSIDJSON) ||
+        pPassJSON == NULL || !cJSON_IsString(pPassJSON) )
+    {
+        ESP_LOGE(TAG, "Invalid JSON file");
+        goto ERROR;
+    }
+
+    // Check if all are possibles.
+    if (NVSJSON_ESETRET_OK != NVSJSON_SetValueInt32(&g_sSettingHandle, SETTINGS_EENTRY_WSTAIsActive, true, pEnableJSON->valueint))
+    {
+        ESP_LOGE(TAG, "Invalid Wi-Fi enable state");
+        goto ERROR;
+    }
+    if (NVSJSON_ESETRET_OK != NVSJSON_SetValueString(&g_sSettingHandle, SETTINGS_EENTRY_WSTASSID, true, pSSIDJSON->valuestring))
+    {
+        ESP_LOGE(TAG, "Invalid Wi-Fi SSID");
+        goto ERROR;
+    }
+    NVSJSON_ESETRET ret;
+    if (NVSJSON_ESETRET_OK != (ret = NVSJSON_SetValueString(&g_sSettingHandle, SETTINGS_EENTRY_WSTAPass, true, pPassJSON->valuestring)))
+    {
+        ESP_LOGE(TAG, "Invalid Wi-Fi password, result: %d", (int)ret);
+        goto ERROR;
+    }
+
+    NVSJSON_SetValueInt32(&g_sSettingHandle, SETTINGS_EENTRY_WSTAIsActive, false, pEnableJSON->valueint);
+    NVSJSON_SetValueString(&g_sSettingHandle, SETTINGS_EENTRY_WSTASSID, false, pSSIDJSON->valuestring);
+    NVSJSON_SetValueString(&g_sSettingHandle, SETTINGS_EENTRY_WSTAPass, false, pPassJSON->valuestring);
     bRet = true;
     goto END;
     ERROR:

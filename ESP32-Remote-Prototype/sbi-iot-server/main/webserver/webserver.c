@@ -12,7 +12,7 @@
 #include "../espnowprocess.h"
 #include "../settings.h"
 #include "../fwconfig.h"
-#include "apiurl.h"
+#include "URL.h"
 #include "../uartbridge/stovemb.h"
 #include "OTAUploadESP32.h"
 #include "OTAUploadSTM32.h"
@@ -22,7 +22,7 @@
 
 #define TAG "webserver"
 
-static esp_err_t file_post_handler(httpd_req_t *req);
+static esp_err_t action_post_handler(httpd_req_t *req);
 
 uint8_t g_u8Buffers[HTTPSERVER_BUFFERSIZE];
 
@@ -62,7 +62,7 @@ static const httpd_uri_t m_sHttpPostAPI = {
 static const httpd_uri_t m_sHttpActionPost = {
     .uri       = "/action/*",
     .method    = HTTP_POST,
-    .handler   = file_post_handler,
+    .handler   = action_post_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = ""
@@ -111,17 +111,16 @@ void WEBSERVER_Init()
     }
 }
 
-static esp_err_t file_post_handler(httpd_req_t *req)
+static esp_err_t action_post_handler(httpd_req_t *req)
 {
-    ESP_LOGI(TAG, "file_post_handler, url: %s", req->uri);
-    CHECK_FOR_ACCESS_OR_RETURN();
-
+    ESP_LOGI(TAG, "action_post_handler, url: %s", req->uri);
     if (strcmp(req->uri, ACTION_POST_REBOOT) == 0)
     {
         esp_restart();
     }
     else if (strcmp(req->uri, ACTION_POST_DOWNLOADCONFIG) == 0)
-    {
+    {    
+        CHECK_FOR_ACCESS_OR_RETURN();
         esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
     }/*
     else if (strcmp(req->uri, ACTION_POST_ESPNOW_STARTPAIRING) == 0)

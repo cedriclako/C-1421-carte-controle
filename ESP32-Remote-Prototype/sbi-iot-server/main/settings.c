@@ -33,16 +33,16 @@ void SETTINGS_Init()
 static bool ValidateWifiPassword(const NVSJSON_SSettingEntry* pSettingEntry, const char* szValue)
 {
     const size_t n = strlen(szValue);
-    return n > 8 || n == 0;
+    return n >= 8 || n == 0;
 }
 
 static bool ValidateESPNowRemoteMac(const NVSJSON_SSettingEntry* pSettingEntry, const char* szValue)
 {
-    uint8_t outMACAddr[6];
+    uint8_t outMACAddr[MACADDR_LEN];
     return SETTINGS_ParseMacAddr(szValue, outMACAddr);
 }
 
-bool SETTINGS_ParseMacAddr(const char* szMacAddr, uint8_t outMACAddr[6])
+bool SETTINGS_ParseMacAddr(const char* szMacAddr, uint8_t outMACAddr[MACADDR_LEN])
 {
     const size_t n = strlen(szMacAddr);
     if (n >= SETTINGS_ESPNOWREMOTEMAC_LEN)

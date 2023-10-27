@@ -1,4 +1,3 @@
-
 let mData =
 {
     sysinfos: [],
@@ -106,18 +105,6 @@ var app = new Vue({
 
             setTimeout(this.automaticUpdate, 500);
         },
-        idStartPairing_Click()
-        {
-            let url = "";
-            if (!this.livedata.state.is_pairing) {
-                url = 'action/espnow_startpairing';
-            }
-            else {
-                url = 'action/espnow_stoppairing';
-            }
-            console.log("idStartPairing_Click");
-            this.postAction(url, { test: "coucou" });
-        },
         idLoadConfig_OnClick(event)
         {
             console.log("idLoadConfig_OnClick");
@@ -125,7 +112,7 @@ var app = new Vue({
             this.configJSONObj = null;
             // Get system informations
             let isOK = false;
-            fetch(API_GETSERVERPARAMETERFILEJSON_URI, {
+            fetch(API_GETPOST_SERVERPARAMETERFILEJSON_URI, {
                 method: 'GET', // or 'PUT'
                 headers: {
                   'Content-Type': 'application/json',
@@ -141,13 +128,13 @@ var app = new Vue({
                 {
                     if (!isOK)
                         throw Error(response);
-                    console.log("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " data: ", response);
+                    console.log("url: ", API_GETPOST_SERVERPARAMETERFILEJSON_URI, " data: ", response);
                     this.configJSON = JSON.stringify(JSON.parse(response), null, 2);
                     this.configJSONObj = JSON.parse(response);
                 })
                 .catch((error) =>
                 {
-                    console.error("url: ", API_GETSERVERPARAMETERFILEJSON_URI, " error: ", error);
+                    console.error("url: ", API_GETPOST_SERVERPARAMETERFILEJSON_URI, " error: ", error);
                     this.configJSON = error;
                     this.configJSONObj = null;
                 });
@@ -165,7 +152,7 @@ var app = new Vue({
             console.log("idSaveConfig_OnClick tablemode: ", bIsTableMode, "config: ", this.configJSON);
 
             let isOK = false;
-            fetch(API_POSTSERVERPARAMETERFILEJSON_URI, {
+            fetch(API_GETPOST_SERVERPARAMETERFILEJSON_URI, {
                 method: 'POST', // or 'PUT'
                 headers: {
                   'Content-Type': 'application/json',
@@ -181,10 +168,10 @@ var app = new Vue({
             .then((response) => {
                 if (!isOK)
                     throw Error(response);
-                console.log("url: ", API_POSTSERVERPARAMETERFILEJSON_URI, " data: ", response);
+                console.log("url: ", API_GETPOST_SERVERPARAMETERFILEJSON_URI, " data: ", response);
             })
             .catch((error) => {
-                console.error("url: ", API_POSTSERVERPARAMETERFILEJSON_URI, " error: ", error);
+                console.error("url: ", API_GETPOST_SERVERPARAMETERFILEJSON_URI, " error: ", error);
                 alert("Error: " + error);
             });
             console.log("idSaveConfig_OnClick");

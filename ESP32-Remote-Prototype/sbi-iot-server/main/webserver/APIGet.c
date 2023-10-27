@@ -14,7 +14,9 @@
 
 static char* GetSysInfo();
 static char* GetLiveData();
-static char* GetPairingSettingToJSON();
+static char* GetPairingSettingsToJSON();
+static char* GetWifiSettingsToJSON();
+
 static void ToHexString(char *dstHexString, const uint8_t* data, uint8_t len);
 static const char* GetESPChipId(esp_chip_model_t eChipid);
 
@@ -32,7 +34,6 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
     {
         CHECK_FOR_ACCESS_OR_RETURN();
         pExportJSON = NVSJSON_ExportJSON(&g_sSettingHandle);
-
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
         httpd_resp_set_type(req, "application/json");
@@ -53,7 +54,7 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
             goto ERROR;
         httpd_resp_set_type(req, "application/json");
     }
-    else if (strcmp(req->uri, API_GETSERVERPARAMETERFILEJSON_URI) == 0)
+    else if (strcmp(req->uri, API_GETPOST_SERVERPARAMETERFILEJSON_URI) == 0)
     {
         CHECK_FOR_ACCESS_OR_RETURN();
         pExportJSON = STOVEMB_ExportParamToJSON();
@@ -64,9 +65,16 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
         }
         httpd_resp_set_type(req, "application/json");
     }
-    else if (strcmp(req->uri, API_GETPAIRINGSETTING_URI) == 0)
-    {
-        pExportJSON = GetPairingSettingToJSON();
+    else if (strcmp(req->uri, API_GETPOST_PAIRINGSETTINGS) == 0)
+    {        
+        pExportJSON = GetPairingSettingsToJSON();
+        if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
+            goto ERROR;
+        httpd_resp_set_type(req, "application/json");
+    }
+    else if (strcmp(req->uri, API_GETPOST_WIFISETTINGS_URI) == 0)
+    {        
+        pExportJSON = GetWifiSettingsToJSON();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
         httpd_resp_set_type(req, "application/json");
@@ -290,7 +298,7 @@ static char* GetLiveData()
     return NULL;
 }
 
-static char* GetPairingSettingToJSON()
+static char* GetPairingSettingsToJSON()
 { 
     cJSON* pRoot = NULL;
     pRoot = cJSON_CreateObject();
@@ -304,6 +312,32 @@ static char* GetPairingSettingToJSON()
         goto ERROR;
 
     cJSON_AddItemToObject(pRoot, "mac_addr", cJSON_CreateString(szMacAddr));
+
+    char* pStr =  cJSON_PrintUnformatted(pRoot);
+    cJSON_Delete(pRoot);
+    return pStr;
+    ERROR:
+    cJSON_Delete(pRoot);
+    return NULL;
+}
+
+static char* GetWifiSettingsToJSON()
+{ 
+    cJSON* pRoot = NULL;
+    pRoot = cJSON_CreateObject();
+    if (pRoot == NULL)
+        goto ERROR;
+
+    const int32_t s32IsEN = NVSJSON_GetValueInt32(&g_sSettingHandle, SETTINGS_EENTRY_WSTAIsActive);
+
+    char szSSID[SETTINGS_SSID_LEN];
+    size_t nSSID = SETTINGS_SSID_LEN;
+    NVSJSON_GetValueString(&g_sSettingHandle, SETTINGS_EENTRY_WSTASSID, (char*)szSSID, &nSSID);
+
+    cJSON_AddItemToObject(pRoot, "en", cJSON_CreateBool(s32IsEN));
+    cJSON_AddItemToObject(pRoot, "ssid", cJSON_CreateString(szSSID));
+    // For security reason we don't return the password
+    cJSON_AddItemToObject(pRoot, "pass", cJSON_CreateString(""));
 
     char* pStr =  cJSON_PrintUnformatted(pRoot);
     cJSON_Delete(pRoot);

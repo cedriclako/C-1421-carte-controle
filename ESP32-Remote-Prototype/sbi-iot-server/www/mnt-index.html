@@ -11,8 +11,6 @@
 </head>
 <body>
     <div id="app">
-        <button id="idStartPairing" @click="idStartPairing_Click">{{ livedata.state.is_pairing ? "Stop Pairing (esp-now)" : "Start Pairing (esp-now)" }}</button>
-
         <div>
             <span>wireless: rx: {{ livedata.wireless.rx }} / tx: {{ livedata.wireless.tx }}</span><br>
             <span>stove, online: {{ livedata.stove.is_connected }}</span><br>

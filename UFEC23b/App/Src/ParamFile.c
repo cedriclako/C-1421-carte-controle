@@ -43,6 +43,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_FANL_SPD,			 	"", &m_sMemBlock.s32FANL_LOW_SPD,		 				   		55, 		0, 		100),
 	PFL_INIT_SINT32(PFD_AFK_SPD,			 	"", &m_sMemBlock.s32AFK_LOW_SPD,		 				   		55, 		0, 		100),
 
+	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Waiting parameters
 	PFL_INIT_SINT32(PFD_WA_T_TARGET,    	    "", &m_sWaitingParams.fTempToQuitWaiting, 				150, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_WA_T_SKIP,    	        "", &m_sWaitingParams.fTempToSkipWaiting, 				800, 		0, 		20000),
@@ -76,6 +77,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_TR_GM_MAX,    	    	"", &m_sTriseParams.sGrill.i32Max, 							48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_TR_GM_MIN,    	    	"", &m_sTriseParams.sGrill.i32Min, 		 					0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
+	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Comb low parameters
 	PFL_INIT_SINT32(PFD_CBL_T_TARGET, 			"", &m_sCombLowParams.sTemperature.fTarget, 		  		630, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_CBL_T_TOL, 				"", &m_sCombLowParams.sTemperature.fTolerance, 	  			10, 		0, 		20000),
@@ -141,6 +143,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COH_GM_MAX,    	    	"", &m_sCoalHighParams.sGrill.i32Max, 						48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_GM_MIN,    	    	"", &m_sCoalHighParams.sGrill.i32Min, 		 				0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
+	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 
 	//SuperStateParameters
 	PFL_INIT_SINT32(PFD_TR_ENTRY_TIME, 			"", &m_sSuperParams[TEMPERATURE_RISE].i32EntryWaitTimeSeconds, 				60, 		0, 		20000),
@@ -170,6 +173,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		"", &m_sOverheatParams.OverheatChamber, 	 	   			1500, 		0, 		20000),
 
 
+	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Motor Speed params
 	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				"", &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_SLOW, 				"", &m_sSpeedParams.fSlow, 	  								150, 		0, 		20000),
@@ -177,10 +181,10 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				"", &m_sSpeedParams.fFast, 	  								60, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_SPS_VFAST, 				"", &m_sSpeedParams.fVeryFast, 	  							15, 		0, 		20000),
 
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_TSTAT, 				"", &m_sRemoteParams.bThermostat, 	  						0, 		0, 		1),
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_BOOST, 				"", &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1),
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_LOWFAN, 			"", &m_sRemoteParams.i32LowerSpeed, 	  					3, 		0, 		3), //0:OFF, 1:LO, 2: HI, 3: AUTO (HI based on temp)
-	PFL_INIT_SINT32_VOLATILE(PFD_RMT_DISTFAN, 			"", &m_sRemoteParams.i32DistribSpeed, 	  					3, 		0, 		3),
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_TSTAT, 	"", &m_sRemoteParams.bThermostat, 	  						0, 		0, 		1),
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_BOOST, 	"", &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1),
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_LOWFAN, 	"", &m_sRemoteParams.i32LowerSpeed, 	  					3, 		0, 		3), //0:OFF, 1:LO, 2: HI, 3: AUTO (HI based on temp)
+	PFL_INIT_SINT32_VOLATILE(PFD_RMT_DISTFAN, 	"", &m_sRemoteParams.i32DistribSpeed, 	  					3, 		0, 		3),
 };
 
 #define PARAMETERITEM_COUNT ( sizeof(m_sParameterItems) / sizeof(m_sParameterItems[0]) )

@@ -1,8 +1,32 @@
 var mData = 
 {
-    pairingsetting: { mac_addr : "" },
-    idSavePairingSetting_IsDisabled : false
+    pairingsettings: { mac_addr : "" },
+    wifisettings: { en: false, ssid: '', pass: '' },
+
+    idSavePairingSettings_IsDisabled : false,
+    idSaveWiFiSettings_IsDisabled : false
 };
+
+function showTab(evt, cityName) {
+    // Declare all variables
+    var i, tabcontent, tablinks;
+
+    // Get all elements with class="tabcontent" and hide them
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+
+    // Get all elements with class="tablinks" and remove the class "active"
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(cityName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
 
 var app = new Vue({
 	el: '#app',
@@ -53,23 +77,30 @@ var app = new Vue({
                 }
               });
         },
-        page_loaded()
-        {
+        page_loaded() {
             console.log("page_loaded");
             // Get system informations
-            fetch(API_GETPAIRINGSETTING, { keepalive: false })
+            fetch(API_GETPOST_PAIRINGSETTINGS, { keepalive: false })
                 .then((response) => response.json())
-                .then((data) => this.pairingsetting = data)
+                .then((data) => this.pairingsettings = data)
                 .catch((ex) =>
                 {
-                    console.error('API_GETPAIRINGSETTING', ex);
+                    console.error('API_GETPOST_PAIRINGSETTINGS', ex);
+                });
+            // Get Wi-Fi informations
+            fetch(API_GETPOSTWIFISETTING, { keepalive: false })
+                .then((response) => response.json())
+                .then((data) => this.wifisettings = data)
+                .catch((ex) =>
+                {
+                    console.error('API_GETPOSTWIFISETTING', ex);
                 });
         },
-        idTroubleshoot_Click() {
-            let password = prompt("Please your password", "");
+        idBtTroubleshoot_Click() {
+            let password = prompt("Please enter your password", "");
             if (password != null) {
                 this.postAction(
-                    "/api/access-maintenance-redirect",
+                    API_POST_ACCESSMAINTENANCEREDIRECT_URI,
                     JSON.stringify({ password: password }),
                     {
                         onError: e => { 
@@ -78,19 +109,43 @@ var app = new Vue({
                         onSuccess: () => { /* If it succeed, it will automatically redirect */}
                     });
             }
-        },        
-        idSavePairingSetting_Click()
-        {
-            this.idSavePairingSetting_IsDisabled = true;
-            this.postAction(API_POSTPAIRINGSETTING, JSON.stringify(this.pairingsetting),
+        },
+        idBtReboot_Click() {
+            this.postAction(
+                API_ACTION_REBOOT_URI,
+                JSON.stringify({ }),
+                {
+                    onError: e => { 
+                        alert(e); 
+                    },
+                    onSuccess: () => { alert("The system will reboot, it will take a few seconds to go back online."); }
+                });
+        },  
+        idSavePairingSettings_Click() {
+            this.idSavePairingSettings_IsDisabled = true;
+            this.postAction(API_GETPOST_PAIRINGSETTINGS, JSON.stringify(this.pairingsettings),
             {
                 onError: e => { 
                     alert(e); 
-                    this.idSavePairingSetting_IsDisabled = false; 
+                    this.idSavePairingSettings_IsDisabled = false; 
                 },
                 onSuccess: () => { 
                     alert("Success !"); 
-                    this.idSavePairingSetting_IsDisabled = false; 
+                    this.idSavePairingSettings_IsDisabled = false; 
+                }
+            });
+        },
+        idBtSaveWiFiSettings_Click() {
+            this.idSaveWiFiSettings_IsDisabled = true;
+            this.postAction(API_GETPOSTWIFISETTING, JSON.stringify(this.wifisettings),
+            {
+                onError: e => { 
+                    alert(e); 
+                    this.idSaveWiFiSettings_IsDisabled = false; 
+                },
+                onSuccess: () => { 
+                    alert("Success !"); 
+                    this.idSaveWiFiSettings_IsDisabled = false; 
                 }
             });
         }

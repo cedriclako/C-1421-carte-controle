@@ -9,7 +9,7 @@
 #include <time.h>
 #include <esp_http_server.h>
 #include "esp_log.h"
-#include "apiurl.h"
+#include "URL.h"
 #include "esp_log.h"
 #include "assets/EmbeddedFiles.h"
 
@@ -22,7 +22,7 @@
 } while(0)
 
 /* Max length a file path can have on storage */
-#define HTTPSERVER_BUFFERSIZE (1024*15)
+#define HTTPSERVER_BUFFERSIZE (1024*30)
 
 extern bool g_bHasAccess;
 
