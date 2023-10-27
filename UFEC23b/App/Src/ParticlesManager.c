@@ -268,7 +268,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			//}
 			config_mode = false; //GC 2023-07-19 debug
 
-		}else if((RX_BUFFER[1] & 0xC0) == SETZERO_CMD)
+		}else if((RX_BUFFER[1] & 0xC0) == SETZERO_CMD) // Conditions jamais vérifiée
 		{
 			setZero = false;
 			ParticleDevice.u16zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];

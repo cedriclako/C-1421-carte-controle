@@ -109,6 +109,28 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	printf("PartTime:%lu ", stove->sParticles->u16TimeSinceInit);
 	printf("dTavant: %.1f", stove->fChamberDeltaT);
 
+
+
+	if(print_debug_setup)
+	{
+		if(stove->bSafetyOn == true)
+		{
+			printf("bSafetyOn ");
+		}
+		else
+		{
+			printf("bSafetyNotOn ");
+		}
+
+		printf("Last State:");
+		printf(ALGO_GetStateString(lastState));
+		printf(" Next State:");
+		printf(ALGO_GetStateString(nextState));
+		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
+		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
+
+		}
+
 	printf("*\n\r");
 }
 

@@ -124,7 +124,7 @@ void Motor_task(void const * argument)
 		  AllInPlace = false;
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
-			  if(!StepperAtSetpoint(&motor[i]) && (u32CurrentTime_ms - motor[i].u32LastMove_ms > STEP_PERIOD))
+			  if(!StepperAtSetpoint(&motor[i]) && ((u32CurrentTime_ms - motor[i].u32LastMove_ms) > STEP_PERIOD))
 			  {
 				  if(motor[i].bInMiddleOfStep)
 				  {
@@ -142,7 +142,8 @@ void Motor_task(void const * argument)
 				  {
 					  StepperRecoverPosition(&motor[i]);
 				  }
-				  else if(u32CurrentTime_ms - motor[i].u32LastMove_ms > motor[i].fSecPerStep*1000)
+				  // this is where we're using motor speed adjustments
+				  else if((u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000)
 				  {
 					  StepperAdjustPosition(&motor[i]);
 				  }

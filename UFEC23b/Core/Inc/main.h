@@ -136,7 +136,7 @@ void MX_USART2_UART_Init(void);
 #define USB_Fault_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-#define NOVIKA_SETUP (1)
+#define NOVIKA_SETUP (0)
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
