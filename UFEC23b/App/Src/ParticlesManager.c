@@ -145,7 +145,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 				//Test unitaire - SETZERO CMD
 				tx_checksum = Particle_Send_CMD(SETZERO_CMD);
 				tx_size = 5;
-				response_delay = 600;
+				response_delay = 1000;
 
 			}else{
 

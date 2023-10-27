@@ -438,7 +438,12 @@ void bridgeTimerElapsed(void)
     
     //printf("Timer elapsed\r\n");
     TMR1_StopTimer();
-    BridgeState = eBridge_IDLE;
+    if(BridgeState < eBridge_VERIFY_CHECKSUM)
+    {
+        BridgeState = eBridge_IDLE;
+    }
+    
+    
     
 }
 
@@ -454,6 +459,7 @@ void bridgeZeroComplete(void)
 
 void controlBridge_update(SMeasureParticlesObject* mOBJ) // Called when MeasureParticles.c has data
 {
+    const gs_Parameters* Param = PF_getCBParamAddr();
     bOBJ.CH0_ON = mOBJ->m_uFullLighted;
     bOBJ.CH1_ON = mOBJ->m_uIrLighted;
     bOBJ.CH0_OFF = mOBJ->m_uFullDark;
@@ -465,6 +471,13 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ) // Called when MeasureP
     }else
     {
         bOBJ.LED_current_meas = 0.8*(float)bOBJ.LED_current_meas + 0.2*(uint16_t)(3300*(float)mOBJ->adcValue/4096);
+    }
+     
+    if(abs((float)bOBJ.LED_current_meas/10 - Param->Current_cmd) > 1)
+    {
+        uint8_t value = (((float)bOBJ.LED_current_meas/10  - Param->Current_cmd) < 0.0) ? Param->DAC_value + 1:Param->DAC_value-1;
+        PF_setDAC(value);
+        measureParticlesSetDacValue(Param);
     }
 
     bOBJ.Lux_ON = (uint16_t)(1000*mOBJ->m_fLuxLighted);

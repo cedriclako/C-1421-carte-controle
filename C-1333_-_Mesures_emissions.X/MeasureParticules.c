@@ -306,13 +306,11 @@ void measureSetLED(const gs_Parameters* Param)
         i = 0;
         while(i< N)
         {
-            if(ADCC_IsConversionDone())
-            {
-                shunt = ADCC_GetSingleConversion(channel_ANB7);
-                adcMeasured += shunt;
-                i++;
-            }
-            
+
+            shunt = ADCC_GetSingleConversion(channel_ANB7);
+            adcMeasured += shunt;
+            i++;
+
         }
         adcMeasured = adcMeasured/N;
         

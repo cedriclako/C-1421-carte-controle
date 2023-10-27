@@ -218,6 +218,10 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
 			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE))
 	{
+		if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
+		{
+			Particle_requestZero();
+		}
 		if(!stove->bInterlockOn)
 		{
 			nextState = RELOAD_IGNITION;
