@@ -79,9 +79,9 @@ typedef enum
 	PFL_ESETRET_EntryNoFound = 4,
 } PFL_ESETRET;
 
-#define PFL_INIT_SINT32(_key,_desc,_ptrvdvar,_defaultValue,_minValue,_maxValue) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} }, .eOpt = PFL_EOPT_None }
+#define PFL_INIT_SINT32(_key,_ptrvdvar,_defaultValue,_minValue,_maxValue,_desc) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} }, .eOpt = PFL_EOPT_None }
 
-#define PFL_INIT_SINT32_VOLATILE(_key,_desc,_ptrvdvar,_defaultValue,_minValue,_maxValue) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} }, .eOpt = PFL_EOPT_IsVolatile }
+#define PFL_INIT_SINT32_VOLATILE(_key,_ptrvdvar,_defaultValue,_minValue,_maxValue,_desc) { .szKey = _key, .vdVar = _ptrvdvar,.szDesc = _desc, .eType = PFL_TYPE_Int32, .uType = { .sInt32 = { .s32Default = _defaultValue, .s32Min = _minValue, .s32Max = _maxValue} }, .eOpt = PFL_EOPT_IsVolatile }
 
 void PFL_Init(PFL_SHandle* pHandle, const PFL_SParameterItem* pParameterEntries, uint32_t u32ParameterEntryCount, const PFL_SConfig* psConfig);
 
