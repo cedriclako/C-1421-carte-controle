@@ -55,6 +55,7 @@ void ParameterInit(void)
     Params.AcqEnable = true;
     Params.Current_cmd = 5.3;
     //Params.DAC_value = 140;
+    
     if(DATAEE_ReadByte(EE_FIRST_CONF_ADDR) != 0xAA)
     {
         DATAEE_WriteByte(EE_FIRST_CONF_ADDR, 0xAA);

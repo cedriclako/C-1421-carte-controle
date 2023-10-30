@@ -318,7 +318,7 @@ void measureSetLED(const gs_Parameters* Param)
         {
             if(adcMeasured - adcRequest > 10)
             {
-                if(upMotion && ((adcRequest - adc_memory) < (adcMeasured - adcRequest)))
+                if(upMotion && ((int)(adcRequest - adc_memory) < (int)(adcMeasured - adcRequest)))
                 {
                     break;
                 }
@@ -338,8 +338,9 @@ void measureSetLED(const gs_Parameters* Param)
         {
             if(adcRequest - adcMeasured > 10)
             {
-                if(!upMotion && ((adcRequest - adcMeasured) < (adc_memory - adcMeasured)))
+                if(!upMotion && ((int)(adcRequest - adcMeasured) < (int)(adc_memory - adcMeasured)))
                 {
+                    //shunt = 10;
                     break;
                 }
                 upMotion = true;
