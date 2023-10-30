@@ -17,7 +17,8 @@ typedef enum
 {
 	FMAP_EPARTITION_AppBin = 0,
 	FMAP_EPARTITION_Parameters,
-
+	FMAP_EPARTITION_Extras,		/*! @brief Extra space for future use */
+	
 	FMAP_EPARTITION_Count
 } FMAP_EPARTITION;
 
@@ -30,6 +31,7 @@ typedef struct
 #define FMAP_INTERNALFLASH_SIZE (FLASH_BANK1_END - FLASH_BASE + 1)
 
 #define FMAP_PARAMETER_SECTOR_COUNT (2)
+#define FMAP_EXTRA_SECTOR_COUNT (2)
 #define FMAP_PARAMETER_SECTOR_LEN (FMAP_PARAMETER_SECTOR_COUNT * FLASH_PAGE_SIZE)
 
 const FMAP_SPart* FMAP_GetPartition(FMAP_EPARTITION ePartition);

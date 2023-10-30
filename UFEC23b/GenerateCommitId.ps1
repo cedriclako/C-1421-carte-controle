@@ -1,11 +1,5 @@
 # The IDE shall add a ${ProjDirPath} environment variable.
 # ensure to configure cube IDE in consequence
-$path = $env:Path
-
-if ([string]::IsNullOrEmpty($env:ProjDirPath)) {
-	Write-Error "Environment variable is not set 'ProjDirPath'. Add it to project properties."
-	Exit 1
-}
 
 # --------------------------
 # Final file
@@ -30,6 +24,6 @@ $gitFileOutput += "#define GITCOMMIT_ISDIRTY $gitIsDirty`r`n"
 $gitFileOutput += "`r`n"
 $gitFileOutput += "#endif`r`n"
 
-Write-Output $gitFileOutput | Out-File -Encoding utf8 $env:ProjDirPath\App\Inc\GitCommit.h
+Write-Output $gitFileOutput | Out-File -Encoding utf8 ..\App\Inc\GitCommit.h
 
 Exit 0

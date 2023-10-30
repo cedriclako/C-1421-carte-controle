@@ -333,14 +333,19 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_LowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_LowerFanSpeed.bHasValue = true;
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.bHasValue = true;
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):
         {
             if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value, u8Payloads, u32PayloadLen))
                 pMemBlock->sRemoteData.sRMT_DistribFanSpeed.bHasValue = true;
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_S2CDumpAll):
+        {
+            ESP_LOGI(TAG, "S2CDumpAll");
             break;
         }
         default:
@@ -425,6 +430,7 @@ static void ServerConnected()
     // Send some requests ...
     // SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     //SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+    SendFrame(UFEC23PROTOCOL_FRAMEID_C2SDumpAll, NULL, 0);
     
     // Start downloading parameters
     ProcParameterDownload();

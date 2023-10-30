@@ -4,6 +4,7 @@
  *  Created on: 13 déc. 2022
  *      Author: mcarrier
  */
+#include <string.h>
 #include "ParamFile.h"
 #include "ParameterFileLib.h"
 #include "Algo.h"
@@ -151,33 +152,33 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			 &m_sSuperParams[TEMPERATURE_RISE].i32MaximumTimeInStateMinutes, 			10, 		0, 		20000, ""), 
 
 	PFL_INIT_SINT32(PFD_CBL_ENTRY_TIME, 		 &m_sSuperParams[COMBUSTION_LOW].i32EntryWaitTimeSeconds, 				60, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			 &m_sSuperParams[COMBUSTION_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			 &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000, ""),// TODO: confirmer le temps du timeout de l'état
+	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			 &m_sSuperParams[COMBUSTION_LOW].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_CBL_MAX_TIME, 			 &m_sSuperParams[COMBUSTION_LOW].i32MaximumTimeInStateMinutes, 			600, 		0, 		20000, ""),// TODO: confirmer le temps du timeout de l'état
 
-	PFL_INIT_SINT32(PFD_CBH_ENTRY_TIME, 		 &m_sSuperParams[COMBUSTION_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_CBH_ENTRY_TIME, 		 &m_sSuperParams[COMBUSTION_HIGH].i32EntryWaitTimeSeconds, 				60, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBH_MIN_TIME, 			 &m_sSuperParams[COMBUSTION_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBH_MAX_TIME, 			 &m_sSuperParams[COMBUSTION_HIGH].i32MaximumTimeInStateMinutes, 		10, 		0, 		20000, ""),
 
-	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		 &m_sSuperParams[COAL_LOW].i32EntryWaitTimeSeconds, 				0, 			0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			 &m_sSuperParams[COAL_LOW].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			 &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_COL_ENTRY_TIME, 		 &m_sSuperParams[COAL_LOW].i32EntryWaitTimeSeconds, 					0, 			0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_COL_MIN_TIME, 			 &m_sSuperParams[COAL_LOW].i32MinimumTimeInStateMinutes, 				1, 			0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_COL_MAX_TIME, 			 &m_sSuperParams[COAL_LOW].i32MaximumTimeInStateMinutes, 				600, 		0, 		20000, ""),
 
-	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		 &m_sSuperParams[COAL_HIGH].i32EntryWaitTimeSeconds, 			60, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_COH_MIN_TIME, 			 &m_sSuperParams[COAL_HIGH].i32MinimumTimeInStateMinutes, 		1, 			0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			 &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 		600, 		0, 		20000, ""), 
+	PFL_INIT_SINT32(PFD_COH_ENTRY_TIME, 		 &m_sSuperParams[COAL_HIGH].i32EntryWaitTimeSeconds, 					60, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_COH_MIN_TIME, 			 &m_sSuperParams[COAL_HIGH].i32MinimumTimeInStateMinutes, 				1, 			0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_COH_MAX_TIME, 			 &m_sSuperParams[COAL_HIGH].i32MaximumTimeInStateMinutes, 				600, 		0, 		20000, ""),
 
 	// Overheat parameters
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		 &m_sOverheatParams.OverheatPlenum, 	  					420, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT, 	 &m_sOverheatParams.OverheatPlenumExit,   				210, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT, 	 &m_sOverheatParams.OverheatPlenumExit,   					210, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_OVERHEATBAFFLE, 		 &m_sOverheatParams.OverheatBaffle, 	 	   				1472, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		 &m_sOverheatParams.OverheatChamber, 	 	   			1500, 		0, 		20000, ""), 
+	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		 &m_sOverheatParams.OverheatChamber, 	 	   				1500, 		0, 		20000, ""),
 
 
 	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Motor Speed params
 	PFL_INIT_SINT32(PFD_SPS_VSLOW, 				 &m_sSpeedParams.fVerySlow, 	  							300, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_SPS_SLOW, 				 &m_sSpeedParams.fSlow, 	  								150, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			 &m_sSpeedParams.fNormal, 	  							100, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			 &m_sSpeedParams.fNormal, 	  								100, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				 &m_sSpeedParams.fFast, 	  								60, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_SPS_VFAST, 				 &m_sSpeedParams.fVeryFast, 	  							15, 		0, 		20000, ""),
 
@@ -191,6 +192,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 static void LoadAllCallback(const PFL_SHandle* psHandle);
 static void CommitAllCallback(const PFL_SHandle* psHandle);
+
+static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem);
 
 PFL_SHandle PARAMFILE_g_sHandle;
 const PFL_SConfig m_sConfig = { .ptrLoadAll = LoadAllCallback, .ptrCommitAll = CommitAllCallback };
@@ -257,12 +260,14 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 			// If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
 			if (!bIsVolatile)
 			{
+				const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
+
 				const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
 				const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
 
 				// If the magic mask fit, we load the value. If not we just ignore it.
 				// the rest of the process will handle it and put it back to the default value.
-				if (s32SavedValue == (s32SavedValueInv ^ PF_MAGIC_MASK))
+				if (s32SavedValue == (s32SavedValueInv ^ s32MagicMask))
 				{
 					*ps32RAMValue = s32SavedValue;
 				}
@@ -289,9 +294,11 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 			// We save the value twice for more safety.
 			// the second save is computed with a MASK to be sure the default erase value (FF)
 			// cannot be confused with a real value.
+			const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
+
 			const int32_t s32Value = *((int32_t*)pItem->vdVar);
 			FMAP_WriteAtPartition(FMAP_EPARTITION_Parameters, u32RelativeAddr, (uint8_t*)&s32Value, sizeof(int32_t));
-			const int32_t s32ValueInv = *((int32_t*)pItem->vdVar) ^ PF_MAGIC_MASK;
+			const int32_t s32ValueInv = *((int32_t*)pItem->vdVar) ^ s32MagicMask;
 			FMAP_WriteAtPartition(FMAP_EPARTITION_Parameters, u32RelativeAddr+sizeof(int32_t), (uint8_t*)&s32ValueInv, sizeof(int32_t));
 		}
 
@@ -300,6 +307,18 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 	}
 }
 
+static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)
+{
+	int32_t s32Magic = PF_MAGIC_MASK;
+	for(int i = 0; i < strlen(pItem->szKey); i++) {
+		s32Magic += (int32_t)pItem->szKey[i];
+	}
+	s32Magic += (int32_t)pItem->eType;
+	for(int i = 0; i < sizeof(pItem->uType.sInt32); i++) {
+		s32Magic += ((const uint8_t*)&pItem->uType.sInt32)[i];
+	}
+	return s32Magic;
+}
 
 const PF_UsrParam* PB_GetUserParam()
 {
