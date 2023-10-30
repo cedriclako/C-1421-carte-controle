@@ -9,13 +9,16 @@
 
 #define INTERNALFLASH_DOUBLEWORDLEN (4)
 
+// Trailer, used to identify the app-bin size at runtime.
+static const uint8_t m_u8Trailers[16] __attribute__((__section__(".TrailerMarker"))) = { 'S', 'B', 'I', 0xDF, 0x2F, 0x87, 0x68, 0x29, 0xe3, 0x43, 0x37, 'T', 'R', 'A', 'I', 'L' };
+
 static const FMAP_SPart m_sPartitions[] =
 {
 	[FMAP_EPARTITION_AppBin] = 		{ .s32SectorStart = 0, 	 .s32SectorCount = 126 },
 	[FMAP_EPARTITION_Parameters] = 	{ .s32SectorStart = 126, .s32SectorCount = FMAP_PARAMETER_SECTOR_COUNT }
 };
 
-static_assert(FMAP_INTERNALFLASH_SIZE == 0x00040000, "The partition are made for 256 KB internal flash. Please adjust it if it changed");
+static_assert(FMAP_INTERNALFLASH_SIZE == 0x00040000, "These partitions are made for a 256 KB internal flash. Please adjust it if changed");
 
 const FMAP_SPart* FMAP_GetPartition(FMAP_EPARTITION ePartition)
 {

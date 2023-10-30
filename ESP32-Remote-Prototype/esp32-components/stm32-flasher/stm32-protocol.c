@@ -9,7 +9,7 @@
 
     url: https://github.com/ESP32-Musings/OTA_update_STM32_using_ESP32
 */
-#define TAG_STM_PRO "STMPROTOCOL"
+#define TAG "STMPROTOCOL"
 #define LOW (0)
 #define HIGH (1)
 
@@ -55,7 +55,7 @@ static esp_err_t SendReceiveBytes(const STM32PROTOCOL_SContext* pContext, const 
 
 void STM32PROTOCOL_Init(STM32PROTOCOL_SContext* pContext, const STM32PROTOCOL_SConfig* pConfig)
 {
-	ESP_LOGI(TAG_STM_PRO, "Init STM32 flasher");
+	ESP_LOGI(TAG, "Init STM32 flasher");
 	pContext->psConfig = pConfig;
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
 
@@ -70,13 +70,27 @@ esp_err_t STM32PROTOCOL_SetupSTM(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
     
+    // Remove garbage from the buffer
+    ESP_LOGI(TAG, "STM32PROTOCOL_ResetSTM");
     uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_ResetSTM(pContext, true));
+    ESP_LOGI(TAG, "STM32PROTOCOL_CmdSync");
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdSync(pContext));
+    ESP_LOGI(TAG, "STM32PROTOCOL_CmdGet");
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdGet(pContext));
+    ESP_LOGI(TAG, "STM32PROTOCOL_CmdVersion");
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdVersion(pContext));
+    ESP_LOGI(TAG, "STM32PROTOCOL_CmdId");
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdId(pContext));
+    ESP_LOGI(TAG, "STM32PROTOCOL_CmdErase");
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdErase(pContext));
+    ESP_LOGI(TAG, "STM32PROTOCOL_CmdExtErase");
+    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdExtErase(pContext));
 	return ESP_OK;
 }
@@ -84,30 +98,78 @@ esp_err_t STM32PROTOCOL_SetupSTM(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_EndConn(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_ResetSTM(pContext, false));
 
-    ESP_LOGI(TAG_STM_PRO, "Ending Connection");
+    ESP_LOGI(TAG, "STM32PROTOCOL_ResetToApp");
+    STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_ResetToApp(pContext));
+
+    uart_flush_input(pContext->psConfig->uart_port);
+    ESP_LOGI(TAG, "Ending Connection");
 	return ESP_OK;
 }
 
 esp_err_t STM32PROTOCOL_ResetSTM(const STM32PROTOCOL_SContext* pContext, bool bIsBootloaderMode)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-	ESP_LOGI(TAG_STM_PRO, "Starting RESET Procedure");
+	ESP_LOGI(TAG, "Starting RESET Procedure");
     // According to the datasheet, putting BOOTPIN0 to HIGH will boot the system in bootloader mode.
-    gpio_set_level(pContext->psConfig->boot0_pin, (bIsBootloaderMode ? HIGH : LOW));
+    if (pContext->psConfig->boot0_pin >= 0) {
+        gpio_set_level(pContext->psConfig->boot0_pin, (bIsBootloaderMode ? HIGH : LOW));
+    }
+    if (pContext->psConfig->boot1_pin >= 0) {
+	    gpio_set_level(pContext->psConfig->boot1_pin, (bIsBootloaderMode ? LOW : HIGH));
+    }
+    vTaskDelay(pdMS_TO_TICKS(250));
 	gpio_set_level(pContext->psConfig->reset_pin, LOW);
-	vTaskDelay(pdMS_TO_TICKS(100));
+	vTaskDelay(pdMS_TO_TICKS(500));
 	gpio_set_level(pContext->psConfig->reset_pin, HIGH);
 	vTaskDelay(pdMS_TO_TICKS(1000));
-	ESP_LOGI(TAG_STM_PRO, "Finished RESET Procedure");
+	ESP_LOGI(TAG, "Finished RESET Procedure");
+    return ESP_OK;
+}
+
+esp_err_t STM32PROTOCOL_ResetToApp(const STM32PROTOCOL_SContext* pContext)
+{
+    if (pContext->psConfig->boot1_pin >= 0) {
+        gpio_set_level(pContext->psConfig->boot1_pin, HIGH);
+    }
+    if (pContext->psConfig->boot0_pin >= 0) {
+        gpio_set_level(pContext->psConfig->boot0_pin, LOW);
+    }
+
+    if (pContext->psConfig->reset_pin >= 0) {
+	    gpio_set_level(pContext->psConfig->reset_pin, LOW);
+    }
+	vTaskDelay(pdMS_TO_TICKS(250));
+    if (pContext->psConfig->reset_pin >= 0) {
+	    gpio_set_level(pContext->psConfig->reset_pin, HIGH);
+    }
+        
+    // Zero-initialize the config structure.
+    gpio_config_t io_conf = {0};
+    //disable interrupt
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    //set as output mode
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    //bit mask of the pins that you want to set,e.g.GPIO18/19
+    io_conf.pin_bit_mask = 0;
+    if (pContext->psConfig->reset_pin >= 0) {
+        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->reset_pin);
+    }
+    if (pContext->psConfig->boot0_pin >= 0) {
+        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->boot0_pin);
+    }
+    if (pContext->psConfig->boot1_pin >= 0) {
+        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->boot1_pin);
+    }
     return ESP_OK;
 }
 
 esp_err_t STM32PROTOCOL_CmdSync(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "SYNC");
+    ESP_LOGI(TAG, "SYNC");
     const uint8_t bytes[] = { 0x7F };
     
     const uint32_t u32RespLen = 1;
@@ -118,7 +180,7 @@ esp_err_t STM32PROTOCOL_CmdSync(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdGet(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "GET");
+    ESP_LOGI(TAG, "GET");
     const uint8_t bytes[] = {0x00, 0xFF};
 
     const int u32RespLen = 15;
@@ -129,7 +191,7 @@ esp_err_t STM32PROTOCOL_CmdGet(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdVersion(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "GET VERSION & READ PROTECTION STATUS");
+    ESP_LOGI(TAG, "GET VERSION & READ PROTECTION STATUS");
     const uint8_t  bytes[] = {0x01, 0xFE};
 
     const int u32RespLen = 5;
@@ -140,7 +202,7 @@ esp_err_t STM32PROTOCOL_CmdVersion(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdId(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "CHECK ID");
+    ESP_LOGI(TAG, "CHECK ID");
     const uint8_t bytes[] = {0x02, 0xFD};
 
     const int u32RespLen = 5;
@@ -158,7 +220,7 @@ esp_err_t STM32PROTOCOL_CmdErase(const STM32PROTOCOL_SContext* pContext)
     Byte 4: 0x00 (in case of global erase) or ((N + 1 bytes (page numbers) and then checksum
     XOR (N, N+1 bytes) */
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "ERASE MEMORY");
+    ESP_LOGI(TAG, "ERASE MEMORY");
     const uint8_t bytes[] = {0x43, 0xBC};
 
     const int u32RespLen = 1;
@@ -192,7 +254,7 @@ esp_err_t STM32PROTOCOL_CmdExtErase(const STM32PROTOCOL_SContext* pContext)
     (2 x (N + 1)) bytes (page numbers coded on two bytes MSB first) and then
     the checksum for bytes 3-4 and all the following bytes */
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "EXTENDED ERASE MEMORY");
+    ESP_LOGI(TAG, "EXTENDED ERASE MEMORY");
     const uint8_t bytes[] = {0x44, 0xBB};
     
     const uint32_t u32RespLen = 1;
@@ -211,7 +273,7 @@ esp_err_t STM32PROTOCOL_CmdExtErase(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdWrite(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "WRITE MEMORY");
+    ESP_LOGI(TAG, "WRITE MEMORY");
     const uint8_t bytes[2] = {0x31, 0xCE};
     const uint32_t u32RespLen = 1;
     uint8_t u8RespData[1];
@@ -221,7 +283,7 @@ esp_err_t STM32PROTOCOL_CmdWrite(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdRead(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "READ MEMORY");
+    ESP_LOGI(TAG, "READ MEMORY");
     const uint8_t bytes[2] = {0x11, 0xEE};
     const uint32_t u32RespLen = 1;
     uint8_t u8RespData[1];
@@ -231,7 +293,7 @@ esp_err_t STM32PROTOCOL_CmdRead(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_LoadAddress(const STM32PROTOCOL_SContext* pContext, const char adrMS, const char adrMI, const char adrLI, const char adrLS)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "LoadAddress");
+    ESP_LOGI(TAG, "LoadAddress");
     uint8_t xor = adrMS ^ adrMI ^ adrLI ^ adrLS;
     uint8_t params[] = {adrMS, adrMI, adrLI, adrLS, xor};
 
@@ -262,7 +324,7 @@ esp_err_t STM32PROTOCOL_IncrementLoadAddress(const STM32PROTOCOL_SContext* pCont
 esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const char *address, const uint8_t* data)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "Flashing Page");
+    ESP_LOGI(TAG, "Flashing Page");
     /*  It seems to be one based, so Byte1 is the first one.
         Byte 1: 0x31
         Byte 2: 0xCE
@@ -293,7 +355,7 @@ esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const 
     const int length = WaitForSerialData(pContext, 1, pContext->psConfig->u32SyncDataTimeoutMS);
     if (length < 0)
     {
-        ESP_LOGE(TAG_STM_PRO, "Serial Timeout");
+        ESP_LOGE(TAG, "Serial Timeout");
         return ESP_FAIL;
     }
 
@@ -301,30 +363,28 @@ esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const 
     const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, uart_data, length, 1000 / portTICK_PERIOD_MS);
     if (rxBytes == 0)
     {
-        ESP_LOGE(TAG_STM_PRO, "No response");
+        ESP_LOGE(TAG, "No response");
         return ESP_FAIL;
     }
 
     if (uart_data[0] == STM32PROTOCOL_NACK)
     {
-        ESP_LOGI(TAG_STM_PRO, "Flash failure (NACK received)");
+        ESP_LOGI(TAG, "Flash failure (NACK received)");
         return ESP_FAIL;
     }
     
     if (uart_data[0] != STM32PROTOCOL_ACK)
     {
-        ESP_LOGE(TAG_STM_PRO, "Flash Failure (unknown return)");
+        ESP_LOGE(TAG, "Flash Failure (unknown return)");
         return ESP_FAIL;
     }
-
-    ESP_LOGI(TAG_STM_PRO, "Flash Success");
     return ESP_OK;
 }
 
 esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const char *address, const uint8_t* data)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG_STM_PRO, "Reading page");
+    ESP_LOGI(TAG, "Reading page");
     const uint8_t param[] = {0xFF, 0x00};
 
     STM32PROTOCOL_CmdRead(pContext);
@@ -335,7 +395,7 @@ esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const c
     const int length = WaitForSerialData(pContext, 257, pContext->psConfig->u32SyncDataTimeoutMS);
     if (length < 0)
     {
-        ESP_LOGE(TAG_STM_PRO, "%s", "Serial Timeout");
+        ESP_LOGE(TAG, "%s", "Serial Timeout");
         return ESP_FAIL;
     }
 
@@ -343,23 +403,23 @@ esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const c
     const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, uart_data, length, 1000 / portTICK_PERIOD_MS);
     if (rxBytes == 0)
     {
-        ESP_LOGE(TAG_STM_PRO, "No response");
+        ESP_LOGE(TAG, "No response");
         return ESP_FAIL;
     }
 
     if (uart_data[0] == STM32PROTOCOL_NACK)
     {
-        ESP_LOGE(TAG_STM_PRO, "Failure (NACK received)");
+        ESP_LOGE(TAG, "Failure (NACK received)");
         return ESP_FAIL;
     }
     
     if ( uart_data[0] != STM32PROTOCOL_ACK)
     {
-        ESP_LOGE(TAG_STM_PRO, "Flash Failure (unknown return)");
+        ESP_LOGE(TAG, "Flash Failure (unknown return)");
         return ESP_FAIL;
     }
 
-    ESP_LOGI(TAG_STM_PRO, "Success");
+    ESP_LOGI(TAG, "Success");
     if (memcpy((void *)data, uart_data, 257) == 0)
     {
         return ESP_FAIL;
@@ -370,29 +430,38 @@ esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const c
 static void InitGPIO(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-	ESP_LOGI(TAG_STM_PRO, "Init GPIO reset: %"PRId32", boot0: %"PRId32", boot1: %"PRId32, 
+	ESP_LOGI(TAG, "Init GPIO reset: %"PRId32", boot0: %"PRId32", boot1: %"PRId32, 
         (int32_t)pContext->psConfig->reset_pin,
         (int32_t)pContext->psConfig->boot0_pin,
         (int32_t)pContext->psConfig->boot1_pin);
 
-	gpio_reset_pin(pContext->psConfig->reset_pin);
-    gpio_set_direction(pContext->psConfig->reset_pin, GPIO_MODE_OUTPUT);
-    gpio_set_level(pContext->psConfig->reset_pin, HIGH);
-	gpio_reset_pin(pContext->psConfig->boot0_pin);
-    gpio_set_direction(pContext->psConfig->boot0_pin, GPIO_MODE_OUTPUT);
-    gpio_set_level(pContext->psConfig->boot0_pin, HIGH);
-
-    if (pContext->psConfig->boot1_pin >= 0)
-    {
-        gpio_reset_pin(pContext->psConfig->boot1_pin);
-        gpio_set_direction(pContext->psConfig->boot1_pin, GPIO_MODE_INPUT);   
+    // Zero-initialize the config structure.
+    gpio_config_t io_conf = {0};
+    //disable interrupt
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    //set as output mode
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    //bit mask of the pins that you want to set,e.g.GPIO18/19
+    io_conf.pin_bit_mask = 0;
+    if (pContext->psConfig->reset_pin >= 0) {
+        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->reset_pin);
     }
+    if (pContext->psConfig->boot0_pin >= 0) {
+        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->boot0_pin);
+    }
+    if (pContext->psConfig->boot1_pin >= 0) {
+        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->boot1_pin);
+    }
+    //configure GPIO with the given settings
+    gpio_config(&io_conf);
 }
 
 static void InitFlashUART(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-	ESP_LOGI(TAG_STM_PRO,"Init flash UART");
+	ESP_LOGI(TAG,"Init flash UART");
 	
     const uart_config_t uart_config = {
         .baud_rate = STM32PROTOCOL_SERIAL_BAUDRATE,
@@ -406,7 +475,7 @@ static void InitFlashUART(const STM32PROTOCOL_SContext* pContext)
     uart_param_config(pContext->psConfig->uart_port, &uart_config);
     uart_set_pin(pContext->psConfig->uart_port, pContext->psConfig->uart_tx_pin, pContext->psConfig->uart_rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
-    ESP_LOGI(TAG_STM_PRO,"Initialized Flash UART");
+    ESP_LOGI(TAG,"Initialized Flash UART");
 }
 
 static esp_err_t SendReceiveBytes(const STM32PROTOCOL_SContext* pContext, const uint8_t* u8SendData, uint32_t u32SendCount, uint8_t* u8RecvData, uint32_t u32ExpectedRecvCount)
@@ -416,30 +485,34 @@ static esp_err_t SendReceiveBytes(const STM32PROTOCOL_SContext* pContext, const 
     const int length = WaitForSerialData(pContext, u32ExpectedRecvCount, pContext->psConfig->u32SyncDataTimeoutMS);
     if (length < 0)
     {
-        ESP_LOGE(TAG_STM_PRO, "Serial Timeout");
+        ESP_LOGE(TAG, "Serial Timeout");
+        return ESP_FAIL;
+    }
+
+    if (length > u32ExpectedRecvCount)
+    {
+        ESP_LOGE(TAG, "The input buffer is too small");
         return ESP_FAIL;
     }
 
     const int rxBytes = uart_read_bytes(pContext->psConfig->uart_port, u8RecvData, length, pdMS_TO_TICKS(pContext->psConfig->u32RecvDataTimeoutMS));
     if (rxBytes == 0)
     {
-        ESP_LOGE(TAG_STM_PRO, "Serial receive error");
+        ESP_LOGE(TAG, "Serial receive error");
         return ESP_FAIL;
     }
 
     if (u8RecvData[0] == STM32PROTOCOL_NACK)
     {
-        ESP_LOGE(TAG_STM_PRO, "Serial receive error (NACK returned)");
+        ESP_LOGE(TAG, "Serial receive error (NACK returned)");
         return ESP_FAIL;
     }
     
     if (u8RecvData[0] != STM32PROTOCOL_ACK)
     {
-        ESP_LOGE(TAG_STM_PRO, "Serial receive error (unknown data received) 0x%"PRIX8, u8RecvData[0]);
+        ESP_LOGE(TAG, "Serial receive error (unknown data received) 0x%"PRIX8, u8RecvData[0]);
         return ESP_FAIL;
     }
-
-    ESP_LOGI(TAG_STM_PRO, "Serial receive success");
     return ESP_OK;
 }
 

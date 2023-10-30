@@ -5,7 +5,7 @@ static const char *TAG_STM_FLASH = "stm_flash";
 static esp_err_t STM32PROCESS_WriteTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file);
 static esp_err_t STM32PROCESS_ReadTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file);
 
-esp_err_t WriteTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file)
+static esp_err_t WriteTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file)
 {
     ESP_LOGI(TAG_STM_FLASH, "%s", "Write Task");
 
@@ -39,7 +39,7 @@ esp_err_t WriteTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file)
     return ESP_OK;
 }
 
-esp_err_t ReadTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file)
+static esp_err_t ReadTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_file)
 {
     ESP_LOGI(TAG_STM_FLASH, "Read & Verification Task");
     char readAddress[4] = {0x08, 0x00, 0x00, 0x00};
@@ -95,8 +95,11 @@ esp_err_t STM32PROCESS_FlashSTM(const STM32PROTOCOL_SContext* pContext, const ch
     }
     err = ESP_OK;
     ESP_LOGI(TAG_STM_FLASH, "STM32 Flashed Successfully!!!");
-    return err;
+    goto END;
     ERROR:
+    err = ESP_FAIL;
+    ESP_LOGI(TAG_STM_FLASH, "ERROR, unable to finish the process");
+    END:
     ESP_LOGI(TAG_STM_FLASH, "Ending Connection");
     STM32PROTOCOL_EndConn(pContext);
     if (flash_file != NULL)

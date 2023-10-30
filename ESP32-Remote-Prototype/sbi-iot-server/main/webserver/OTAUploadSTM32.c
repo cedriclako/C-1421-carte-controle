@@ -60,6 +60,7 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     sConfig.bInitGPIO = true;
     sConfig.reset_pin = HWGPIO_STM32_RESET_PIN;
     sConfig.boot0_pin = HWGPIO_STM32_BOOT0_PIN;
+    sConfig.boot1_pin = HWGPIO_STM32_BOOT1_PIN;
 
     sConfig.uart_port = HWGPIO_BRIDGEUART_PORT_NUM;
 
