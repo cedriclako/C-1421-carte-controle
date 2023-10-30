@@ -114,6 +114,8 @@ static void SendDebugData(const SScheduler* pSchContext);
 static void ReadVariableFrame(const SScheduler* pSchContext);
 static void WriteVariableFrame(const SScheduler* pSchContext, const uint8_t* pu8Data, uint32_t u32Len);
 
+static void HandleScheduler(bool bIsForceSending);
+
 static SScheduler m_sSchedulers[] =
 {
 	// Frame												Delay (ms)      Read   				Write
@@ -208,20 +210,26 @@ void ESPMANAGER_Run(void)
 		m_last_DMA_count = u16DMA_count;
 	}
 
+
 	// Don't send anything until the bridge is ready.
 	if (m_sBridgeState.bIsBridgeReady)
 	{
-		// Scheduler, period data sent
-		for(int i = 0; i < SSCHEDULER_COUNT; i++)
-		{
-			SScheduler* pSch = &m_sSchedulers[i];
+		HandleScheduler(false);
+	}
+}
 
-			if ( (xTaskGetTickCount() - pSch->ttLastSend) > pdMS_TO_TICKS(pSch->u16DelayMS) )
-			{
-				pSch->ttLastSend = xTaskGetTickCount();
-				if (pSch->fpRead != NULL)
-					pSch->fpRead(pSch);
-			}
+static void HandleScheduler(bool bIsForceSending)
+{
+	// Scheduler, period data sent
+	for(int i = 0; i < SSCHEDULER_COUNT; i++)
+	{
+		SScheduler* pSch = &m_sSchedulers[i];
+
+		if ( bIsForceSending || (xTaskGetTickCount() - pSch->ttLastSend) > pdMS_TO_TICKS(pSch->u16DelayMS) )
+		{
+			pSch->ttLastSend = xTaskGetTickCount();
+			if (pSch->fpRead != NULL)
+				pSch->fpRead(pSch);
 		}
 	}
 }
@@ -264,6 +272,15 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
 	switch((UFEC23PROTOCOL_FRAMEID)u8ID)
 	{
+		case UFEC23PROTOCOL_FRAMEID_C2SDumpAll:
+		{
+			LOG(TAG, "C2SDumpAll");
+			// Send all variable contents
+			HandleScheduler(true);
+			// Confirm the dump all is complete
+			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CDumpAll, m_u8UARTOutputBuffers, 0);
+			break;
+		}
 		case UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive:
 		{
 			// Decode PING then send a response ...

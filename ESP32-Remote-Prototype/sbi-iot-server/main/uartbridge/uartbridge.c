@@ -343,6 +343,11 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 pMemBlock->sRemoteData.sRMT_DistribFanSpeed.bHasValue = true;
             break;
         }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_S2CDumpAll):
+        {
+            ESP_LOGI(TAG, "S2CDumpAll");
+            break;
+        }
         default:
         {
             ESP_LOGI(TAG, "Accepted frame, not handled, ID: %"PRId32", len: %"PRId32, (int32_t)u8ID, (int32_t)u32PayloadLen);
@@ -425,6 +430,7 @@ static void ServerConnected()
     // Send some requests ...
     // SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
     //SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+    SendFrame(UFEC23PROTOCOL_FRAMEID_C2SDumpAll, NULL, 0);
     
     // Start downloading parameters
     ProcParameterDownload();
