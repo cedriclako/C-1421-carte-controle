@@ -14,8 +14,9 @@ static const uint8_t m_u8Trailers[16] __attribute__((__section__(".TrailerMarker
 
 static const FMAP_SPart m_sPartitions[] =
 {
-	[FMAP_EPARTITION_AppBin] = 		{ .s32SectorStart = 0, 	 .s32SectorCount = 126 },
-	[FMAP_EPARTITION_Parameters] = 	{ .s32SectorStart = 126, .s32SectorCount = FMAP_PARAMETER_SECTOR_COUNT }
+	[FMAP_EPARTITION_AppBin] = 		{ .s32SectorStart = 0, 	 .s32SectorCount = 124 },
+	[FMAP_EPARTITION_Parameters] = 	{ .s32SectorStart = 124, .s32SectorCount = FMAP_PARAMETER_SECTOR_COUNT },
+	[FMAP_EPARTITION_Extras] 	= 	{ .s32SectorStart = 126, .s32SectorCount = FMAP_EXTRA_SECTOR_COUNT }
 };
 
 static_assert(FMAP_INTERNALFLASH_SIZE == 0x00040000, "These partitions are made for a 256 KB internal flash. Please adjust it if changed");
