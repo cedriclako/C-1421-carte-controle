@@ -333,8 +333,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_LowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_LowerFanSpeed.bHasValue = true;
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.bHasValue = true;
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):

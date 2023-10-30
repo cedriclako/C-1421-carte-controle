@@ -32,7 +32,7 @@ typedef struct
     // Temperature setpoint
     STOVEMB_S32Value sRMT_TstatReqBool;
     STOVEMB_S32Value sRMT_BoostBool;
-    STOVEMB_S32Value sRMT_LowerFanSpeed;
+    STOVEMB_S32Value sRMT_BlowerFanSpeed;
     STOVEMB_S32Value sRMT_DistribFanSpeed;
 
     // Last communication ticks

@@ -188,7 +188,7 @@ typedef struct
 
 #define PFD_RMT_TSTAT			"rmt_TstatReqBool"
 #define PFD_RMT_BOOST			"rmt_BoostBool"
-#define PFD_RMT_LOWFAN			"rmt_LowerFanSpeed"
+#define PFD_RMT_LOWFAN			"rmt_BlowerFanSpeed"
 #define PFD_RMT_DISTFAN			"rmt_DistribFanSpeed"
 
 
