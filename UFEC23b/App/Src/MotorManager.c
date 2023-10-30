@@ -143,7 +143,7 @@ void Motor_task(void const * argument)
 					  StepperRecoverPosition(&motor[i]);
 				  }
 				  // this is where we're using motor speed adjustments
-				  else if((u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000)
+				  else if((u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000) // TODO: valider si ça se passe correctement
 				  {
 					  StepperAdjustPosition(&motor[i]);
 				  }
@@ -285,7 +285,7 @@ void StepperToggleOneStep(StepObj * motor)
 		motor->bInMiddleOfStep = false;
 	}
 
-	motor->u32LastMove_ms = osKernelSysTick();
+	motor->u32LastMove_ms = osKernelSysTick(); // TODO: Valider si ça se passe correctement
 }
 bool StepperLimitSwitchActive(StepObj * motor)
 {
