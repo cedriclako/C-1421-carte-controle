@@ -4,6 +4,7 @@
  *  Created on: 13 déc. 2022
  *      Author: mcarrier
  */
+#include <string.h>
 #include "ParamFile.h"
 #include "ParameterFileLib.h"
 #include "Algo.h"
@@ -192,6 +193,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 static void LoadAllCallback(const PFL_SHandle* psHandle);
 static void CommitAllCallback(const PFL_SHandle* psHandle);
 
+static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem);
+
 PFL_SHandle PARAMFILE_g_sHandle;
 const PFL_SConfig m_sConfig = { .ptrLoadAll = LoadAllCallback, .ptrCommitAll = CommitAllCallback };
 
@@ -257,12 +260,14 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 			// If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
 			if (!bIsVolatile)
 			{
+				const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
+
 				const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
 				const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
 
 				// If the magic mask fit, we load the value. If not we just ignore it.
 				// the rest of the process will handle it and put it back to the default value.
-				if (s32SavedValue == (s32SavedValueInv ^ PF_MAGIC_MASK))
+				if (s32SavedValue == (s32SavedValueInv ^ s32MagicMask))
 				{
 					*ps32RAMValue = s32SavedValue;
 				}
@@ -289,9 +294,11 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 			// We save the value twice for more safety.
 			// the second save is computed with a MASK to be sure the default erase value (FF)
 			// cannot be confused with a real value.
+			const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
+
 			const int32_t s32Value = *((int32_t*)pItem->vdVar);
 			FMAP_WriteAtPartition(FMAP_EPARTITION_Parameters, u32RelativeAddr, (uint8_t*)&s32Value, sizeof(int32_t));
-			const int32_t s32ValueInv = *((int32_t*)pItem->vdVar) ^ PF_MAGIC_MASK;
+			const int32_t s32ValueInv = *((int32_t*)pItem->vdVar) ^ s32MagicMask;
 			FMAP_WriteAtPartition(FMAP_EPARTITION_Parameters, u32RelativeAddr+sizeof(int32_t), (uint8_t*)&s32ValueInv, sizeof(int32_t));
 		}
 
@@ -300,6 +307,18 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 	}
 }
 
+static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)
+{
+	int32_t s32Magic = PF_MAGIC_MASK;
+	for(int i = 0; i < strlen(pItem->szKey); i++) {
+		s32Magic += (int32_t)pItem->szKey[i];
+	}
+	s32Magic += (int32_t)pItem->eType;
+	for(int i = 0; i < sizeof(pItem->uType.sInt32); i++) {
+		s32Magic += ((const uint8_t*)&pItem->uType.sInt32)[i];
+	}
+	return s32Magic;
+}
 
 const PF_UsrParam* PB_GetUserParam()
 {
