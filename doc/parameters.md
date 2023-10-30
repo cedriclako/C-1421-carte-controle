@@ -21,6 +21,8 @@ Every single parameter items need to be configured.
 | s32Max        | Maximum value |
 | eOpt          | Options (volatile = don't save into flash) |
 
+![](./assets/parameters-example.png)
+
 ## Load parameter items from flash
 
 Every value are saved twice, the second save applies a magic binary mask, so if flash memory parameters moves it will be detected and resetted to default value.
@@ -28,6 +30,12 @@ Every value are saved twice, the second save applies a magic binary mask, so if 
 The magic mask is just a checksum of fixed all fixed parameter item. (Keys/Min/Max/Default).
 
 If there is an error during the parameter item loading phase, the value get reset to the default value.
+
+## String-mode
+
+The string mode allows to copy/paste configurations directly. It also allows to keep the configuration before starting a new test.
+
+![](./assets/parameters-example-string.png)
 
 ## Drawbacks
 
