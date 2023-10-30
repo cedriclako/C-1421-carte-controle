@@ -129,7 +129,36 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
 		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
 
+
+
+		if(stove->bInterlockOn)
+		{
+			printf("\n\rbinterlock on \n");
 		}
+		else
+		{
+			printf("\n\rbinterlock off \n");
+		}
+
+
+		if(stove->bReloadRequested)
+		{
+			printf("\n\rbReloadRequested on \n");
+		}
+		else
+		{
+			printf("\n\rbReloadRequested off \n");
+		}
+
+
+
+
+
+
+
+
+
+	}
 
 	printf("*\n\r");
 }
