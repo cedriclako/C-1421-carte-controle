@@ -25,6 +25,7 @@
 #include "stm32f1xx_hal.h"
 #include "TemperatureManager.h"
 #include "DebugManager.h"
+#include "FanManager.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
@@ -80,9 +81,9 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	}
 	printf("dTbaffle:%.1f ", stove->fBaffleDeltaT);
 	printf("FanSpeed:%i ", 0);
-	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps*9/10));
-	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps*9/10));
-	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps*9/10));
+	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps));
+	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps));
+	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps));
 	printf("Tboard:%.0f ", get_BoardTemp());
 	printf("Door:");
 
@@ -112,14 +113,24 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 
 	if(print_debug_setup)
+
+
+
 	{
+
+		printf("Grille sec per steps:%i ", (int)(stove->sGrill.fSecPerStep));
+		printf("Prim sec per steps:%i ", (int)(stove->sPrimary.fSecPerStep));
+		printf("Sec sec per steps:%i ", (int)(stove->sSecondary.fSecPerStep));
+
+
+
 		if(stove->bSafetyOn == true)
 		{
 			printf("bSafetyOn ");
 		}
 		else
 		{
-			printf("bSafetyNotOn ");
+			printf("bSafetyOff ");
 		}
 
 		printf("Last State:");
@@ -153,6 +164,8 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 
 
+			printf("\n\rfan 1 speed is : %i",fan1speed);
+			printf("\n\rfan 2 speed is : %i",fan2speed);
 
 
 

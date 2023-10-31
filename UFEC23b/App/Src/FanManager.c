@@ -26,6 +26,7 @@ void Fan_DisableFan(FanObj *fan);
 void Fan_EnableFan(FanObj *fan);
 void Fan_ManageSpeed(FanObj *fan);
 
+
 //static FAN_states eFANstate = FANSTATE_IDLE;
 
 static FanObj sFans[FAN_NUM_OF_FANS] =
@@ -53,6 +54,11 @@ void Fan_Process(Mobj *stove)
 		Fan_DisableAll();
 		return;
 	}
+
+
+	fan1speed = sFans[0].eSpeed;
+	fan2speed = sFans[1].eSpeed;
+
 
 	for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
 	{
