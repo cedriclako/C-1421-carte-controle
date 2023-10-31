@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <esp_sntp.h>
+#include <inttypes.h>
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"

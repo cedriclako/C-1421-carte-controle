@@ -272,13 +272,14 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 
 	switch((UFEC23PROTOCOL_FRAMEID)u8ID)
 	{
-		case UFEC23PROTOCOL_FRAMEID_C2SDumpAll:
+		case UFEC23PROTOCOL_FRAMEID_C2SSyncAll:
 		{
-			LOG(TAG, "C2SDumpAll");
-			// Send all variable contents
+			LOG(TAG, "Server sync request received");
+			// Force to send all variables
 			HandleScheduler(true);
 			// Confirm the dump all is complete
-			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CDumpAll, m_u8UARTOutputBuffers, 0);
+			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CSyncAll, m_u8UARTOutputBuffers, 0);
+			LOG(TAG, "Server sync request done");
 			break;
 		}
 		case UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive:

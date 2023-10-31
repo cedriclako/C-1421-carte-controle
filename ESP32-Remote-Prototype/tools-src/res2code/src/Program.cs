@@ -225,6 +225,8 @@ namespace res2code
 
                                sw.WriteLine("extern const EF_SFile EF_g_sFiles[EF_EFILE_COUNT];");
                                sw.WriteLine("extern const uint8_t EF_g_u8Blobs[];");
+                               sw.WriteLine("extern const uint32_t EF_g_u32BlobSize;");
+                               sw.WriteLine("extern const uint32_t EF_g_u32BlobCRC32;");
                                sw.WriteLine();
 
                                sw.WriteLine("#ifdef __cplusplus");
@@ -317,6 +319,9 @@ namespace res2code
                                    sw.WriteLine();
                                }
                                sw.WriteLine("};");
+                               sw.WriteLine();
+                               sw.WriteLine($"const uint32_t EF_g_u32BlobSize = {bigBlobs.Length};");
+                               sw.WriteLine($"const uint32_t EF_g_u32BlobCRC32 = {CRC32.Compute(bigBlobs)};");
                            }
 
                            string fileBinC = System.IO.Path.Combine(o.OutputCodePath, Path.ChangeExtension(assetName+"Bin", ".c"));

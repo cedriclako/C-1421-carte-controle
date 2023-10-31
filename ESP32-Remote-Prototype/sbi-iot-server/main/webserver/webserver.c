@@ -88,6 +88,8 @@ static const httpd_uri_t m_sHttpOTAUploadSTM32Post = {
 
 void WEBSERVER_Init()
 {
+    WSSFS_Init();
+
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.task_priority = FWCONFIG_HTTPTASK_PRIORITY;
