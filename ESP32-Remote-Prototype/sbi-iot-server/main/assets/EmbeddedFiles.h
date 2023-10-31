@@ -30,14 +30,14 @@ typedef struct
 
 typedef enum
 {
-  EF_EFILE_MNT_INDEX_HTML = 0,                                  /*!< @brief file: mnt-index.html, size: 5185 */
-  EF_EFILE_MNT_OTA_HTML = 1,                                    /*!< @brief file: mnt-ota.html, size: 781 */
+  EF_EFILE_MNT_INDEX_HTML = 0,                                  /*!< @brief file: mnt-index.html, size: 5252 */
+  EF_EFILE_MNT_OTA_HTML = 1,                                    /*!< @brief file: mnt-ota.html, size: 1247 */
   EF_EFILE_USER_INDEX_HTML = 2,                                 /*!< @brief file: user-index.html, size: 2913 */
   EF_EFILE_CSS_MNT_CONTENT_CSS = 3,                             /*!< @brief file: css/mnt-content.css, size: 1181 */
   EF_EFILE_CSS_USER_CONTENT_CSS = 4,                            /*!< @brief file: css/user-content.css, size: 1495 */
-  EF_EFILE_JS_API_DEF_JS = 5,                                   /*!< @brief file: js/api-def.js, size: 603 */
+  EF_EFILE_JS_API_DEF_JS = 5,                                   /*!< @brief file: js/api-def.js, size: 707 */
   EF_EFILE_JS_MNT_APP_JS = 6,                                   /*!< @brief file: js/mnt-app.js, size: 7017 */
-  EF_EFILE_JS_MNT_OTA_JS = 7,                                   /*!< @brief file: js/mnt-ota.js, size: 1032 */
+  EF_EFILE_JS_MNT_OTA_JS = 7,                                   /*!< @brief file: js/mnt-ota.js, size: 2158 */
   EF_EFILE_JS_USER_APP_JS = 8,                                  /*!< @brief file: js/user-app.js, size: 5543 */
   EF_EFILE_JS_VUE_MIN_JS = 9,                                   /*!< @brief file: js/vue.min.js, size: 107165 */
   EF_EFILE_FAVICON_ICO = 10,                                    /*!< @brief file: favicon.ico, size: 1673 */
@@ -50,11 +50,12 @@ typedef enum
 /*! @brief Check if compressed flag is active */
 #define EF_ISFILECOMPRESSED(x) ((x & EF_EFLAGS_GZip) == EF_EFLAGS_GZip)
 
+extern const EF_SImage EF_g_sIMAGES_IMG_LOGO_SBI_350X256_PNG;
 
 extern const EF_SFile EF_g_sFiles[EF_EFILE_COUNT];
 extern const uint8_t EF_g_u8Blobs[];
-
-extern const EF_SImage EF_g_sIMAGES_IMG_LOGO_SBI_350X256_PNG;
+extern const uint32_t EF_g_u32BlobSize;
+extern const uint32_t EF_g_u32BlobCRC32;
 
 #ifdef __cplusplus
 }

@@ -15,3 +15,7 @@ const API_ACTION_REBOOT_URI = "/action/reboot";
 const API_GETPOST_PAIRINGSETTINGS = '/api/pairingsettings';
 
 const API_GETPOSTWIFISETTING = '/api/wifisettings';
+
+const API_POST_ESP32_URI = "/ota/upload_esp32";
+const API_POST_STM32_URI = "/ota/upload_stm32";
+

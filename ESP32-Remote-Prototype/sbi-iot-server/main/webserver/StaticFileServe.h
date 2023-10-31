@@ -5,6 +5,8 @@
 
 #define WSSFS_MIN(a, b) ((a) < (b) ? (a) : (b))
 
+void WSSFS_Init();
+
 esp_err_t WSSFS_file_get_handler(httpd_req_t *req);
 
 #endif

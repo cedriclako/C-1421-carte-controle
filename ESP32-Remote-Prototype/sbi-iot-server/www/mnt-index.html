@@ -12,6 +12,7 @@
 <body>
     <div id="app">
         <div>
+            <span><a href="mnt-ota.html">ESP32 OTA</a></span><br>
             <span>wireless: rx: {{ livedata.wireless.rx }} / tx: {{ livedata.wireless.tx }}</span><br>
             <span>stove, online: {{ livedata.stove.is_connected }}</span><br>
             <span>remote, current: {{ livedata.remote.tempC_current.toFixed(2) }} C, set point: {{ livedata.remote.tempC_sp.toFixed(2) }} C, fan: {{ livedata.remote.fanspeed }} C, lastcomm (s): {{ (livedata.remote.lastcomm_ms/1000).toFixed(2) }}</span><br>
