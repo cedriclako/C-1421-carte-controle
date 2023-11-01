@@ -52,7 +52,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_WA_GM_POS,    	    	"", &m_sWaitingParams.sGrill.i32Max, 						PF_GRILL_MINIMUM_OPENING, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 
 	// Reload parameters
-	PFL_INIT_SINT32(PFD_REL_T_TARGET,    	    "", &m_sReloadParams.fTempToQuitReload, 					525, 		0, 		20000),
+	PFL_INIT_SINT32(PFD_REL_T_TARGET,    	    "", &m_sReloadParams.fTempToQuitReload, 					350, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_REL_T_SKIP,    	        "", &m_sReloadParams.fTempToSkipReload, 					750, 		0, 		20000),
 	PFL_INIT_SINT32(PFD_REL_PM_POS,    	    	"", &m_sReloadParams.sPrimary.i32Max, 						PF_PRIMARY_FULL_OPEN, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_REL_SM_POS,    	    	"", &m_sReloadParams.sSecondary.i32Max, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
@@ -148,9 +148,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_COH_T_TOL, 				"", &m_sCoalHighParams.sTemperature.fTolerance, 	  		0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_T_ABS, 				"", &m_sCoalHighParams.sTemperature.fAbsMaxDiff, 			0, 			0, 		20000),
 	PFL_INIT_SINT32(PFD_COH_PM_MAX,    	    	"", &m_sCoalHighParams.sPrimary.i32Max, 					85, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_COH_PM_MIN,    	    	"", &m_sCoalHighParams.sPrimary.i32Min, 					17, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_COH_PM_MIN,    	    	"", &m_sCoalHighParams.sPrimary.i32Min, 					5, 		PF_PRIMARY_MINIMUM_OPENING, PF_PRIMARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_SM_MAX,    	    	"", &m_sCoalHighParams.sSecondary.i32Max, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
-	PFL_INIT_SINT32(PFD_COH_SM_MIN,    	    	"", &m_sCoalHighParams.sSecondary.i32Min, 					PF_SECONDARY_FULL_OPEN, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
+	PFL_INIT_SINT32(PFD_COH_SM_MIN,    	    	"", &m_sCoalHighParams.sSecondary.i32Min, 					PF_SECONDARY_MINIMUM_OPENING, 		PF_SECONDARY_MINIMUM_OPENING, PF_SECONDARY_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_GM_MAX,    	    	"", &m_sCoalHighParams.sGrill.i32Max, 						48, 		PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 	PFL_INIT_SINT32(PFD_COH_GM_MIN,    	    	"", &m_sCoalHighParams.sGrill.i32Min, 		 				0, 			PF_GRILL_MINIMUM_OPENING, PF_GRILL_FULL_OPEN),
 

@@ -25,6 +25,8 @@ void Fan_DisableAll(void);
 void Fan_DisableFan(FanObj *fan);
 void Fan_EnableFan(FanObj *fan);
 void Fan_ManageSpeed(FanObj *fan);
+int fan1speed;
+int fan2speed;
 
 
 //static FAN_states eFANstate = FANSTATE_IDLE;

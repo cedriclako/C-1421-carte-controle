@@ -14,7 +14,8 @@
 #include "stm32f1xx_hal.h"
 #include "ParamFile.h"
 
-
+extern int fan1speed;
+extern int fan2speed;
 
 typedef enum
 {
@@ -74,8 +75,7 @@ void Fan_StartPulseSPEED3(void);
 void Fan_StopPulseSPEED3(void);
 void Fan_StartPulseSPEED1(void);
 void Fan_StopPulseSPEED1(void);
-int fan1speed;
-int fan2speed;
+
 
 
 #endif /* INC_FANMANAGER_H_ */
