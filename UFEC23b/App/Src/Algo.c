@@ -133,8 +133,8 @@ static void Algo_tempRise_exit(Mobj *stove);
 static void Algo_combLow_exit(Mobj *stove);
 static void Algo_combHigh_exit(Mobj *stove);
 static void Algo_boost_exit(Mobj *stove);
-//static void Algo_coalLow_exit(Mobj *stove);
-//static void Algo_coalHigh_exit(Mobj *stove);
+static void Algo_coalLow_exit(Mobj *stove);
+static void Algo_coalHigh_exit(Mobj *stove);
 
 static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms);
 static bool Algo_adjust_steppers_position(Mobj *stove);
@@ -670,7 +670,7 @@ static void Algo_combLow_entry(Mobj *stove)
 	// stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
 
-	if(lastState == TEMPERATURE_RISE)
+	if(lastState == TEMPERATURE_RISE) // TODO: lastState == COAL_LOW
 	{
 		stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
 	}
@@ -1132,10 +1132,13 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 }
 
-//static void Algo_coalLow_exit(Mobj *stove)
-//{
+static void Algo_coalLow_exit(Mobj *stove)
+{
+	printDebugStr("Coal low exit", print_debug_setup);
 
-//}
+}
+
+
 //** END: COAL LOW **//
 
 //** STATE: COAL HIGH **//
@@ -1230,10 +1233,10 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 }
 
 
-//static void Algo_coalHigh_exit(Mobj *stove)
-//{
-
-//}
+static void Algo_coalHigh_exit(Mobj *stove)
+{
+	printDebugStr("Coal High exit", print_debug_setup);
+}
 //** END: COAL HIGH **//
 
 
