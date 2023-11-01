@@ -362,7 +362,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 		if((nextState == COMBUSTION_HIGH || nextState == COMBUSTION_LOW) && stove->u32TimeSinceCombEntry_ms == 0)
 		{
-			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms;
+			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms; // TODO : enlever ça, on utilise plutot u32TimeOfStateEntry_ms
 		}
 	}
 }
