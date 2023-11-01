@@ -262,13 +262,16 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		if(lastState != BOOST)
 		{
-			stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
+			// if state change is consequence of thermostat change, keep same time of entry
+			 stove->u32TimeOfStateEntry_ms = tStat_just_changed ? stove->u32TimeOfStateEntry_ms : u32CurrentTime_ms;
+
 
 			if(AlgoStateEntryAction[currentState] != NULL)
 			{
 				AlgoStateEntryAction[currentState](stove);
 			}
 		}
+
 		stove->bstateJustChanged = false;
 
 	}
@@ -279,7 +282,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		{
 			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
 			{
-				Particle_requestZero(); // TODO : valider pourquoi ce bout là s'est pas pas fait MC:19/10
+				Particle_requestZero();
 			}
 
 			nextState = RELOAD_IGNITION;
@@ -293,14 +296,14 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		if((u32CurrentTime_ms - stove->u32TimeOfComputation_ms) > UsrParam->s32TimeBetweenComputations_ms)
 		{
 			Temperature_update_deltaT(stove,(u32CurrentTime_ms - stove->u32TimeOfComputation_ms));
-			if(state_entry_delays_skip|| tStat_just_changed  ||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
+			if(state_entry_delays_skip /*|| tStat_just_changed */ ||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
 			{
 
-				if ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds))
-				{
+				//if ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds))
+				//{
 					tStat_just_changed = false ;
 
-				}
+				//}
 
 				if(AlgoComputeAdjustment[currentState] != NULL)
 				{
@@ -317,7 +320,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			}
 		}
 		// STATE EXIT ACTION
-		// Check if state timed out or if exit conditions are met // added state entry time skip
+		// Check if state timed out or if exit conditions are met // added state entry time skip and thermostat time skip
 
 
 
