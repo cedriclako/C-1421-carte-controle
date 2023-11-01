@@ -148,7 +148,8 @@ int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, in
 
 
 void printDebugStr(char str[], _Bool debugisOn) {
-  if(debugisOn){
+  if(debugisOn)
+  {
     printf(" %s \n\r", str);
   }
 }
@@ -159,16 +160,14 @@ void smoke_array_shifter(int array[], int l,int newval){
   for (i = 0; i <l; i++ )
     {
         if (i+1 <l)
-          //printf("i is %i\n",i);
         {
            array[i] =array[i+1];
-          //array_printer(array,l);
         }
-      else{
+      else
+      {
         array[i] = newval;
-        // printf("breaking, array[i] is :%i, i is :%i, newval is %i\n",array[i],i,newval );
-        //array_printer(array,l);
-        break;}
+        break;
+      }
     }
 }
 
@@ -176,8 +175,10 @@ void array_printer(int array[],int l){
 
     int loop = 0;
          for(loop = 0; loop < l; loop++)
-           { printf("%d ", array[loop]);
-           } printf("\n\r"); }
+           {
+        	 printf("%d ", array[loop]);
+           }
+         printf("\n\r"); }
 
 
 
@@ -1552,7 +1553,7 @@ const char* ALGO_GetStateString(State state)
 	    }
 
 	    else{
-			printDebugStr("no cold smoke detected", print_debug_setup);
+			// printDebugStr("no cold smoke detected", print_debug_setup);
 			index_of_grill = 999;
 		      reset_to_last_good_position_needed = false;
 		      // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
@@ -1581,7 +1582,9 @@ const char* ALGO_GetStateString(State state)
 		printDebugStr("normal action, no smoke", print_debug_setup);
 
 		if(print_debug_setup){
+			printf("Smoke History :");
 			array_printer(smoke_history,l);
+			printf("Grill History :");
 			array_printer(grill_history,lgrill);
 		}
 
