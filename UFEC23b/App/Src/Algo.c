@@ -295,6 +295,13 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			Temperature_update_deltaT(stove,(u32CurrentTime_ms - stove->u32TimeOfComputation_ms));
 			if(state_entry_delays_skip|| tStat_just_changed  ||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
 			{
+
+				if ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds))
+				{
+					tStat_just_changed = false ;
+
+				}
+
 				if(AlgoComputeAdjustment[currentState] != NULL)
 				{
 					AlgoComputeAdjustment[currentState](stove, u32CurrentTime_ms);
@@ -471,9 +478,6 @@ static void Algo_reload_entry(Mobj* stove)
 
 	hot_reload = (stove->fBaffleTemp > 400) ;
 
-	printDebugStr("HOT RELOAD", print_debug_setup && hot_reload);
-	printDebugStr("COLD RELOAD", print_debug_setup && !hot_reload);
-
 
 
 }
@@ -502,6 +506,10 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(((stove->fBaffleTemp > P2F(sParam->fTempToQuitReload)) && !hot_reload)|| ((stove->fBaffleTemp > 525) && hot_reload)) // NORMALEMENT 525
 	{
 		nextState = TEMPERATURE_RISE;
+		printDebugStr("HOT RELOAD", print_debug_setup && hot_reload);
+		printDebugStr("COLD RELOAD", print_debug_setup && !hot_reload);
+
+
 	}
 
 
@@ -689,7 +697,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 	static int smoke_detected = 0;
 	int cycle_time = 30;
-	tStat_just_changed = false;
+
 
 
 
@@ -870,7 +878,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 	static int smoke_detected = 0;
 	int cycle_time = 30;
-	tStat_just_changed = false;
+
 
 	if(!stove->bThermostatOn)
 	{
@@ -1041,7 +1049,7 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	static uint32_t u32MajorCorrectionTime_ms = 0;
 	static int smoke_detected = 0;
 	int cycle_time = 30;
-	tStat_just_changed = false;
+
 
 
 	// THERMOSTAT SWITCHING
@@ -1139,7 +1147,7 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	int cycle_time = 30;
 	static int smoke_detected = 0;
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
-	tStat_just_changed = false;
+
 
 
 	if(!stove->bThermostatOn)

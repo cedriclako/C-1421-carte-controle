@@ -118,9 +118,9 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 	{
 
-		printf("Grille sec per steps:%i ", (int)(stove->sGrill.fSecPerStep));
-		printf("Prim sec per steps:%i ", (int)(stove->sPrimary.fSecPerStep));
-		printf("Sec sec per steps:%i ", (int)(stove->sSecondary.fSecPerStep));
+		printf("Grille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
+		printf("Prim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));
+		printf("Sec_sec_per_steps:%i ", (int)(stove->sSecondary.fSecPerStep));
 
 
 
