@@ -320,17 +320,23 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 				AlgoComputeAdjustment[currentState](stove, u32CurrentTime_ms);
 			}
 		}
+
+
 		// STATE EXIT ACTION
 		// Check if state timed out or if exit conditions are met // added state entry time skip and thermostat time skip
 
-
-
-		if(((state_entry_delays_skip|| tStat_just_changed  ||(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) && bStateExitConditionMet) ||
-				((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))))
-		{
+		if(		// have we met the min time in state before being allowed to exit
+			( bStateExitConditionMet && (state_entry_delays_skip  ||
+			(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) ) ||
+			// or have we timed out
+			((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) >
+			MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes)))
+			)
+	{
 
 			if(AlgoStateExitAction[currentState] != NULL)
 			{
+				// if you don't want to end up in zeroing, you need to put something in your state exit action
 				AlgoStateExitAction[currentState](stove);
 			}else
 			{
@@ -1386,8 +1392,8 @@ void Algo_fill_state_functions(void)
 	AlgoStateExitAction[TEMPERATURE_RISE] = Algo_tempRise_exit;
 	AlgoStateExitAction[COMBUSTION_HIGH] = Algo_combHigh_exit;
 	AlgoStateExitAction[COMBUSTION_LOW] = Algo_combLow_exit;
-	AlgoStateExitAction[COAL_LOW] = NULL;
-	AlgoStateExitAction[COAL_HIGH] = NULL;
+	AlgoStateExitAction[COAL_LOW] = Algo_coalLow_exit;
+	AlgoStateExitAction[COAL_HIGH] = Algo_coalHigh_exit;
 	AlgoStateExitAction[OVERTEMP] = NULL;
 	AlgoStateExitAction[SAFETY] = NULL;
 	AlgoStateExitAction[MANUAL_CONTROL] = NULL;
