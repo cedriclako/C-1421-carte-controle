@@ -70,6 +70,7 @@ static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
 // int reload_entry_temperature = 0;
 static bool hot_reload = false;
 static bool tStat_just_changed = false;
+static bool tstat_status = false;
 
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
@@ -236,6 +237,9 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	const PF_RemoteParams_t* RmtParams = PB_GetRemoteParams();
 
 	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
+
+	// update tstat_status with or operator with either remote param or GPIO signal
+	tstat_status = RmtParams->bThermostat || stove->bThermostatOn;
 
 	if((currentState != SAFETY) && stove->bSafetyOn)
 	{
@@ -591,11 +595,11 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// EXIT CONDITIONs TO COMBUSTION
 	//if Tbaffle > 710 or 630, or if primary <=75 go to comb states
-	if((stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombHigh)) ||
-			(!stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombLow))||
+	if((tstat_status && stove->fBaffleTemp > P2F(sParam->fTempToCombHigh)) ||
+			(!tstat_status && stove->fBaffleTemp > P2F(sParam->fTempToCombLow))||
 			stove->sPrimary.u8apertureCmdSteps <= 75 )
 	{
-		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		printDebugStr("Trise exit to combustion", print_debug_setup);
 		return;
 	}
@@ -711,9 +715,9 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
-	if(stove->bThermostatOn)
+	if(tstat_status)
 	{
-		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to comb high", print_debug_setup);
 		tStat_just_changed = true;
@@ -726,7 +730,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal low", print_debug_setup);
 		return;
@@ -890,9 +894,9 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	int cycle_time = 30;
 
 
-	if(!stove->bThermostatOn)
+	if(!tstat_status)
 	{
-		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to comb low", print_debug_setup);
 		tStat_just_changed = true;
@@ -908,7 +912,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if((stove->fBaffleTemp < 550 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal high", print_debug_setup);
 		return;
@@ -1064,9 +1068,9 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// THERMOSTAT SWITCHING
 
-	if(stove->bThermostatOn)
+	if(tstat_status)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal high", print_debug_setup);
 		tStat_just_changed = true;
@@ -1163,9 +1167,9 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
-	if(!stove->bThermostatOn)
+	if(!tstat_status)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal low", print_debug_setup);
 		tStat_just_changed = true;
