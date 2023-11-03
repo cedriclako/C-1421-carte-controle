@@ -71,6 +71,7 @@ static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
 static bool hot_reload = false;
 static bool tStat_just_changed = false;
 static bool tstat_status = false;
+static bool stateTimeout = false;
 
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
@@ -325,16 +326,19 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			}
 		}
 
+		stateTimeout = ((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) >
+		MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))) ;
 
 		// STATE EXIT ACTION
 		// Check if state timed out or if exit conditions are met // added state entry time skip and thermostat time skip
 
-		if(		// have we met the min time in state before being allowed to exit
-			( bStateExitConditionMet && (state_entry_delays_skip  ||
+		if(		// have we met the min time in state before being allowed to do a NORMAL EXIT
+			( bStateExitConditionMet && ( state_entry_delays_skip  ||
 			(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) ) ||
+
 			// or have we timed out
-			((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) >
-			MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes)))
+			stateTimeout
+
 			)
 	{
 
@@ -1139,12 +1143,23 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	}
 
-
 }
 
 static void Algo_coalLow_exit(Mobj *stove)
 {
+
+	// We need to leave the exit action here, otherwise we can't transition between low and high thermostat actions
 	printDebugStr("Coal low exit", print_debug_setup);
+
+	if(bStateExitConditionMet)
+	{
+		// nothing to do here
+	}
+	else
+	{
+		// case for timeout or error (timeout does not validate bStateExitConditionMet)
+		nextState = ZEROING_STEPPER;
+	}
 
 }
 
@@ -1245,7 +1260,23 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 static void Algo_coalHigh_exit(Mobj *stove)
 {
+	// We need to leave the exit action here, otherwise we can't transition between low and high thermostat actions
 	printDebugStr("Coal High exit", print_debug_setup);
+
+	if(bStateExitConditionMet)
+	{
+		// nothing to do here
+	}
+	else
+	{
+		// case for timeout or error (timeout does not validate bStateExitConditionMet)
+		nextState = ZEROING_STEPPER;
+	}
+
+
+
+
+
 }
 //** END: COAL HIGH **//
 
