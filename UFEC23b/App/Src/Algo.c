@@ -669,11 +669,21 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 }
 
+
 static void Algo_tempRise_exit(Mobj *stove)
 {
-
+	if(bStateExitConditionMet)
+	{
+		//
+	}
+	else
+	{
+		// case for timeout or error
+		nextState = ZEROING_STEPPER;
+	}
 }
 //** END: TEMPERATURE RISE **//
+
 
 
 //** STATE: COMBUSTION LOW **//
