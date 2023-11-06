@@ -67,6 +67,8 @@ static void RequestConfigWriteEvent(void *event_handler_arg, esp_event_base_t ev
 
 static void ManageServerConnection();
 
+static void ForceDisconnected();
+
 // Events
 static void ServerConnected();
 static void ServerDisconnected();
@@ -194,7 +196,16 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         }
         case UFEC23PROTOCOL_FRAMEID_S2CEvent:
         {
-            ESP_LOGI(TAG, "Received S2CEvent, len: %"PRIu32", payload: %"PRId32, u32PayloadLen, (int32_t)u8Payloads[0]);
+            const UFEC23PROTOCOL_EVENTID eEventID = (UFEC23PROTOCOL_EVENTID)u8Payloads[0];
+            if (eEventID == UFEC23PROTOCOL_EVENTID_BootedUp)
+            {
+                ESP_LOGI(TAG, "The served just rebooted, force disconnection");
+                ForceDisconnected();
+            }
+            else
+            {
+                ESP_LOGI(TAG, "Received S2CEvent, len: %"PRIu32", payload: %"PRId32, u32PayloadLen, (int32_t)u8Payloads[0]);
+            }
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
@@ -333,14 +344,19 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_LowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_LowerFanSpeed.bHasValue = true;
+            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
+                pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.bHasValue = true;
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):
         {
             if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value, u8Payloads, u32PayloadLen))
                 pMemBlock->sRemoteData.sRMT_DistribFanSpeed.bHasValue = true;
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_S2CSyncAll):
+        {
+            ESP_LOGI(TAG, "Finished sync");
             break;
         }
         default:
@@ -371,20 +387,25 @@ static void RequestConfigWriteEvent(void *event_handler_arg, esp_event_base_t ev
     ProcParameterUpload();
 }
 
+static void ForceDisconnected()
+{       
+    if (m_sStateMachine.bIsConnected)
+    {
+        m_sStateMachine.bIsConnected = false;
+        STOVEMB_Take(portMAX_DELAY);
+        STOVEMB_Reset();
+        STOVEMB_Give();
+        ServerDisconnected();
+    }
+}
+
 static void ManageServerConnection()
 {
     // Business logics
     const TickType_t ttDiffLastComm = (xTaskGetTickCount() - m_sStateMachine.ttLastCommTicks);
     if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_COMMUNICATIONLOST_TIMEOUT_MS))
     {
-        if (m_sStateMachine.bIsConnected)
-        {
-            m_sStateMachine.bIsConnected = false;
-            STOVEMB_Take(portMAX_DELAY);
-            STOVEMB_Reset();
-            STOVEMB_Give();
-            ServerDisconnected();
-        }
+        ForceDisconnected();
     }
     else if (m_sStateMachine.ttLastCommTicks != 0)
     {
@@ -423,8 +444,8 @@ static void ServerConnected()
     STOVEMB_Give();
 
     // Send some requests ...
-    // SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqVersion, NULL, 0);
-    //SendFrame(UFEC23PROTOCOL_FRAMEID_C2SGetRunningSetting, NULL, 0);
+    // Request the system to send all relevant variables values
+    SendFrame(UFEC23PROTOCOL_FRAMEID_C2SSyncAll, NULL, 0);
     
     // Start downloading parameters
     ProcParameterDownload();

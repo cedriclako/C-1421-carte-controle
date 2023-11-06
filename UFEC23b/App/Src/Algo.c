@@ -184,12 +184,14 @@ void array_printer(int array[],int l){
 
 
 
+static const char* m_szGitCommitBranch = GITCOMMIT_BRANCH;
+
 void Algo_Init(void const * argument)
 {
 	LOG(TAG, "\r\n\r\n");
 	LOG(TAG, "--------------------------------");
 	LOG(TAG, "BOOTING APP");
-	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, GITCOMMIT_BRANCH, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
+	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, m_szGitCommitBranch, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
 	LOG(TAG, "Internal flash: %"PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
 	LOG(TAG, "--------------------------------");
 
@@ -212,23 +214,21 @@ void Algo_Init(void const * argument)
 	ESPMANAGER_SetReady();
 	LOG(TAG, "Ready");
 
-    for(;;)
-    {
-    	GPIOManager(&UFEC23,osKernelSysTick());
-    	TemperatureManager(&UFEC23,osKernelSysTick());
-    	DebugManager(&UFEC23,osKernelSysTick());
-    	ESPMANAGER_Run();
-    	ParticlesManager(osKernelSysTick());
-    	Algo_task(&UFEC23, osKernelSysTick());
-    	osDelay(1);
+	for(;;)
+	{
+		GPIOManager(&UFEC23,osKernelSysTick());
+		TemperatureManager(&UFEC23,osKernelSysTick());
+		DebugManager(&UFEC23,osKernelSysTick());
+		ESPMANAGER_Run();
+		ParticlesManager(osKernelSysTick());
+		Algo_task(&UFEC23, osKernelSysTick());
+		osDelay(1);
 		#if WHITEBOX_WATCHDOG_ISDEACTIVATED == 0
-    	HAL_IWDG_Refresh(&hiwdg);
+		HAL_IWDG_Refresh(&hiwdg);
 		#endif
-    	Fan_Process(&UFEC23);
-
-    	//osDelay(1);
-    }
-
+		Fan_Process(&UFEC23);
+		//osDelay(1);
+	}
 }
 
 static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
@@ -284,6 +284,10 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	else if(stove->bReloadRequested && (currentState == WAITING || currentState == COMBUSTION_LOW || currentState == COMBUSTION_HIGH ||
 			currentState == COAL_LOW || currentState == COAL_HIGH || currentState == TEMPERATURE_RISE))
 	{
+		if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
+		{
+			Particle_requestZero();
+		}
 		if(!stove->bInterlockOn)
 		{
 			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))

@@ -10,14 +10,24 @@
     <body>
         <img src="img/logo-sbi-350x256.png" style="padding: 5px; width: 150px;"><br>
         <div class="content">
-            <span>Please upload a new firmware binary.</span><br>
-            <input type="file" id="idFile">
+            <span>ESP32 - Please upload a new firmware binary.</span><br>
+            <input type="file" id="idFileESP32">
             <br/><br/>
-            <span id="lblStatus">---</span>
+            <span id="lblStatusESP32">---</span>
             <br/><br/>
-            <button id="idBtnUpload" onclick="idBtnUpload_Click()">Upload</button>
+            <button id="dBtnUploadESP32" onclick="idBtnUploadESP32_Click()">Upload</button>
         </div><br>
 
+        <div class="content">
+            <span>STM32 - Please upload a new firmware binary.</span><br>
+            <input type="file" id="idFileSTM32">
+            <br/><br/>
+            <span id="lblStatusSTM32">---</span>
+            <br/><br/>
+            <button id="dBtnUploadSTM32" onclick="idBtnUploadSTM32_Click()">Upload</button>
+        </div><br>
+
+        <script type="text/javascript" src="js/api-def.js"></script>
         <script type="text/javascript" src="js/mnt-ota.js"></script>
     </body>
 </html>

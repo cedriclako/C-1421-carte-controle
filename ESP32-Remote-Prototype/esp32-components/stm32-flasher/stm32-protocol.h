@@ -34,11 +34,13 @@ typedef struct
 #define STM32PROTOCOL_ACK (0x79)
 #define STM32PROTOCOL_NACK (0x1F)
 
-#define STM32PROTOCOL_SCONFIG_INIT { .bInitGPIO = false, .reset_pin = -1, .boot0_pin = -1, .boot1_pin = -1, .bInitUART = false, .uart_port = -1, .uart_tx_pin = -1, .uart_rx_pin = -1, .u32RecvDataTimeoutMS = 1000, .u32SyncDataTimeoutMS = 10000 }
+#define STM32PROTOCOL_SCONFIG_INIT { .bInitGPIO = false, .reset_pin = -1, .boot0_pin = -1, .boot1_pin = -1, .bInitUART = false, .uart_port = -1, .uart_tx_pin = -1, .uart_rx_pin = -1, .u32RecvDataTimeoutMS = 20000, .u32SyncDataTimeoutMS = 20000 }
 
 void STM32PROTOCOL_Init(STM32PROTOCOL_SContext* pContext, const STM32PROTOCOL_SConfig* pConfig);
 
 esp_err_t STM32PROTOCOL_ResetSTM(const STM32PROTOCOL_SContext* pContext, bool bIsBootloaderMode);
+
+esp_err_t STM32PROTOCOL_ResetToApp(const STM32PROTOCOL_SContext* pContext);
 
 esp_err_t STM32PROTOCOL_SetupSTM(const STM32PROTOCOL_SContext* pContext);
 

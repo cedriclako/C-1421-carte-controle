@@ -1,10 +1,29 @@
 #include "StaticFileServe.h"
+#include <esp32/rom/crc.h>
+#include "assets/EmbeddedFiles.h"
 
 #define TAG "StaticFileServe"
 
 static const EF_SFile* GetFileByURL(const char* strFilename, EF_EFILE* pOutEFile);
 static const EF_SFile* GetFile(EF_EFILE eFile);
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filename);
+
+static bool m_bIsCRC32Valid = false;
+
+void WSSFS_Init()
+{
+    // Check internal assets CRC32 to be sure nothing wrong happens silently ...
+    uint32_t crc = 0;
+    ESP_LOGI(TAG, "Checking assets CRC32");
+    crc = crc32_le(crc, EF_g_u8Blobs, EF_g_u32BlobSize);
+    ESP_LOGI(TAG, "Assets calculated CRC32: %"PRIX32", expected CRC32: %"PRIX32, crc, EF_g_u32BlobCRC32);
+    m_bIsCRC32Valid = (crc == EF_g_u32BlobCRC32);
+
+    if (!m_bIsCRC32Valid)
+    {
+        ESP_LOGE(TAG, "Assets CRC32 doesn't match");
+    }
+}
 
 /* An HTTP GET handler */
 esp_err_t WSSFS_file_get_handler(httpd_req_t *req)
@@ -13,7 +32,14 @@ esp_err_t WSSFS_file_get_handler(httpd_req_t *req)
     EF_EFILE eFile;
 
     ESP_LOGI(TAG, "Opening file uri: '%s'", req->uri);
-    
+
+    if (!m_bIsCRC32Valid)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Missmatch between generated assets CRC32. You need to regenerate the assets");
+        httpd_resp_set_hdr(req, "Connection", "close");
+        return ESP_FAIL;
+    }
+
     if (strcmp(req->uri, "/") == 0 || strcmp(req->uri, DEFAULT_RELATIVE_URI) == 0) {
         // Redirect root to index.html
         eFile = EF_EFILE_USER_INDEX_HTML;
@@ -29,7 +55,7 @@ esp_err_t WSSFS_file_get_handler(httpd_req_t *req)
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
         return ESP_FAIL;
     }
-    else if (eFile == EF_EFILE_MNT_INDEX_HTML)
+    else if (eFile == EF_EFILE_MNT_INDEX_HTML || eFile == EF_EFILE_MNT_OTA_HTML)
     {
         CHECK_FOR_ACCESS_OR_RETURN();
     }

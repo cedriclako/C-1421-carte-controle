@@ -137,7 +137,13 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
 
   } >RAM AT> FLASH
-
+  
+  .TrailerMarker : ALIGN(0x10) 
+  {
+    KEEP(*(.TrailerMarker)) /*keep my variable even if not referenced */
+    FILL(0xff); /* Fill al the section with 0xff. */
+  } > FLASH
+  
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
   .bss :

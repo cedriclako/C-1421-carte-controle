@@ -30,14 +30,12 @@ Thise is an except from the manufacturer documentation.
 Partition the flash memory with some future proofing.
 Partition layout could looks like this:
 
-NOTE: Address doesn't start at 0, refer to the datasheet for more details.
+NOTE: Address doesn't start at 0 (flash memory is mapped at 0x0800_0000), refer to the datasheet for more details.
 Nothing here is final, it's still suggested.
 
 | Partition name | Start page | Page count | Description
 |---|---|---|---|
-| Bootloader | 0 | 30 (60 KiB) | Reserved for the bootloader program
-| APP0 | 30 | 47 (94 KiB) | Main application, location 0
-| APP1 | 77 | 47 (94 KiB) | Main application, location 1
-| PARAM | 124 | 3 (12 KiB) | User parameters or calibration
-| BOOT-INFO | 127 | 1 (2 KiB) | The bootloader can use this to store boot related information (like CRC32, location etc...)
+| APP | 0 | 124 (124 KiB) | Main application, location 0 |
+| PARAMS | 124 | 2 (4 KiB) | User parameters or calibration |
+| EXTRAS | 126 | 2 (4 KiB) | In case we need to store extra informations not related to the parameters |
 

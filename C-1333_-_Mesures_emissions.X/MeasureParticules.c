@@ -292,10 +292,12 @@ void measureSetLED(const gs_Parameters* Param)
     
     uint8_t DAC = Param->DAC_value;
     
+    DAC1_SetOutput(DAC);
     DAC1_Enable();
     
     adcRequest = (uint16_t) (4096*Param->Current_cmd/330);
-    //shunt = ADCC_GetSingleConversion(channel_ANB7);
+    ADCC_DischargeSampleCapacitor();
+    adc_memory = ADCC_GetSingleConversion(channel_ANB7);
     
     while(adcMeasured != adcRequest)
     {
@@ -304,13 +306,11 @@ void measureSetLED(const gs_Parameters* Param)
         i = 0;
         while(i< N)
         {
-            if(ADCC_IsConversionDone())
-            {
-                shunt = ADCC_GetSingleConversion(channel_ANB7);
-                adcMeasured += shunt;
-                i++;
-            }
-            
+
+            shunt = ADCC_GetSingleConversion(channel_ANB7);
+            adcMeasured += shunt;
+            i++;
+
         }
         adcMeasured = adcMeasured/N;
         
@@ -318,7 +318,7 @@ void measureSetLED(const gs_Parameters* Param)
         {
             if(adcMeasured - adcRequest > 10)
             {
-                if(upMotion && (adcRequest - adc_memory) < (adcMeasured - adcRequest))
+                if(upMotion && ((int)(adcRequest - adc_memory) < (int)(adcMeasured - adcRequest)))
                 {
                     break;
                 }
@@ -338,8 +338,9 @@ void measureSetLED(const gs_Parameters* Param)
         {
             if(adcRequest - adcMeasured > 10)
             {
-                if(!upMotion && (adcRequest - adcMeasured) < (adc_memory - adcMeasured))
+                if(!upMotion && ((int)(adcRequest - adcMeasured) < (int)(adc_memory - adcMeasured)))
                 {
+                    //shunt = 10;
                     break;
                 }
                 upMotion = true;
@@ -357,6 +358,7 @@ void measureSetLED(const gs_Parameters* Param)
         //shunt = ADCC_GetSingleConversion(channel_ANB7);
     }
     PF_setDAC(DAC);
+    
     gs_sMeasPartObject.adcValue = (uint16_t) shunt;
     DAC1_Disable();
 }

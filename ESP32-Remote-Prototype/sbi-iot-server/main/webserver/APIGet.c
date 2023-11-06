@@ -260,7 +260,7 @@ static char* GetLiveData()
     cJSON* pRemote = cJSON_CreateObject();
     cJSON_AddItemToObject(pRemote, "rmt_TstatReqBool", cJSON_CreateBool(pMemBlock->sRemoteData.sRMT_TstatReqBool.s32Value));
     cJSON_AddItemToObject(pRemote, "rmt_BoostBool", cJSON_CreateBool(pMemBlock->sRemoteData.sRMT_BoostBool.s32Value));
-    cJSON_AddItemToObject(pRemote, "rmt_LowerFanSpeed", cJSON_CreateNumber(pMemBlock->sRemoteData.sRMT_LowerFanSpeed.s32Value));
+    cJSON_AddItemToObject(pRemote, "rmt_BlowerFanSpeed", cJSON_CreateNumber(pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.s32Value));
     cJSON_AddItemToObject(pRemote, "rmt_DistribFanSpeed", cJSON_CreateNumber(pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value));
     
     cJSON_AddItemToObject(pRemote, "tempC_current", cJSON_CreateNumber(pMemBlock->sRemoteData.fTempCurrentC));

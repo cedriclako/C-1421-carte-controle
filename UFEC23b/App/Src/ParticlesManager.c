@@ -145,7 +145,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 				//Test unitaire - SETZERO CMD
 				tx_checksum = Particle_Send_CMD(SETZERO_CMD);
 				tx_size = 5;
-				response_delay = 600;
+				response_delay = 1000;
 
 			}else{
 
@@ -273,9 +273,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			setZero = false;
 			ParticleDevice.u16zero = (uint16_t)(RX_BUFFER[4] << 8) + (uint16_t)RX_BUFFER[5];
 			//zero_current = RX_BUFFER[7];
-			//ParticleDevice.normalized_zero = (float)ParticleDevice.u16zero/(float)zero_current;
 			ParticleDevice.fnormalized_zero = (float)ParticleDevice.u16zero/((float)RX_BUFFER[7]/10);
-
 		}else
 		{
 			if(uartErrorCount <= COMM_ERR_LIMIT)
