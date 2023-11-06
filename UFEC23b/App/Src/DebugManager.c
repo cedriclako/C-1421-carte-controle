@@ -71,7 +71,7 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	printf(ALGO_GetStateString(currentState));
 
 	printf(" tStat:");
-	if (stove->bThermostatOn == true)
+	if (tstat_status == true)
 	{
 		printf("ON ");
 	}

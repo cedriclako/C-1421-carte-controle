@@ -31,6 +31,9 @@
 
 /***** Variables ******/
 
+extern _Bool tstat_status;
+
+
 typedef enum {
   ZEROING_STEPPER,
   WAITING,

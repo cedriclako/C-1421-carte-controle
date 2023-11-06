@@ -70,7 +70,7 @@ static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
 // int reload_entry_temperature = 0;
 static bool hot_reload = false;
 static bool tStat_just_changed = false;
-static bool tstat_status = false;
+_Bool tstat_status = false;
 static bool stateTimeout = false;
 
 
