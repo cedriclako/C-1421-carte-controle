@@ -14,6 +14,7 @@
 
 #include "uartbridge/stovemb.h"
 #include "version.h"
+#include "uartbridge/uartbridge.h"
 
 #if SBI_CL
 #include "cJSON.h"
@@ -476,12 +477,10 @@ static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, cons
         ESP_LOGI(TAG, "espNowDataRcv.distribSpeedRmt: %d", espNowDataRcv.distribSpeedRmt);
         ESP_LOGI(TAG, "espNowDataRcv.boostStatRmt: %d", espNowDataRcv.boostStatRmt);
 
-        STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-
-        pMB->sRemoteData.sRMT_TstatReqBool.s32Value = espNowDataRcv.tStatRmt;
-        pMB->sRemoteData.sRMT_BlowerFanSpeed.s32Value = espNowDataRcv.blowerSpeedRmt;
-        pMB->sRemoteData.sRMT_DistribFanSpeed.s32Value = espNowDataRcv.distribSpeedRmt;
-        pMB->sRemoteData.sRMT_BoostBool.s32Value = espNowDataRcv.boostStatRmt;
+        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_StatRmt, (int32_t) espNowDataRcv.tStatRmt);
+        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, (int32_t) espNowDataRcv.blowerSpeedRmt);
+        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt, (int32_t) espNowDataRcv.distribSpeedRmt);
+        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, (int32_t) espNowDataRcv.boostStatRmt);
 
         // Put into receive queue
         ESPNOWPROCESS_SMsg msg;
