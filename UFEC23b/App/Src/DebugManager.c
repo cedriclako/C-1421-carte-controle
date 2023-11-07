@@ -113,16 +113,17 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 
 	if(print_debug_setup)
-
-
-
 	{
+		printf("Last State:");
+		printf(ALGO_GetStateString(lastState));
+		printf(" Next State:");
+		printf(ALGO_GetStateString(nextState));
+		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
+		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
 
 		printf("Grille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
 		printf("Prim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));
 		printf("Sec_sec_per_steps:%i ", (int)(stove->sSecondary.fSecPerStep));
-
-
 
 		if(stove->bSafetyOn == true)
 		{
@@ -133,15 +134,6 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 			printf("bSafetyOff ");
 		}
 
-		printf("Last State:");
-		printf(ALGO_GetStateString(lastState));
-		printf(" Next State:");
-		printf(ALGO_GetStateString(nextState));
-		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
-		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
-
-
-
 		if(stove->bInterlockOn)
 		{
 			printf("\n\rbinterlock on \n");
@@ -150,7 +142,6 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 		{
 			printf("\n\rbinterlock off \n");
 		}
-
 
 		if(stove->bReloadRequested)
 		{
@@ -161,11 +152,13 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 			printf("\n\rbReloadRequested off \n");
 		}
 
-
-
-
 			printf("\n\rfan 1 speed is : %i",fan1speed);
 			printf("\n\rfan 2 speed is : %i",fan2speed);
+
+		if(stove->bstateJustChanged)
+		{
+		// print state that we entered parameters
+		}
 
 
 

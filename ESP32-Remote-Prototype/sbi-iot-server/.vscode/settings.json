@@ -12,5 +12,6 @@
         "settings.h": "c",
         "stovemb.h": "c"
     },
-    "idf.adapterTargetName": "esp32"
+    "idf.adapterTargetName": "esp32",
+    "idf.flashType": "UART"
 }
