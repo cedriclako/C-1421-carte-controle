@@ -72,6 +72,7 @@ static bool hot_reload = false;
 static bool tStat_just_changed = false;
 _Bool tstat_status = false;
 static bool stateTimeout = false;
+static int temp_coal_entry;
 
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
@@ -129,7 +130,7 @@ static void Algo_coalHigh_entry(Mobj *stove);
 static void Algo_boost_entry(Mobj *stove);
 
 //static void Algo_waiting_exit(Mobj *stove);
-static void Algo_reload_exit(Mobj *stove);
+//static void Algo_reload_exit(Mobj *stove);
 //static void Algo_zeroing_exit(Mobj *stove);
 static void Algo_tempRise_exit(Mobj *stove);
 static void Algo_combLow_exit(Mobj *stove);
@@ -148,7 +149,6 @@ int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, in
 		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target,
 		int g_min, int g_max, int p_min, int p_max);
 
-
 void printDebugStr(char str[], _Bool debugisOn) {
   if(debugisOn)
   {
@@ -156,8 +156,8 @@ void printDebugStr(char str[], _Bool debugisOn) {
   }
 }
 
-void smoke_array_shifter(int array[], int l,int newval){
-
+void smoke_array_shifter(int array[], int l ,int newval)
+{
   int i = 0;
   for (i = 0; i <l; i++ )
     {
@@ -236,6 +236,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	const PF_UsrParam* UsrParam =  PB_GetUserParam();
 	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
 	const PF_RemoteParams_t* RmtParams = PB_GetRemoteParams();
+	bool min_time_in_state_met = 0;
 
 	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
 
@@ -301,7 +302,9 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			stove->TimeOfReloadRequest = u32CurrentTime_ms;
 		}
 	}
-	else // When we get here, check if it's time to compute an adjustment
+
+	// When we get here, check if it's time to do current state action
+	else
 	{
 		if((u32CurrentTime_ms - stove->u32TimeOfComputation_ms) > UsrParam->s32TimeBetweenComputations_ms)
 		{
@@ -309,11 +312,9 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			if(state_entry_delays_skip /*|| tStat_just_changed */ ||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
 			{
 
-				//if ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds))
-				//{
+				// if we're at state action period time and we've done entry time in state wait, reset condition
+				// tStat_just_changed serves to skip state wait time because we want to be able to switch between high and low without delay
 					tStat_just_changed = false ;
-
-				//}
 
 				if(AlgoComputeAdjustment[currentState] != NULL)
 				{
@@ -322,6 +323,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			}
 			stove->u32TimeOfComputation_ms = u32CurrentTime_ms;
 			PrintOutput(stove, currentState, nextState, lastState);
+
 		}else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
 		{										// But we still loop in the first 'if' once per computation period (to print output)
 			if(AlgoComputeAdjustment[currentState] != NULL)
@@ -336,14 +338,10 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		// STATE EXIT ACTION
 		// Check if state timed out or if exit conditions are met // added state entry time skip and thermostat time skip
 
+		min_time_in_state_met = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes);
+
 		if(		// have we met the min time in state before being allowed to do a NORMAL EXIT
-			( bStateExitConditionMet && ( state_entry_delays_skip  ||
-			(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) ) ||
-
-			// or have we timed out
-			stateTimeout
-
-			)
+			( bStateExitConditionMet && ( state_entry_delays_skip  || min_time_in_state_met ) ) || stateTimeout )
 	{
 
 			if(AlgoStateExitAction[currentState] != NULL)
@@ -413,7 +411,7 @@ static void Algo_stoveInit(Mobj *stove)
 	Algo_adjust_steppers_position(stove);
 }
 
-///////////////////////// STATE MACHINE  //////////////////////////////////////////////////////////////////////
+///////////////////////// STATE MACHINE  ////////////////////////////
 
 
 //** STATE: ZEROING STEPPER **//
@@ -439,7 +437,6 @@ static void Algo_zeroing_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 //static void Algo_zeroing_exit(Mobj *stove)
 //{
-
 //}
 //** END: ZEROING STEPPER **//
 
@@ -452,21 +449,19 @@ static void Algo_waiting_entry(Mobj *stove)
 	{
 		nextState = TEMPERATURE_RISE;
 	}
-
 }
 
 static void Algo_Waiting_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_WaitingParam_t *sParam = PB_GetWaitingParams();
 
-	if(!stove->bInterlockOn)
+	if(!stove->bInterlockOn) // va tjrs être vrai parce qu'on utilise plus l'interlock, donc la variable est seulement initialisée
 	{
 		if((stove->fBaffleTemp > P2F(sParam->fTempToQuitWaiting)))
 		{
 			stove->bReloadRequested = true;
 		}
 	}
-
 }
 
 //static void Algo_waiting_exit(Mobj *stove)
@@ -518,7 +513,7 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	time_reload_entry = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000;
 
-	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60) && !state_entry_delays_skip)
+	if(time_reload_entry * 1000 < SECONDS(60) && !state_entry_delays_skip)
 	{
 		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup);
 		if(print_debug_setup){printf("\n%i\n",(int)time_reload_entry);}
@@ -531,7 +526,6 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		printDebugStr("HOT RELOAD", print_debug_setup && hot_reload);
 		printDebugStr("COLD RELOAD", print_debug_setup && !hot_reload);
 
-
 	}
 
 
@@ -539,10 +533,12 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 }
 
+/*
 static void Algo_reload_exit(Mobj *stove)
 {
 
 }
+*/
 //** END: RELOAD / IGNITION**//
 
 
@@ -582,7 +578,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams(); // aller chercher les paramètres de vitesse de stepper selon l'état
 	static int smoke_detected = 0;
 
-	int cycle_time = 60; // cycle time (sec) that is specific to this state
+	int cycle_time = 30; // cycle time (sec) that is specific to this state
 
 	//const Smoke_struct_t sSmoke = {
 	//		.cycle_time = cycle_time,
@@ -809,8 +805,8 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 			printDebugStr("\n Eta 10 B \n under temp slope target (-5) && TBaffle under 620 : changing fast", print_debug_setup);
 
-			// TODO setter une variable pour 36 dans ce cas
-			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 36);
+			// TODO setter une variable pour 70 dans ce cas
+			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 70);
 			stove->sPrimary.fSecPerStep = 0; // force aperture
 			bStepperAdjustmentNeeded = true;
 			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
@@ -1082,6 +1078,7 @@ static void Algo_combHigh_exit(Mobj *stove)
 static void Algo_coalLow_entry(Mobj *stove)
 {
 	//const PF_CoalParam_t *sParam = PB_GetCoalLowParams();
+	temp_coal_entry = stove->fBaffleTemp;
 
 }
 
@@ -1107,9 +1104,7 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
-
-
-	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(5) && stove->fBaffleTemp > 550 )
+	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(5) && stove->fBaffleTemp > (temp_coal_entry + 15) )
 
 	{
 		nextState = COMBUSTION_LOW ;
@@ -1267,7 +1262,6 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 					if(stove->sSecondary.u8apertureCmdSteps-- <= sParam->sSecondary.i32Min + 5)
 					{
 						stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Min + 5;
-
 					}
 				}
 			}
@@ -1443,7 +1437,7 @@ void Algo_fill_state_functions(void)
 
 	AlgoStateExitAction[ZEROING_STEPPER] = NULL;
 	AlgoStateExitAction[WAITING] = NULL;
-	AlgoStateExitAction[RELOAD_IGNITION] = Algo_reload_exit;
+	AlgoStateExitAction[RELOAD_IGNITION] = NULL;
 	AlgoStateExitAction[TEMPERATURE_RISE] = Algo_tempRise_exit;
 	AlgoStateExitAction[COMBUSTION_HIGH] = Algo_combHigh_exit;
 	AlgoStateExitAction[COMBUSTION_LOW] = Algo_combLow_exit;
@@ -1519,8 +1513,6 @@ const char* ALGO_GetStateString(State state)
 	int controller_target = (P2F(particles_target) + P2F(particles_tolerance)) ;
 	int controller_output;
 	int k = 1.8;
-
-
 
 	controller_output  = RANGE(0.5 , k / (controller_error/controller_target) , 0.85 );
 
