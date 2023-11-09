@@ -1177,9 +1177,8 @@ static void Algo_coalLow_exit(Mobj *stove)
 	}
 
 }
-
-
 //** END: COAL LOW **//
+
 
 //** STATE: COAL HIGH **//
 static void Algo_coalHigh_entry(Mobj *stove)
@@ -1196,7 +1195,7 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 
 
-
+	// THERMOSTAT SWITCHING
 	if(!tstat_status)
 	{
 		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
@@ -1207,9 +1206,8 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 
 
-
+	// ACTION AFTER 5 MINS
 	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(5) && stove->fBaffleTemp > 575 )
-
 	{
 		nextState = COMBUSTION_HIGH ;
 		bStateExitConditionMet = true;
@@ -1218,8 +1216,7 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	}
 
 
-	// WAITING FOR NEXT LOOP WHEN MAJOR CORRECTION
-
+	// WAITING FOR NEXT LOOP
 	if((u32MajorCorrectionTime_ms != 0 && ((u32CurrentTime_ms - u32MajorCorrectionTime_ms) < SECONDS(cycle_time))) )
 	{
 		printDebugStr("there was a major correction,  wait: skip to next loop !", print_debug_setup);
@@ -1228,19 +1225,11 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 	// SMOKE ACTION
-
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
 				 0,	sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
 
 	if(smoke_detected){return;}
-
-
-
-
-
-
-
 
 
 	if(stove->fBaffleTemp<550)
@@ -1286,10 +1275,6 @@ static void Algo_coalHigh_exit(Mobj *stove)
 		// case for timeout or error (timeout does not validate bStateExitConditionMet)
 		nextState = ZEROING_STEPPER;
 	}
-
-
-
-
 
 }
 //** END: COAL HIGH **//
@@ -1663,7 +1648,6 @@ const char* ALGO_GetStateString(State state)
 	return 0; // no smoke return 0
 
 }
-
 
  bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2)
  {
