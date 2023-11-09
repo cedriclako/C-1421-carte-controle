@@ -20,8 +20,6 @@
 #include "GPIOManager.h"
 #include "FlashMap.h"
 #include "FanManager.h"
-//#include "ProdTest.h"
-//#include "MotorManager.h"
 #include "ParticlesManager.h"
 #include "EspBridge.h"
 #include "TemperatureManager.h"
@@ -42,7 +40,6 @@ typedef struct
 
 	Fan_Speed_t eFanDistSpeed;
 	Fan_Speed_t eFanLowSpeed;
-
 }Boost_mem_t;
 
 /*
@@ -184,10 +181,17 @@ void Algo_Init(void const * argument)
 {
 	LOG(TAG, "\r\n\r\n");
 	LOG(TAG, "--------------------------------");
-	LOG(TAG, "BOOTING APP");
+	#ifdef DEBUG
+	LOG(TAG, "BOOTING APP-BIN (DEBUG)");
+	#else
+	LOG(TAG, "BOOTING APP-BIN (RELEASE)");
+	#endif
 	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, m_szGitCommitBranch, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
-	LOG(TAG, "Internal flash: %"PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
+	LOG(TAG, "Internal flash: %" PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
 	LOG(TAG, "--------------------------------");
+	#ifndef DEBUG
+	LOG(TAG, "WARNING: In release, parameter are not saved");
+	#endif
 
 	PARAMFILE_Init();
 	PARAMFILE_Load();

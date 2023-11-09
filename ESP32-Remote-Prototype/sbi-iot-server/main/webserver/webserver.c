@@ -27,7 +27,7 @@ static esp_err_t action_post_handler(httpd_req_t *req);
 uint8_t g_u8Buffers[HTTPSERVER_BUFFERSIZE];
 
 // static bool m_bIsPairing = false;
-#if FWCONFIG_MAINTENANCEACCESS_NOPASSWORD != 0
+#if FWCONFIG_DEVMODE != 0
 bool g_bHasAccess = true;
 #else
 bool g_bHasAccess = false;

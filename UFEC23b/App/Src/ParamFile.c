@@ -257,22 +257,23 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 
 			*ps32RAMValue = pItem->uType.sInt32.s32Default;
 
-			// If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
-			if (!bIsVolatile)
-			{
-				const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
+      #ifdef DEBUG
+      // If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
+      if (!bIsVolatile)
+      {
+        const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
 
-				const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
-				const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
+        const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
+        const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
 
-				// If the magic mask fit, we load the value. If not we just ignore it.
-				// the rest of the process will handle it and put it back to the default value.
-				if (s32SavedValue == (s32SavedValueInv ^ s32MagicMask))
-				{
-					*ps32RAMValue = s32SavedValue;
-				}
-			}
-
+        // If the magic mask fit, we load the value. If not we just ignore it.
+        // the rest of the process will handle it and put it back to the default value.
+        if (s32SavedValue == (s32SavedValueInv ^ s32MagicMask))
+        {
+          *ps32RAMValue = s32SavedValue;
+        }
+      }
+      #endif
 			// We need to still increase the address even if we don't write into flash to ensure all settings stay coherent
 			u32RelativeAddr += sizeof(int32_t)*2;
 		}
@@ -281,6 +282,7 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 
 static void CommitAllCallback(const PFL_SHandle* psHandle)
 {
+  #ifdef DEBUG
 	FMAP_ErasePartition(FMAP_EPARTITION_Parameters);
 
 	uint32_t u32RelativeAddr = 0;
@@ -305,6 +307,7 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 		// We need to still increase the address even if we don't write into flash to ensure all settings stay coherent
 		u32RelativeAddr += sizeof(int32_t)*2;
 	}
+  #endif
 }
 
 static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)

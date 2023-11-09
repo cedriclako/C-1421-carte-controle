@@ -203,7 +203,7 @@ static bool HandleMaintenancePasswordRequest(const char* szJSON)
         ESP_LOGE(TAG, "Cannot find JSON password element");
         goto ERROR;
     }
-    #if FWCONFIG_MAINTENANCEACCESS_NOPASSWORD == 0
+    #if FWCONFIG_DEVMODE == 0
     if (strcmp((const char*)pEntryJSON->valuestring, FWCONFIG_MAINTENANCEACCESS_PASSWORD) != 0)
     {
         ESP_LOGE(TAG, "Wrong password");
