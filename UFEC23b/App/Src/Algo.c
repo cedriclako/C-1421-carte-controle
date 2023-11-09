@@ -1497,7 +1497,7 @@ const char* ALGO_GetStateString(State state)
 	int controller_target = (P2F(particles_target) + P2F(particles_tolerance))- 20 ;
 	int controller_error = stove->sParticles->fparticles - controller_target;
 	  float controller_output;
-	  float k = 1.8;
+	  float k = 1.2;
 
 	controller_error = controller_error==0 ? 1 : controller_error ;
 
