@@ -1509,12 +1509,15 @@ const char* ALGO_GetStateString(State state)
 	int index_of_grill = 999;
 	static bool reset_to_last_good_position_needed=false;
 
-	int controller_error = stove->sParticles->fparticles - (P2F(particles_target) + P2F(particles_tolerance));
-	int controller_target = (P2F(particles_target) + P2F(particles_tolerance)) ;
+	int controller_target = (P2F(particles_target) + P2F(particles_tolerance))- 20 ;
+	int controller_error = stove->sParticles->fparticles - controller_target;
 	int controller_output;
-	int k = 1.8;
+	int k = 2;
 
-	controller_output  = RANGE(0.5 , k / (controller_error/controller_target) , 0.85 );
+	controller_error = controller_error==0 ? 1 : controller_error ;
+
+
+	controller_output  = RANGE(0.5 , k * (controller_target/controller_error) , 0.95 );
 
 	printf("\n\r proportional smoke controller output : %i \n\r",controller_output);
 
