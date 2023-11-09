@@ -1132,9 +1132,9 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
-	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != sParam->sGrill.i32Min)
+	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != /*sParam->sGrill.i32Min*/ 24)
 	{
-		stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
+		stove->sGrill.u8apertureCmdSteps = /*sParam->sGrill.i32Min*/ 24;
 		stove->sGrill.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
 	}
@@ -1496,15 +1496,15 @@ const char* ALGO_GetStateString(State state)
 
 	int controller_target = (P2F(particles_target) + P2F(particles_tolerance))- 20 ;
 	int controller_error = stove->sParticles->fparticles - controller_target;
-	int controller_output;
-	int k = 2;
+	  float controller_output;
+	  float k = 1.8;
 
 	controller_error = controller_error==0 ? 1 : controller_error ;
 
 
-	controller_output  = RANGE(0.5 , k * (controller_target/controller_error) , 0.95 );
+	controller_output = RANGE(P2F(0.5), k * P2F(controller_target) / P2F(controller_error),P2F(0.95));
 
-	printf("\n\r proportional smoke controller output : %i \n\r",controller_output);
+	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);
 
 
 // delta T > 0 pour comb
