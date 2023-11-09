@@ -121,9 +121,7 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
 		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
 
-		printf("Grille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
-		printf("Prim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));
-		printf("Sec_sec_per_steps:%i ", (int)(stove->sSecondary.fSecPerStep));
+
 
 		if(stove->bSafetyOn == true)
 		{
@@ -154,6 +152,11 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 			printf("\n\rfan 1 speed is : %i",fan1speed);
 			printf("\n\rfan 2 speed is : %i",fan2speed);
+
+			printf("\n\rGrille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
+			printf("\n\rPrim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));
+			printf("\n\rSec_sec_per_steps:%i ", (int)(stove->sSecondary.fSecPerStep));
+
 
 		if(stove->bstateJustChanged)
 		{
