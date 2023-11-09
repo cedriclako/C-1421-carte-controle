@@ -1491,21 +1491,19 @@ const char* ALGO_GetStateString(State state)
 	int l = LEN(smoke_history);
 	int lgrill = LEN(grill_history);
 	int i = 0;
-	int index_of_grill = 999;
-	static bool reset_to_last_good_position_needed=false;
+	// int index_of_grill ;
+	// static bool reset_to_last_good_position_needed=false;
 
 	int controller_target = (P2F(particles_target) + P2F(particles_tolerance))- 20 ;
 	int controller_error = stove->sParticles->fparticles - controller_target;
-	  float controller_output;
-	  float k = 1.2;
+	float controller_output;
+	float k = 1.2;
 
 	controller_error = controller_error==0 ? 1 : controller_error ;
-
-
 	controller_output = RANGE(P2F(0.5), k * P2F(controller_target) / P2F(controller_error),P2F(0.95));
 
-	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);
-
+if(print_debug_setup){
+	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);}
 
 // delta T > 0 pour comb
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
@@ -1601,30 +1599,19 @@ const char* ALGO_GetStateString(State state)
 
 	  for (i = l;i>=1;i--){
 	    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i+1] == -1 ){ // last smoke event was cold
-	    	if(print_debug_setup){
-	    		printf("position of last good val is %i \n\n using : %i",i,grill_history[index_of_grill]);
-	    	}
-	      index_of_grill = i;
-	      reset_to_last_good_position_needed = true;
-	    break;
-	    }
+	    	// index_of_grill = i;
 
-	    else{
-			// printDebugStr("no cold smoke detected", print_debug_setup);
-			index_of_grill = 999;
-		      reset_to_last_good_position_needed = false;
-		      // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
-	    }
-	    }
-
-	  if(reset_to_last_good_position_needed){
-
-		  stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, grill_history[index_of_grill],g_max);
+		  stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, grill_history[i],g_max);
 			stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
 			bStepperAdjustmentNeeded = true;
 
+	    	if(print_debug_setup){
+	    		printf("position of last good val is %i \n\n using : %i",i,grill_history[i]);}
 
+	    break;
+	    }
 	  }
+
 
 
 	  // else : the last smoke event was not cold smoke or we are out of bounds. Leaving aperture as is.
