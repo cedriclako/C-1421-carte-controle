@@ -12,13 +12,18 @@ static uint32_t u32SafetyStartTime_ms = 0;
 
 void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
-
+  const PF_RemoteParams_t* RmtParams = PB_GetRemoteParams();
 	//const PF_UsrParam* uParam = PB_GetUserParam();
 	static uint8_t u8BlinkCounter = 0;
 	static uint32_t u32ButtonBlinkStartTime_ms = 0;
 
 	// Update Thermostat boolean based on GPIO state
 	stove->bThermostatOn = (HAL_GPIO_ReadPin(Thermostat_Input_GPIO_Port,Thermostat_Input_Pin) == GPIO_PIN_RESET);
+
+	if(!stove->bThermostatOn)
+	{
+	  stove->bThermostatOn = RmtParams->bThermostat;
+	}
 
 	// Update Interlock boolean based on GPIO state
 	//stove->bInterlockOn = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
