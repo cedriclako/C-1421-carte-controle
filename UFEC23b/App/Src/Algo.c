@@ -40,7 +40,7 @@ typedef struct
 
 	Fan_Speed_t eFanDistSpeed;
 	Fan_Speed_t eFanLowSpeed;
-}Boost_mem_t;
+}State_mem_t;
 
 /*
 typedef struct
@@ -61,7 +61,8 @@ static bool reloadEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
-static Boost_mem_t sBoostConfMem;
+static State_mem_t sBoostConfMem;
+static State_mem_t sManualConfMem;
 static int smoke_history[] = {0,0,0,0,0,0,0,0,0,0};
 static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
 
@@ -119,6 +120,7 @@ static void Algo_combHigh_entry(Mobj *stove);
 static void Algo_coalLow_entry(Mobj *stove);
 static void Algo_coalHigh_entry(Mobj *stove);
 static void Algo_boost_entry(Mobj *stove);
+static void Algo_manual_entry(Mobj *stove);
 
 //static void Algo_waiting_exit(Mobj *stove);
 static void Algo_reload_exit(Mobj *stove);
@@ -127,6 +129,7 @@ static void Algo_tempRise_exit(Mobj *stove);
 static void Algo_combLow_exit(Mobj *stove);
 static void Algo_combHigh_exit(Mobj *stove);
 static void Algo_boost_exit(Mobj *stove);
+static void Algo_manual_exit(Mobj *stove);
 //static void Algo_coalLow_exit(Mobj *stove);
 //static void Algo_coalHigh_exit(Mobj *stove);
 
@@ -253,10 +256,10 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 	else if((currentState != MANUAL_CONTROL) && (UsrParam->s32ManualOverride == 1))
 	{
-
+	  sManualConfMem.u32StateEntryMem_ms = stove->u32TimeOfStateEntry_ms;
 		nextState = MANUAL_CONTROL;
 	}
-	else if((currentState != BOOST) && (currentState != ZEROING_STEPPER) && (RmtParams->bBoostReq == 1))
+	else if((currentState != MANUAL_CONTROL) && (currentState != BOOST) && (currentState != ZEROING_STEPPER) && (RmtParams->bBoostReq == 1))
 	{
 		sBoostConfMem.u32StateEntryMem_ms = stove->u32TimeOfStateEntry_ms;
 		nextState = BOOST;
@@ -270,7 +273,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 	else if(stove->bstateJustChanged) // If first loop in state, perform entry action
 	{
-		if(lastState != BOOST)
+		if((lastState != BOOST) && (lastState != MANUAL_CONTROL))
 		{
 			stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
 
@@ -1186,6 +1189,15 @@ static void Algo_boost_exit(Mobj *stove)
 }
 //** END: BOOST **//
 
+//** STATE: MANUAL **//
+static void Algo_manual_entry(Mobj *stove)
+{
+  sManualConfMem.u8grill_pos = stove->sGrill.u8aperturePosSteps;
+  sManualConfMem.u8prim_pos = stove->sPrimary.u8aperturePosSteps;
+  sManualConfMem.u8sec_pos = stove->sSecondary.u8aperturePosSteps;
+
+}
+
 static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_UsrParam* sManParam = PB_GetUserParam();
@@ -1197,6 +1209,7 @@ static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 			motors_ready_for_req = false;
 		}
+    bStateExitConditionMet = true;
 
 		return;
 	}
@@ -1216,6 +1229,19 @@ static void Algo_manual_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 }
+
+static void Algo_manual_exit(Mobj *stove)
+{
+  stove->u32TimeOfStateEntry_ms = sManualConfMem.u32StateEntryMem_ms;
+
+  stove->sPrimary.u8apertureCmdSteps = sManualConfMem.u8prim_pos;
+  stove->sSecondary.u8apertureCmdSteps = sManualConfMem.u8sec_pos;
+  stove->sGrill.u8apertureCmdSteps = sManualConfMem.u8grill_pos;
+  bStepperAdjustmentNeeded = true;
+
+}
+
+//** END: MANUAL **//
 
 static void Algo_safety_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
@@ -1266,7 +1292,7 @@ void Algo_fill_state_functions(void)
 	AlgoStateEntryAction[COAL_HIGH] = Algo_coalHigh_entry;
 	AlgoStateEntryAction[OVERTEMP] = Algo_zeroing_entry;
 	AlgoStateEntryAction[SAFETY] = Algo_zeroing_entry;
-	AlgoStateEntryAction[MANUAL_CONTROL] = NULL;
+	AlgoStateEntryAction[MANUAL_CONTROL] = Algo_manual_entry;
 	AlgoStateEntryAction[BOOST] = Algo_boost_entry;
 
 	AlgoStateExitAction[ZEROING_STEPPER] = NULL;
@@ -1279,7 +1305,7 @@ void Algo_fill_state_functions(void)
 	AlgoStateExitAction[COAL_HIGH] = NULL;
 	AlgoStateExitAction[OVERTEMP] = NULL;
 	AlgoStateExitAction[SAFETY] = NULL;
-	AlgoStateExitAction[MANUAL_CONTROL] = NULL;
+	AlgoStateExitAction[MANUAL_CONTROL] = Algo_manual_exit;
 	AlgoStateExitAction[BOOST] = Algo_boost_exit;
 
 }

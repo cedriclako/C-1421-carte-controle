@@ -44,5 +44,6 @@ void Particle_setConfig(void);
 void Particle_Init(void);
 void ParticlesManager(uint32_t u32Time_ms);
 const MeasureParticles_t* ParticlesGetObject(void);
+void Particle_ResetDevice(void);
 
 #endif /* INC_PARTICLESMANAGER_H_ */
