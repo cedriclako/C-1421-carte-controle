@@ -43,6 +43,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_FAN_HI_KIP,			 	 &m_sMemBlock.s32FAN_HI_KIP,   	 					   		650, 		0, 		20000, "x to HI"),
 	PFL_INIT_SINT32(PFD_FANL_SPD,			 	 &m_sMemBlock.s32FANL_LOW_SPD,		 				   		55, 		0, 		100, ""),
 	PFL_INIT_SINT32(PFD_AFK_SPD,			 	 &m_sMemBlock.s32AFK_LOW_SPD,		 				   		55, 		0, 		100, ""),
+	PFL_INIT_SINT32(PFD_PART_RESET,			 	 &m_sMemBlock.s32ParticleReset,		 				   		0, 		0, 		1, "1 = REQ RESET"),
 
 	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Waiting parameters

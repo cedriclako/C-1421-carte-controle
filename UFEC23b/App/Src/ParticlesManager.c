@@ -42,7 +42,8 @@ typedef enum
 	Send_request,
 	Request_sent,
 	Validate_data,
-	Data_ready
+	Data_ready,
+	Reset_device
 }Part_States;
 
 #define START_BYTE 0xCC
@@ -55,7 +56,7 @@ typedef enum
 #define RX_BUFFER_LENGTH 64
 #define TX_BUFFER_LENGTH 20
 
-#define COMM_ERR_LIMIT   1000
+#define COMM_ERR_LIMIT   10
 #define TIME_TO_WAIT_IF_OK 2
 #define TIME_TO_WAIT_IF_ERR 30
 
@@ -99,13 +100,21 @@ void Particle_Init(void)
 
 void ParticlesManager(uint32_t u32Time_ms)
 {
+  const PF_UsrParam* uParam = PB_GetUserParam();
 	static uint16_t uartErrorCount = 0;
 	static uint16_t tx_checksum, rx_checksum;
 	static uint8_t rx_payload_size, tx_size;
 	static uint32_t response_delay = 800;
 	static uint8_t request_interval = TIME_TO_WAIT_IF_OK;
 	static uint32_t u32LastReqTime = 0;
+	static uint32_t u32Reset_Time_ms = 0;
 	int slp_sign = 1;
+
+	if(uParam->s32ParticleReset == 1)
+	{
+	    Particle_ResetDevice();
+	    PARAMFILE_SetParamValueByKey(0,PFD_PART_RESET);
+	}
 
 
 	switch(currentState)
@@ -170,7 +179,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 		if(uartErrorCount > COMM_ERR_LIMIT && request_interval !=TIME_TO_WAIT_IF_ERR)
 		{
 			request_interval = TIME_TO_WAIT_IF_ERR;
-			nextState = Idle;
+			nextState = Reset_device;
 			break;
 		}
 
@@ -198,6 +207,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			if(uartErrorCount <= COMM_ERR_LIMIT)
 			{
 				nextState = Send_request;
+
 			}else
 			{
 				nextState = Idle;
@@ -286,6 +296,23 @@ void ParticlesManager(uint32_t u32Time_ms)
 			uartErrorCount++;
 		}
 		break;
+	case Reset_device:
+	  if(HAL_GPIO_ReadPin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin) == GPIO_PIN_SET)
+	  {
+	    HAL_GPIO_WritePin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin,GPIO_PIN_RESET);
+	    HAL_UART_MspDeInit(&huart3);
+	    u32Reset_Time_ms = u32Time_ms;
+	  }
+	  else
+	  {
+	    if(u32Time_ms - u32Reset_Time_ms > 2000)
+	    {
+	      HAL_GPIO_WritePin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin,GPIO_PIN_SET);
+	      HAL_UART_MspInit(&huart3);
+	      nextState = Idle;
+	    }
+	  }
+	  break;
 	}
 	if(nextState != currentState)
 	{
@@ -327,6 +354,12 @@ void Particle_requestZero(void)
 void Particle_IncFireCount(void)
 {
 	IncFireCount = true;
+}
+
+void Particle_ResetDevice(void)
+{
+  currentState = Reset_device;
+  nextState = Reset_device;
 }
 
 uint16_t Particle_Send_CMD(uint8_t cmd)
