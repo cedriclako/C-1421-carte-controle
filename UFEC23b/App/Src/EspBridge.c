@@ -42,7 +42,10 @@ CR    | 2022/11/21 | -       | Creation
 #include "../esp32/ufec23_protocol/ufec23_endec.h"
 #include "../esp32/ufec23_protocol/ufec23_protocol.h"
 #include "../esp32/ufec23_protocol/ufec_stream.h"
+#include "FlashMap.h"
 #include "ParamFile.h"
+#include "FirmwareVersion.h"
+#include "GitCommit.h"
 
 #define TAG "ESPBridge"
 
@@ -114,16 +117,24 @@ static void SendDebugData(const SScheduler* pSchContext);
 static void ReadVariableFrame(const SScheduler* pSchContext);
 static void WriteVariableFrame(const SScheduler* pSchContext, const uint8_t* pu8Data, uint32_t u32Len);
 
+
+static void ReadServerFirmwareInfo(const SScheduler* pSchContext);
+static void ReadServerGitCommit(const SScheduler* pSchContext);
+
 static void HandleScheduler(bool bIsForceSending);
 
 static SScheduler m_sSchedulers[] =
 {
-	// Frame												Delay (ms)      Read   				Write
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_StatRmt, 			 1000, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, 		 1000, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt,  	 1000, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, 		 1000, 		ReadVariableFrame, 	WriteVariableFrame),
-	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DebugDataString, 	 5000, 		SendDebugData, 		NULL)
+	// Frame												Delay (ms)                Read   				Write
+  SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_ServerGitCommit,      0,     ReadServerGitCommit,      NULL),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_ServerFirmwareInfo, 	 0, 		ReadServerFirmwareInfo, 	NULL),
+
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_StatRmt, 			    1000, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, 		1000, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt,  	1000, 		ReadVariableFrame, 	WriteVariableFrame),
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, 		  1000, 		ReadVariableFrame, 	WriteVariableFrame),
+
+	SSCHEDULER_INIT(UFEC23PROTOCOL_FRAMEID_DebugDataString, 	5000, 		SendDebugData, 		NULL)
 };
 #define SSCHEDULER_COUNT (sizeof(m_sSchedulers)/sizeof(m_sSchedulers[0]))
 
@@ -159,11 +170,11 @@ void ESPMANAGER_Init()
 
 	m_last_DMA_count = 0;
 
-    // Encoder
-    UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
+  // Encoder
+  UARTPROTOCOLENC_Init(&m_sHandleEncoder, &m_sConfigEncoder);
 
-    // Decoder
-    UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
+  // Decoder
+  UARTPROTOCOLDEC_Init(&m_sHandleDecoder, &m_sConfigDecoder);
 
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, m_u8UART_RX_DMABuffers, MAX_RX_DMA_SIZE);
 	HAL_UART_RegisterCallback(&huart1, HAL_UART_ERROR_CB_ID, UARTErrorCb);
@@ -225,11 +236,12 @@ static void HandleScheduler(bool bIsForceSending)
 	{
 		SScheduler* pSch = &m_sSchedulers[i];
 
-		if ( bIsForceSending || (xTaskGetTickCount() - pSch->ttLastSend) > pdMS_TO_TICKS(pSch->u16DelayMS) )
+		if ( bIsForceSending || (pSch->u16DelayMS != 0 && (xTaskGetTickCount() - pSch->ttLastSend) > pdMS_TO_TICKS(pSch->u16DelayMS)) )
 		{
 			pSch->ttLastSend = xTaskGetTickCount();
-			if (pSch->fpRead != NULL)
+			if (pSch->fpRead != NULL) {
 				pSch->fpRead(pSch);
+			}
 		}
 	}
 }
@@ -282,17 +294,23 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			LOG(TAG, "Server sync request done");
 			break;
 		}
-		case UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive:
+    case UFEC23PROTOCOL_FRAMEID_C2SCmdGoServerUpgradeMode:
+    {
+      // Future proof, do nothing now.
+      UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_C2SCmdGoServerUpgradeMode), m_u8UARTOutputBuffers, 0);
+      break;
+    }
+		case UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive:
 		{
 			// Decode PING then send a response ...
-			UFEC23ENDEC_A2AReqPingAlive reqPing;
-			if (!UFEC23ENDEC_A2AReqPingAliveDecode(&reqPing, u8Payloads, u32PayloadLen))
+		  UFEC23ENDEC_C2SReqPingAlive reqPing;
+			if (!UFEC23ENDEC_S2CReqPingAliveDecode(&reqPing, u8Payloads, u32PayloadLen))
 			{
 				GOTO_ERROR("A2AReqPingAliveDecode");
 			}
 
-			const uint32_t u32Len = (uint32_t)UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &reqPing);
-			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp, m_u8UARTOutputBuffers, u32Len);
+			const uint32_t u32Len = (uint32_t)UFEC23ENDEC_C2SReqPingAliveEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &reqPing);
+			UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp, m_u8UARTOutputBuffers, u32Len);
 			break;
 		}
 		case UFEC23PROTOCOL_FRAMEID_C2SGetParameter:
@@ -404,6 +422,33 @@ static void SendEvent(UFEC23PROTOCOL_EVENTID eEventID)
 {
 	const uint32_t u32Len = (uint32_t)UFEC23ENDEC_S2CEventEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, eEventID);
 	UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMEID_S2CEvent, m_u8UARTOutputBuffers, u32Len);
+}
+
+static void ReadServerFirmwareInfo(const SScheduler* pSchContext)
+{
+  const FMAP_SFileInfo* pFileInfo = FMAP_GetAppFileInfo();
+
+  const UFEC23PROTOCOL_SServerFirmwareInfo sServerFirmwareInfo =
+  {
+    .u32CRC32 = pFileInfo->u32CRC32,
+    .u32Size = pFileInfo->u32Size,
+    .sVersion = FWV_VERSION,
+    .u16FirmwareID = FWV_FIRMWAREID
+  };
+  const int32_t s32Count = UFEC23ENDEC_S2CServerFirmwareInfoEncode(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &sServerFirmwareInfo);
+  UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMESVRRESP(pSchContext->eFrameID), m_u8UARTOutputBuffers, s32Count);
+}
+
+static void ReadServerGitCommit(const SScheduler* pSchContext)
+{
+  const UFEC23PROTOCOL_SServerGitInfo sServerGitInfo =
+  {
+    .bGitIsDirty = GITCOMMIT_ISDIRTY,
+    .szGitCommitID = GITCOMMIT_COMMITID,
+    .szGitBranch = GITCOMMIT_BRANCH
+  };
+  const int32_t s32Count = UFEC23ENDEC_S2CSServerGitInfo(m_u8UARTOutputBuffers, UART_OUTBUFFER_LEN, &sServerGitInfo);
+  UARTPROTOCOLENC_Send(&m_sHandleEncoder, UFEC23PROTOCOL_FRAMESVRRESP(pSchContext->eFrameID), m_u8UARTOutputBuffers, s32Count);
 }
 
 static void ReadVariableFrame(const SScheduler* pSchContext)

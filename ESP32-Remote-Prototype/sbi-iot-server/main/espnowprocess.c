@@ -163,17 +163,6 @@ static void RecvC2SStatusHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SGetStatus* pC2S
         resp.stove_state.remote_temperature_setp.temp = pMB->sRemoteData.sTempSetpoint.temp;
     }
 
-    // Return stove related informations
-    if (pMB->sS2CReqVersionRespIsSet)
-    {
-        resp.has_stove_info = true;
-        resp.stove_info.device_type = SBI_iot_EDEVICETYPE_Stove_V1;
-        resp.stove_info.has_sw_version = true;
-        resp.stove_info.sw_version.major = pMB->sS2CReqVersionResp.sVersion.u8Major;
-        resp.stove_info.sw_version.minor = pMB->sS2CReqVersionResp.sVersion.u8Minor;
-        resp.stove_info.sw_version.revision = pMB->sS2CReqVersionResp.sVersion.u8Revision;
-    }
-
     pMB->sRemoteData.ttLastCommunicationTicks = xTaskGetTickCount();
 
     // Date time

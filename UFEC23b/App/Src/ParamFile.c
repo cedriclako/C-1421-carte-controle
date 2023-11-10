@@ -193,8 +193,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 static void LoadAllCallback(const PFL_SHandle* psHandle);
 static void CommitAllCallback(const PFL_SHandle* psHandle);
 
+#ifdef DEBUG
 static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem);
-
+#endif
 PFL_SHandle PARAMFILE_g_sHandle;
 const PFL_SConfig m_sConfig = { .ptrLoadAll = LoadAllCallback, .ptrCommitAll = CommitAllCallback };
 
@@ -310,6 +311,7 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
   #endif
 }
 
+#ifdef DEBUG
 static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)
 {
 	int32_t s32Magic = PF_MAGIC_MASK;
@@ -322,6 +324,7 @@ static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)
 	}
 	return s32Magic;
 }
+#endif
 
 const PF_UsrParam* PB_GetUserParam()
 {

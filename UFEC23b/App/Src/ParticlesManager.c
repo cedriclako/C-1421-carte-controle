@@ -71,7 +71,7 @@ static bool config_mode = false;
 static bool setZero = false;
 static bool IncFireCount = false;
 
-bool validateRxChecksum(uint8_t buffer_index);
+static bool validateRxChecksum(uint8_t buffer_index);
 
 uint16_t Particle_Send_CMD(uint8_t cmd);
 
@@ -295,7 +295,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 }
 
 
-bool validateRxChecksum(uint8_t buffer_index)
+static bool validateRxChecksum(uint8_t buffer_index)
 {
 	uint16_t sum = 0;
 	uint8_t i;

@@ -1,11 +1,12 @@
 #include "ufec23_endec.h"
+#include "ufec_stream.h"
 
 void UFEC23ENDEC_Init()
 {
     
 }
 
-int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_A2AReqPingAlive* pSrc)
+int32_t UFEC23ENDEC_C2SReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqPingAlive* pSrc)
 {
     if (u32DstLen < UFEC23ENDEC_A2AREQPINGALIVE_COUNT)
         return 0;
@@ -13,61 +14,12 @@ int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, c
     return sizeof(uint32_t);
 }
 
-bool UFEC23ENDEC_A2AReqPingAliveDecode(UFEC23ENDEC_A2AReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+bool UFEC23ENDEC_S2CReqPingAliveDecode(UFEC23ENDEC_C2SReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
     if (u32DataLen < UFEC23ENDEC_A2AREQPINGALIVE_COUNT)
         return false;
     memcpy(&pDst->u32Ping, u8Datas, sizeof(uint32_t));
     return true;
-}
-
-int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc)
-{
-	 if (u32DstLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
-		 return 0;
-
-	 const uint8_t u32SWNameLen = (uint8_t)strlen(pSrc->szSoftwareName);
-	 if (u32SWNameLen > UFEC23ENDEC_SOFTWARENAME_LEN)
-		 return 0;
-	 const uint8_t u32GitHashLen = (uint8_t)strlen(pSrc->szGitHash);
-	 if (u32GitHashLen > UFEC23ENDEC_GITHASH_LEN)
-		 return 0;
-	 int32_t n = 0;
-	 u8Dst[n++] = pSrc->sVersion.u8Major;
-	 u8Dst[n++] = pSrc->sVersion.u8Minor;
-	 u8Dst[n++] = pSrc->sVersion.u8Revision;
-
-	 u8Dst[n++] = (uint8_t)u32SWNameLen;
-	 memcpy(u8Dst+n, pSrc->szSoftwareName, u32SWNameLen);
-	 n += u32SWNameLen;
-	 u8Dst[n++] = (uint8_t)u32GitHashLen;
-	 memcpy(u8Dst+n, pSrc->szGitHash, u32GitHashLen);
-	 n += u32GitHashLen;
-	 return n;
-}
-
-bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
-{
- if (u32DataLen < UFEC23ENDEC_S2CREQVERSIONRESP_COUNT)
-	 return false;
- // Version
-	uint32_t n = 0;
-	pDst->sVersion.u8Major = u8Datas[n++];
-	pDst->sVersion.u8Minor = u8Datas[n++];
-	pDst->sVersion.u8Revision = u8Datas[n++];
-	const uint32_t swlen = u8Datas[n++];
-	if (swlen > UFEC23ENDEC_SOFTWARENAME_LEN)
-		return false;
-	memcpy(pDst->szSoftwareName, &u8Datas[n], (size_t)swlen);
-	pDst->szSoftwareName[swlen] = 0;
-	n += swlen;
-	const uint32_t gitHashLen = u8Datas[n++];
-	if (gitHashLen > UFEC23ENDEC_GITHASH_LEN)
-		return false;
-	memcpy(pDst->szGitHash, &u8Datas[n], (size_t)gitHashLen);
-	pDst->szGitHash[gitHashLen] = 0;
-	n += gitHashLen;
-	return true;
 }
 
 int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc)
@@ -327,4 +279,46 @@ bool UFEC23ENDEC_S2CDecodeS32(int32_t* ps32Value, const uint8_t u8Datas[], uint3
         return 0;
     memcpy(ps32Value, u8Datas, sizeof(int32_t));
     return true;
+}
+
+int32_t UFEC23ENDEC_S2CServerFirmwareInfoEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_SServerFirmwareInfo* pSrc)
+{
+  UFECSTREAM_SContext sContext;
+  UFECSTREAM_Init(&sContext, u8Dst, u32DstLen);
+  UFECSTREAM_WriteUInt32LE(&sContext, pSrc->u32CRC32);
+  UFECSTREAM_WriteUInt32LE(&sContext, pSrc->u32Size);
+  UFECSTREAM_WriteUInt16LE(&sContext, pSrc->u16FirmwareID);
+  UFECSTREAM_WriteUInt8LE(&sContext, pSrc->sVersion.u8Major);
+  UFECSTREAM_WriteUInt8LE(&sContext, pSrc->sVersion.u8Minor);
+  UFECSTREAM_WriteUInt8LE(&sContext, pSrc->sVersion.u8Revision);
+  return UFECSTREAM_Count(&sContext);
+}
+
+bool UFEC23ENDEC_S2CServerFirmwareInfoRespDecode(UFEC23PROTOCOL_SServerFirmwareInfo* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+  UFECSTREAM_SContext sContext;
+  UFECSTREAM_Init(&sContext, (uint8_t*)u8Datas, u32DataLen);
+  return UFECSTREAM_ReadUInt32LE(&sContext, &pDst->u32CRC32) &&
+         UFECSTREAM_ReadUInt32LE(&sContext, &pDst->u32Size) &&
+         UFECSTREAM_ReadUInt16LE(&sContext, &pDst->u16FirmwareID) &&
+         UFECSTREAM_ReadUInt8LE(&sContext, &pDst->sVersion.u8Major) &&
+         UFECSTREAM_ReadUInt8LE(&sContext, &pDst->sVersion.u8Minor) &&
+         UFECSTREAM_ReadUInt8LE(&sContext, &pDst->sVersion.u8Revision);
+}
+
+int32_t UFEC23ENDEC_S2CSServerGitInfo(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_SServerGitInfo* pSrc)
+{
+  UFECSTREAM_SContext sContext;
+  UFECSTREAM_Init(&sContext, u8Dst, u32DstLen);
+  UFECSTREAM_WriteString(&sContext, pSrc->szGitCommitID);
+  UFECSTREAM_WriteString(&sContext, pSrc->szGitBranch);
+  return UFECSTREAM_Count(&sContext);
+}
+
+bool UFEC23ENDEC_S2CServerGitInfoRespDecode(UFEC23PROTOCOL_SServerGitInfo* pDst, const uint8_t u8Datas[], uint32_t u32DataLen)
+{
+  UFECSTREAM_SContext sContext;
+  UFECSTREAM_Init(&sContext, (uint8_t*)u8Datas, u32DataLen);
+  return UFECSTREAM_ReadString(&sContext, pDst->szGitCommitID, sizeof(pDst->szGitCommitID)/sizeof(pDst->szGitCommitID[0])) &&
+         UFECSTREAM_ReadString(&sContext, pDst->szGitBranch, sizeof(pDst->szGitBranch)/sizeof(pDst->szGitBranch[0]));
 }

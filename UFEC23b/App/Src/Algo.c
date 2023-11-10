@@ -10,12 +10,12 @@
 #include "cmsis_os.h"
 #include "stm32f1xx_hal_iwdg.h"
 #include "main.h"
-#include "WhiteBox.h"
 #include "DebugPort.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <math.h>
+#include <WhiteBox.h>
 #include "message_buffer.h"
 #include "GPIOManager.h"
 #include "FlashMap.h"
@@ -136,18 +136,18 @@ static void Algo_update_steppers_inPlace_flag(void);
 static void Algo_stoveInit(Mobj *stove);
 static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
-int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
+static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
 		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target,
 		int g_min, int g_max, int p_min, int p_max);
 
 
-void printDebugStr(char str[], _Bool debugisOn) {
+static void printDebugStr(char str[], _Bool debugisOn) {
   if(debugisOn){
     printf(" %s \n\r", str);
   }
 }
 
-void smoke_array_shifter(int array[], int l,int newval){
+static void smoke_array_shifter(int array[], int l,int newval){
 
   int i = 0;
   for (i = 0; i <l; i++ )
@@ -166,20 +166,21 @@ void smoke_array_shifter(int array[], int l,int newval){
     }
 }
 
-void array_printer(int array[],int l){
-
-    int loop = 0;
-         for(loop = 0; loop < l; loop++)
-           { printf("%d ", array[loop]);
-           } printf("\n\r"); }
-
-
+static void array_printer(int array[],int l)
+{
+  int loop = 0;
+  for(loop = 0; loop < l; loop++)
+  {
+    printf("%d ", array[loop]);
+  }
+  printf("\n\r");
+}
 
 static const char* m_szGitCommitBranch = GITCOMMIT_BRANCH;
 
 void Algo_Init(void const * argument)
 {
-	LOG(TAG, "\r\n\r\n");
+  LOG(TAG, "\r\n\r\n");
 	LOG(TAG, "--------------------------------");
 	#ifdef DEBUG
 	LOG(TAG, "BOOTING APP-BIN (DEBUG)");
@@ -188,6 +189,14 @@ void Algo_Init(void const * argument)
 	#endif
 	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, m_szGitCommitBranch, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
 	LOG(TAG, "Internal flash: %" PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
+  FMAP_Init(); // App size and CRC32 get calculated there
+  const FMAP_SFileInfo* pFileInfo = FMAP_GetAppFileInfo();
+  // If the CRC32 cannot be calculated, it means something is wrong with the trailing sequence.
+  // fix in into the linker file.
+  if (pFileInfo->u32Size > 0)
+    LOG(TAG, "Firmware, size: %" PRIu32 ", crc32: 0x%" PRIx32, pFileInfo->u32Size, pFileInfo->u32CRC32);
+  else
+    LOG(TAG, "ERROR: Cannot calculate CRC32 and size, this need to be addressed");
 	LOG(TAG, "--------------------------------");
 	#ifndef DEBUG
 	LOG(TAG, "WARNING: In release, parameter are not saved");
@@ -1323,7 +1332,7 @@ const char* ALGO_GetStateString(State state)
 
 
 
- int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff, int particles_target,int particles_tolerance,
+static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff, int particles_target,int particles_tolerance,
 		 uint32_t* correction_time, int deltaT_target , int g_min, int g_max, int p_min, int p_max)
 {
 
@@ -1331,8 +1340,6 @@ const char* ALGO_GetStateString(State state)
 	int l = LEN(smoke_history);
 	int lgrill = LEN(grill_history);
 	int i = 0;
-	int index_of_grill = 999;
-	static bool reset_to_last_good_position_needed=false;
 
 
 // delta T > 0 pour comb
@@ -1340,8 +1347,8 @@ const char* ALGO_GetStateString(State state)
 	{
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 
-		if(delay_period_passed ){
-
+		if(delay_period_passed )
+		{
 			printDebugStr("SMOKE HOT", print_debug_setup);
 
 			if (stove->sGrill.u8apertureCmdSteps > 15)
@@ -1379,172 +1386,148 @@ const char* ALGO_GetStateString(State state)
 		smoke_array_shifter(smoke_history,l,1);// setting value 1 for smoke hot
 		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 
-		if(print_debug_setup){
+		if(print_debug_setup)
+		{
 			array_printer(smoke_history,l);
-			array_printer(grill_history,lgrill);}
+			array_printer(grill_history,lgrill);
+		}
 		return 1 ;
 	}
 
-
-
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
-			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= -10) && !(stove->bDoorOpen)	){
-
+			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= -10) && !(stove->bDoorOpen)	)
+	{
 		// take action if the 30 seconds have passed
-		if(delay_period_passed){
+		if(delay_period_passed)
+		{
 			printDebugStr("\n\nSMOKE COLD", print_debug_setup);
-		if(stove->sGrill.u8apertureCmdSteps < 30)
-		{
-			stove->sGrill.u8apertureCmdSteps = 30;
-			printDebugStr("smoke && grille < 30 : set grill to 30", print_debug_setup);
-		}
-		else
-		{
-			stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, stove->sGrill.u8apertureCmdSteps *2,g_max);
-			printDebugStr("smoke && grille >= 30 : set grill *=2 ", print_debug_setup);
-		}
+      if(stove->sGrill.u8apertureCmdSteps < 30)
+      {
+        stove->sGrill.u8apertureCmdSteps = 30;
+        printDebugStr("smoke && grille < 30 : set grill to 30", print_debug_setup);
+      }
+      else
+      {
+        stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, stove->sGrill.u8apertureCmdSteps *2,g_max);
+        printDebugStr("smoke && grille >= 30 : set grill *=2 ", print_debug_setup);
+      }
 
-		stove->sGrill.fSecPerStep = 0; // force aperture
-		bStepperAdjustmentNeeded = true;
-		*correction_time = u32CurrentTime_ms;
+      stove->sGrill.fSecPerStep = 0; // force aperture
+      bStepperAdjustmentNeeded = true;
+      *correction_time = u32CurrentTime_ms;
 		}
 
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 		smoke_array_shifter(smoke_history,l,-1); // setting value -1 in history for smoke cold
 		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
 
-		if(print_debug_setup){
+		if(print_debug_setup)
+		{
 			array_printer(smoke_history,l);
 			array_printer(grill_history,lgrill);}
 
-		return 1 ;
-	}
-
-
+		  return 1 ;
+  }
 
 	// find the last good grill value before smoke event
 	printDebugStr("Looking for last good aperture value if relevant", print_debug_setup);
 
-	  for (i = l;i>=1;i--){
-	    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i+1] == -1 ){ // last smoke event was cold
-	    	if(print_debug_setup){
-	    		printf("position of last good val is %i \n\n using : %i",i,grill_history[index_of_grill]);
-	    	}
-	      index_of_grill = i;
-	      reset_to_last_good_position_needed = true;
-	    break;
-	    }
+  for (i = l;i>=1;i--)
+  {
+    if (smoke_history[i] == 0 && smoke_history[i-1] ==0 && smoke_history[i+1] == -1 )
+    { // last smoke event was cold
+      stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, grill_history[i],g_max);
+      stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
+      bStepperAdjustmentNeeded = true;
 
-	    else{
-			printDebugStr("no cold smoke detected", print_debug_setup);
-			index_of_grill = 999;
-		      reset_to_last_good_position_needed = false;
-		      // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
-	    }
-	    }
+      if(print_debug_setup)
+      {
+        printf("position of last good val is %i \n\n using : %i",i,grill_history[i]);
+      }
+      break;
+    }
+    else
+    {
+      printDebugStr("no cold smoke detected", print_debug_setup);
+      // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
+    }
+  }
 
-	  if(reset_to_last_good_position_needed){
+  // else : the last smoke event was not cold smoke or we are out of bounds. Leaving aperture as is.
+  //TODO : Flag it if we are out of bounds
+  // *correction_time = u32CurrentTime_ms;
 
-		  stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, grill_history[index_of_grill],g_max);
-			stove->sGrill.fSecPerStep = 0; // force aperture by setting speed to max
-			bStepperAdjustmentNeeded = true;
+  // (array, length, value to append)
+  smoke_array_shifter(smoke_history,l,0);
+  smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
+  printDebugStr("normal action, no smoke", print_debug_setup);
 
-
-	  }
-
-
-	  // else : the last smoke event was not cold smoke or we are out of bounds. Leaving aperture as is.
-	  //TODO : Flag it if we are out of bounds
-
-
-		// *correction_time = u32CurrentTime_ms;
-
-		// (array, length, value to append)
-		smoke_array_shifter(smoke_history,l,0);
-		smoke_array_shifter(grill_history,lgrill,stove->sGrill.u8apertureCmdSteps);
-		printDebugStr("normal action, no smoke", print_debug_setup);
-
-		if(print_debug_setup){
-			array_printer(smoke_history,l);
-			array_printer(grill_history,lgrill);
-		}
+  if(print_debug_setup)
+  {
+    array_printer(smoke_history,l);
+    array_printer(grill_history,lgrill);
+  }
 
 	return 0; // no smoke return 0
-
 }
 
 
- bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2)
- {
-	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
-	const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
+static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2)
+{
+  const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+  const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
+  // NOTE:  (w_part_dev_change_speed,w_part_change_speed, no_part_change_speed)
+  // set aperture speeds to -1 if you want to disable those cases
+  if(motors_ready_for_req || add_condition1 || add_condition2 )
+  {
 
+    if(change_var == -1) {
+      printDebugStr(" decrementing ", print_debug_setup);
 
-// NOTE:  (w_part_dev_change_speed,w_part_change_speed, no_part_change_speed)
-	// set aperture speeds to -1 if you want to disable those cases
+      stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
+      stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
 
+      if(stove->sPrimary.u8apertureCmdSteps  <= sParam->sPrimary.i32Min)
+      {
 
-
-	if(motors_ready_for_req || add_condition1 || add_condition2 )
-	{
-
-    if(change_var == -1){
-	printDebugStr(" decrementing ", print_debug_setup);
-
-	stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
-			stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
-
-    	if(stove->sPrimary.u8apertureCmdSteps  <= sParam->sPrimary.i32Min)
-		{
-
-	    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
-	    			stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
-		}
+      stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
+      stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
+      }
     }
 
     else if(change_var == 1)
     {
-    	printDebugStr(" incrementing ", print_debug_setup);
+      printDebugStr(" incrementing ", print_debug_setup);
 
-    	stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
-    			stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
+      stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
+      stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
 
-    	if(stove->sSecondary.u8apertureCmdSteps >= sParam->sSecondary.i32Max)
-    	{
-        	stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
-        			stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
-    	}
+      if(stove->sSecondary.u8apertureCmdSteps >= sParam->sSecondary.i32Max)
+      {
+        stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
+        stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
+      }
     }
 
-		if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
-		{
-			printDebugStr(" particulate deviation speed", print_debug_setup);
-			stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
-		}
-		else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
-		{
-			printDebugStr(" particulate target speed", print_debug_setup);
-			stove->sPrimary.fSecPerStep = w_part_change_speed;
-		}
-		else if (!(no_part_change_speed == -1))
-		{
-			stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
-			printDebugStr(" no particulate target speed", print_debug_setup);
-		}
-		bStepperAdjustmentNeeded = true;
+    if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
+    {
+      printDebugStr(" particulate deviation speed", print_debug_setup);
+      stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
+    }
+    else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
+    {
+      printDebugStr(" particulate target speed", print_debug_setup);
+      stove->sPrimary.fSecPerStep = w_part_change_speed;
+    }
+    else if (!(no_part_change_speed == -1))
+    {
+      stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
+      printDebugStr(" no particulate target speed", print_debug_setup);
+    }
+    bStepperAdjustmentNeeded = true;
 
-	return 1;
-	}
+    return 1;
+  }
 
- return 0;
- }
-
-
-
-
-
-
-
-
-
-
+  return 0;
+}

@@ -187,9 +187,10 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
         {
             if (!UFEC23ENDEC_S2CSendDebugDataRespDecode(pMemBlock->szDebugJSONString, sizeof(pMemBlock->szDebugJSONString), u8Payloads, u32PayloadLen))
             {
+                pMemBlock->szDebugJSONString[0] = 0;
                 ESP_LOGE(TAG, "Received S2CSendDebugDataResp, len: %"PRIu32, u32PayloadLen);
                 break;
-            }
+            }            
             pMemBlock->ttDebugJSONLastTicks = xTaskGetTickCount();
             ESP_LOGI(TAG, "Received S2CSendDebugDataResp, json: '%s'", pMemBlock->szDebugJSONString);
             break;
@@ -208,9 +209,8 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
             break;
         }
-        case UFEC23PROTOCOL_FRAMEID_A2AReqPingAliveResp:
+        case UFEC23PROTOCOL_FRAMEID_S2CReqPingAliveResp:
         {
-            //ESP_LOGI(TAG, "Received frame A2AReqPingAliveResp");
             // If it's connected, we accept any message as stay alive
             m_sStateMachine.ttLastCommTicks = xTaskGetTickCount();
             break;
@@ -330,28 +330,49 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
             }
             break;
         }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_ServerGitCommit):
+        {
+            if ((pMemBlock->bSrvGitInfoIsSet = UFEC23ENDEC_S2CServerGitInfoRespDecode(&pMemBlock->sSrvGitInfo, u8Payloads, u32PayloadLen)))
+            {
+                true;
+                ESP_LOGI(TAG, "Server git commit info, commitid: '%s', branch: '%s'", 
+                    pMemBlock->sSrvGitInfo.szGitCommitID, 
+                    pMemBlock->sSrvGitInfo.szGitBranch);
+            }
+            break;
+        }
+        case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_ServerFirmwareInfo):
+        {
+            if ((pMemBlock->bSrvFWInfoIsSet = UFEC23ENDEC_S2CServerFirmwareInfoRespDecode(&pMemBlock->sSrvFWInfo, u8Payloads, u32PayloadLen)))
+            {
+                ESP_LOGI(TAG, "Server firmware info, crc32: 0x%" PRIx32 ", size: %" PRIu32 " version: %d.%d.%d, firmwareID: %" PRIu16, 
+                    pMemBlock->sSrvFWInfo.u32CRC32, 
+                    pMemBlock->sSrvFWInfo.u32Size,
+                    pMemBlock->sSrvFWInfo.sVersion.u8Major,
+                    pMemBlock->sSrvFWInfo.sVersion.u8Minor,
+                    pMemBlock->sSrvFWInfo.sVersion.u8Revision,
+                    pMemBlock->sSrvFWInfo.u16FirmwareID);
+            }
+            break;
+        }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_StatRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_TstatReqBool.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_TstatReqBool.bHasValue = true;
+            pMemBlock->sRemoteData.sRMT_TstatReqBool.bHasValue = UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_TstatReqBool.s32Value, u8Payloads, u32PayloadLen);
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_BoostStatRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BoostBool.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_BoostBool.bHasValue = true;
+            pMemBlock->sRemoteData.sRMT_BoostBool.bHasValue = UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BoostBool.s32Value, u8Payloads, u32PayloadLen);
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.bHasValue = true;
+            pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.bHasValue = UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_BlowerFanSpeed.s32Value, u8Payloads, u32PayloadLen);
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt):
         {
-            if (UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value, u8Payloads, u32PayloadLen))
-                pMemBlock->sRemoteData.sRMT_DistribFanSpeed.bHasValue = true;
+            pMemBlock->sRemoteData.sRMT_DistribFanSpeed.bHasValue = UFEC23ENDEC_S2CDecodeS32(&pMemBlock->sRemoteData.sRMT_DistribFanSpeed.s32Value, u8Payloads, u32PayloadLen);
             break;
         }
         case UFEC23PROTOCOL_FRAMESVRRESP(UFEC23PROTOCOL_FRAMEID_S2CSyncAll):
@@ -426,9 +447,9 @@ static void ManageServerConnection()
     if (ttDiffLastComm > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS) &&
         (xTaskGetTickCount() - m_sStateMachine.ttLastKeepAliveSent) > pdMS_TO_TICKS(UARTBRIDGE_KEEPALIVE_MS))
     {
-        const UFEC23ENDEC_A2AReqPingAlive a2aReqPinAlive = { .u32Ping = m_sStateMachine.u32PingCount++ };
-        const int32_t s32n = UFEC23ENDEC_A2AReqPingAliveEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &a2aReqPinAlive);
-        SendFrame(UFEC23PROTOCOL_FRAMEID_A2AReqPingAlive, m_u8UARTSendProtocols, s32n);
+        const UFEC23ENDEC_C2SReqPingAlive a2aReqPinAlive = { .u32Ping = m_sStateMachine.u32PingCount++ };
+        const int32_t s32n = UFEC23ENDEC_C2SReqPingAliveEncode(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, &a2aReqPinAlive);
+        SendFrame(UFEC23PROTOCOL_FRAMEID_C2SReqPingAlive, m_u8UARTSendProtocols, s32n);
         m_sStateMachine.ttLastKeepAliveSent = xTaskGetTickCount(); 
         // ESP_LOGI(TAG, "Sending frame A2AReqPingAlive");
     }

@@ -14,15 +14,15 @@ typedef enum
 
 typedef struct 
 {
-    uint8_t u8Major;
-    uint8_t u8Minor;
-    uint8_t u8Revision;
+  uint8_t u8Major;
+  uint8_t u8Minor;
+  uint8_t u8Revision;
 } UFEC23ENDEC_SVersion;
 
 typedef struct 
 {
-    uint32_t u32Ping;
-} UFEC23ENDEC_A2AReqPingAlive;
+  uint32_t u32Ping;
+} UFEC23ENDEC_C2SReqPingAlive;
 
 #define UFEC23ENDEC_SOFTWARENAME_LEN (12)
 #define UFEC23ENDEC_GITHASH_LEN (12)
@@ -37,18 +37,11 @@ typedef struct
 
 typedef struct 
 {
-    UFEC23ENDEC_SVersion sVersion;
-    char szSoftwareName[UFEC23ENDEC_SOFTWARENAME_LEN+1];
-    char szGitHash[UFEC23ENDEC_GITHASH_LEN+1];
-} UFEC23ENDEC_S2CReqVersionResp;
+  uint8_t u8FanSpeedCurr;
+  uint8_t u8FanSpeedMax;
 
-typedef struct 
-{
-    uint8_t u8FanSpeedCurr;
-    uint8_t u8FanSpeedMax;
-
-    bool bIsAirOpen;
-    bool bIsFanModeAuto;
+  bool bIsAirOpen;
+  bool bIsFanModeAuto;
 } UFEC23ENDEC_S2CGetRunningSettingResp;
 
 typedef enum 
@@ -61,29 +54,29 @@ typedef enum
 
 typedef struct 
 {
-    UFEC23ENDEC_EWRITESETTINGFLAGS eRunningSettingFlags;
-    uint8_t u8FanSpeedCurr;
-    bool bIsFanModeAuto;
-    bool bIsAirOpen;
+  UFEC23ENDEC_EWRITESETTINGFLAGS eRunningSettingFlags;
+  uint8_t u8FanSpeedCurr;
+  bool bIsFanModeAuto;
+  bool bIsAirOpen;
 } UFEC23ENDEC_C2SSetRunningSetting;
 
 typedef enum
 {
-    UFEC23ENDEC_EITERATEOP_First = 0,	// Reset the iterator
-    UFEC23ENDEC_EITERATEOP_Next = 1,	// Send next item
+  UFEC23ENDEC_EITERATEOP_First = 0,	// Reset the iterator
+  UFEC23ENDEC_EITERATEOP_Next = 1,	// Send next item
 
-    UFEC23ENDEC_EITERATEOP_Count
+  UFEC23ENDEC_EITERATEOP_Count
 } UFEC23ENDEC_EITERATEOP;
 
 typedef struct 
 {
-    UFEC23ENDEC_EITERATEOP eIterateOp;
+  UFEC23ENDEC_EITERATEOP eIterateOp;
 } UFEC23ENDEC_C2SGetParameter;
 
 typedef enum
 {
-    UFEC23ENDEC_EPARAMTYPE_Int32 = 0,
-    // UFEC23ENDEC_EPARAMTYPE_Float = 1
+  UFEC23ENDEC_EPARAMTYPE_Int32 = 0,
+  // UFEC23ENDEC_EPARAMTYPE_Float = 1
 } UFEC23ENDEC_EPARAMTYPE;
 
 typedef enum
@@ -94,64 +87,78 @@ typedef enum
 
 typedef union
 {
-    struct
-    {
-        int32_t s32Default;
-        int32_t s32Min;
-        int32_t s32Max;
-    } sInt32;
-    struct
-    {
-        float fltDefault;
-        float fltMin;
-        float fltMax;
-    } sFloat;
+  struct
+  {
+    int32_t s32Default;
+    int32_t s32Min;
+    int32_t s32Max;
+  } sInt32;
+  struct
+  {
+    float fltDefault;
+    float fltMin;
+    float fltMax;
+  } sFloat;
 } UFEC23ENDEC_uType;
 
 typedef union
 {
-    int32_t s32Value;
-    float fltValue;
+  int32_t s32Value;
+  float fltValue;
 } UFEC23ENDEC_uValue;
 
 typedef struct 
 {
-    char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
-    UFEC23ENDEC_EPARAMTYPE eParamType;
-    UFEC23ENDEC_uType uType;
-    UFEC23ENDEC_EENTRYFLAGS eEntryFlag;
+  char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
+  UFEC23ENDEC_EPARAMTYPE eParamType;
+  UFEC23ENDEC_uType uType;
+  UFEC23ENDEC_EENTRYFLAGS eEntryFlag;
 } UFEC23ENDEC_SEntry;
 
 typedef struct 
 {
-    UFEC23ENDEC_SEntry sEntry;
-    UFEC23ENDEC_uValue uValue;
-    bool bIsEOF; 
-	bool bHasRecord;
-    bool bIsFirstRecord;
+  UFEC23ENDEC_SEntry sEntry;
+  UFEC23ENDEC_uValue uValue;
+  bool bIsEOF;
+  bool bHasRecord;
+  bool bIsFirstRecord;
 } UFEC23ENDEC_S2CReqParameterGetResp;
 
 typedef struct
 {
-    char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
-    UFEC23ENDEC_uValue uValue;
+  char szKey[UFEC23ENDEC_PARAMETERITEM_KEY_LEN+1];
+  UFEC23ENDEC_uValue uValue;
 } UFEC23PROTOCOL_C2SSetParameter;
+
+typedef struct
+{
+  uint32_t u32CRC32;
+  uint32_t u32Size;
+  UFEC23ENDEC_SVersion sVersion;
+  uint16_t u16FirmwareID;
+} UFEC23PROTOCOL_SServerFirmwareInfo;
+
+typedef struct
+{
+  // Git
+  char szGitCommitID[48+1];
+  char szGitBranch[48+1];
+  bool bGitIsDirty;
+} UFEC23PROTOCOL_SServerGitInfo;
 
 typedef enum
 {
-    UFEC23PROTOCOL_ERESULT_Ok = 0,
-    UFEC23PROTOCOL_ERESULT_Fail = 1
+  UFEC23PROTOCOL_ERESULT_Ok = 0,
+  UFEC23PROTOCOL_ERESULT_Fail = 1
 } UFEC23PROTOCOL_ERESULT;
 
 typedef struct 
 {
-    UFEC23PROTOCOL_ERESULT eResult;
+  UFEC23PROTOCOL_ERESULT eResult;
 } UFEC23PROTOCOL_S2CSetParameterResp;
 
 // Maximum size for messages
 #define UFEC23ENDEC_S2CREQPARAMETERGETRESP_MAX_COUNT (2 + 1 + 1 + sizeof(UFEC23ENDEC_uType)*3 + sizeof(UFEC23ENDEC_uValue) + 1 + UFEC23ENDEC_PARAMETERITEM_KEY_LEN + 1)
-
-#define UFEC23ENDEC_S2CREQVERSIONRESP_COUNT (3 + 1 + UFEC23ENDEC_SOFTWARENAME_LEN + 1 + 1 + UFEC23ENDEC_GITHASH_LEN + 1)
 
 #define UFEC23ENDEC_S2CGETRUNNINGSETTINGRESP_COUNT (3)
 #define UFEC23ENDEC_C2SSETRUNNINGSETTING_COUNT (4)
@@ -170,11 +177,8 @@ typedef struct
 
 void UFEC23ENDEC_Init();
 
-int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_A2AReqPingAlive* pSrc);
-bool UFEC23ENDEC_A2AReqPingAliveDecode(UFEC23ENDEC_A2AReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
-
-int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
-bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
+int32_t UFEC23ENDEC_C2SReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_C2SReqPingAlive* pSrc);
+bool UFEC23ENDEC_S2CReqPingAliveDecode(UFEC23ENDEC_C2SReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc);
 bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSettingResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
@@ -198,9 +202,14 @@ bool UFEC23ENDEC_C2SSetParameterDecode(UFEC23PROTOCOL_C2SSetParameter* pDst, con
 int32_t UFEC23ENDEC_S2CSetParameterRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_S2CSetParameterResp* pSrc);
 bool UFEC23ENDEC_S2CSetParameterRespDecode(UFEC23PROTOCOL_S2CSetParameterResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
+int32_t UFEC23ENDEC_S2CServerFirmwareInfoEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_SServerFirmwareInfo* pSrc);
+bool UFEC23ENDEC_S2CServerFirmwareInfoRespDecode(UFEC23PROTOCOL_SServerFirmwareInfo* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 int32_t UFEC23ENDEC_S2CSendDebugDataRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const char* szJsonString);
 bool UFEC23ENDEC_S2CSendDebugDataRespDecode(char szJsonStrings[], uint32_t u32JsonLen, const uint8_t u8Datas[], uint32_t u32DataLen);
+
+int32_t UFEC23ENDEC_S2CSServerGitInfo(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23PROTOCOL_SServerGitInfo* pSrc);
+bool UFEC23ENDEC_S2CServerGitInfoRespDecode(UFEC23PROTOCOL_SServerGitInfo* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
 int32_t UFEC23ENDEC_S2CEncodeU16(uint8_t u8Dst[], uint32_t u32DstLen, uint16_t u16Value);
 
