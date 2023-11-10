@@ -255,6 +255,20 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pStove, "is_param_upload_error", cJSON_CreateBool(pMemBlock->bIsAnyUploadError));
     cJSON_AddItemToObject(pStove, "is_param_download_error", cJSON_CreateBool(pMemBlock->bIsAnyDownloadError));
     cJSON_AddItemToObject(pStove, "debug_string", cJSON_CreateString(pMemBlock->szDebugJSONString));
+    
+    // Firmware (STM32)
+    cJSON* pFirmwareSTM32 = cJSON_CreateObject();
+    cJSON_AddItemToObject(pFirmwareSTM32, "filecrc32", cJSON_CreateNumber(pMemBlock->sSrvFWInfo.u32CRC32));
+    cJSON_AddItemToObject(pFirmwareSTM32, "filesize", cJSON_CreateNumber(pMemBlock->sSrvFWInfo.u32Size));
+    cJSON_AddItemToObject(pFirmwareSTM32, "firmwareID", cJSON_CreateNumber(pMemBlock->sSrvFWInfo.u16FirmwareID));
+    cJSON_AddItemToObject(pFirmwareSTM32, "version_major", cJSON_CreateNumber(pMemBlock->sSrvFWInfo.sVersion.u8Major));
+    cJSON_AddItemToObject(pFirmwareSTM32, "version_min", cJSON_CreateNumber(pMemBlock->sSrvFWInfo.sVersion.u8Minor));
+    cJSON_AddItemToObject(pFirmwareSTM32, "version_rev", cJSON_CreateNumber(pMemBlock->sSrvFWInfo.sVersion.u8Revision));
+    cJSON_AddItemToObject(pFirmwareSTM32, "git_commitid", cJSON_CreateString(pMemBlock->sSrvGitInfo.szGitCommitID));
+    cJSON_AddItemToObject(pFirmwareSTM32, "git_branch", cJSON_CreateString(pMemBlock->sSrvGitInfo.szGitBranch));
+    cJSON_AddItemToObject(pFirmwareSTM32, "git_isdirty", cJSON_CreateBool(pMemBlock->sSrvGitInfo.bGitIsDirty));
+    cJSON_AddItemToObject(pStove, "server", pFirmwareSTM32);
+    
     cJSON_AddItemToObject(pRoot, "stove", pStove);
     // Remote
     cJSON* pRemote = cJSON_CreateObject();

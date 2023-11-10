@@ -16,6 +16,17 @@ let mData =
            is_param_upload_error: false,
            is_param_download_error: false,
            debug_string: "---",
+           server : {
+            filecrc32: 0,
+            filesize: 0,
+            firmwareID : 0,
+            version_major : 0,
+            version_min : 0,
+            version_rev : 0,
+            git_commitid: "",
+            git_branch: "",
+            git_isdirty: false,
+           }
         },
         remote:{
            tempC_current: 0,
@@ -26,6 +37,7 @@ let mData =
         datetime: "",
     },
     debug_string_table: [],
+    server_infos_table: [],
     // Config JSON
     configJSON: "",
     isStringMode: false,
@@ -60,6 +72,19 @@ var app = new Vue({
                   console.error('url: ', url, " error: ", ex);
               });
         },
+        json2Table(obj) {
+            let newTable = [];
+
+            const keys = Object.keys(obj);
+            const vals = Object.values(obj);
+
+            for (let i = 0; i < keys.length; i++) {
+                let newItem = { name: keys[i], value: vals[i] };
+                newTable.push(newItem);
+            }
+            return newTable;
+        },
+
         automaticUpdate() {
             fetch(API_GETLIVEDATA, { keepalive: false })
                 .then((response) => response.json())
@@ -69,19 +94,12 @@ var app = new Vue({
                         this.livedata = data;
                         // --------------------------
                         // Debug tables
-                        // --------------------------
                         let debugStringObj = JSON.parse(this.livedata.stove.debug_string);
-                        let newTable = [];
+                        this.debug_string_table = this.json2Table(debugStringObj);
+                        // --------------------------
+                        // Server infos tables
+                        this.server_infos_table = this.json2Table(this.livedata.stove.server);
 
-                        const keys = Object.keys(debugStringObj);
-                        const vals = Object.values(debugStringObj);
-
-                        for (let i = 0; i < keys.length; i++) {
-                            let newItem = { name: keys[i], value: vals[i] };
-                            newTable.push(newItem);
-                        }
-
-                        this.debug_string_table = newTable;
                         setTimeout(this.automaticUpdate, 500);
                     })
                 .catch((ex) =>

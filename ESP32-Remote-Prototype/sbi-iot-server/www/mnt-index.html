@@ -19,7 +19,7 @@
             <span>datetime: {{ livedata.datetime }}</span><br>
         </div>
         <br>
-        <h1>Debug infos</h1>
+        <h1>Stove Debug infos</h1>
         <table class="table1">
             <thead>
                 <th>Name</th>
@@ -36,7 +36,24 @@
             </tbody>
         </table>
         <br>
-        <h1>System Informations</h1>
+        <h1>Server information</h1>
+        <table class="table1">
+            <thead>
+                <th>Name</th>
+                <th>Value</th>
+            </thead>
+            <tbody>
+                <tr v-if="server_infos_table" v-for="item in server_infos_table">
+                    <td>{{ item.name }}</td>
+                    <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
+                </tr>
+                <tr v-if="!server_infos_table">
+                    <td colspan="2">Information is not yet loaded</td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+        <h1>Stove (Client) informations</h1>
         <table class="table1">
             <thead>
                 <th>Name</th>
@@ -53,7 +70,7 @@
             </tbody>
         </table>
         <br>
-        <h1>Stove Parameters</h1>
+        <h1>Stove parameters</h1>
         <div class="content">
             <!-- Config file -->
             <span>
