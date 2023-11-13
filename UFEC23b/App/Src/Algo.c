@@ -612,9 +612,9 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	//EXIT CONDITIONS
 
 	/*ajouté || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) pour nous permettre de sortir plus vite vers coal */
-	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) ) &&  (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))
-			/*|| // partie suivante ajoutée par charles, valider pertinence
-			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
+
+	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) ) &&
+			(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)) && !smoke_detected)
 	{
 		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
@@ -644,7 +644,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// Section regulating (chg rapides)
 	if(stove->fBaffleTemp >P2F(sParam->fTempToStartReg))
 	{
-		printDebugStr("t > 500, regulating smoke here ", print_debug_setup);
+		printDebugStr("t > 425, regulating smoke here ", print_debug_setup);
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
@@ -752,7 +752,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	//EXIT CONDITIONS
 
 	/*ajouté || (stove->fBaffleTemp < 580 && stove->fBaffleDeltaT < -2) pour nous permettre de sortir plus vite vers coal */
-	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 580 && stove->fBaffleDeltaT < -2) ) && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)))
+	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 535 && stove->fBaffleDeltaT < -2) ) && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)))
 			/*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
@@ -761,12 +761,6 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		printDebugStr("exit to coal low", print_debug_setup);
 		return;
 	}
-
-
-
-
-
-
 
 
 	// WAITING FOR NEXT LOOP

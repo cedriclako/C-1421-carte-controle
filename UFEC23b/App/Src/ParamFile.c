@@ -41,6 +41,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_FAN_LO_KIP,			 	 &m_sMemBlock.s32FAN_LO_KIP,   	 					   		500, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_FAN_LO_KOP,			 	 &m_sMemBlock.s32FAN_LO_KOP,		 				   		300, 		0, 		20000, "Lo to OFF"),
 	PFL_INIT_SINT32(PFD_FAN_HI_KIP,			 	 &m_sMemBlock.s32FAN_HI_KIP,   	 					   		650, 		0, 		20000, "x to HI"),
+	PFL_INIT_SINT32(PFD_FAN_HI_KOP,				 &m_sMemBlock.s32FAN_HI_KOP,   	 							490,		0,		20000, "HI to LO"),
 	PFL_INIT_SINT32(PFD_FANL_SPD,			 	 &m_sMemBlock.s32FANL_LOW_SPD,		 				   		40, 		0, 		100, ""),
 	PFL_INIT_SINT32(PFD_AFK_SPD,			 	 &m_sMemBlock.s32AFK_LOW_SPD,		 				   		40, 		0, 		100, ""),
 
@@ -62,7 +63,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	// TempRise parameters
 	PFL_INIT_SINT32(PFD_TR_T_TARGETH, 			 &m_sTriseParams.fTempToCombHigh, 		  			630, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_TR_T_TARGETL, 			 &m_sTriseParams.fTempToCombLow, 		  			630, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_TR_T_TOL, 				 &m_sTriseParams.fTempToStartReg,				  			500, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_TR_T_TOL, 				 &m_sTriseParams.fTempToStartReg,				  			425, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_TR_TS_TARGET, 			 &m_sTriseParams.sTempSlope.fTarget, 		  			50, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_TR_TS_TOL, 				 &m_sTriseParams.sTempSlope.fTolerance, 					50, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_TR_TS_ABS, 				 &m_sTriseParams.sTempSlope.fAbsMaxDiff, 				100, 		0, 		20000, ""),

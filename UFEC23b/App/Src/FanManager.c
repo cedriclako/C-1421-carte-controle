@@ -64,8 +64,13 @@ void Fan_Process(Mobj *stove)
 
 	for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
 	{
+
+		// set fan to remote value
 		sFans[i].eSpeed = (Fan_Speed_t) PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey);
 
+		// if fan is not in auto mode, leave mode to what is set from the remote
+
+		// if the mode is auto, use this algo to set a new fan speed
 		if((sFans[i].eSpeed == FSPEED_AUTO))
 		{
 			if(stove->fBaffleTemp >= P2F(uParam->s32FAN_HI_KIP))
@@ -84,13 +89,16 @@ void Fan_Process(Mobj *stove)
 			// prob ici, pas de transition entre fan high et fan low
 			else if(stove->fBaffleTemp > P2F(uParam->s32FAN_LO_KIP))
 			{
-				if(bHiTriggered)
+
+
+				if(bHiTriggered && stove->fBaffleTemp > P2F(uParam->s32FAN_HI_KOP))
 				{
 					sFans[i].eSpeed = FSPEED_HIGH;
 				}
 				else
 				{
 					bLoTriggered = true;
+					bHiTriggered = false;
 					sFans[i].eSpeed = FSPEED_LOW;
 				}
 			}
