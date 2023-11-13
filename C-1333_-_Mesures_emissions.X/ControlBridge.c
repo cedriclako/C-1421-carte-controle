@@ -474,6 +474,7 @@ void controlBridge_update(SMeasureParticlesObject* mOBJ) // Called when MeasureP
     }
      
     if(abs((float)bOBJ.LED_current_meas/10 - Param->Current_cmd) > 1)
+    if(fabs(((float)bOBJ.LED_current_meas/10) - Param->Current_cmd) > 1.0)
     {
         uint8_t value = (((float)bOBJ.LED_current_meas/10  - Param->Current_cmd) < 0.0) ? Param->DAC_value + 1:Param->DAC_value-1;
         PF_setDAC(value);
