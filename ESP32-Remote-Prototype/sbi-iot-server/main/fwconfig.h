@@ -3,8 +3,9 @@
 
 #define FWCONFIG_DEVMODE (1)
 
-#define FWCONFIG_MAINTASK_PRIORITY (tskIDLE_PRIORITY + 1)
-#define FWCONFIG_HTTPTASK_PRIORITY (tskIDLE_PRIORITY + 2) 
+#define FWCONFIG_OTACHECKTASK_PRIORITY (tskIDLE_PRIORITY + 1)
+#define FWCONFIG_MAINTASK_PRIORITY (tskIDLE_PRIORITY + 5)
+#define FWCONFIG_HTTPTASK_PRIORITY (tskIDLE_PRIORITY + 6)
 
 // Wi-Fi (Soft Access Point)
 #define FWCONFIG_STAAP_WIFI_SSID "SBI-Iot-Svr-%02X%02X%02X"
@@ -22,5 +23,8 @@
 // SPIFF
 #define FWCONFIG_SPIFF_ROOTPATH "/spiffs"
 #define FWCONFIG_SPIFF_PARTITION "storage"
+
+// OTA URL
+#define FWCONFIG_OTA_URL "https://sbistoragecount.blob.core.windows.net/firmware/updateBoardNovikaVersion.json"
 
 #endif

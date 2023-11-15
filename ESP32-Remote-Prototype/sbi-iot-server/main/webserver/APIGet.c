@@ -3,6 +3,7 @@
 #include "nvsjson.h"
 #include "../settings.h"
 #include "../espnowprocess.h"
+#include "../OTACheck.h"
 #include "cJSON.h"
 #include "../main.h"
 #include "esp_mac.h"
@@ -16,6 +17,7 @@ static char* GetSysInfo();
 static char* GetLiveData();
 static char* GetPairingSettingsToJSON();
 static char* GetWifiSettingsToJSON();
+static char* GetGetOTAListJSON();
 
 static void ToHexString(char *dstHexString, const uint8_t* data, uint8_t len);
 static const char* GetESPChipId(esp_chip_model_t eChipid);
@@ -75,6 +77,13 @@ esp_err_t APIGET_get_handler(httpd_req_t *req)
     else if (strcmp(req->uri, API_GETPOST_WIFISETTINGS_URI) == 0)
     {        
         pExportJSON = GetWifiSettingsToJSON();
+        if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
+            goto ERROR;
+        httpd_resp_set_type(req, "application/json");
+    }
+    else if (strcmp(req->uri, API_GETPOST_GETOTALIST_URI) == 0)
+    {        
+        pExportJSON = GetGetOTAListJSON();
         if (pExportJSON == NULL || httpd_resp_send_chunk(req, pExportJSON, strlen(pExportJSON)) != ESP_OK)
             goto ERROR;
         httpd_resp_set_type(req, "application/json");
@@ -267,9 +276,24 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pFirmwareSTM32, "git_commitid", cJSON_CreateString(pMemBlock->sSrvGitInfo.szGitCommitID));
     cJSON_AddItemToObject(pFirmwareSTM32, "git_branch", cJSON_CreateString(pMemBlock->sSrvGitInfo.szGitBranch));
     cJSON_AddItemToObject(pFirmwareSTM32, "git_isdirty", cJSON_CreateBool(pMemBlock->sSrvGitInfo.bGitIsDirty));
-    cJSON_AddItemToObject(pStove, "server", pFirmwareSTM32);
-    
+    cJSON_AddItemToObject(pStove, "server", pFirmwareSTM32);    
     cJSON_AddItemToObject(pRoot, "stove", pStove);
+    // ESP32 Update status
+    cJSON* pProgress = cJSON_CreateObject();
+    const OTACHECK_SProgress sProgress = OTACHECK_GetProgress();
+    cJSON_AddItemToObject(pProgress, "perc", cJSON_CreateNumber(sProgress.dProgressOfOne));
+    const char* szText = "";
+    if (sProgress.eResult == OTACHECK_ERESULT_Progress) {
+        szText = "In progress";
+    }
+    else if (sProgress.eResult == OTACHECK_ERESULT_Success) {
+        szText = "Successfull";
+    }
+    else if (sProgress.eResult == OTACHECK_ERESULT_Error) {
+        szText = "Error";
+    }
+    cJSON_AddItemToObject(pProgress, "statustext", cJSON_CreateString(szText));
+    cJSON_AddItemToObject(pRoot, "update_process", pProgress);
     // Remote
     cJSON* pRemote = cJSON_CreateObject();
     cJSON_AddItemToObject(pRemote, "rmt_TstatReqBool", cJSON_CreateBool(pMemBlock->sRemoteData.sRMT_TstatReqBool.s32Value));
@@ -361,6 +385,35 @@ static char* GetWifiSettingsToJSON()
     return NULL;
 }
 
+static char* GetGetOTAListJSON()
+{ 
+    cJSON* pRoot = NULL;
+    pRoot = cJSON_CreateObject();
+    if (pRoot == NULL)
+        goto ERROR;
+
+    OTACHECK_OTAItemBegin();
+
+    cJSON* pEntries = cJSON_AddArrayToObject(pRoot, "list");
+    OTACHECK_SOTAItem sOut;
+    while(OTACHECK_OTAItemGet(&sOut))
+    {
+        cJSON* pEntryJSON1 = cJSON_CreateObject();
+        cJSON_AddItemToObject(pEntryJSON1, "id", cJSON_CreateNumber(sOut.u32Id));
+        cJSON_AddItemToObject(pEntryJSON1, "url", cJSON_CreateString(sOut.szURL));
+        cJSON_AddItemToObject(pEntryJSON1, "version", cJSON_CreateString(sOut.szVersion));
+        cJSON_AddItemToObject(pEntryJSON1, "changelogs", cJSON_CreateString(sOut.szChangeLogs));
+        cJSON_AddItemToArray(pEntries, pEntryJSON1);        
+    }
+
+    char* pStr =  cJSON_PrintUnformatted(pRoot);
+    cJSON_Delete(pRoot);
+    return pStr;
+    ERROR:
+    cJSON_Delete(pRoot);
+    return NULL;
+}
+
 static void ToHexString(char *dstHexString, const uint8_t* data, uint8_t len)
 {
     for (uint32_t i = 0; i < len; i++)
@@ -383,6 +436,10 @@ static const char* GetESPChipId(esp_chip_model_t eChipid)
             return "ESP32-S3";
         case CHIP_ESP32H2:
             return "ESP32-H2";
+        case CHIP_ESP32C6:
+            return "ESP32-C6";
+        case CHIP_POSIX_LINUX:
+            return "POSIX-LINUX";
     }
     return "";
 }

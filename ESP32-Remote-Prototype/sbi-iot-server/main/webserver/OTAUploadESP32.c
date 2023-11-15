@@ -30,7 +30,6 @@ esp_err_t OTAUPLOADESP32_postotauploadESP32_handler(httpd_req_t *req)
     esp_ota_handle_t update_handle = 0;
 
     esp_err_t err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
-    err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
     if (err != ESP_OK)
     {
         ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));

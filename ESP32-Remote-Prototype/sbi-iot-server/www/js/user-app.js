@@ -1,10 +1,18 @@
 var mData = 
 {
+    sysinfos: [],
+    server_infos_table: [],
+    
     pairingsettings: { mac_addr : "" },
     wifisettings: { en: false, ssid: '', pass: '' },
 
+    ota: null,
+
+    livedata: { update_process: { perc: 0, statustext: "" } },
+
     idSavePairingSettings_IsDisabled : false,
-    idSaveWiFiSettings_IsDisabled : false
+    idSaveWiFiSettings_IsDisabled : false,
+    idCheckOTAAvailability_IsDisabled : false,
 };
 
 function showTab(evt, cityName) {
@@ -80,6 +88,16 @@ var app = new Vue({
         page_loaded() {
             console.log("page_loaded");
             // Get system informations
+            fetch(API_GETSYSINFO, { keepalive: false })
+                .then((response) => response.json())
+                .then((data) => this.sysinfos = data.infos)
+                .catch((ex) =>
+                {
+                    console.error('getSysInfo', ex);
+                    this.sysinfos = null;
+                });
+        
+            // Get system informations
             fetch(API_GETPOST_PAIRINGSETTINGS, { keepalive: false })
                 .then((response) => response.json())
                 .then((data) => this.pairingsettings = data)
@@ -95,6 +113,8 @@ var app = new Vue({
                 {
                     console.error('API_GETPOSTWIFISETTING', ex);
                 });
+
+            setTimeout(this.automaticUpdate, 500);
         },
         idBtTroubleshoot_Click() {
             let password = prompt("Please enter your password", "");
@@ -121,6 +141,48 @@ var app = new Vue({
                     onSuccess: () => { alert("The system will reboot, it will take a few seconds to go back online."); }
                 });
         },  
+        idCheckOTAAvailability_Click() {
+            this.idCheckOTAAvailability_IsDisabled = true;
+            this.ota = null;
+
+            this.postAction(
+                API_ACTION_CHECKOTAAVAILABILITY_URI,
+                JSON.stringify({ }),
+                {
+                    onError: e => { 
+                        alert(e);
+                        this.idCheckOTAAvailability_IsDisabled = false;
+                    },
+                    onSuccess: () => { 
+                        fetch(API_GETOTALIST, { keepalive: false })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            this.ota = data;
+                            console.log(API_GETOTALIST, data);
+                        }
+                        )
+                        .catch((ex) =>
+                        {
+                            alert('API_GETOTALIST', ex);
+                        });
+                        this.idCheckOTAAvailability_IsDisabled = false; 
+                    }
+                });
+        },
+        idOTAInstall_Click(e) {
+            console.log("idOTAInstall_Click", e);            
+            this.postAction(
+                API_INSTALLOTA,
+                JSON.stringify({ id: e.id }),
+                {
+                    onError: e => { 
+                        alert(e);
+                    },
+                    onSuccess: () => { 
+                        /* Status report will handle the rest */
+                    }
+                });
+        },
         idSavePairingSettings_Click() {
             this.idSavePairingSettings_IsDisabled = true;
             this.postAction(API_GETPOST_PAIRINGSETTINGS, JSON.stringify(this.pairingsettings),
@@ -148,6 +210,37 @@ var app = new Vue({
                     this.idSaveWiFiSettings_IsDisabled = false; 
                 }
             });
+        },
+        json2Table(obj) {
+            let newTable = [];
+
+            const keys = Object.keys(obj);
+            const vals = Object.values(obj);
+
+            for (let i = 0; i < keys.length; i++) {
+                let newItem = { name: keys[i], value: vals[i] };
+                newTable.push(newItem);
+            }
+            return newTable;
+        },
+        automaticUpdate() {
+            fetch(API_GETLIVEDATA, { keepalive: false })
+                .then((response) => response.json())
+                .then(
+                    (data) =>
+                    {
+                        this.livedata = data;
+                        // --------------------------
+                        // Server infos tables
+                        this.server_infos_table = this.json2Table(this.livedata.stove.server);
+
+                        setTimeout(this.automaticUpdate, 1000);
+                    })
+                .catch((ex) =>
+                {
+                    console.error('automaticUpdate', ex);
+                    setTimeout(this.automaticUpdate, 5000);
+                });
         }
 	}
 })

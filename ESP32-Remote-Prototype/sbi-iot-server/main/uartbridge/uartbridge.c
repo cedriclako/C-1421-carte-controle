@@ -11,6 +11,7 @@
 #include "hardwaregpio.h"
 #include "uartbridge.h"
 #include "stovemb.h"
+#include "OTACheck.h"
 
 #define TAG "UARTBridge"
 
@@ -398,13 +399,13 @@ static void DecDropFrame(const UARTPROTOCOLDEC_SHandle* psHandle, const char* sz
 
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-    ESP_LOGI(TAG, "RequestConfigReloadEvent");
+    ESP_LOGI(TAG, "Request ConfigReloadEvent");
     ProcParameterDownload();
 }
 
 static void RequestConfigWriteEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-    ESP_LOGI(TAG, "RequestConfigWriteEvent");
+    ESP_LOGI(TAG, "Request ConfigWriteEvent");
     ProcParameterUpload();
 }
 

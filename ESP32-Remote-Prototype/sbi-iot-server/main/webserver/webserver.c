@@ -22,8 +22,6 @@
 
 #define TAG "webserver"
 
-static esp_err_t action_post_handler(httpd_req_t *req);
-
 uint8_t g_u8Buffers[HTTPSERVER_BUFFERSIZE];
 
 // static bool m_bIsPairing = false;
@@ -62,7 +60,7 @@ static const httpd_uri_t m_sHttpPostAPI = {
 static const httpd_uri_t m_sHttpActionPost = {
     .uri       = "/action/*",
     .method    = HTTP_POST,
-    .handler   = action_post_handler,
+    .handler   = APIPOST_action_post_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = ""
@@ -112,60 +110,3 @@ void WEBSERVER_Init()
         httpd_register_uri_handler(server, &m_sHttpOTAUploadSTM32Post);
     }
 }
-
-static esp_err_t action_post_handler(httpd_req_t *req)
-{
-    ESP_LOGI(TAG, "action_post_handler, url: %s", req->uri);
-    if (strcmp(req->uri, ACTION_POST_REBOOT) == 0)
-    {
-        esp_restart();
-    }
-    else if (strcmp(req->uri, ACTION_POST_DOWNLOADCONFIG) == 0)
-    {    
-        CHECK_FOR_ACCESS_OR_RETURN();
-        esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
-    }/*
-    else if (strcmp(req->uri, ACTION_POST_ESPNOW_STARTPAIRING) == 0)
-    {
-        m_bIsPairing = true;
-        ESP_LOGI(TAG, "Starting pairing");
-    }
-    else if (strcmp(req->uri, ACTION_POST_ESPNOW_STOPPAIRING) == 0)
-    {
-        m_bIsPairing = false;
-        ESP_LOGI(TAG, "Stopping pairing");
-    }*/
-    else
-    {
-        ESP_LOGE(TAG, "Unknown request for url: %s", req->uri);
-        goto ERROR;
-    }
- 
-    httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send(req, NULL, 0);
-    return ESP_OK;
-    ERROR:
-    ESP_LOGE(TAG, "Invalid request");
-    httpd_resp_set_hdr(req, "Connection", "close");
-    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
-    return ESP_FAIL;
-}
-
-/*
-    char queryString[64+1] = {0};
-    esp_err_t get_query_err;
-    if (ESP_OK != (get_query_err = httpd_req_get_url_query_str(req, queryString, sizeof(queryString)-1)))
-    {
-        ESP_LOGE(TAG, "invalid query string, error: %s", esp_err_to_name(get_query_err));
-        goto ERROR;
-    }
-
-    ESP_LOGI(TAG, "api_postaccessmaintenanceredirect_handler, url: '%s', query: '%s'", req->uri, queryString);
-    char password[16+1] = {0};
-    // It seems it already handle the trailing 0. So no need to add -1.
-    if (ESP_OK != httpd_query_key_value(queryString, "password", password, sizeof(password)))
-    {
-        ESP_LOGE(TAG, "invalid query, password key field is not there");
-        goto ERROR;
-    }
-*/
