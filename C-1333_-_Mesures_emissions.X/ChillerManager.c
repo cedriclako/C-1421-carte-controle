@@ -5,7 +5,7 @@ Copyright 2022
 
 Filename :      ChillerManager.c
 
-Author(s):      Guillaume Caon   
+Author(s):      Guillaume Caron   
 
 Public prefix : Chiller
 
@@ -38,8 +38,8 @@ GC    | 2023/09/16 | 0.1      | Creation
 #define ChillerLowerTempLimit       30.0 //degrees celcius
 #define ChillerHigherTempLimit      50.0 //degrees celcius
 #define ChillerTempLimitHysteresis  2.0  //degrees celcius
-#define LowSpeedDutyCycle   0x4B00  //50% duty cycle - magic number obtain with MCC generated file. Configure PWM and see PWM1_16BIT_Initialize 
-#define HighSpeedDutyCycle  0x7D00  //100% duty cycle - magic number obtain with MCC generated file. Configure PWM and see PWM1_16BIT_Initialize 
+#define LowSpeedDutyCycle   0x6d60  //85% duty cycle - magic number obtain with MCC generated file. Configure PWM and see PWM1_16BIT_Initialize 
+#define HighSpeedDutyCycle  0x8000  //100% duty cycle - magic number obtain with MCC generated file. Configure PWM and see PWM1_16BIT_Initialize 
 
 void SetChillerOFF(void);
 void SetChillerLow(void);
