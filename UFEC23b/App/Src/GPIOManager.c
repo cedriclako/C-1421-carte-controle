@@ -34,8 +34,6 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	//bButtonPressed = (HAL_GPIO_ReadPin(Button_Input_GPIO_Port,Button_Input_Pin) == GPIO_PIN_SET);
 	bButtonPressed = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
 
-	// initialize button, then if initialized, send true value for 100 ms, then deactivate
-
 	if(bButtonPressed && (u32PressStartTime_ms == 0))
 	{
 		u32PressStartTime_ms = u32CurrentTime_ms;//Initialize timer

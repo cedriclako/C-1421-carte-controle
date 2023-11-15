@@ -61,7 +61,8 @@ static bool tRiseEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
-static Boost_mem_t sBoostConfMem;
+static State_mem_t sBoostConfMem;
+static State_mem_t sManualConfMem;
 static int smoke_history[] = {0,0,0,0,0,0,0,0,0,0}; // TODO :valider si le prefixe static est necessaire vu que c'est déclaré à l'extérieur de la fonction
 static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
 // int reload_entry_temperature = 0;
@@ -1117,7 +1118,7 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_CoalParam_t *sParam = PB_GetCoalLowParams();
 	static uint32_t u32MajorCorrectionTime_ms = 0;
-	static int smoke_detected = 0;
+	//static int smoke_detected = 0;
 	int cycle_time = 30;
 
 
@@ -1222,7 +1223,7 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	const PF_CoalParam_t *sParam = PB_GetCoalHighParams();
 	static uint32_t u32MajorCorrectionTime_ms = 0;
 	int cycle_time = 30;
-	static int smoke_detected = 0;
+	//static int smoke_detected = 0;
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 
 
@@ -1691,7 +1692,7 @@ if(print_debug_setup){
 
 static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2)
 {
-  const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+  //const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
   const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
   // NOTE:  (w_part_dev_change_speed,w_part_change_speed, no_part_change_speed)
   // set aperture speeds to -1 if you want to disable those cases
