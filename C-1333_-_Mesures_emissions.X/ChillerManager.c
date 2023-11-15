@@ -5,7 +5,7 @@ Copyright 2022
 
 Filename :      ChillerManager.c
 
-Author(s):      Guillaume Caon   
+Author(s):      Guillaume Caron   
 
 Public prefix : Chiller
 
