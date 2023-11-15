@@ -507,7 +507,7 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// bool hot_reload = false;
 	bool smoke_detected=0;
 	static uint32_t u32MajorCorrectionTime_ms = 0;
-	int cycle_time = 30;
+	int cycle_time = 60;
 
 
 //	if(reloadEntry){
@@ -540,14 +540,15 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
-			sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
-			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
+	if(stove->fBaffleTemp > 220){
+	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, 50,
+			0,50, &u32MajorCorrectionTime_ms,
+			P2F1DEC(60) + P2F1DEC(60),
 			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max , 1);
 
 
 	if(smoke_detected){return;}
-
+	}
 
 
 
@@ -575,7 +576,10 @@ static void Algo_tempRise_entry(Mobj* stove)
 	// ----------------- set les vitesses et ouvertures pour les moteurs pour le début de l'état -------------------------------
 	stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
-	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
+
+	if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Max)
+	{stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;}
+	//stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
 	stove->sGrill.fSecPerStep = 0; // force aperture
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
@@ -839,12 +843,12 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		}
 	}
 
-	// cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 680
+	// cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 620
 	else if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) + P2F(sParam->sTemperature.fAbsMaxDiff)) &&
 			(fabs(stove->fBaffleDeltaT) < (P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance))) )
 	{
 
-		printDebugStr("cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 680 ", print_debug_setup);
+		printDebugStr("cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 620 ", print_debug_setup);
 
 		comb_aperture_slow_adjust(stove, -1, P2F1DEC(sSpeedParams->fNormal), P2F1DEC(sSpeedParams->fSlow),
 				P2F1DEC(sSpeedParams->fVerySlow) , 0,0);
@@ -1013,7 +1017,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 //			static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed,
 			// int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
-			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fSlow) ,
+			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fNormal) ,
 					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
 
 
@@ -1138,18 +1142,18 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 	// SMOKE ACTION
-
+/*
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
 				 0,	sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
-
+*/
 
 
 	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != /*sParam->sGrill.i32Min*/ 24)
 	{
-		stove->sGrill.u8apertureCmdSteps = /*sParam->sGrill.i32Min*/ 24;
+		stove->sGrill.u8apertureCmdSteps = /*sParam->sGrill.i32Min*/ 12;
 		stove->sGrill.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
 	}
@@ -1238,14 +1242,14 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-
+/*
 	// SMOKE ACTION
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
 				 0,	sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
-
+*/
 
 	if(stove->fBaffleTemp<550)
 	{
@@ -1664,6 +1668,15 @@ if(print_debug_setup){
 
 	if(motors_ready_for_req || add_condition1 || add_condition2 )
 	{
+		if(print_debug_setup){
+
+			printf("\n\r comb_aperture_slow_adjust entry");
+			printf("\n\r motors_ready_for_req : %i",(int)motors_ready_for_req);
+			printf("\n\r add_condition1 : %i",(int)add_condition1);
+			printf("\n\r add_condition2 : %i\n\r",(int)add_condition2);
+
+		}
+
 
     if(change_var == -1){
 	printDebugStr(" decrementing ", print_debug_setup);

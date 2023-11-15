@@ -81,7 +81,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Comb low parameters
-	PFL_INIT_SINT32(PFD_CBL_T_TARGET, 			 &m_sCombLowParams.sTemperature.fTarget, 		  		630, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_CBL_T_TARGET, 			 &m_sCombLowParams.sTemperature.fTarget, 		  		600, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_T_TOL, 				 &m_sCombLowParams.sTemperature.fTolerance, 	  			10, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_T_ABS, 				 &m_sCombLowParams.sTemperature.fAbsMaxDiff, 			40, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_TS_TARGET, 			 &m_sCombLowParams.sTempSlope.fTarget, 		  			0, 			0, 		20000, ""),
