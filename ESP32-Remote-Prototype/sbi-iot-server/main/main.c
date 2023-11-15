@@ -11,6 +11,7 @@
 #include "esp_netif.h"
 #include "lwip/apps/netbiosns.h"
 #include "fwconfig.h"
+#include "OTACheck.h"
 #include "spiff.h"
 #include "webserver/webserver.h"
 #include "settings.h"
@@ -198,13 +199,10 @@ void app_main(void)
     esp_event_loop_create(&loop_args, &EVENT_g_LoopHandle);
 
     SETTINGS_Init();
-
+    OTACHECK_Init();
     UARTBRIDGE_Init();
-
     WIFI_Init();
-
     ESPNOWPROCESS_Init();
-
     WEBSERVER_Init();
 
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -212,7 +210,6 @@ void app_main(void)
     sntp_set_time_sync_notification_cb(time_sync_notification_cb);
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_init();
-
     mdns_sn_init();
     
     // Just print task list
@@ -249,9 +246,9 @@ void app_main(void)
             isActive = !isActive;
         }
 
-       //vTaskDelay(10);
-       esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 1 ));
-       vTaskDelayUntil( &xLastWakeTime, xFrequency );
+        //vTaskDelay(10);
+        esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 1 ));
+        vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   
 }
 

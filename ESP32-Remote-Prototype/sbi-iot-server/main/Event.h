@@ -10,8 +10,6 @@ enum {
     REQUESTCONFIGRELOAD_EVENT,
 
     REQUESTCONFIGWRITE_EVENT,
-    //UFEC23_CONNECTED_EVENT,
-    // UFEC23_DISCONNECTED_EVENT
 };
 
 extern esp_event_loop_handle_t EVENT_g_LoopHandle;

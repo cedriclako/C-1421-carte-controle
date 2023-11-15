@@ -11,6 +11,11 @@ const API_POST_ACCESSMAINTENANCEREDIRECT_URI = "/api/access-maintenance-redirect
 
 const API_ACTION_DOWNLOADCONFIG_URI = "/action/downloadconfig";
 const API_ACTION_REBOOT_URI = "/action/reboot";
+const API_ACTION_CHECKOTAAVAILABILITY_URI = "/action/checkotaavailability";
+
+const API_GETOTALIST = '/api/getotalist';
+
+const API_INSTALLOTA = '/action/installota';
 
 const API_GETPOST_PAIRINGSETTINGS = '/api/pairingsettings';
 

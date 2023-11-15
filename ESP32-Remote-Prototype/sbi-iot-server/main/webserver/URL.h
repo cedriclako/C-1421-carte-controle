@@ -12,8 +12,12 @@
 
 #define API_GETPOST_WIFISETTINGS_URI "/api/wifisettings"
 
+#define API_GETPOST_GETOTALIST_URI "/api/getotalist"
+
 #define ACTION_POST_REBOOT "/action/reboot"
 #define ACTION_POST_DOWNLOADCONFIG "/action/downloadconfig"
+#define ACTION_POST_CHECKOTAVAIL "/action/checkotaavailability"
+#define ACTION_POST_INSTALLOTA "/action/installota"
 
 #define API_GETSYSINFOJSON_URI "/api/getsysinfo"
 #define API_GETLIVEDATAJSON_URI "/api/getlivedata"
