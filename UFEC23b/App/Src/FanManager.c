@@ -81,7 +81,7 @@ void Fan_Process(Mobj *stove)
 				bHiTriggered = false;
 			}
 
-			// prob ici, pas de transition entre fan high et fan low
+
 			else if(stove->fBaffleTemp > P2F(uParam->s32FAN_LO_KIP))
 			{
 				if(bHiTriggered)
