@@ -56,11 +56,14 @@ typedef struct
 {
     // Settings
     UFEC23ENDEC_S2CGetRunningSettingResp s2CGetRunningSetting;
-    bool s2CGetRunningSettingIsSet;
+    bool bS2CGetRunningSettingIsSet;
 
-    // Version infos
-    UFEC23ENDEC_S2CReqVersionResp sS2CReqVersionResp;
-    bool sS2CReqVersionRespIsSet;
+    // Firmwares infos
+    UFEC23PROTOCOL_SServerFirmwareInfo sSrvFWInfo;
+    bool bSrvFWInfoIsSet;
+
+    UFEC23PROTOCOL_SServerGitInfo sSrvGitInfo;
+    bool bSrvGitInfoIsSet;
 
     // Remote related data
     STOVEMB_SRemoteData sRemoteData;

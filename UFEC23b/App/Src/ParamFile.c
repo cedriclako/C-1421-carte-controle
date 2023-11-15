@@ -41,9 +41,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_FAN_LO_KIP,			 	 &m_sMemBlock.s32FAN_LO_KIP,   	 					   		500, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_FAN_LO_KOP,			 	 &m_sMemBlock.s32FAN_LO_KOP,		 				   		300, 		0, 		20000, "Lo to OFF"),
 	PFL_INIT_SINT32(PFD_FAN_HI_KIP,			 	 &m_sMemBlock.s32FAN_HI_KIP,   	 					   		650, 		0, 		20000, "x to HI"),
-	PFL_INIT_SINT32(PFD_FAN_HI_KOP,				 &m_sMemBlock.s32FAN_HI_KOP,   	 							490,		0,		20000, "HI to LO"),
 	PFL_INIT_SINT32(PFD_FANL_SPD,			 	 &m_sMemBlock.s32FANL_LOW_SPD,		 				   		40, 		0, 		100, ""),
 	PFL_INIT_SINT32(PFD_AFK_SPD,			 	 &m_sMemBlock.s32AFK_LOW_SPD,		 				   		40, 		0, 		100, ""),
+	PFL_INIT_SINT32(PFD_PART_RESET,			 	 &m_sMemBlock.s32ParticleReset,		 				   		0, 		0, 		1, "1 = REQ RESET"),
 
 	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
 	// Waiting parameters
@@ -202,8 +202,9 @@ static const PFL_SParameterItem m_sParameterItems[] =
 static void LoadAllCallback(const PFL_SHandle* psHandle);
 static void CommitAllCallback(const PFL_SHandle* psHandle);
 
+#ifdef DEBUG
 static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem);
-
+#endif
 PFL_SHandle PARAMFILE_g_sHandle;
 const PFL_SConfig m_sConfig = { .ptrLoadAll = LoadAllCallback, .ptrCommitAll = CommitAllCallback };
 
@@ -266,22 +267,23 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 
 			*ps32RAMValue = pItem->uType.sInt32.s32Default;
 
-			// If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
-			if (!bIsVolatile)
-			{
-				const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
+      #ifdef DEBUG
+      // If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
+      if (!bIsVolatile)
+      {
+        const int32_t s32MagicMask = GetParameterFileMagicNumber(pItem);
 
-				const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
-				const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
+        const int32_t s32SavedValue = *((int32_t*) (pStartAddr + u32RelativeAddr) );
+        const int32_t s32SavedValueInv = *((int32_t*)(pStartAddr + u32RelativeAddr + sizeof(int32_t)));
 
-				// If the magic mask fit, we load the value. If not we just ignore it.
-				// the rest of the process will handle it and put it back to the default value.
-				if (s32SavedValue == (s32SavedValueInv ^ s32MagicMask))
-				{
-					*ps32RAMValue = s32SavedValue;
-				}
-			}
-
+        // If the magic mask fit, we load the value. If not we just ignore it.
+        // the rest of the process will handle it and put it back to the default value.
+        if (s32SavedValue == (s32SavedValueInv ^ s32MagicMask))
+        {
+          *ps32RAMValue = s32SavedValue;
+        }
+      }
+      #endif
 			// We need to still increase the address even if we don't write into flash to ensure all settings stay coherent
 			u32RelativeAddr += sizeof(int32_t)*2;
 		}
@@ -290,6 +292,7 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 
 static void CommitAllCallback(const PFL_SHandle* psHandle)
 {
+  #ifdef DEBUG
 	FMAP_ErasePartition(FMAP_EPARTITION_Parameters);
 
 	uint32_t u32RelativeAddr = 0;
@@ -314,8 +317,10 @@ static void CommitAllCallback(const PFL_SHandle* psHandle)
 		// We need to still increase the address even if we don't write into flash to ensure all settings stay coherent
 		u32RelativeAddr += sizeof(int32_t)*2;
 	}
+  #endif
 }
 
+#ifdef DEBUG
 static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)
 {
 	int32_t s32Magic = PF_MAGIC_MASK;
@@ -328,6 +333,7 @@ static int32_t GetParameterFileMagicNumber(const PFL_SParameterItem* pItem)
 	}
 	return s32Magic;
 }
+#endif
 
 const PF_UsrParam* PB_GetUserParam()
 {

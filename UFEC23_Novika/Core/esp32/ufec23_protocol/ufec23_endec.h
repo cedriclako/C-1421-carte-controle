@@ -173,9 +173,6 @@ void UFEC23ENDEC_Init();
 int32_t UFEC23ENDEC_A2AReqPingAliveEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_A2AReqPingAlive* pSrc);
 bool UFEC23ENDEC_A2AReqPingAliveDecode(UFEC23ENDEC_A2AReqPingAlive* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 
-int32_t UFEC23ENDEC_S2CReqVersionRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CReqVersionResp* pSrc);
-bool UFEC23ENDEC_S2CReqVersionRespDecode(UFEC23ENDEC_S2CReqVersionResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
-
 int32_t UFEC23ENDEC_S2CGetRunningSettingRespEncode(uint8_t u8Dst[], uint32_t u32DstLen, const UFEC23ENDEC_S2CGetRunningSettingResp* pSrc);
 bool UFEC23ENDEC_S2CGetRunningSettingRespDecode(UFEC23ENDEC_S2CGetRunningSettingResp* pDst, const uint8_t u8Datas[], uint32_t u32DataLen);
 

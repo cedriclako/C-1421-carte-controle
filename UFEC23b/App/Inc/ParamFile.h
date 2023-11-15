@@ -45,6 +45,7 @@ typedef struct
 	int32_t s32FANL_LOW_SPD;
 
 	int32_t s32ManualOverride;
+	int32_t s32ParticleReset;
 	int32_t s32ManualPrimary;
 	int32_t s32ManualSecondary;
 	int32_t s32ManualGrill;
@@ -200,6 +201,7 @@ typedef struct
 #define PFD_AFK_SPD				"usr_AFKSpeed"
 #define PFD_FANL_SPD			"usr_FanLSpeed"
 
+#define PFD_PART_RESET			"usr_ParticleReset"
 #define PFD_MANUALBOOL			"usr_ManualOverride"
 #define PFD_MANUALPRIM			"usr_PrimaryOverrideValue"
 #define PFD_MANUALSEC			"usr_SecondaryOverrideValue"

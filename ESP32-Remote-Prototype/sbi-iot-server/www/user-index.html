@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>SBI</title>
+    <link rel="stylesheet" type="text/css" href="css/common-content.css">
     <link rel="stylesheet" type="text/css" href="css/user-content.css">
 </head>
 <body>
@@ -11,11 +12,13 @@
         <div class="container">
             <img src="img/logo-sbi-350x256.png">
         </div>
-          
+
         <!-- Tab links -->
         <div class="tab">
             <button class="tablinks active" onclick="showTab(event, 'idTabPairingDevice')">Pairing Device</button>
             <button class="tablinks" onclick="showTab(event, 'idTabWiFi')">Wi-Fi</button>
+            <button class="tablinks" onclick="showTab(event, 'idTabOTA')">OTA</button>
+            <button class="tablinks" onclick="showTab(event, 'idTabSystemInfo')">System Info</button>
         </div>
 
         <!-- Tab content -->
@@ -26,13 +29,14 @@
                 <input id="idTxtMacAddress" type="text" v-model="pairingsettings.mac_addr"></input>
             </div>
             <div class="container" style="margin-top: 10px;">
-                <button id="idSavePairingSettings" 
-                    class="btn-orange" style="font-weight: bold;" 
-                    :disabled="idSavePairingSettings_IsDisabled"    
+                <button id="idSavePairingSettings"
+                    class="btn-orange" style="font-weight: bold;"
+                    :disabled="idSavePairingSettings_IsDisabled"
                     @click="idSavePairingSettings_Click()">Pair your devices !</button>
             </div>
         </div>
 
+        <!-- Wi-Fi -->
         <div id="idTabWiFi" class="tabcontent">
             <div class="container">
                 <label for="idChkStationMode">Activate Wi-Fi in station mode</label>
@@ -52,7 +56,86 @@
                     @click="idBtSaveWiFiSettings_Click()">Save</button>
             </div>
         </div>
-
+        <!-- OTA -->
+        <div id="idTabOTA" class="tabcontent">
+            <div class="container">
+                Status: {{ (livedata.update_process.perc * 100).toFixed(2) }}% [{{ livedata.update_process.statustext }}]<br>
+            </div>
+            <div class="container">                
+                <div id="progressBackground" style="width: 200px">
+                    <div id="progressBar" :style="{ width: (livedata.update_process.perc * 100)+'%' }"></div>
+                </div>
+            </div>
+            <div class="container">
+                <button class="btn-orange"
+                    :disabled="idCheckOTAAvailability_IsDisabled"
+                    @click="idCheckOTAAvailability_Click()">Check OTA</button><br>
+            </div>
+            <div class="container">
+                <table v-if="ota" width="600px" class="table1">
+                    <thread>
+                        <tr>
+                            <th>Version</th>
+                            <th style="width:70%">Change logs</th>
+                            <th class="auto-width"></th>
+                        </tr>
+                    </thread>
+                    <tbody v-if="ota.list.length > 0">
+                        <tr v-for="item in ota.list">
+                            <td>{{ item.version }}</td>
+                            <td>{{ item.changelogs }}</td>
+                            <td class="auto-width"><button class="btn-orange" @click="idOTAInstall_Click({ id: item.id })">Install</button></td>
+                        </tr>
+                    </tbody>
+                    <tbody v-if="ota.list.length == 0">
+                        <tr><td colspan="3">No OTA</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- System informations -->
+        <div id="idTabSystemInfo" class="tabcontent">
+            <div class="container">   
+                <h1>Server (Stove) information</h1><br>
+            </div>
+            <div class="container">   
+                <table class="table1">
+                    <thead>
+                        <th>Name</th>
+                        <th>Value</th>
+                    </thead>
+                    <tbody>
+                        <tr v-if="sysinfos" v-for="item in sysinfos">
+                            <td>{{ item.name }}</td>
+                            <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
+                        </tr>
+                        <tr v-if="!sysinfos">
+                            <td colspan="2">Information is not yet loaded</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="container">   
+                <h1>Client (Bridge) informations</h1><br>
+            </div>
+            <div class="container">   
+                <table class="table1">
+                    <thead>
+                        <th>Name</th>
+                        <th>Value</th>
+                    </thead>
+                    <tbody>
+                        <tr v-if="server_infos_table" v-for="item in server_infos_table">
+                            <td>{{ item.name }}</td>
+                            <td style="overflow-wrap: anywhere;">{{ item.value }}</td>
+                        </tr>
+                        <tr v-if="!server_infos_table">
+                            <td colspan="2">Information is not yet loaded</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
         <div class="container" style="margin-top: 10px;">
             <button class="btn-orange" @click="idBtTroubleshoot_Click()">Troubleshoot</button>
             &nbsp;

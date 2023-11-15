@@ -3,6 +3,7 @@
 #include "../espnowprocess.h"
 #include "../uartbridge/stovemb.h"
 #include "../main.h"
+#include "../OTACheck.h"
 #include "../Event.h"
 #include "esp_log.h"
 #include "cJson.h"
@@ -10,10 +11,21 @@
 
 #define TAG "APIPOST"
 
+#define GOTO_ERROR(_errCode, _szError) \
+    do \
+    { \
+        errCode = _errCode; \
+        szError = _szError; \
+        goto ERROR; \
+    } \
+    while(0)
+
 static bool PostPairingSetting(const char* szJSON);
 static bool PostWifiSetting(const char* szJSON);
 
 static bool HandleMaintenancePasswordRequest(const char* szJSON);
+
+static bool HandleInstallOTARequest(const char* szJSON);
 
 esp_err_t APIPOST_post_handler(httpd_req_t *req)
 {
@@ -203,13 +215,108 @@ static bool HandleMaintenancePasswordRequest(const char* szJSON)
         ESP_LOGE(TAG, "Cannot find JSON password element");
         goto ERROR;
     }
-    #if FWCONFIG_MAINTENANCEACCESS_NOPASSWORD == 0
+    #if FWCONFIG_DEVMODE == 0
     if (strcmp((const char*)pEntryJSON->valuestring, FWCONFIG_MAINTENANCEACCESS_PASSWORD) != 0)
     {
         ESP_LOGE(TAG, "Wrong password");
         goto ERROR;
     }
     #endif
+    bRet = true;
+    goto END; 
+    ERROR:
+    bRet = false;
+    END:
+    if (pRoot != NULL)
+        cJSON_free(pRoot);
+    return bRet;
+}
+
+esp_err_t APIPOST_action_post_handler(httpd_req_t *req)
+{
+    httpd_err_code_t errCode = HTTPD_400_BAD_REQUEST;
+    const char* szError = "";
+    
+    ESP_LOGI(TAG, "action_post_handler, url: %s", req->uri);
+    
+    const int total_len = req->content_len;
+
+    if (total_len >= HTTPSERVER_BUFFERSIZE-1) {
+       GOTO_ERROR(HTTPD_500_INTERNAL_SERVER_ERROR, "Content too long");
+    }
+
+    // Receive the complete payload.
+    int n = 0;
+    while (n < total_len)
+    {
+        const int received = httpd_req_recv(req, (char*)(g_u8Buffers + n), total_len);
+        if (received <= 0) {
+            /* Respond with 500 Internal Server Error */
+            GOTO_ERROR(HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to read the request");
+            goto ERROR;
+        }
+        n += received;
+    }
+    g_u8Buffers[n] = '\0';
+
+    if (strcmp(req->uri, ACTION_POST_REBOOT) == 0)
+    {
+        esp_restart();
+    }
+    else if (strcmp(req->uri, ACTION_POST_DOWNLOADCONFIG) == 0)
+    {
+        CHECK_FOR_ACCESS_OR_RETURN();
+        esp_event_post_to(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGRELOAD_EVENT, NULL, 0, 0);
+    }
+    else if (strcmp(req->uri, ACTION_POST_CHECKOTAVAIL) == 0)
+    {
+        if (!OTACHECK_CheckOTAvailability(15000)) {
+            GOTO_ERROR(HTTPD_500_INTERNAL_SERVER_ERROR, "Check for OTA timeout");
+        }
+    }
+    else if (strcmp(req->uri, ACTION_POST_INSTALLOTA) == 0)
+    {
+        if (!HandleInstallOTARequest((const char*)g_u8Buffers)) {
+            GOTO_ERROR(HTTPD_500_INTERNAL_SERVER_ERROR, "Install OTA timeout");
+        }
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Unknown request for url: %s", req->uri);
+        GOTO_ERROR(HTTPD_400_BAD_REQUEST, "Unknown URL");
+    }
+ 
+    httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+    ERROR:
+    ESP_LOGE(TAG, "Invalid request, code: %d, error: %s", (int)errCode, szError);
+    httpd_resp_set_hdr(req, "Connection", "close");
+    httpd_resp_send_err(req, errCode, szError);
+    return ESP_FAIL;
+}
+
+static bool HandleInstallOTARequest(const char* szJSON)
+{
+    bool bRet = true;
+    cJSON* pRoot = cJSON_Parse(szJSON);
+    if (pRoot == NULL)
+        goto ERROR;
+
+    const cJSON* pEntryJSON = cJSON_GetObjectItemCaseSensitive(pRoot, "id");
+    if (pEntryJSON == NULL || !cJSON_IsNumber(pEntryJSON))
+    {
+        ESP_LOGE(TAG, "Cannot find 'id' JSON password element");
+        goto ERROR;
+    }
+    
+    ESP_LOGI(TAG, "OTACHECK_ScheduleInstallOTA, id: %d", (int)pEntryJSON->valueint);
+    // Timeout is fixed at 10 minutes
+    if (!OTACHECK_InstallOTA(pEntryJSON->valueint, 600*1000))
+    {
+        ESP_LOGE(TAG, "OTA installation timeout");
+        goto ERROR;
+    }
     bRet = true;
     goto END; 
     ERROR:
