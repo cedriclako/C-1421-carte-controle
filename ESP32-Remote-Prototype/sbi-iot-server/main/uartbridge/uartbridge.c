@@ -60,8 +60,6 @@ static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle);
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen);
 static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint32_t u32PayloadLen);
 
-static void SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value);
-
 // Event loops
 static void RequestConfigReloadEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 static void RequestConfigWriteEvent(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
@@ -594,7 +592,7 @@ static bool ProcParameterUpload()
     return true;
 }
 
-static void SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value)
+void UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value)
 {
     const int32_t s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, s32Value);
     SendFrame(eFrameID, m_u8UARTSendProtocols, s32Count);

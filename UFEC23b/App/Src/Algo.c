@@ -57,14 +57,21 @@ static bool motors_ready_for_req = false;
 static bool bStepperAdjustmentNeeded = false;
 static bool bStateExitConditionMet = false;
 static bool tRiseEntry = false;
-static bool reloadEntry = false;
+// static bool reloadEntry = false;
 static State currentState = ZEROING_STEPPER;
 static State lastState = ZEROING_STEPPER;
 static State nextState = ZEROING_STEPPER;
 static State_mem_t sBoostConfMem;
 static State_mem_t sManualConfMem;
-static int smoke_history[] = {0,0,0,0,0,0,0,0,0,0};
+static int smoke_history[] = {0,0,0,0,0,0,0,0,0,0}; // TODO :valider si le prefixe static est necessaire vu que c'est déclaré à l'extérieur de la fonction
 static int grill_history[] = {0,0,0,0,0,0,0,0,0,0};
+// int reload_entry_temperature = 0;
+static bool hot_reload = false;
+static bool tStat_just_changed = false;
+_Bool tstat_status = false;
+static bool stateTimeout = false;
+static int temp_coal_entry;
+
 
 
 static const char* m_StateStrings[ALGO_NB_OF_STATE] =
@@ -123,7 +130,7 @@ static void Algo_boost_entry(Mobj *stove);
 static void Algo_manual_entry(Mobj *stove);
 
 //static void Algo_waiting_exit(Mobj *stove);
-static void Algo_reload_exit(Mobj *stove);
+//static void Algo_reload_exit(Mobj *stove);
 //static void Algo_zeroing_exit(Mobj *stove);
 static void Algo_tempRise_exit(Mobj *stove);
 static void Algo_combLow_exit(Mobj *stove);
@@ -141,8 +148,7 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
 
 static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
 		int particles_target,int particles_tolerance, uint32_t *correction_time, int deltaT_target,
-		int g_min, int g_max, int p_min, int p_max);
-
+		int g_min, int g_max, int p_min, int p_max, bool early_states);
 
 static void printDebugStr(char str[], _Bool debugisOn) {
   if(debugisOn){
@@ -156,16 +162,14 @@ static void smoke_array_shifter(int array[], int l,int newval){
   for (i = 0; i <l; i++ )
     {
         if (i+1 <l)
-          //printf("i is %i\n",i);
         {
            array[i] =array[i+1];
-          //array_printer(array,l);
         }
-      else{
+      else
+      {
         array[i] = newval;
-        // printf("breaking, array[i] is :%i, i is :%i, newval is %i\n",array[i],i,newval );
-        //array_printer(array,l);
-        break;}
+        break;
+      }
     }
 }
 
@@ -246,8 +250,12 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	const PF_UsrParam* UsrParam =  PB_GetUserParam();
 	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
 	const PF_RemoteParams_t* RmtParams = PB_GetRemoteParams();
+	bool min_time_in_state_met = 0;
 
 	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
+
+	// update tstat_status with or operator with either remote param or GPIO signal
+	tstat_status = RmtParams->bThermostat || stove->bThermostatOn;
 
 	if((currentState != SAFETY) && stove->bSafetyOn)
 	{
@@ -275,13 +283,16 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	{
 		if((lastState != BOOST) && (lastState != MANUAL_CONTROL))
 		{
-			stove->u32TimeOfStateEntry_ms = u32CurrentTime_ms;
+			// if state change is consequence of thermostat change, keep same time of entry
+			 stove->u32TimeOfStateEntry_ms = tStat_just_changed ? stove->u32TimeOfStateEntry_ms : u32CurrentTime_ms;
+
 
 			if(AlgoStateEntryAction[currentState] != NULL)
 			{
 				AlgoStateEntryAction[currentState](stove);
 			}
 		}
+
 		stove->bstateJustChanged = false;
 
 	}
@@ -296,7 +307,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 		{
 			if((currentState == WAITING) && (stove->fBaffleTemp < 120.0))
 			{
-				Particle_requestZero(); // TODO : valider pourquoi ce bout là s'est pas pas fait MC:19/10
+				Particle_requestZero();
 			}
 
 			nextState = RELOAD_IGNITION;
@@ -305,13 +316,20 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			stove->TimeOfReloadRequest = u32CurrentTime_ms;
 		}
 	}
-	else // When we get here, check if it's time to compute an adjustment
+
+	// When we get here, check if it's time to do current state action
+	else
 	{
 		if((u32CurrentTime_ms - stove->u32TimeOfComputation_ms) > UsrParam->s32TimeBetweenComputations_ms)
 		{
 			Temperature_update_deltaT(stove,(u32CurrentTime_ms - stove->u32TimeOfComputation_ms));
-			if(state_entry_delays_skip||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
+			if(state_entry_delays_skip /*|| tStat_just_changed */ ||((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > SECONDS(sStateParams[currentState]->i32EntryWaitTimeSeconds)))
 			{
+
+				// if we're at state action period time and we've done entry time in state wait, reset condition
+				// tStat_just_changed serves to skip state wait time because we want to be able to switch between high and low without delay
+					tStat_just_changed = false ;
+
 				if(AlgoComputeAdjustment[currentState] != NULL)
 				{
 					AlgoComputeAdjustment[currentState](stove, u32CurrentTime_ms);
@@ -319,6 +337,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 			}
 			stove->u32TimeOfComputation_ms = u32CurrentTime_ms;
 			PrintOutput(stove, currentState, nextState, lastState);
+
 		}else if(currentState == MANUAL_CONTROL) // If in manual control, we don't wait the computation time
 		{										// But we still loop in the first 'if' once per computation period (to print output)
 			if(AlgoComputeAdjustment[currentState] != NULL)
@@ -326,14 +345,22 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 				AlgoComputeAdjustment[currentState](stove, u32CurrentTime_ms);
 			}
 		}
+
+		stateTimeout = ((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) >
+		MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))) ;
+
 		// STATE EXIT ACTION
-		// Check if state timed out or if exit conditions are met // added state entry time skip
-		if(((state_entry_delays_skip||(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes)) && bStateExitConditionMet) ||
-				((sStateParams[currentState]->i32MaximumTimeInStateMinutes != 0) && ((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MaximumTimeInStateMinutes))))
-		{
+		// Check if state timed out or if exit conditions are met // added state entry time skip and thermostat time skip
+
+		min_time_in_state_met = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(sStateParams[currentState]->i32MinimumTimeInStateMinutes);
+
+		if(		// have we met the min time in state before being allowed to do a NORMAL EXIT
+			( bStateExitConditionMet && ( state_entry_delays_skip  || min_time_in_state_met ) ) || stateTimeout )
+	{
 
 			if(AlgoStateExitAction[currentState] != NULL)
 			{
+				// if you don't want to end up in zeroing, you need to put something in your state exit action
 				AlgoStateExitAction[currentState](stove);
 			}else
 			{
@@ -366,7 +393,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 
 		if((nextState == COMBUSTION_HIGH || nextState == COMBUSTION_LOW) && stove->u32TimeSinceCombEntry_ms == 0)
 		{
-			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms;
+			stove->u32TimeSinceCombEntry_ms = u32CurrentTime_ms; // TODO : enlever ça, on utilise plutot u32TimeOfStateEntry_ms
 		}
 	}
 }
@@ -398,7 +425,7 @@ static void Algo_stoveInit(Mobj *stove)
 	Algo_adjust_steppers_position(stove);
 }
 
-///////////////////////// STATE MACHINE  //////////////////////////////////////////////////////////////////////
+///////////////////////// STATE MACHINE  ////////////////////////////
 
 
 //** STATE: ZEROING STEPPER **//
@@ -424,7 +451,6 @@ static void Algo_zeroing_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 //static void Algo_zeroing_exit(Mobj *stove)
 //{
-
 //}
 //** END: ZEROING STEPPER **//
 
@@ -437,21 +463,19 @@ static void Algo_waiting_entry(Mobj *stove)
 	{
 		nextState = TEMPERATURE_RISE;
 	}
-
 }
 
 static void Algo_Waiting_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_WaitingParam_t *sParam = PB_GetWaitingParams();
 
-	if(!stove->bInterlockOn)
+	if(!stove->bInterlockOn) // va tjrs être vrai parce qu'on utilise plus l'interlock, donc la variable est seulement initialisée
 	{
 		if((stove->fBaffleTemp > P2F(sParam->fTempToQuitWaiting)))
 		{
 			stove->bReloadRequested = true;
 		}
 	}
-
 }
 
 //static void Algo_waiting_exit(Mobj *stove)
@@ -474,7 +498,8 @@ static void Algo_reload_entry(Mobj* stove)
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
 	bStepperAdjustmentNeeded = true;
-	reloadEntry = true;
+	// reloadEntry = true;
+
 
 
 	if((stove->fBaffleTemp > P2F(sParam->fTempToSkipReload))) // NORMALEMENT 1000
@@ -482,37 +507,72 @@ static void Algo_reload_entry(Mobj* stove)
 		nextState = TEMPERATURE_RISE;
 	}
 
+	hot_reload = (stove->fBaffleTemp > 400) ;
+
+
+
 }
 
 static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_ReloadParam_t *sParam = PB_GetReloadParams();
 	int32_t time_reload_entry = 0;
+	// bool hot_reload = false;
+	bool smoke_detected=0;
+	static uint32_t u32MajorCorrectionTime_ms = 0;
+	int cycle_time = 60;
 
-	if(reloadEntry){
+
+//	if(reloadEntry){
 		// do something
-		reloadEntry= false;
-	}
+	//	reloadEntry= false;
+
 
 	time_reload_entry = (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms)/1000;
 
-	if((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) < SECONDS(60) && !state_entry_delays_skip)
+	if(time_reload_entry * 1000 < SECONDS(cycle_time) && !state_entry_delays_skip)
 	{
 		printDebugStr("on attend 60 secondes apres l'entree en reload", print_debug_setup);
 		if(print_debug_setup){printf("\n%i\n",(int)time_reload_entry);}
 		return;
 	}
 
-	if((stove->fBaffleTemp > P2F(sParam->fTempToQuitReload))) // NORMALEMENT 525
+	if(((stove->fBaffleTemp > P2F(sParam->fTempToQuitReload)) && !hot_reload)|| ((stove->fBaffleTemp > 525) && hot_reload)) // NORMALEMENT 525
 	{
 		nextState = TEMPERATURE_RISE;
+		printDebugStr("HOT RELOAD", print_debug_setup && hot_reload);
+		printDebugStr("COLD RELOAD", print_debug_setup && !hot_reload);
+
 	}
+
+	// WAIT FOR NEXT LOOP
+	// time of correction < 60s
+	if((u32MajorCorrectionTime_ms != 0 && ((u32CurrentTime_ms - u32MajorCorrectionTime_ms) < SECONDS(cycle_time))) )
+	{
+		printDebugStr("there was a major correction,  wait: skip to next loop !", print_debug_setup);
+		return;
+	}
+
+	if(stove->fBaffleTemp > 220){
+	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, 50,
+			0,50, &u32MajorCorrectionTime_ms,
+			P2F1DEC(60) + P2F1DEC(60),
+			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max , 1);
+
+
+	if(smoke_detected){return;}
+	}
+
+
+
 }
 
+/*
 static void Algo_reload_exit(Mobj *stove)
 {
 
 }
+*/
 //** END: RELOAD / IGNITION**//
 
 
@@ -529,7 +589,10 @@ static void Algo_tempRise_entry(Mobj* stove)
 	// ----------------- set les vitesses et ouvertures pour les moteurs pour le début de l'état -------------------------------
 	stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
-	stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
+
+	if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Max)
+	{stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;}
+	//stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
 	stove->sGrill.fSecPerStep = 0; // force aperture
 	stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Max;
 	stove->sSecondary.fSecPerStep = 0; // force aperture
@@ -551,7 +614,8 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	static uint32_t u32MajorCorrectionTime_ms = 0;
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams(); // aller chercher les paramètres de vitesse de stepper selon l'état
 	static int smoke_detected = 0;
-	int cycle_time = 60;
+
+	int cycle_time = 30; // cycle time (sec) that is specific to this state
 
 	//const Smoke_struct_t sSmoke = {
 	//		.cycle_time = cycle_time,
@@ -573,12 +637,25 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// EXIT CONDITIONs TO COMBUSTION
 	//if Tbaffle > 710 or 630, or if primary <=75 go to comb states
-	if((stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombHigh)) ||
-			(!stove->bThermostatOn && stove->fBaffleTemp > P2F(sParam->fTempToCombLow))||
+	if((tstat_status && stove->fBaffleTemp > P2F(sParam->fTempToCombHigh)) ||
+			(!tstat_status && stove->fBaffleTemp > P2F(sParam->fTempToCombLow))||
 			stove->sPrimary.u8apertureCmdSteps <= 75 )
 	{
-		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
 		printDebugStr("Trise exit to combustion", print_debug_setup);
+		return;
+	}
+
+	//EXIT CONDITIONS
+
+	/*ajouté || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) pour nous permettre de sortir plus vite vers coal */
+
+	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) ) &&
+			(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)) && !smoke_detected)
+	{
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("never got to comb, exit to coal low", print_debug_setup);
 		return;
 	}
 
@@ -602,48 +679,55 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// Todo : valider si on a besoin de la condition 500 deg ici
 	// Section regulating (chg rapides)
-	if(stove->fBaffleTemp >P2F(sParam->fTempToStartReg))
-	{
-		printDebugStr("t > 500, regulating smoke here ", print_debug_setup);
+	//if(stove->fBaffleTemp >P2F(sParam->fTempToStartReg))
+	//{
+		printDebugStr("t > 425, regulating smoke here ", print_debug_setup);
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
 				P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
-				sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
+				sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max , 0);
+
 
 		if(smoke_detected){return;}
-
-	}
-
+	//}
 
 	if(motors_ready_for_req)
 	{
 		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 		{
 			printDebugStr("etat 12 A : decrement grill \n\n", print_debug_setup);
-
 			stove->sGrill.u8apertureCmdSteps--;
 			stove->sGrill.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
-		}else
+		}
+		else
 		{
 			printDebugStr("eta 12 B : decrement primary ", print_debug_setup);
-
 			stove->sPrimary.u8apertureCmdSteps--;
-
 			stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fFast);
 		}
 
 		bStepperAdjustmentNeeded = true;
+
 	}
 
-
 }
+
 
 static void Algo_tempRise_exit(Mobj *stove)
 {
-
+	if(bStateExitConditionMet)
+	{
+		//
+	}
+	else
+	{
+		// case for timeout or error
+		nextState = ZEROING_STEPPER;
+	}
 }
 //** END: TEMPERATURE RISE **//
+
 
 
 //** STATE: COMBUSTION LOW **//
@@ -658,7 +742,7 @@ static void Algo_combLow_entry(Mobj *stove)
 	// stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Max;
 	stove->sPrimary.fSecPerStep = 0; // force aperture
 
-	if(lastState == TEMPERATURE_RISE)
+	if(lastState == TEMPERATURE_RISE) // TODO: lastState == COAL_LOW
 	{
 		stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Min;
 	}
@@ -692,28 +776,29 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
+
+	if(tstat_status)
+	{
+		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("exit to comb high", print_debug_setup);
+		tStat_just_changed = true;
+		return;
+	}
+
+
 	//EXIT CONDITIONS
 
-	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
+	/*ajouté || (stove->fBaffleTemp < 580 && stove->fBaffleDeltaT < -2) pour nous permettre de sortir plus vite vers coal */
+	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 535 && stove->fBaffleDeltaT < -2) ) && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)))
+			/*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal low", print_debug_setup);
 		return;
 	}
-
-
-	if(stove->bThermostatOn)
-	{
-		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
-		bStateExitConditionMet = true;
-		printDebugStr("exit to comb high", print_debug_setup);
-		return;
-	}
-
-
-
 
 
 	// WAITING FOR NEXT LOOP
@@ -729,7 +814,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 			sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
 			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
-			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
+			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
 
@@ -752,8 +837,8 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 			printDebugStr("\n Eta 10 B \n under temp slope target (-5) && TBaffle under 620 : changing fast", print_debug_setup);
 
-			// TODO setter une variable pour 36 dans ce cas
-			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 36);
+			// TODO setter une variable pour 70 dans ce cas
+			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 70);
 			stove->sPrimary.fSecPerStep = 0; // force aperture
 			bStepperAdjustmentNeeded = true;
 			u32MajorCorrectionTime_ms = u32CurrentTime_ms;
@@ -771,12 +856,12 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		}
 	}
 
-	// cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 680
+	// cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 620
 	else if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) + P2F(sParam->sTemperature.fAbsMaxDiff)) &&
 			(fabs(stove->fBaffleDeltaT) < (P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance))) )
 	{
 
-		printDebugStr("cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 680 ", print_debug_setup);
+		printDebugStr("cas 10D : -1 < baffleDeltaT  < 1 && baffle Temp < 620 ", print_debug_setup);
 
 		comb_aperture_slow_adjust(stove, -1, P2F1DEC(sSpeedParams->fNormal), P2F1DEC(sSpeedParams->fSlow),
 				P2F1DEC(sSpeedParams->fVerySlow) , 0,0);
@@ -866,24 +951,30 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	static int smoke_detected = 0;
 	int cycle_time = 30;
 
+
+	if(!tstat_status)
+	{
+		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
+		bStateExitConditionMet = true;
+		printDebugStr("exit to comb low", print_debug_setup);
+		tStat_just_changed = true;
+		return;
+	}
+
+
+
 	// EXIT CONDITIONS
 
 	if((stove->fBaffleTemp < 550 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal high", print_debug_setup);
 		return;
 	}
 
-	if(!stove->bThermostatOn)
-	{
-		nextState = stove->bThermostatOn ? COMBUSTION_HIGH : COMBUSTION_LOW;
-		bStateExitConditionMet = true;
-		printDebugStr("exit to comb low", print_debug_setup);
-		return;
-	}
+
 
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
@@ -898,7 +989,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 			sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
 			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
-			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
+			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
 
@@ -939,7 +1030,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 //			static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed,
 			// int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
-			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fSlow) ,
+			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fNormal) ,
 					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
 
 
@@ -1019,6 +1110,7 @@ static void Algo_combHigh_exit(Mobj *stove)
 static void Algo_coalLow_entry(Mobj *stove)
 {
 	//const PF_CoalParam_t *sParam = PB_GetCoalLowParams();
+	temp_coal_entry = stove->fBaffleTemp;
 
 }
 
@@ -1026,19 +1118,33 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_CoalParam_t *sParam = PB_GetCoalLowParams();
 	static uint32_t u32MajorCorrectionTime_ms = 0;
-	static int smoke_detected = 0;
+	//static int smoke_detected = 0;
 	int cycle_time = 30;
+
 
 
 	// THERMOSTAT SWITCHING
 
-	if(stove->bThermostatOn)
+	if(tstat_status)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal high", print_debug_setup);
+		tStat_just_changed = true;
 		return;
 	}
+
+
+
+	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(5) && stove->fBaffleTemp > (temp_coal_entry + 15) )
+
+	{
+		nextState = COMBUSTION_LOW ;
+		bStateExitConditionMet = true;
+		printDebugStr("EXIT : RETURN TO COMB LO", print_debug_setup);
+		return;
+	}
+
 
 	// WAITING FOR NEXT LOOP WHEN MAJOR CORRECTION
 
@@ -1049,22 +1155,20 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 	// SMOKE ACTION
-
+/*
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
-				 0,
-				sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max);
+				 0,	sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
+*/
 
 
-
-	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != sParam->sGrill.i32Max)
+	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != /*sParam->sGrill.i32Min*/ 24)
 	{
-		stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max;
+		stove->sGrill.u8apertureCmdSteps = /*sParam->sGrill.i32Min*/ 12;
 		stove->sGrill.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
-
 	}
 
 		//Ne pas être en coal s'il y a de la fumée (MUST NOT)
@@ -1077,7 +1181,6 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Min;
 		stove->sPrimary.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
-
 	}
 
 	if(u32CurrentTime_ms - stove->u32TimeOfAdjustment_ms > MINUTES(sParam->i32TimeBeforeMovingSec) && (stove->sSecondary.u8apertureCmdSteps != sParam->sSecondary.i32Min))
@@ -1085,50 +1188,127 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Min;
 		stove->sSecondary.fSecPerStep = 0; // force aperture
 		bStepperAdjustmentNeeded = true;
-
 	}
-
 
 }
 
-//static void Algo_coalLow_exit(Mobj *stove)
-//{
+static void Algo_coalLow_exit(Mobj *stove)
+{
 
-//}
+	// We need to leave the exit action here, otherwise we can't transition between low and high thermostat actions
+	printDebugStr("Coal low exit", print_debug_setup);
+
+	if(bStateExitConditionMet)
+	{
+		// nothing to do here
+	}
+	else
+	{
+		// case for timeout or error (timeout does not validate bStateExitConditionMet)
+		nextState = ZEROING_STEPPER;
+	}
+
+}
 //** END: COAL LOW **//
+
 
 //** STATE: COAL HIGH **//
 static void Algo_coalHigh_entry(Mobj *stove)
 {
-	//const PF_CoalParam_t *sParams = PB_GetCoalHighParams();
+	//const PF_CoalParam_t *sParam = PB_GetCoalHighParams();
 }
 
 static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
-	//const PF_CoalParam_t *sParams = PB_GetCoalHighParams();
+	const PF_CoalParam_t *sParam = PB_GetCoalHighParams();
+	static uint32_t u32MajorCorrectionTime_ms = 0;
+	int cycle_time = 30;
+	//static int smoke_detected = 0;
+	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
 
 
-
-	if(!stove->bThermostatOn)
+	// THERMOSTAT SWITCHING
+	if(!tstat_status)
 	{
-		nextState = stove->bThermostatOn ? COAL_HIGH : COAL_LOW;
+		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal low", print_debug_setup);
+		tStat_just_changed = true;
 		return;
 	}
 
 
+	// ACTION AFTER 5 MINS
+	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(5) && stove->fBaffleTemp > 575 )
+	{
+		nextState = COMBUSTION_HIGH ;
+		bStateExitConditionMet = true;
+		printDebugStr("EXIT : RETURN TO COMB HI", print_debug_setup);
+		return;
+	}
 
 
+	// WAITING FOR NEXT LOOP
+	if((u32MajorCorrectionTime_ms != 0 && ((u32CurrentTime_ms - u32MajorCorrectionTime_ms) < SECONDS(cycle_time))) )
+	{
+		printDebugStr("there was a major correction,  wait: skip to next loop !", print_debug_setup);
+		return;
+	}
 
+/*
+	// SMOKE ACTION
+		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
+				sParam->sParticles.fTarget,sParam->sParticles.fTolerance, &u32MajorCorrectionTime_ms,
+				 0,	sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
+	if(smoke_detected){return;}
+*/
 
+	if(stove->fBaffleTemp<550)
+	{
+		if(motors_ready_for_req)
+		{
+			stove->sGrill.fSecPerStep = sSpeedParams->fSlow;
+			stove->sPrimary.fSecPerStep = sSpeedParams->fSlow;
+			stove->sSecondary.fSecPerStep = sSpeedParams->fSlow;
+
+			if(stove->sGrill.u8apertureCmdSteps++ >= sParam->sGrill.i32Max + 20)
+			{
+				stove->sGrill.u8apertureCmdSteps = sParam->sGrill.i32Max + 20;
+
+				if(stove->sPrimary.u8apertureCmdSteps-- <= sParam->sPrimary.i32Min)
+				{
+					stove->sPrimary.u8apertureCmdSteps = sParam->sPrimary.i32Min;
+
+					if(stove->sSecondary.u8apertureCmdSteps-- <= sParam->sSecondary.i32Min + 5)
+					{
+						stove->sSecondary.u8apertureCmdSteps = sParam->sSecondary.i32Min + 5;
+					}
+				}
+			}
+
+			bStepperAdjustmentNeeded = true;
+		}
+	}
 }
 
-//static void Algo_coalHigh_exit(Mobj *stove)
-//{
 
-//}
+static void Algo_coalHigh_exit(Mobj *stove)
+{
+	// We need to leave the exit action here, otherwise we can't transition between low and high thermostat actions
+	printDebugStr("Coal High exit", print_debug_setup);
+
+	if(bStateExitConditionMet)
+	{
+		// nothing to do here
+	}
+	else
+	{
+		// case for timeout or error (timeout does not validate bStateExitConditionMet)
+		nextState = ZEROING_STEPPER;
+	}
+
+}
 //** END: COAL HIGH **//
 
 
@@ -1297,12 +1477,12 @@ void Algo_fill_state_functions(void)
 
 	AlgoStateExitAction[ZEROING_STEPPER] = NULL;
 	AlgoStateExitAction[WAITING] = NULL;
-	AlgoStateExitAction[RELOAD_IGNITION] = Algo_reload_exit;
+	AlgoStateExitAction[RELOAD_IGNITION] = NULL;
 	AlgoStateExitAction[TEMPERATURE_RISE] = Algo_tempRise_exit;
 	AlgoStateExitAction[COMBUSTION_HIGH] = Algo_combHigh_exit;
 	AlgoStateExitAction[COMBUSTION_LOW] = Algo_combLow_exit;
-	AlgoStateExitAction[COAL_LOW] = NULL;
-	AlgoStateExitAction[COAL_HIGH] = NULL;
+	AlgoStateExitAction[COAL_LOW] = Algo_coalLow_exit;
+	AlgoStateExitAction[COAL_HIGH] = Algo_coalHigh_exit;
 	AlgoStateExitAction[OVERTEMP] = NULL;
 	AlgoStateExitAction[SAFETY] = NULL;
 	AlgoStateExitAction[MANUAL_CONTROL] = Algo_manual_exit;
@@ -1359,7 +1539,7 @@ const char* ALGO_GetStateString(State state)
 
 
 static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff, int particles_target,int particles_tolerance,
-		 uint32_t* correction_time, int deltaT_target , int g_min, int g_max, int p_min, int p_max)
+		 uint32_t* correction_time, int deltaT_target , int g_min, int g_max, int p_min, int p_max, bool early_states)
 {
 
 	bool delay_period_passed = (u32CurrentTime_ms - *correction_time) > SECONDS(cycle_time);
@@ -1367,10 +1547,21 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 	int lgrill = LEN(grill_history);
 	int i = 0;
 
+	int controller_target = (P2F(particles_target) + P2F(particles_tolerance))- 20 ;
+	int controller_error = stove->sParticles->fparticles - controller_target;
+	float controller_output;
+	float k = 1.2;
+
+	controller_error = controller_error==0 ? 1 : controller_error ;
+	controller_output = RANGE(P2F(0.5), k * P2F(controller_target) / P2F(controller_error),P2F(0.95));
+
+if(print_debug_setup){
+	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);}
 
 // delta T > 0 pour comb
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
 	{
+
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
 
 		if(delay_period_passed )
@@ -1379,17 +1570,18 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 
 			if (stove->sGrill.u8apertureCmdSteps > 15)
 			{
-				stove->sGrill.u8apertureCmdSteps /=2;
+
+				stove->sGrill.u8apertureCmdSteps *= controller_output;
 			}
 			else if(stove->sPrimary.u8apertureCmdSteps> 76 && stove->sGrill.u8apertureCmdSteps >  g_min)
 			{
 				stove->sGrill.u8apertureCmdSteps = g_min;
 				stove->sPrimary.u8apertureCmdSteps = 76;
 			}
-			else if(stove->sGrill.u8apertureCmdSteps == g_min && stove->sPrimary.u8apertureCmdSteps > p_min)
+			else if(stove->sGrill.u8apertureCmdSteps == g_min && stove->sPrimary.u8apertureCmdSteps > p_min && !early_states)
 			{
 				stove->sGrill.u8apertureCmdSteps = g_min;
-				stove->sPrimary.u8apertureCmdSteps  = RANGE(p_min,stove->sPrimary.u8apertureCmdSteps /2 ,p_max); // 20-10 MC, Changed, validate effect
+				stove->sPrimary.u8apertureCmdSteps  = RANGE(p_min,stove->sPrimary.u8apertureCmdSteps * controller_output ,p_max); // 20-10 MC, Changed, validate effect
 			}
 
 			/*else {
@@ -1421,8 +1613,8 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 	}
 
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
-			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= -10) && !(stove->bDoorOpen)	)
-	{
+			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= - deltaT_target) && !(stove->bDoorOpen)	){
+
 		// take action if the 30 seconds have passed
 		if(delay_period_passed)
 		{
@@ -1500,7 +1692,7 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 
 static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2)
 {
-  const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
+  //const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
   const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
   // NOTE:  (w_part_dev_change_speed,w_part_change_speed, no_part_change_speed)
   // set aperture speeds to -1 if you want to disable those cases
@@ -1535,25 +1727,30 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
       }
     }
 
-    if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
-    {
-      printDebugStr(" particulate deviation speed", print_debug_setup);
-      stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
-    }
-    else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
-    {
-      printDebugStr(" particulate target speed", print_debug_setup);
-      stove->sPrimary.fSecPerStep = w_part_change_speed;
-    }
-    else if (!(no_part_change_speed == -1))
-    {
-      stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
-      printDebugStr(" no particulate target speed", print_debug_setup);
-    }
-    bStepperAdjustmentNeeded = true;
+		if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
+		{
+			printDebugStr(" particulate deviation speed", print_debug_setup);
+			stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
+			stove->sSecondary.fSecPerStep = w_part_dev_change_speed;
 
-    return 1;
-  }
+		}
+		else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
+		{
+			printDebugStr(" particulate target speed", print_debug_setup);
+			stove->sPrimary.fSecPerStep = w_part_change_speed;
+			stove->sSecondary.fSecPerStep = w_part_change_speed;
+		}
+		else if (!(no_part_change_speed == -1))
+		{
+			printDebugStr(" no particulate target speed", print_debug_setup);
+			stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
+			stove->sSecondary.fSecPerStep = P2F1DEC(no_part_change_speed);
 
-  return 0;
-}
+		}
+		bStepperAdjustmentNeeded = true;
+
+	return 1;
+	}
+
+ return 0;
+ }

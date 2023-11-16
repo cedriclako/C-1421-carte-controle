@@ -92,7 +92,9 @@ void Particle_Init(void)
 	ParticleDevice.u16Lux_OFF = 0;
 	ParticleDevice.u16TimeSinceInit = 0;
 	ParticleDevice.u16Last_particle_time = 0;
-	ParticleDevice.fnormalized_zero = 80.0;
+
+	// Était initialement à 80, on a changé à 50 parce que plus representatif
+	ParticleDevice.fnormalized_zero = 50.0;
 
 	currentState = Idle;
 	nextState = Idle;

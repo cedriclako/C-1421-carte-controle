@@ -15,5 +15,6 @@ void UARTBRIDGE_SetSilenceMode(bool bIsSilent);
 
 void UARTBRIDGE_Handler();
 
+void UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value);
 
 #endif

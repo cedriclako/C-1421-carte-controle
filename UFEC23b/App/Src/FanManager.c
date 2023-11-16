@@ -25,6 +25,9 @@ void Fan_DisableAll(void);
 void Fan_DisableFan(FanObj *fan);
 void Fan_EnableFan(FanObj *fan);
 void Fan_ManageSpeed(FanObj *fan);
+int fan1speed;
+int fan2speed;
+
 
 //static FAN_states eFANstate = FANSTATE_IDLE;
 
@@ -54,6 +57,11 @@ void Fan_Process(Mobj *stove)
 		return;
 	}
 
+
+	fan1speed = sFans[0].eSpeed;
+	fan2speed = sFans[1].eSpeed;
+
+
 	for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
 	{
 		sFans[i].eSpeed = (Fan_Speed_t) PARAMFILE_GetParamValueByKey(sFans[i].szSpeedKey);
@@ -72,6 +80,8 @@ void Fan_Process(Mobj *stove)
 				bLoTriggered = false;
 				bHiTriggered = false;
 			}
+
+
 			else if(stove->fBaffleTemp > P2F(uParam->s32FAN_LO_KIP))
 			{
 				if(bHiTriggered)

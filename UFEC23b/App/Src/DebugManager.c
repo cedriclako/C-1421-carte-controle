@@ -25,6 +25,7 @@
 #include "stm32f1xx_hal.h"
 #include "TemperatureManager.h"
 #include "DebugManager.h"
+#include "FanManager.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
@@ -70,7 +71,7 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	printf(ALGO_GetStateString(currentState));
 
 	printf(" tStat:");
-	if (stove->bThermostatOn == true)
+	if (tstat_status == true)
 	{
 		printf("ON ");
 	}
@@ -80,9 +81,9 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	}
 	printf("dTbaffle:%.1f ", stove->fBaffleDeltaT);
 	printf("FanSpeed:%i ", 0);
-	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps*9/10));
-	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps*9/10));
-	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps*9/10));
+	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps));
+	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps));
+	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps));
 	printf("Tboard:%.0f ", get_BoardTemp());
 	printf("Door:");
 
@@ -113,15 +114,6 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 	if(print_debug_setup)
 	{
-		if(stove->bSafetyOn == true)
-		{
-			printf("bSafetyOn ");
-		}
-		else
-		{
-			printf("bSafetyNotOn ");
-		}
-
 		printf("Last State:");
 		printf(ALGO_GetStateString(lastState));
 		printf(" Next State:");
@@ -129,7 +121,53 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 		printf(" Normalized Particles :%.2f",stove->sParticles->fparticles);
 		printf(" Normalized Particles zero :%.2f",stove->sParticles->fnormalized_zero);
 
+
+
+		if(stove->bSafetyOn == true)
+		{
+			printf("bSafetyOn ");
 		}
+		else
+		{
+			printf("bSafetyOff ");
+		}
+
+		if(stove->bInterlockOn)
+		{
+			printf("\n\rbinterlock on \n");
+		}
+		else
+		{
+			printf("\n\rbinterlock off \n");
+		}
+
+		if(stove->bReloadRequested)
+		{
+			printf("\n\rbReloadRequested on \n");
+		}
+		else
+		{
+			printf("\n\rbReloadRequested off \n");
+		}
+
+			printf("\n\rfan 1 speed is : %i",fan1speed);
+			printf("\n\rfan 2 speed is : %i",fan2speed);
+
+			printf("\n\rGrille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
+			printf("\n\rPrim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));
+			printf("\n\rSec_sec_per_steps:%i ", (int)(stove->sSecondary.fSecPerStep));
+
+
+		if(stove->bstateJustChanged)
+		{
+		// print state that we entered parameters
+		}
+
+
+
+
+
+	}
 
 	printf("*\n\r");
 }
