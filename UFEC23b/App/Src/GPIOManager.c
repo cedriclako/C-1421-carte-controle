@@ -26,13 +26,13 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	}
 
 	// Update Interlock boolean based on GPIO state
-	//stove->bInterlockOn = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
+	stove->bInterlockOn = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
 	// Update Door state boolean based on GPIO state
 	stove->bDoorOpen = (HAL_GPIO_ReadPin(Limit_switch_Door_GPIO_Port,Limit_switch_Door_Pin) == GPIO_PIN_SET);
 
 	// Store button GPIO state for debounce
-	//bButtonPressed = (HAL_GPIO_ReadPin(Button_Input_GPIO_Port,Button_Input_Pin) == GPIO_PIN_SET);
-	bButtonPressed = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
+	bButtonPressed = (HAL_GPIO_ReadPin(Button_Input_GPIO_Port,Button_Input_Pin) == GPIO_PIN_RESET);
+	//bButtonPressed = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
 
 	if(bButtonPressed && (u32PressStartTime_ms == 0))
 	{

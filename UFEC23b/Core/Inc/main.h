@@ -90,8 +90,8 @@ void MX_USART2_UART_Init(void);
 #define Limit_switch_Door_GPIO_Port GPIOB
 #define Step3_STEP_Pin GPIO_PIN_1
 #define Step3_STEP_GPIO_Port GPIOB
-#define Safety_ON_Pin GPIO_PIN_2
-#define Safety_ON_GPIO_Port GPIOB
+#define BOOT1_input_Pin GPIO_PIN_2
+#define BOOT1_input_GPIO_Port GPIOB
 #define Thermostat_Input_Pin GPIO_PIN_12
 #define Thermostat_Input_GPIO_Port GPIOB
 #define Safety_Out_Pin GPIO_PIN_13
@@ -110,8 +110,8 @@ void MX_USART2_UART_Init(void);
 #define Step1_LowCurrent_GPIO_Port GPIOC
 #define Button_LED_Pin GPIO_PIN_8
 #define Button_LED_GPIO_Port GPIOA
-#define USB_ENABLE_Pin GPIO_PIN_15
-#define USB_ENABLE_GPIO_Port GPIOA
+#define Safety_ON_Pin GPIO_PIN_15
+#define Safety_ON_GPIO_Port GPIOA
 #define Step2_STEP_Pin GPIO_PIN_10
 #define Step2_STEP_GPIO_Port GPIOC
 #define Step2_RESET_Pin GPIO_PIN_11

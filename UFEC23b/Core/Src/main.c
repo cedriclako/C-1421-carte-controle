@@ -694,7 +694,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, Step3_DIR_Pin|Button_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, AFK_SpeedPWM_Pin|Step3_LowCurrent_Pin|USB_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, AFK_SpeedPWM_Pin|Step3_LowCurrent_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, Step3_STEP_Pin|Safety_Out_Pin|Step1_STEP_Pin, GPIO_PIN_RESET);
@@ -728,24 +728,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(FAN_Zero_crossing_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Limit_switch3_Pin */
-  GPIO_InitStruct.Pin = Limit_switch3_Pin;
+  /*Configure GPIO pins : Limit_switch3_Pin Safety_ON_Pin */
+  GPIO_InitStruct.Pin = Limit_switch3_Pin|Safety_ON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Limit_switch3_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Step3_DIR_Pin AFK_SpeedPWM_Pin Step3_LowCurrent_Pin Button_LED_Pin
-                           USB_ENABLE_Pin */
-  GPIO_InitStruct.Pin = Step3_DIR_Pin|AFK_SpeedPWM_Pin|Step3_LowCurrent_Pin|Button_LED_Pin
-                          |USB_ENABLE_Pin;
+  /*Configure GPIO pins : Step3_DIR_Pin AFK_SpeedPWM_Pin Step3_LowCurrent_Pin Button_LED_Pin */
+  GPIO_InitStruct.Pin = Step3_DIR_Pin|AFK_SpeedPWM_Pin|Step3_LowCurrent_Pin|Button_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Limit_switch_Door_Pin Safety_ON_Pin Thermostat_Input_Pin Interlock_Input_Pin
+  /*Configure GPIO pins : Limit_switch_Door_Pin BOOT1_input_Pin Thermostat_Input_Pin Interlock_Input_Pin
                            Button_Input_Pin USB_Fault_Pin */
-  GPIO_InitStruct.Pin = Limit_switch_Door_Pin|Safety_ON_Pin|Thermostat_Input_Pin|Interlock_Input_Pin
+  GPIO_InitStruct.Pin = Limit_switch_Door_Pin|BOOT1_input_Pin|Thermostat_Input_Pin|Interlock_Input_Pin
                           |Button_Input_Pin|USB_Fault_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
