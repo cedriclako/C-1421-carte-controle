@@ -228,13 +228,20 @@ void Algo_Init(void const * argument)
 	ESPMANAGER_SetReady();
 	LOG(TAG, "Ready");
 
+  #if WHITEBOX_SANITY_LED != 0
+	bool bSanity = false;
+	uint32_t u32SanityTicks = osKernelSysTick();
+  #endif
+
 	for(;;)
 	{
 		GPIOManager(&UFEC23,osKernelSysTick());
 		TemperatureManager(&UFEC23,osKernelSysTick());
 		DebugManager(&UFEC23,osKernelSysTick());
 		ESPMANAGER_Run();
-		ParticlesManager(osKernelSysTick());
+    #if WHITEBOX_SANITY_LED == 0
+    ParticlesManager(osKernelSysTick());
+    #endif
 		Algo_task(&UFEC23, osKernelSysTick());
 		osDelay(1);
 		#if WHITEBOX_WATCHDOG_ISDEACTIVATED == 0
@@ -242,6 +249,15 @@ void Algo_Init(void const * argument)
 		#endif
 		Fan_Process(&UFEC23);
 		//osDelay(1);
+
+    #if WHITEBOX_SANITY_LED != 0
+		if ( (osKernelSysTick() - u32SanityTicks) > pdMS_TO_TICKS(100) )
+		{
+      HAL_GPIO_WritePin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin, (bSanity ? GPIO_PIN_SET : GPIO_PIN_RESET));
+		  u32SanityTicks = osKernelSysTick();
+	    bSanity = !bSanity;
+		}
+    #endif
 	}
 }
 

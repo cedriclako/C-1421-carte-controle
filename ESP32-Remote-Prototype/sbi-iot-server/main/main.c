@@ -228,6 +228,7 @@ void app_main(void)
     const TickType_t xFrequency = loopPeriodMS / portTICK_PERIOD_MS;
 
     LOG_Init();
+    UARTBRIDGE_Start();
 
     while (true)
     {
@@ -246,7 +247,6 @@ void app_main(void)
             isActive = !isActive;
         }
 
-        //vTaskDelay(10);
         esp_event_loop_run(EVENT_g_LoopHandle, pdMS_TO_TICKS( 1 ));
         vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }   

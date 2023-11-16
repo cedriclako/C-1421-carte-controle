@@ -45,7 +45,7 @@ function idBtnUploadSTM32_Click()
 		var xhr = new XMLHttpRequest();
 		xhr.open('POST', API_POST_STM32_URI, true);
 
-		let firmwareFile = document.getElementById("idFileESP32").files[0];
+		let firmwareFile = document.getElementById("idFileSTM32").files[0];
 
 		// Listen to the upload progress.
 		xhr.upload.onprogress = function(e)

@@ -47,7 +47,9 @@ do \
 
 
 static void InitGPIO(const STM32PROTOCOL_SContext* pContext);
+
 static void InitFlashUART(const STM32PROTOCOL_SContext* pContext);
+static void DeinitFlashUART(const STM32PROTOCOL_SContext* pContext);
 
 static int WaitForSerialData(const STM32PROTOCOL_SContext* pContext, int dataCount, int timeout);
 static int SendData(const STM32PROTOCOL_SContext* pContext, const uint8_t* u8OutgoingData, const int count);
@@ -58,41 +60,44 @@ void STM32PROTOCOL_Init(STM32PROTOCOL_SContext* pContext, const STM32PROTOCOL_SC
 	ESP_LOGI(TAG, "Init STM32 flasher");
 	pContext->psConfig = pConfig;
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-
-	if (pConfig->bInitGPIO)
-		InitGPIO(pContext);
-	
-	if (pConfig->bInitUART)
-		InitFlashUART(pContext);
 }
 
 esp_err_t STM32PROTOCOL_SetupSTM(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    
     // Remove garbage from the buffer
     ESP_LOGI(TAG, "STM32PROTOCOL_ResetSTM");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_ResetSTM(pContext, true));
+    
+    // Attempt several time to sync ....
     ESP_LOGI(TAG, "STM32PROTOCOL_CmdSync");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdSync(pContext));
+
     ESP_LOGI(TAG, "STM32PROTOCOL_CmdGet");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdGet(pContext));
     ESP_LOGI(TAG, "STM32PROTOCOL_CmdVersion");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdVersion(pContext));
     ESP_LOGI(TAG, "STM32PROTOCOL_CmdId");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdId(pContext));
     ESP_LOGI(TAG, "STM32PROTOCOL_CmdErase");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdErase(pContext));
     ESP_LOGI(TAG, "STM32PROTOCOL_CmdExtErase");
-    uart_flush_input(pContext->psConfig->uart_port);
     STM32PROTOCOL_RETURNNOTOK(STM32PROTOCOL_CmdExtErase(pContext));
 	return ESP_OK;
+}
+
+esp_err_t STM32PROTOCOL_StartConn(const STM32PROTOCOL_SContext* pContext)
+{
+    ESP_LOGI(TAG, "STM32PROTOCOL_StartConn");
+
+    if (pContext->psConfig->bInitGPIO) {
+		InitGPIO(pContext);
+    }
+	
+	if (pContext->psConfig->bInitUART) {
+		InitFlashUART(pContext);
+    }
+    return ESP_OK;
 }
 
 esp_err_t STM32PROTOCOL_EndConn(const STM32PROTOCOL_SContext* pContext)
@@ -104,6 +109,11 @@ esp_err_t STM32PROTOCOL_EndConn(const STM32PROTOCOL_SContext* pContext)
 
     uart_flush_input(pContext->psConfig->uart_port);
     ESP_LOGI(TAG, "Ending Connection");
+
+	if (pContext->psConfig->bInitUART) {
+		DeinitFlashUART(pContext);
+    }
+
 	return ESP_OK;
 }
 
@@ -111,18 +121,21 @@ esp_err_t STM32PROTOCOL_ResetSTM(const STM32PROTOCOL_SContext* pContext, bool bI
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
 	ESP_LOGI(TAG, "Starting RESET Procedure");
-    // According to the datasheet, putting BOOTPIN0 to HIGH will boot the system in bootloader mode.
+	gpio_set_level(pContext->psConfig->reset_pin, LOW);
+
+    // Test: BOOT0 = HIGH during process, then LOW at the end
+    //       BOOT1 = LOW during process, HIGH at the END
+    //       RESET = LOW on RESET, HIGH after
+    // According to the datasheet, putting BOOTPIN0 to HIGH and BOOTPIN1 TO LOW will boot the system in bootloader mode.
     if (pContext->psConfig->boot0_pin >= 0) {
         gpio_set_level(pContext->psConfig->boot0_pin, (bIsBootloaderMode ? HIGH : LOW));
     }
     if (pContext->psConfig->boot1_pin >= 0) {
 	    gpio_set_level(pContext->psConfig->boot1_pin, (bIsBootloaderMode ? LOW : HIGH));
     }
-    vTaskDelay(pdMS_TO_TICKS(250));
-	gpio_set_level(pContext->psConfig->reset_pin, LOW);
-	vTaskDelay(pdMS_TO_TICKS(500));
+	vTaskDelay(pdMS_TO_TICKS(1500));
 	gpio_set_level(pContext->psConfig->reset_pin, HIGH);
-	vTaskDelay(pdMS_TO_TICKS(1000));
+	vTaskDelay(pdMS_TO_TICKS(3000));
 	ESP_LOGI(TAG, "Finished RESET Procedure");
     return ESP_OK;
 }
@@ -170,11 +183,10 @@ esp_err_t STM32PROTOCOL_CmdSync(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
     ESP_LOGI(TAG, "SYNC");
-    const uint8_t bytes[] = { 0x7F };
-    
+    const uint8_t u8SendData[] = { 0x7F };
     const uint32_t u32RespLen = 1;
     uint8_t u8RespData[1];
-    return SendReceiveBytes(pContext, bytes, sizeof(bytes), u8RespData, u32RespLen);
+    return SendReceiveBytes(pContext, u8SendData, sizeof(u8SendData), u8RespData, u32RespLen);
 }
 
 esp_err_t STM32PROTOCOL_CmdGet(const STM32PROTOCOL_SContext* pContext)
@@ -446,13 +458,13 @@ static void InitGPIO(const STM32PROTOCOL_SContext* pContext)
     //bit mask of the pins that you want to set,e.g.GPIO18/19
     io_conf.pin_bit_mask = 0;
     if (pContext->psConfig->reset_pin >= 0) {
-        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->reset_pin);
+        io_conf.pin_bit_mask |= (1ULL<<(uint64_t)pContext->psConfig->reset_pin);
     }
     if (pContext->psConfig->boot0_pin >= 0) {
-        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->boot0_pin);
+        io_conf.pin_bit_mask |= (1ULL<<(uint64_t)pContext->psConfig->boot0_pin);
     }
     if (pContext->psConfig->boot1_pin >= 0) {
-        io_conf.pin_bit_mask |= (1ULL<<pContext->psConfig->boot1_pin);
+        io_conf.pin_bit_mask |= (1ULL<<(uint64_t)pContext->psConfig->boot1_pin);
     }
     //configure GPIO with the given settings
     gpio_config(&io_conf);
@@ -478,12 +490,19 @@ static void InitFlashUART(const STM32PROTOCOL_SContext* pContext)
     ESP_LOGI(TAG,"Initialized Flash UART");
 }
 
+static void DeinitFlashUART(const STM32PROTOCOL_SContext* pContext)
+{
+    uart_driver_delete(pContext->psConfig->uart_port);
+}
+
 static esp_err_t SendReceiveBytes(const STM32PROTOCOL_SContext* pContext, const uint8_t* u8SendData, uint32_t u32SendCount, uint8_t* u8RecvData, uint32_t u32ExpectedRecvCount)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
+    // Clear the input buffer before attempting to write ...
+    uart_flush_input(pContext->psConfig->uart_port);
     SendData(pContext, u8SendData, u32SendCount);
     const int length = WaitForSerialData(pContext, u32ExpectedRecvCount, pContext->psConfig->u32SyncDataTimeoutMS);
-    if (length < 0)
+    if (length <= 0)
     {
         ESP_LOGE(TAG, "Serial Timeout");
         return ESP_FAIL;

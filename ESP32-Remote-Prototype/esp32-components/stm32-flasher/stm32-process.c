@@ -70,7 +70,10 @@ static esp_err_t ReadTask(const STM32PROTOCOL_SContext* pContext, FILE *flash_fi
 
 esp_err_t STM32PROCESS_FlashSTM(const STM32PROTOCOL_SContext* pContext, const char* filename)
 {
-    esp_err_t err = ESP_FAIL;
+    esp_err_t err = ESP_OK;
+
+    // Initialize GPIO and UART
+    STM32PROTOCOL_StartConn(pContext);
 
     ESP_LOGI(TAG_STM_FLASH, "File name: %s", filename);
 
@@ -80,15 +83,16 @@ esp_err_t STM32PROCESS_FlashSTM(const STM32PROTOCOL_SContext* pContext, const ch
         ESP_LOGE(TAG_STM_FLASH, "Cannot open file");
         goto ERROR;
     }
+
     // This while loop executes only once and breaks if any of the functions do not return ESP_OK
     ESP_LOGI(TAG_STM_FLASH, "Writing STM32 Memory");
-    if (WriteTask(pContext, flash_file) != ESP_OK)
+    if (ESP_OK != (err = WriteTask(pContext, flash_file)))
     {
         ESP_LOGE(TAG_STM_FLASH, "Writing STM32 Memory process failed");
         goto ERROR;
     }
     ESP_LOGI(TAG_STM_FLASH, "Reading STM32 Memory");
-    if (ReadTask(pContext, flash_file) != ESP_OK)
+    if (ESP_OK != (err = ReadTask(pContext, flash_file)))
     {
         ESP_LOGE(TAG_STM_FLASH, "Reading STM32 Memory process failed");
         goto ERROR;  
@@ -97,7 +101,9 @@ esp_err_t STM32PROCESS_FlashSTM(const STM32PROTOCOL_SContext* pContext, const ch
     ESP_LOGI(TAG_STM_FLASH, "STM32 Flashed Successfully!!!");
     goto END;
     ERROR:
-    err = ESP_FAIL;
+    if (err == ESP_OK) {
+        err = ESP_FAIL;
+    }
     ESP_LOGI(TAG_STM_FLASH, "ERROR, unable to finish the process");
     END:
     ESP_LOGI(TAG_STM_FLASH, "Ending Connection");

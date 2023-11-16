@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
+#include "esp_log.h"
 
 #define TAG "hardwaregpio"
 
@@ -13,9 +14,10 @@ static void InitSDCardGPIO();
 static void InitSTM32GPIO();
 
 static void InitSDCardDriver();
-static void InitUARTDriver();
 
 static bool m_bIsSDCardAvailable = false;
+
+static bool m_bIsUARTReady = false;
 
 void HARDWAREGPIO_Init()
 {
@@ -27,7 +29,6 @@ void HARDWAREGPIO_Init()
     InitSTM32GPIO();
 
     InitSDCardDriver();
-    InitUARTDriver();
 }
 
 static void InitStatusLEDsGPIO()
@@ -125,6 +126,7 @@ static void InitSDCardDriver()
     };
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    //host.max_freq_khz = SDMMC_FREQ_PROBING;
     host.slot = HWGPIO_SDCARD_SPI_HOST;
 
     const esp_err_t ret2=spi_bus_initialize(host.slot, &buscfgSPI2, SPI_DMA_CH_AUTO);
@@ -164,8 +166,13 @@ static void InitSDCardDriver()
     #endif
 }
 
-static void InitUARTDriver()
+bool HARDWAREGPIO_InitUARTDriver()
 {
+    if (uart_is_driver_installed(HWGPIO_BRIDGEUART_PORT_NUM)) {
+        ESP_LOGE(TAG, "The driver UART driver is already running");
+        return false;
+    }
+
      /* Configure parameters of an UART driver,
      * communication pins and install the driver */
     const uart_config_t uart_config = {
@@ -184,6 +191,18 @@ static void InitUARTDriver()
     ESP_ERROR_CHECK(uart_param_config(HWGPIO_BRIDGEUART_PORT_NUM, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(HWGPIO_BRIDGEUART_PORT_NUM, HWGPIO_BRIDGEUART_TXD_PIN, HWGPIO_BRIDGEUART_RXD_PIN, HWGPIO_BRIDGEUART_RTS_PIN, HWGPIO_BRIDGEUART_CTS_PIN));
     ESP_ERROR_CHECK(uart_driver_install(HWGPIO_BRIDGEUART_PORT_NUM, HWGPIO_BRIDGEUART_BUFFSIZE * 2, 0, 0, NULL, intr_alloc_flags));
+    m_bIsUARTReady = true;
+    return true;
+}
+
+bool HARDWAREGPIO_DeinitUARTDriver()
+{
+    if (!uart_is_driver_installed(HWGPIO_BRIDGEUART_PORT_NUM)) {
+        ESP_LOGW(TAG, "The driver UART driver is not installed");
+        return false;
+    }
+    ESP_ERROR_CHECK(uart_driver_delete(HWGPIO_BRIDGEUART_PORT_NUM));
+    return true;
 }
 
 void HARDWAREGPIO_SetSanity(bool bIsActive)
