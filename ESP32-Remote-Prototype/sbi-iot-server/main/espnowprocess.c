@@ -466,10 +466,10 @@ static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, cons
         ESP_LOGI(TAG, "espNowDataRcv.distribSpeedRmt: %d", espNowDataRcv.distribSpeedRmt);
         ESP_LOGI(TAG, "espNowDataRcv.boostStatRmt: %d", espNowDataRcv.boostStatRmt);
 
-        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_StatRmt, (int32_t) espNowDataRcv.tStatRmt);
-        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, (int32_t) espNowDataRcv.blowerSpeedRmt);
-        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt, (int32_t) espNowDataRcv.distribSpeedRmt);
-        SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, (int32_t) espNowDataRcv.boostStatRmt);
+        UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_StatRmt, (int32_t) espNowDataRcv.tStatRmt);
+        UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, (int32_t) espNowDataRcv.blowerSpeedRmt);
+        UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt, (int32_t) espNowDataRcv.distribSpeedRmt);
+        UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, (int32_t) espNowDataRcv.boostStatRmt);
 
         // Put into receive queue
         ESPNOWPROCESS_SMsg msg;
