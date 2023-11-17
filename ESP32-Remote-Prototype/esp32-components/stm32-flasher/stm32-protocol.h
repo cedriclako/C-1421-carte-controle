@@ -44,6 +44,8 @@ esp_err_t STM32PROTOCOL_ResetToApp(const STM32PROTOCOL_SContext* pContext);
 
 esp_err_t STM32PROTOCOL_SetupSTM(const STM32PROTOCOL_SContext* pContext);
 
+esp_err_t STM32PROTOCOL_StartConn(const STM32PROTOCOL_SContext* pContext);
+
 int STM32PROTOCOL_EndConn(const STM32PROTOCOL_SContext* pContext);
 
 esp_err_t STM32PROTOCOL_CmdSync(const STM32PROTOCOL_SContext* pContext);

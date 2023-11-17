@@ -85,4 +85,8 @@ bool HARDWAREGPIO_GetISSDCardAvailable();
 
 uint32_t HARDWAREGPIO_GetModel();
 
+bool HARDWAREGPIO_InitUARTDriver();
+
+bool HARDWAREGPIO_DeinitUARTDriver();
+
 #endif

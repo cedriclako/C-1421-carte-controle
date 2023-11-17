@@ -5,6 +5,8 @@
 
 esp_err_t OTAUPLOADESP32_postotauploadESP32_handler(httpd_req_t *req)
 {
+    esp_ota_handle_t update_handle = 0;
+
     ESP_LOGI(TAG, "file_postotauploadESP32_handler / uri: %s", req->uri);
 
     CHECK_FOR_ACCESS_OR_RETURN();
@@ -27,13 +29,10 @@ esp_err_t OTAUPLOADESP32_postotauploadESP32_handler(httpd_req_t *req)
     ESP_LOGI(TAG, "Writing to partition subtype %"PRId32" at offset 0x%"PRIx32,
         (int32_t)update_partition->subtype, (int32_t)update_partition->address);
 
-    esp_ota_handle_t update_handle = 0;
-
     esp_err_t err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
     if (err != ESP_OK)
     {
         ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
-        esp_ota_abort(update_handle);
         goto ERROR;
     }
 
@@ -47,7 +46,6 @@ esp_err_t OTAUPLOADESP32_postotauploadESP32_handler(httpd_req_t *req)
         err = esp_ota_write( update_handle, (const void *)g_u8Buffers, n);
         if (err != ESP_OK)
         {
-            esp_ota_abort(update_handle);
             goto ERROR;
         }
         binary_file_length += n;
@@ -64,8 +62,6 @@ esp_err_t OTAUPLOADESP32_postotauploadESP32_handler(httpd_req_t *req)
         } else {
             ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
         }
-
-        // TODO: esp_ota_abort(update_handle); needed ?
         goto ERROR;
     }
 
@@ -85,6 +81,10 @@ esp_err_t OTAUPLOADESP32_postotauploadESP32_handler(httpd_req_t *req)
     httpd_resp_send(req, NULL, 0);
     return ESP_OK;
     ERROR:
+    if (update_handle != 0) {
+        esp_ota_abort(update_handle);
+    }
+
     httpd_resp_set_hdr(req, "Connection", "close");
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid image");
     return ESP_FAIL;

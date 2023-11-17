@@ -13,6 +13,9 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     esp_err_t err = ESP_FAIL;
     CHECK_FOR_ACCESS_OR_RETURN();
 
+    // Stop the UART bridge
+    UARTBRIDGE_Stop();
+
     const char* szError = NULL;
 
     FILE* flash_file = NULL;
@@ -21,9 +24,6 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     const char* filename = FWCONFIG_SPIFF_ROOTPATH"/stm32.bin";
 
     ESP_LOGI(TAG, "file_postotauploadSTM32_handler / uri: %s, filename: %s", req->uri, filename);
-
-    // Stop the UART bridge
-    UARTBRIDGE_SetSilenceMode(true);
 
     // Prepare the STM32
     flash_file = fopen(filename, "w");
@@ -54,19 +54,50 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     }
     while (n > 0);
 
+    if (binary_file_length == 0) {
+        szError = "The file is empty";
+        goto ERROR;
+    }
+
+    if (flash_file != NULL) {
+        fclose(flash_file);
+        flash_file = NULL;
+    }
+
     // Initialize upload
     STM32PROTOCOL_SContext sContext;
     STM32PROTOCOL_SConfig sConfig = STM32PROTOCOL_SCONFIG_INIT;
     sConfig.bInitGPIO = true;
+    sConfig.bInitUART = true;
+
     sConfig.reset_pin = HWGPIO_STM32_RESET_PIN;
     sConfig.boot0_pin = HWGPIO_STM32_BOOT0_PIN;
     sConfig.boot1_pin = HWGPIO_STM32_BOOT1_PIN;
 
     sConfig.uart_port = HWGPIO_BRIDGEUART_PORT_NUM;
+    sConfig.uart_tx_pin = HWGPIO_BRIDGEUART_TXD_PIN;
+    sConfig.uart_rx_pin = HWGPIO_BRIDGEUART_RXD_PIN;
 
     STM32PROTOCOL_Init(&sContext, &sConfig);
 
-    if (STM32PROCESS_FlashSTM(&sContext, filename) != ESP_OK)
+    bool bIsFlashSuccess = false;
+
+    //for(int j = 0; j < 20; j++) 
+    {
+        int j = 0;
+
+        ESP_LOGI(TAG, "Flashing attempt #%d", (j+1));
+
+        if (ESP_OK == STM32PROCESS_FlashSTM(&sContext, filename))
+        {
+            ESP_LOGI(TAG, "Finished flash attempt #%d", (j+1));
+            bIsFlashSuccess = true;
+            //break;
+        }
+        ESP_LOGI(TAG, "Flashing attempt #%d done", (j+1));
+    }
+
+    if (!bIsFlashSuccess)
     {
         szError = "Unable to flash";
         goto ERROR;
@@ -84,6 +115,6 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
 
     httpd_resp_set_hdr(req, "Connection", "close");
     // Restore the UART bridge.
-    UARTBRIDGE_SetSilenceMode(false);
+    UARTBRIDGE_Start();
     return err;
 }

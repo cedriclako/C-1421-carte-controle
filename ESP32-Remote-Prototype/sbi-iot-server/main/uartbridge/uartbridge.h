@@ -11,7 +11,9 @@
 
 void UARTBRIDGE_Init();
 
-void UARTBRIDGE_SetSilenceMode(bool bIsSilent);
+void UARTBRIDGE_Start();
+
+void UARTBRIDGE_Stop();
 
 void UARTBRIDGE_Handler();
 

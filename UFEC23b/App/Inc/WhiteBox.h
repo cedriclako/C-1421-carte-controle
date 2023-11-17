@@ -10,4 +10,6 @@
 
 #define WHITEBOX_WATCHDOG_ISDEACTIVATED (0)
 
+#define WHITEBOX_SANITY_LED (0)
+
 #endif /* INC_WHITEBOX_H_ */

@@ -8,6 +8,7 @@
 #include "event.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "FreeRTOS/semphr.h"
 #include "hardwaregpio.h"
 #include "uartbridge.h"
 #include "stovemb.h"
@@ -27,7 +28,7 @@ typedef struct
     // State
     bool bIsConnected;
 
-    bool bIsSilentMode;
+    bool bIsUARTWorking;
 
     // Connection 
     TickType_t ttLastCommTicks;
@@ -99,12 +100,17 @@ static UARTPROTOCOLENC_SConfig m_sConfigEncoder =
 
 static SStateMachine m_sStateMachine;
 
+static SemaphoreHandle_t m_xSemaphoreExt = NULL;
+
 void UARTBRIDGE_Init()
 {
+    m_xSemaphoreExt = xSemaphoreCreateRecursiveMutex();
+    assert(m_xSemaphoreExt != NULL);
+
     STOVEMB_Init();
 
-    // Silence mode?
-    m_sStateMachine.bIsSilentMode = false;
+    // Is UART working
+    m_sStateMachine.bIsUARTWorking = false;
 
     // Reset communication
     m_sStateMachine.bIsConnected = false;
@@ -124,15 +130,59 @@ void UARTBRIDGE_Init()
     esp_event_handler_register_with(EVENT_g_LoopHandle, MAINAPP_EVENT, REQUESTCONFIGWRITE_EVENT, RequestConfigWriteEvent, NULL);
 }
 
-void UARTBRIDGE_SetSilenceMode(bool bIsSilent)
+void UARTBRIDGE_Start()
 {
-    m_sStateMachine.bIsSilentMode = bIsSilent;
+    if (pdTRUE != xSemaphoreTakeRecursive( m_xSemaphoreExt, portMAX_DELAY))
+        return;
+
+    if (m_sStateMachine.bIsUARTWorking) {
+        ESP_LOGW(TAG, "Cannot start the bridge, already working");
+        goto END;
+    }
+
+    if (!HARDWAREGPIO_InitUARTDriver()) {
+        m_sStateMachine.bIsUARTWorking = false;
+        ESP_LOGE(TAG, "Cannot start the bridge, UART driver won't initialize");
+        goto END;
+    }
+
+    m_sStateMachine.bIsUARTWorking = true;        
+    ESP_LOGI(TAG, "Bridge started");
+    END:
+    xSemaphoreGiveRecursive( m_xSemaphoreExt);
+}
+
+void UARTBRIDGE_Stop()
+{
+    if (pdTRUE != xSemaphoreTakeRecursive( m_xSemaphoreExt, portMAX_DELAY))
+        return;
+
+    if (!m_sStateMachine.bIsUARTWorking)
+    {
+        ESP_LOGW(TAG, "Cannot stop the bridge, already working");
+        goto END;
+    }
+        
+    if (!HARDWAREGPIO_DeinitUARTDriver()) {
+        m_sStateMachine.bIsUARTWorking = true;
+        ESP_LOGE(TAG, "Cannot stop the bridge, UART driver won't uninitialize");
+        goto END;
+    }
+
+    m_sStateMachine.bIsUARTWorking = false;        
+    ESP_LOGI(TAG, "Bridge stopped");
+    END:
+    xSemaphoreGiveRecursive( m_xSemaphoreExt);
 }
 
 void UARTBRIDGE_Handler()
 {
+    // No hurry, the next run will handle it
+    if (pdTRUE != xSemaphoreTakeRecursive( m_xSemaphoreExt, 1))
+        return;
+
     // Read data from the UART
-    if (!m_sStateMachine.bIsSilentMode)
+    if (m_sStateMachine.bIsUARTWorking)
     {
         uint8_t u8UARTDriverBuffers[128];
         int len = 0;
@@ -154,6 +204,8 @@ void UARTBRIDGE_Handler()
             ProcParameterAbort();
         }
     }
+
+    xSemaphoreGiveRecursive( m_xSemaphoreExt);
 }
 
 static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
@@ -163,8 +215,9 @@ static int64_t GetTimerCountMS(const UARTPROTOCOLDEC_SHandle* psHandle)
 
 static void EncWriteUART(const UARTPROTOCOLENC_SHandle* psHandle, const uint8_t u8Datas[], uint32_t u32DataLen)
 {
-    if (!m_sStateMachine.bIsSilentMode)
+    if (m_sStateMachine.bIsUARTWorking) {
         uart_write_bytes(HWGPIO_BRIDGEUART_PORT_NUM, u8Datas, u32DataLen);
+    }
 }
 
 static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID, const uint8_t u8Payloads[], uint32_t u32PayloadLen)
@@ -593,12 +646,17 @@ static bool ProcParameterUpload()
 }
 
 void UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID eFrameID, int32_t s32Value)
-{
+{   
+    // No hurry, the next run will handle it
+    if (pdTRUE != xSemaphoreTakeRecursive( m_xSemaphoreExt, portMAX_DELAY))
+        return;
+
     const int32_t s32Count = UFEC23ENDEC_S2CEncodeS32(m_u8UARTSendProtocols, SENDPROTOCOL_COUNT, s32Value);
     SendFrame(eFrameID, m_u8UARTSendProtocols, s32Count);
     
     ESP_LOGI(TAG, "SendFrameInt32Value, value: %"PRId32", count: %"PRId32, s32Value, s32Count);
-}
+    xSemaphoreGiveRecursive( m_xSemaphoreExt);
+ }
 
 static void SendFrame(UFEC23PROTOCOL_FRAMEID eFrameID, uint8_t u8Payloads[], uint32_t u32PayloadLen)
 {
