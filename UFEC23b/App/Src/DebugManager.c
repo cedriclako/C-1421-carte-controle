@@ -80,8 +80,9 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 		printf("OFF ");
 	}
 	printf("dTbaffle:%.1f ", stove->fBaffleDeltaT);
-	printf("FanSpeed:%i ", 0);
-	printf("Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps));
+	printf("FanSpeed:");
+	printf(Fan_GetSpeedString(FAN_DISTRIB));
+	printf(" Grille:%i ", (int)(stove->sGrill.u8aperturePosSteps));
 	printf("Prim:%i ", (int)(stove->sPrimary.u8aperturePosSteps));
 	printf("Sec:%i ", (int)(stove->sSecondary.u8aperturePosSteps));
 	printf("Tboard:%.0f ", get_BoardTemp());
@@ -150,8 +151,8 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 			printf("\n\rbReloadRequested off \n");
 		}
 
-			printf("\n\rfan 1 speed is : %i",fan1speed);
-			printf("\n\rfan 2 speed is : %i",fan2speed);
+			printf("\n\rfan 1 speed is : %i",Fan_GetSpeed(FAN_DISTRIB));
+			printf("\n\rfan 2 speed is : %i",Fan_GetSpeed(FAN_BLOWER));
 
 			printf("\n\rGrille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
 			printf("\n\rPrim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));

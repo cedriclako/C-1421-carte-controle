@@ -7,6 +7,7 @@
 
 #include "FanManager.h"
 #include "stm32f1xx_hal.h"
+#include "HelperMacro.h"
 #include <stdlib.h>
 #include "main.h"
 #include "Algo.h"
@@ -25,16 +26,21 @@ void Fan_DisableAll(void);
 void Fan_DisableFan(FanObj *fan);
 void Fan_EnableFan(FanObj *fan);
 void Fan_ManageSpeed(FanObj *fan);
-int fan1speed;
-int fan2speed;
+
+static const char* m_FanStrings[FSPEED_NUM_OF_SPEEDS] =
+{
+  HELPERMACRO_DEFSTRING(FSPEED_OFF),
+  HELPERMACRO_DEFSTRING(FSPEED_LOW),
+  HELPERMACRO_DEFSTRING(FSPEED_HIGH),
+  HELPERMACRO_DEFSTRING(FSPEED_AUTO),
 
 
-//static FAN_states eFANstate = FANSTATE_IDLE;
+};
 
 static FanObj sFans[FAN_NUM_OF_FANS] =
 {
-	FAN_INIT(PFD_RMT_DISTFAN, PFD_AFK_SPD, &htim4, &htim5, AFK_Speed1_Pin,AFK_Speed1_GPIO_Port), //Amélioration possible... Remapper sur timer 3 pour utilisation des fonctions OnePulse à délai
-	FAN_INIT(PFD_RMT_LOWFAN, PFD_FANL_SPD, &htim2, &htim3, FAN_SPEED3_Pin,FAN_SPEED3_GPIO_Port),
+	FAN_INIT(PFD_RMT_DISTFAN, PFD_DIST_SPD, &htim4, &htim5, AFK_Speed1_Pin,AFK_Speed1_GPIO_Port), //Amélioration possible... Remapper sur timer 3 pour utilisation des fonctions OnePulse à délai
+	FAN_INIT(PFD_RMT_LOWFAN, PFD_BLOW_SPD, &htim2, &htim3, FAN_SPEED3_Pin,FAN_SPEED3_GPIO_Port),
 
 };
 
@@ -56,10 +62,6 @@ void Fan_Process(Mobj *stove)
 		Fan_DisableAll();
 		return;
 	}
-
-
-	fan1speed = sFans[0].eSpeed;
-	fan2speed = sFans[1].eSpeed;
 
 
 	for(uint8_t i = 0; i < FAN_NUM_OF_FANS;i++)
@@ -190,13 +192,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == FAN_Zero_crossing_Pin)
 	{
-		if(sFans[FAN_FAN_L].bEnabled && sFans[FAN_FAN_L].u16SpeedPercent !=100)
+		if(sFans[FAN_BLOWER].bEnabled && sFans[FAN_BLOWER].u16SpeedPercent !=100)
 		{
-			HAL_TIM_Base_Start_IT(sFans[FAN_FAN_L].sStartTimer);
+			HAL_TIM_Base_Start_IT(sFans[FAN_BLOWER].sStartTimer);
 		}
-		if(sFans[FAN_AFK].bEnabled && sFans[FAN_AFK].u16SpeedPercent !=100)
+		if(sFans[FAN_DISTRIB].bEnabled && sFans[FAN_DISTRIB].u16SpeedPercent !=100)
 		{
-			HAL_TIM_Base_Start_IT(sFans[FAN_AFK].sStartTimer);
+			HAL_TIM_Base_Start_IT(sFans[FAN_DISTRIB].sStartTimer);
 		}
 
 	}
@@ -205,36 +207,36 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void Fan_StartPulseSPEED3(void)
 {
-	HAL_TIM_Base_Stop(sFans[FAN_FAN_L].sStartTimer);
-	HAL_TIM_Base_Start_IT(sFans[FAN_FAN_L].sStopTimer);
-	HAL_GPIO_WritePin(sFans[FAN_FAN_L].sPins.MODULATION_PORT,sFans[FAN_FAN_L].sPins.MODULATION_PIN,GPIO_PIN_SET);
+	HAL_TIM_Base_Stop(sFans[FAN_BLOWER].sStartTimer);
+	HAL_TIM_Base_Start_IT(sFans[FAN_BLOWER].sStopTimer);
+	HAL_GPIO_WritePin(sFans[FAN_BLOWER].sPins.MODULATION_PORT,sFans[FAN_BLOWER].sPins.MODULATION_PIN,GPIO_PIN_SET);
 }
 
 void Fan_StopPulseSPEED3(void)
 {
-	HAL_TIM_Base_Stop(sFans[FAN_FAN_L].sStopTimer);
+	HAL_TIM_Base_Stop(sFans[FAN_BLOWER].sStopTimer);
 
-	if(sFans[FAN_FAN_L].u16SpeedPercent !=100)
+	if(sFans[FAN_BLOWER].u16SpeedPercent !=100)
 	{
-		HAL_GPIO_WritePin(sFans[FAN_FAN_L].sPins.MODULATION_PORT,sFans[FAN_FAN_L].sPins.MODULATION_PIN,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(sFans[FAN_BLOWER].sPins.MODULATION_PORT,sFans[FAN_BLOWER].sPins.MODULATION_PIN,GPIO_PIN_RESET);
 	}
 
 }
 
 void Fan_StartPulseSPEED1(void)
 {
-	HAL_TIM_Base_Stop(sFans[FAN_AFK].sStartTimer);
-	HAL_TIM_Base_Start_IT(sFans[FAN_AFK].sStopTimer);
-	HAL_GPIO_WritePin(sFans[FAN_AFK].sPins.MODULATION_PORT,sFans[FAN_AFK].sPins.MODULATION_PIN,GPIO_PIN_SET);
+	HAL_TIM_Base_Stop(sFans[FAN_DISTRIB].sStartTimer);
+	HAL_TIM_Base_Start_IT(sFans[FAN_DISTRIB].sStopTimer);
+	HAL_GPIO_WritePin(sFans[FAN_DISTRIB].sPins.MODULATION_PORT,sFans[FAN_DISTRIB].sPins.MODULATION_PIN,GPIO_PIN_SET);
 }
 
 void Fan_StopPulseSPEED1(void)
 {
-	HAL_TIM_Base_Stop(sFans[FAN_AFK].sStopTimer);
+	HAL_TIM_Base_Stop(sFans[FAN_DISTRIB].sStopTimer);
 
-	if(sFans[FAN_AFK].u16SpeedPercent !=100)
+	if(sFans[FAN_DISTRIB].u16SpeedPercent !=100)
 	{
-		HAL_GPIO_WritePin(sFans[FAN_AFK].sPins.MODULATION_PORT,sFans[FAN_AFK].sPins.MODULATION_PIN,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(sFans[FAN_DISTRIB].sPins.MODULATION_PORT,sFans[FAN_DISTRIB].sPins.MODULATION_PIN,GPIO_PIN_RESET);
 	}
 
 }
@@ -262,6 +264,20 @@ void Fan_DisableAll(void)
 
 	Fan_DisableZeroDetect();
 }
+
+Fan_Speed_t Fan_GetSpeed(Fan_t FanID)
+{
+  return sFans[FanID].eSpeed;
+}
+
+const char* Fan_GetSpeedString(Fan_t FanID)
+{
+  if (sFans[FanID].eSpeed >= FSPEED_NUM_OF_SPEEDS)
+    return "-- N/A --";
+  return m_FanStrings[sFans[FanID].eSpeed];
+
+}
+
 
 
 

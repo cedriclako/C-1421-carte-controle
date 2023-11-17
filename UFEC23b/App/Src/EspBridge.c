@@ -29,6 +29,7 @@ CR    | 2022/11/21 | -       | Creation
 */
 #include <inttypes.h>
 #include "main.h"
+#include "FanManager.h"
 #include "Algo.h"
 #include "cmsis_os.h"
 #include "FreeRTOS.h"
@@ -542,7 +543,7 @@ static void SendDebugData(const SScheduler* pSchContext)
 	const Mobj* pMobj = ALGO_GetObjData();
 
 	int n = snprintf(m_szDebugStringJSON, sizeof(m_szDebugStringJSON)-1,
-		"{ \"#\":\"%s\",\"Tbaffle\":%f,\"Tavant\":%f,\"Plenum\":%f,\"State\":\"%s\",\"tStat\":\"%s\",\"dTbaffle\":%f,\"FanSpeed\":%"PRId32",\"Grille\":%"PRId32",\"Prim\":%"PRId32",\"Sec\":%"PRId32",\"Tboard\":%.0f,\"Door\":\"%s\",\"PartCH0ON\":%"PRId32",\"PartCH1ON\":%"PRId32",\"PartCH0OFF\":%"PRId32",\"PartCH1OFF\":%"PRId32",\"PartVar\":%"PRId32",\"PartSlope\":%f,\"TPart\":%"PRId32",\"PartCurr\":%f,\"PartLuxON\":%"PRId32",\"PartLuxOFF\":%"PRId32",\"PartTime\":%"PRId32",\"dTavant\":%f }",
+		"{ \"#\":\"%s\",\"Tbaffle\":%f,\"Tavant\":%f,\"Plenum\":%f,\"State\":\"%s\",\"tStat\":\"%s\",\"dTbaffle\":%f,\"FanDistSpeed\":\"%s\",\"FanBlowSpeed\":\"%s\",\"Grille\":%"PRId32",\"Prim\":%"PRId32",\"Sec\":%"PRId32",\"Tboard\":%.0f,\"Door\":\"%s\",\"PartCH0ON\":%"PRId32",\"PartCH1ON\":%"PRId32",\"PartCH0OFF\":%"PRId32",\"PartCH1OFF\":%"PRId32",\"PartVar\":%"PRId32",\"PartSlope\":%f,\"TPart\":%"PRId32",\"PartCurr\":%f,\"PartLuxON\":%"PRId32",\"PartLuxOFF\":%"PRId32",\"PartTime\":%"PRId32",\"dTavant\":%f }",
 		/*#*/rtcTimeString,
 		/*Tbaffle*/pMobj->fBaffleTemp,
 		/*Tavant*/pMobj->fChamberTemp,
@@ -550,7 +551,8 @@ static void SendDebugData(const SScheduler* pSchContext)
 		/*State*/ALGO_GetStateString(ALGO_GetCurrentState()),
 		/*tStat*/pMobj->bThermostatOn ? "ON" : "OFF",
 		/*dTbaffle*/pMobj->fBaffleDeltaT,
-		/*FanSpeed*/(int32_t)0,
+		/*FanDistSpeed*/Fan_GetSpeedString(FAN_DISTRIB),
+		/*FanBlowSpeed*/Fan_GetSpeedString(FAN_BLOWER),
 		/*Grille*/(int32_t)(pMobj->sGrill.u8aperturePosSteps*9/10),
 		/*Prim*/(int32_t)(pMobj->sPrimary.u8aperturePosSteps*9/10),
 		/*Sec*/(int32_t)(pMobj->sSecondary.u8aperturePosSteps*9/10),

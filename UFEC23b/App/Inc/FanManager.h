@@ -19,8 +19,8 @@ extern int fan2speed;
 
 typedef enum
 {
-	FAN_AFK,
-	FAN_FAN_L,
+	FAN_DISTRIB,
+	FAN_BLOWER,
 
 	FAN_NUM_OF_FANS
 }Fan_t;
@@ -75,6 +75,9 @@ void Fan_StartPulseSPEED3(void);
 void Fan_StopPulseSPEED3(void);
 void Fan_StartPulseSPEED1(void);
 void Fan_StopPulseSPEED1(void);
+
+Fan_Speed_t Fan_GetSpeed(Fan_t FanID);
+const char* Fan_GetSpeedString(Fan_t FanID);
 
 
 

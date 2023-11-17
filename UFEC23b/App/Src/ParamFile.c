@@ -41,8 +41,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_FAN_LO_KIP,			 	 &m_sMemBlock.s32FAN_LO_KIP,   	 					   		500, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_FAN_LO_KOP,			 	 &m_sMemBlock.s32FAN_LO_KOP,		 				   		300, 		0, 		20000, "Lo to OFF"),
 	PFL_INIT_SINT32(PFD_FAN_HI_KIP,			 	 &m_sMemBlock.s32FAN_HI_KIP,   	 					   		650, 		0, 		20000, "x to HI"),
-	PFL_INIT_SINT32(PFD_FANL_SPD,			 	 &m_sMemBlock.s32FANL_LOW_SPD,		 				   		40, 		0, 		100, ""),
-	PFL_INIT_SINT32(PFD_AFK_SPD,			 	 &m_sMemBlock.s32AFK_LOW_SPD,		 				   		40, 		0, 		100, ""),
+	PFL_INIT_SINT32(PFD_BLOW_SPD,			 	 &m_sMemBlock.s32FANL_LOW_SPD,		 				   		40, 		0, 		100, ""),
+	PFL_INIT_SINT32(PFD_DIST_SPD,			 	 &m_sMemBlock.s32AFK_LOW_SPD,		 				   		40, 		0, 		100, ""),
 	PFL_INIT_SINT32(PFD_PART_RESET,			 	 &m_sMemBlock.s32ParticleReset,		 				   		0, 		0, 		1, "1 = REQ RESET"),
 
 	// KEY										    VARIABLE POINTER										DEFAULT, 	MIN,	 MAX
@@ -157,8 +157,8 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	//SuperStateParameters
 	PFL_INIT_SINT32(PFD_TR_ENTRY_TIME, 			 &m_sSuperParams[TEMPERATURE_RISE].i32EntryWaitTimeSeconds, 				60, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_TR_MIN_TIME, 			 &m_sSuperParams[TEMPERATURE_RISE].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			 &m_sSuperParams[TEMPERATURE_RISE].i32MaximumTimeInStateMinutes, 			60, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_TR_MIN_TIME, 			   &m_sSuperParams[TEMPERATURE_RISE].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_TR_MAX_TIME, 			   &m_sSuperParams[TEMPERATURE_RISE].i32MaximumTimeInStateMinutes, 			60, 		0, 		20000, ""),
 
 	PFL_INIT_SINT32(PFD_CBL_ENTRY_TIME, 		 &m_sSuperParams[COMBUSTION_LOW].i32EntryWaitTimeSeconds, 				60, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_MIN_TIME, 			 &m_sSuperParams[COMBUSTION_LOW].i32MinimumTimeInStateMinutes, 			1, 			0, 		20000, ""),
@@ -178,7 +178,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 
 	// Overheat parameters
 	PFL_INIT_SINT32(PFD_OVERHEATPLENUM, 		 &m_sOverheatParams.OverheatPlenum, 	  					420, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT, 	 &m_sOverheatParams.OverheatPlenumExit,   					210, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_OVERHEATPLENUMEXIT,  &m_sOverheatParams.OverheatPlenumExit,   					210, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_OVERHEATBAFFLE, 		 &m_sOverheatParams.OverheatBaffle, 	 	   				1472, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_OVERHEATCHAMBER, 		 &m_sOverheatParams.OverheatChamber, 	 	   				1500, 		0, 		20000, ""),
 
