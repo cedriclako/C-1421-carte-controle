@@ -37,6 +37,7 @@ typedef struct
 	uint8_t u8grill_pos;
 
 	uint32_t u32StateEntryMem_ms;
+	State sPreviousState;
 
 	Fan_Speed_t eFanDistSpeed;
 	Fan_Speed_t eFanLowSpeed;
@@ -1331,7 +1332,8 @@ static void Algo_coalHigh_exit(Mobj *stove)
 //** STATE: BOOST **//
 static void Algo_boost_entry(Mobj *stove)
 {
-	sBoostConfMem.u8grill_pos = stove->sGrill.u8aperturePosSteps;
+	sBoostConfMem.sPreviousState = lastState;
+  sBoostConfMem.u8grill_pos = stove->sGrill.u8aperturePosSteps;
 	sBoostConfMem.u8prim_pos = stove->sPrimary.u8aperturePosSteps;
 	sBoostConfMem.u8sec_pos = stove->sSecondary.u8aperturePosSteps;
 
@@ -1363,7 +1365,7 @@ static void Algo_boost_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	if(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > MINUTES(1))
 	{
-		nextState = lastState;
+		nextState = sBoostConfMem.sPreviousState;
 		bStateExitConditionMet = true;
 	}
 
