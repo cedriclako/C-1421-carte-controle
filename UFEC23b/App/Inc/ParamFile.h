@@ -198,8 +198,8 @@ typedef struct
 #define PFD_FAN_LO_KOP			"usr_FansLowSpeedKOP"
 #define PFD_FAN_HI_KIP			"usr_FansHighSpeedKIP"
 #define PFD_FAN_HI_KOP			"usr_FansHighSpeedKOP"
-#define PFD_DIST_SPD				"fan_DistributionSpeed"
-#define PFD_BLOW_SPD			  "fan_BlowerSpeed"
+#define PFD_DIST_SPD				"fan_Dist_LowSpeedPercent"
+#define PFD_BLOW_SPD			  "fan_Blow_LowSpeedPercent"
 
 #define PFD_PART_RESET			"usr_ParticleReset"
 #define PFD_MANUALBOOL			"usr_ManualOverride"
