@@ -25,4 +25,4 @@ const EF_SFile EF_g_sFiles[EF_EFILE_COUNT] =
 };
 
 const uint32_t EF_g_u32BlobSize = 495088;
-const uint32_t EF_g_u32BlobCRC32 = 2194028166;
+const uint32_t EF_g_u32BlobCRC32 = 392989670;

@@ -285,7 +285,7 @@ esp_err_t STM32PROTOCOL_CmdExtErase(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdWrite(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG, "WRITE MEMORY");
+    ESP_LOGD(TAG, "WRITE MEMORY");
     const uint8_t bytes[2] = {0x31, 0xCE};
     const uint32_t u32RespLen = 1;
     uint8_t u8RespData[1];
@@ -295,7 +295,7 @@ esp_err_t STM32PROTOCOL_CmdWrite(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_CmdRead(const STM32PROTOCOL_SContext* pContext)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG, "READ MEMORY");
+    ESP_LOGD(TAG, "READ MEMORY");
     const uint8_t bytes[2] = {0x11, 0xEE};
     const uint32_t u32RespLen = 1;
     uint8_t u8RespData[1];
@@ -305,7 +305,7 @@ esp_err_t STM32PROTOCOL_CmdRead(const STM32PROTOCOL_SContext* pContext)
 esp_err_t STM32PROTOCOL_LoadAddress(const STM32PROTOCOL_SContext* pContext, const char adrMS, const char adrMI, const char adrLI, const char adrLS)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG, "LoadAddress");
+    ESP_LOGD(TAG, "LoadAddress");
     uint8_t xor = adrMS ^ adrMI ^ adrLI ^ adrLS;
     uint8_t params[] = {adrMS, adrMI, adrLI, adrLS, xor};
 
@@ -336,7 +336,7 @@ esp_err_t STM32PROTOCOL_IncrementLoadAddress(const STM32PROTOCOL_SContext* pCont
 esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const char *address, const uint8_t* data)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG, "Flashing Page");
+    ESP_LOGD(TAG, "Flashing Page");
     /*  It seems to be one based, so Byte1 is the first one.
         Byte 1: 0x31
         Byte 2: 0xCE
@@ -396,7 +396,7 @@ esp_err_t STM32PROTOCOL_FlashPage(const STM32PROTOCOL_SContext* pContext, const 
 esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const char *address, const uint8_t* data)
 {
     STM32PROTOCOL_ASSERTCONTEXT(pContext);
-    ESP_LOGI(TAG, "Reading page");
+    ESP_LOGD(TAG, "Reading page");
     const uint8_t param[] = {0xFF, 0x00};
 
     STM32PROTOCOL_CmdRead(pContext);
@@ -431,7 +431,7 @@ esp_err_t STM32PROTOCOL_ReadPage(const STM32PROTOCOL_SContext* pContext, const c
         return ESP_FAIL;
     }
 
-    ESP_LOGI(TAG, "Success");
+    ESP_LOGD(TAG, "Success");
     if (memcpy((void *)data, uart_data, 257) == 0)
     {
         return ESP_FAIL;
