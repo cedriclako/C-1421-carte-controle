@@ -263,9 +263,6 @@ void app_main(void)
     LOG_Init();
     UARTBRIDGE_Start();
 
-    // Confirm it started correctly.
-    esp_ota_mark_app_valid_cancel_rollback(); // esp_ota_mark_app_invalid_rollback_and_reboot()
-
     while (true)
     {
         TickType_t xLastWakeTime = xTaskGetTickCount();

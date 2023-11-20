@@ -78,26 +78,7 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     sConfig.uart_tx_pin = HWGPIO_BRIDGEUART_TXD_PIN;
     sConfig.uart_rx_pin = HWGPIO_BRIDGEUART_RXD_PIN;
 
-    STM32PROTOCOL_Init(&sContext, &sConfig);
-
-    bool bIsFlashSuccess = false;
-
-    //for(int j = 0; j < 20; j++) 
-    {
-        int j = 0;
-
-        ESP_LOGI(TAG, "Flashing attempt #%d", (j+1));
-
-        if (ESP_OK == STM32PROCESS_FlashSTM(&sContext, filename))
-        {
-            ESP_LOGI(TAG, "Finished flash attempt #%d", (j+1));
-            bIsFlashSuccess = true;
-            //break;
-        }
-        ESP_LOGI(TAG, "Flashing attempt #%d done", (j+1));
-    }
-
-    if (!bIsFlashSuccess)
+    if (ESP_OK != STM32PROCESS_FlashSTM(&sContext, filename))
     {
         szError = "Unable to flash";
         goto ERROR;
@@ -110,8 +91,9 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     err = ESP_FAIL;
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, ((szError != NULL) ? szError : "Unknown error"));
     END:
-    if (flash_file != NULL)
+    if (flash_file != NULL) {
         fclose(flash_file);
+    }
 
     httpd_resp_set_hdr(req, "Connection", "close");
     // Restore the UART bridge.
