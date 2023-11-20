@@ -9,13 +9,11 @@
 #include "FlashMap.h"
 #include "DebugPort.h"
 #include "CRC32.h"
+#include "BinaryMarker.h"
 
 #define TAG "FlashMap"
 
 #define INTERNALFLASH_DOUBLEWORDLEN (4)
-
-// Trailer, used to identify the app-bin size at runtime.
-static const uint8_t m_u8Trailers[16] __attribute__((__section__(".TrailerMarker"))) = { 'S', 'B', 'I', 0xDF, 0x2F, 0x87, 0x68, 0x29, 0xe3, 0x43, 0x37, 'T', 'R', 'A', 'I', 'L' };
 
 static const FMAP_SPart m_sPartitions[] =
 {
@@ -86,7 +84,7 @@ static bool CalculateAppInfo(FMAP_SFileInfo* pOutFileInfo)
   for(uint32_t u32Pos = 0; u32Pos < FMAP_SECTOR2BYTES(pAppBinPart->s32SectorCount); u32Pos += 16)
   {
     //CRC32_Accumulate((uint8_t *)(pAddr + u32Pos), 0, 16);
-    if (memcmp(pAddr + u32Pos, m_u8Trailers, sizeof(m_u8Trailers)/sizeof(m_u8Trailers[0])) == 0)
+    if (memcmp(pAddr + u32Pos, BM_g_u8Trailers, sizeof(BM_g_u8Trailers)/sizeof(BM_g_u8Trailers[0])) == 0)
     {
       // Found trailer
       pOutFileInfo->u32Size = u32Pos + 16;

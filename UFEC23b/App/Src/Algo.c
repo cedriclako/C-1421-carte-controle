@@ -184,8 +184,6 @@ static void array_printer(int array[],int l)
   printf("\n\r");
 }
 
-static const char* m_szGitCommitBranch = GITCOMMIT_BRANCH;
-
 void Algo_Init(void const * argument)
 {
   LOG(TAG, "\r\n\r\n");
@@ -195,7 +193,9 @@ void Algo_Init(void const * argument)
 	#else
 	LOG(TAG, "BOOTING APP-BIN (RELEASE)");
 	#endif
-	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", GITCOMMIT_COMMITID, m_szGitCommitBranch, (GITCOMMIT_ISDIRTY ? "TRUE" : "FALSE"));
+	LOG(TAG, "Version: %d.%d.%d", (int)BM_g_sMarker.u8Versions[0], (int)BM_g_sMarker.u8Versions[1], (int)BM_g_sMarker.u8Versions[2]);
+	LOG(TAG, "Git commit ID: %s, branch: '%s', dirty: %s", BM_g_sMarker.u8GitCommitID, BM_g_sMarker.u8GitBranch, (BM_g_sMarker.u8GitIsDirty ? "TRUE" : "FALSE"));
+  LOG(TAG, "Compile: %s %s", BM_g_sMarker.u8CompileDate, BM_g_sMarker.u8CompileTime);
 	LOG(TAG, "Internal flash: %" PRIu32" KB", (uint32_t)(FMAP_INTERNALFLASH_SIZE/1024));
   FMAP_Init(); // App size and CRC32 get calculated there
   const FMAP_SFileInfo* pFileInfo = FMAP_GetAppFileInfo();

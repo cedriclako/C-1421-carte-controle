@@ -51,6 +51,12 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  .BinaryMarker : ALIGN(0x10) 
+  {
+    KEEP(*(.BinaryMarker)) /*keep my variable even if not referenced */
+    FILL(0xff); /* Fill al the section with 0xff. */
+  } > FLASH
+  
   /* The program code and other data into "FLASH" Rom type memory */
   .text :
   {

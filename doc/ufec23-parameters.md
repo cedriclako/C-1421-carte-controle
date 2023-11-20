@@ -5,6 +5,8 @@ All parameters except those with 'volatile' option active are saved into the int
 
 Refer to: [Memory layout](./mem-layout.md) for more details.
 
+EXCEPTION: This function is only available in DEBUG, in production all parameters get destroyed.
+
 ## Parameter item
 
 Every single parameter items need to be configured.

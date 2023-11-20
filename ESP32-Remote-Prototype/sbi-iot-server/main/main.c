@@ -22,6 +22,7 @@
 #include "fwconfig.h"
 #include "event.h"
 #include "log.h"
+#include "esp_ota_ops.h"
 
 #define TAG "main"
 
@@ -37,6 +38,7 @@ static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
 static void time_sync_notification_cb(struct timeval* tv);
+static void CheckForOTAUpdate();
 
 static void WIFI_Init()
 {
@@ -174,11 +176,42 @@ void MAIN_GetWiFiSoftAPIP(esp_netif_ip_info_t* ip)
     esp_netif_get_ip_info(m_pWifiSoftAP, ip);
 }
 
+static void CheckForOTAUpdate()
+{
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_ota_img_states_t ota_state;
+    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) 
+    {
+        // Check if it's a new update
+        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) 
+        {
+            // run diagnostic function ...
+            const bool diagnostic_is_ok = true;
+            if (diagnostic_is_ok) 
+            {
+                // TODO: That's where we will start the update process for the UFEC23 (STM32)
+                // Just start another task and wait
+                // don't forget to kick the watchdog
+                ESP_LOGI(TAG, "Diagnostics completed successfully! Continuing execution ....");
+                esp_ota_mark_app_valid_cancel_rollback();
+            }
+            else
+            {
+                ESP_LOGE(TAG, "Diagnostics failed! Start rollback to the previous version ....");
+                esp_ota_mark_app_invalid_rollback_and_reboot();
+            }
+        }
+    }
+}
+
 void app_main(void)
 {
     // Set new priority for main task
     vTaskPrioritySet( xTaskGetCurrentTaskHandle(), FWCONFIG_MAINTASK_PRIORITY);
 
+    // Check if an update is pending
+    CheckForOTAUpdate();
+    
     HARDWAREGPIO_Init();
 
     // Initialize NVS
@@ -229,6 +262,9 @@ void app_main(void)
 
     LOG_Init();
     UARTBRIDGE_Start();
+
+    // Confirm it started correctly.
+    esp_ota_mark_app_valid_cancel_rollback(); // esp_ota_mark_app_invalid_rollback_and_reboot()
 
     while (true)
     {

@@ -25,7 +25,6 @@
 #define API_GETPOST_SERVERPARAMETERFILEJSON_URI "/api/serverparameterfile"
 
 #define API_POST_OTAUPLOADSTM32_URI "/ota/upload_stm32"
-
 #define API_POST_OTAUPLOADESP32_URI "/ota/upload_esp32"
 
 
