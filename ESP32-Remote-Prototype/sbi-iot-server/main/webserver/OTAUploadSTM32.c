@@ -59,6 +59,7 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
         goto ERROR;
     }
 
+    // Close the handler, so the other process can reopen the file
     if (flash_file != NULL) {
         fclose(flash_file);
         flash_file = NULL;
@@ -77,6 +78,8 @@ esp_err_t OTAUPLOADSTM32_postotauploadSTM32_handler(httpd_req_t *req)
     sConfig.uart_port = HWGPIO_BRIDGEUART_PORT_NUM;
     sConfig.uart_tx_pin = HWGPIO_BRIDGEUART_TXD_PIN;
     sConfig.uart_rx_pin = HWGPIO_BRIDGEUART_RXD_PIN;
+
+    STM32PROTOCOL_Init(&sContext, &sConfig);
 
     if (ESP_OK != STM32PROCESS_FlashSTM(&sContext, filename))
     {
