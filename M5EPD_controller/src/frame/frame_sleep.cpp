@@ -2,11 +2,11 @@
 #include "frame_menu.h"
 #include <WiFi.h>
 #include "esp_log.h"
+#include "espnowcomm.h"
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  600        /* Time ESP32 will go to sleep (in seconds) */
 
-extern ESPNOWRMT_SMsg espNowDataSent;
 static uint8_t timeout_sleep = 0;
 
 uint8_t curThermStatSleep = 0;

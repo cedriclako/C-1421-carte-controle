@@ -7,9 +7,13 @@
 #include "../global_setting.h"
 #include "../resources/ImageResource.h"
 #include "Free_Fonts.h"
-#include "espnowcomm.h"
+
 
 #define TEMP_ADJ 4
+
+extern char buf_roomtemp[6];
+extern char buf_setpoint[6];
+extern float tmp_room;
 
 class Frame_Base {
    public:
@@ -43,9 +47,7 @@ class Frame_Base {
     EPDGUI_Button *_key_exit;
     uint32_t _frame_id;
     bool _shutdown_prompt_is_shown = false;
-    char buf_roomtemp[6];
-    char buf_setpoint[6];
-    float tmp_room;
+    
     bool bEspNowInit            = true;
     uint32_t _time_update_battery;
     
