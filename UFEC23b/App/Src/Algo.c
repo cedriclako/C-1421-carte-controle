@@ -1714,6 +1714,7 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
   const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
   // NOTE:  (w_part_dev_change_speed,w_part_change_speed, no_part_change_speed)
   // set aperture speeds to -1 if you want to disable those cases
+  static int apertureSpeedOutput = -1;
   if(motors_ready_for_req || add_condition1 || add_condition2 )
   {
 
@@ -1750,6 +1751,8 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
 			printDebugStr(" particulate deviation speed", print_debug_setup);
 			stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
 			stove->sSecondary.fSecPerStep = w_part_dev_change_speed;
+      apertureSpeedOutput = w_part_dev_change_speed;
+
 
 		}
 		else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
@@ -1757,16 +1760,25 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
 			printDebugStr(" particulate target speed", print_debug_setup);
 			stove->sPrimary.fSecPerStep = w_part_change_speed;
 			stove->sSecondary.fSecPerStep = w_part_change_speed;
+			apertureSpeedOutput = w_part_change_speed;
 		}
 		else if (!(no_part_change_speed == -1))
 		{
 			printDebugStr(" no particulate target speed", print_debug_setup);
 			stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
 			stove->sSecondary.fSecPerStep = P2F1DEC(no_part_change_speed);
+			apertureSpeedOutput = no_part_change_speed;
 
 		}
 		bStepperAdjustmentNeeded = true;
 
+		if(print_debug_setup){
+		  printf("\r\nspeed set by slow adjust func is : %i",apertureSpeedOutput);
+
+
+
+
+		}
 	return 1;
 	}
 

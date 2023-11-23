@@ -13,5 +13,6 @@
         "stovemb.h": "c"
     },
     "idf.adapterTargetName": "esp32",
-    "idf.flashType": "UART"
+    "idf.flashType": "UART",
+    "idf.portWin": "COM21"
 }
