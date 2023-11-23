@@ -869,7 +869,8 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			printDebugStr("cas Comb_Low_eta 10 C: (-5 < delta T baffle < -1 && TBaffle under 620 ", print_debug_setup);
 			// incrementing too fast here, need to verify
-			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fNormal) , stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
+			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fNormal) ,
+			    stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
 		}
 	}
 
@@ -892,7 +893,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		{
 			printDebugStr("Cas 10 E : delta T > 5", print_debug_setup);
 
-			comb_aperture_slow_adjust(stove,  -1,  sSpeedParams->fFast ,-1,sSpeedParams->fFast,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),
+			comb_aperture_slow_adjust(stove,  -1,  P2F1DEC(sSpeedParams->fFast ),-1,P2F1DEC(sSpeedParams->fFast),stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),
 					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow));
 		}
 
@@ -902,7 +903,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			printDebugStr("10 f T > 680 : -1 < baffleDeltaT  < 5,  ", print_debug_setup);
 
-			comb_aperture_slow_adjust(stove,  -1, P2F1DEC(sSpeedParams->fFast) ,0,sSpeedParams->fSlow ,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow), 0);
+			comb_aperture_slow_adjust(stove,  -1, P2F1DEC(sSpeedParams->fFast) ,0,P2F1DEC(sSpeedParams->fSlow) ,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow), 0);
 
 		}
 	}
@@ -1083,7 +1084,8 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			//	static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
-			comb_aperture_slow_adjust(stove,  -1, P2F1DEC(sSpeedParams->fFast) ,-1,sSpeedParams->fSlow ,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow), 0);
+			comb_aperture_slow_adjust(stove,  -1, P2F1DEC(sSpeedParams->fFast) ,-1,P2F1DEC(sSpeedParams->fSlow) ,
+			    stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow), 0);
 		}
 
 		else if (stove->fBaffleDeltaT > 5)
@@ -1091,7 +1093,8 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			printDebugStr(" fBaffleDeltaT > 5 : closing fast", print_debug_setup);
 
-			comb_aperture_slow_adjust(stove,  -1,  sSpeedParams->fFast ,-1,sSpeedParams->fFast,stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),
+			comb_aperture_slow_adjust(stove,  -1,  P2F1DEC(sSpeedParams->fFast) ,-1,P2F1DEC(sSpeedParams->fFast),
+			    stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),
 					stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fSlow));
 		}
 
@@ -1285,9 +1288,9 @@ static void Algo_coalHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	{
 		if(motors_ready_for_req)
 		{
-			stove->sGrill.fSecPerStep = sSpeedParams->fSlow;
-			stove->sPrimary.fSecPerStep = sSpeedParams->fSlow;
-			stove->sSecondary.fSecPerStep = sSpeedParams->fSlow;
+			stove->sGrill.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
+			stove->sPrimary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
+			stove->sSecondary.fSecPerStep = P2F1DEC(sSpeedParams->fSlow);
 
 			if(stove->sGrill.u8apertureCmdSteps++ >= sParam->sGrill.i32Max + 20)
 			{
@@ -1710,11 +1713,22 @@ if(print_debug_setup){
 
 static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2)
 {
+  /*
+   * Function that adjust stepper apertures if following args   :
+   *  add_condition1,  add_condition2 or motors_ready_for_req are met
+   *
+   *  attention : P2F1 conversion of speeds is done OUTSIDE func, you need to put it inside of call
+   *
+   * will set aperture positions and speeds according to defined algo
+   *
+   *
+   * */
+
   //const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
   const PF_CombustionParam_t *sParam = PB_GetCombLowParams();
   // NOTE:  (w_part_dev_change_speed,w_part_change_speed, no_part_change_speed)
   // set aperture speeds to -1 if you want to disable those cases
-  static int apertureSpeedOutput = -1;
+  static float apertureSpeedOutput = -1.0;
   if(motors_ready_for_req || add_condition1 || add_condition2 )
   {
 
@@ -1765,19 +1779,15 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
 		else if (!(no_part_change_speed == -1))
 		{
 			printDebugStr(" no particulate target speed", print_debug_setup);
-			stove->sPrimary.fSecPerStep = P2F1DEC(no_part_change_speed);
-			stove->sSecondary.fSecPerStep = P2F1DEC(no_part_change_speed);
+			stove->sPrimary.fSecPerStep = no_part_change_speed;
+			stove->sSecondary.fSecPerStep = no_part_change_speed;
 			apertureSpeedOutput = no_part_change_speed;
 
 		}
 		bStepperAdjustmentNeeded = true;
 
 		if(print_debug_setup){
-		  printf("\r\nspeed set by slow adjust func is : %i",apertureSpeedOutput);
-
-
-
-
+		  printf("\r\nspeed set by slow adjust func is : %f",apertureSpeedOutput);
 		}
 	return 1;
 	}
