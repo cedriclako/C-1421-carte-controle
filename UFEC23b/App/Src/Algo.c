@@ -1458,6 +1458,8 @@ static void Algo_overtemp_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 {
 	const PF_OverHeat_Thresholds_t* OvrhtParams = PB_GetOverheatParams();
 
+  printDebugStr("WARNING : OVERTEMP !", print_debug_setup);
+
 	if((stove->fBaffleTemp < P2F(OvrhtParams->OverheatBaffle))  &&
 				(stove->fChamberTemp < P2F(OvrhtParams->OverheatChamber)) &&
 				(stove->fPlenumTemp < P2F(OvrhtParams->OverheatPlenumExit)) )
@@ -1577,7 +1579,14 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 	controller_output = RANGE(P2F(0.5), k * P2F(controller_target) / P2F(controller_error),P2F(0.95));
 
 if(print_debug_setup){
-	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);}
+	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);
+  printf("\n\r smoke delta t target : %i \n\r",deltaT_target);
+  printf("\n\r particles limit : %i \n\r",controller_target+20);
+
+
+
+
+}
 
 // delta T > 0 pour comb
 	if((stove->sParticles->fparticles > (P2F(particles_target) + P2F(particles_tolerance))) &&	(stove->fBaffleDeltaT > deltaT_target) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
@@ -1687,7 +1696,7 @@ if(print_debug_setup){
     }
     else
     {
-      printDebugStr("no cold smoke detected", print_debug_setup);
+      printDebugStr("no cold smoke detected in array history", print_debug_setup);
       // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
     }
   }
