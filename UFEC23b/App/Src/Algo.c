@@ -792,8 +792,6 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	int cycle_time = 30;
 
 
-
-
 	if(tstat_status)
 	{
 		nextState = tstat_status ? COMBUSTION_HIGH : COMBUSTION_LOW;
@@ -839,20 +837,30 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	// if temperature is under 620 (630-10)
 	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)))
 	{
-		printDebugStr("TBaffle under 620", print_debug_setup);
+
+    if(print_debug_setup){
+      printf("\n comb low, TBaffle is under %f",
+          P2F(sParam->sTemperature.fTarget) -  P2F(sParam->sTemperature.fTolerance));
+    }
+
 
 
 		if(fabs(stove->fBaffleDeltaT) <= 1  )
 				{
-					printDebugStr("cas 10 A : deltaTBaffle est ([ +- 1F]/30sec) && "
-							" Tbaffle< 620 : do nothing", print_debug_setup);
+					printDebugStr("cas 10 A : deltaTBaffle [ +- 1F]) doing nothing", print_debug_setup);
 					return;
 				}
 
 		// si baffle deltaT < -5
 		if(stove->fBaffleDeltaT < (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fAbsMaxDiff)))
 		{
-			printDebugStr("\n Eta 10 B \n under temp slope target (-5) && TBaffle under 620 : changing fast", print_debug_setup);
+
+			if(print_debug_setup){
+			  printf("\n Eta 10 B \n under slope target (%0.2f) && TBaffle under %f : changing fast (*2)!",
+			    P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fAbsMaxDiff),
+			    P2F(sParam->sTemperature.fTarget) -  P2F(sParam->sTemperature.fTolerance));
+			}
+
 
 			// TODO setter une variable pour 70 dans ce cas
 			stove->sPrimary.u8apertureCmdSteps = RANGE(sParam->sPrimary.i32Min,stove->sPrimary.u8apertureCmdSteps * 2, 70);
@@ -869,6 +877,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 			printDebugStr("cas Comb_Low_eta 10 C: (-5 < delta T baffle < -1 && TBaffle under 620 ", print_debug_setup);
 			// incrementing too fast here, need to verify
+
 			comb_aperture_slow_adjust(stove, 1, P2F1DEC(sSpeedParams->fFast), -1, P2F1DEC(sSpeedParams->fNormal) ,
 			    stove->sPrimary.fSecPerStep == P2F1DEC(sSpeedParams->fVerySlow),0);
 		}
@@ -1620,9 +1629,6 @@ if(print_debug_setup){
 				stove->sPrimary.u8apertureCmdSteps  = p_min+5;
 				stove->sSecondary.u8apertureCmdSteps -=2;
 
-
-
-
 			}*/
 
 			stove->sPrimary.fSecPerStep = 0;
@@ -1796,7 +1802,7 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
 		bStepperAdjustmentNeeded = true;
 
 		if(print_debug_setup){
-		  printf("\r\nspeed set by slow adjust func is : %f",apertureSpeedOutput);
+		  printf("\r\nspeed set by slow adjust func is : %0.2f\n\r",apertureSpeedOutput);
 		}
 	return 1;
 	}
