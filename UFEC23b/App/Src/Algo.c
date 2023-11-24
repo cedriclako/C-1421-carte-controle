@@ -1612,6 +1612,12 @@ if(print_debug_setup){
 
 				stove->sGrill.u8apertureCmdSteps *= controller_output;
 			}
+
+		  else if(stove->sGrill.u8apertureCmdSteps >  g_min)
+		      {
+		        stove->sGrill.u8apertureCmdSteps = g_min;
+		      }
+
 			else if(stove->sPrimary.u8apertureCmdSteps> 76 && stove->sGrill.u8apertureCmdSteps >  g_min)
 			{
 				stove->sGrill.u8apertureCmdSteps = g_min;
@@ -1655,10 +1661,18 @@ if(print_debug_setup){
 		if(delay_period_passed)
 		{
 			printDebugStr("\n\nSMOKE COLD", print_debug_setup);
-      if(stove->sGrill.u8apertureCmdSteps < 30)
+
+
+      if(stove->sPrimary.u8apertureCmdSteps < 20)
       {
-        stove->sGrill.u8apertureCmdSteps = 30;
-        printDebugStr("smoke && grille < 30 : set grill to 30", print_debug_setup);
+        stove->sPrimary.u8apertureCmdSteps = 20;
+        printDebugStr("smoke && primary < 20 : set grill to 20", print_debug_setup);
+      }
+
+      else if(stove->sGrill.u8apertureCmdSteps < 20)
+      {
+        stove->sGrill.u8apertureCmdSteps = 20;
+        printDebugStr("smoke && grille < 20 : set grill to 20", print_debug_setup);
       }
       else
       {
@@ -1778,11 +1792,9 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
 		if(!(w_part_dev_change_speed == -1)&&(stove->sParticles->u16stDev > sParam->sPartStdev.fTolerance))
 		{
 			printDebugStr(" particulate deviation speed", print_debug_setup);
-			stove->sPrimary.fSecPerStep = w_part_dev_change_speed;
-			stove->sSecondary.fSecPerStep = w_part_dev_change_speed;
-      apertureSpeedOutput = w_part_dev_change_speed;
-
-
+			stove->sPrimary.fSecPerStep = w_part_dev_change_speed ;
+			stove->sSecondary.fSecPerStep = w_part_dev_change_speed ;
+      apertureSpeedOutput = w_part_dev_change_speed ;
 		}
 		else if(!(w_part_change_speed == -1)&&(stove->sParticles->fparticles > (P2F(sParam->sParticles.fTarget) + P2F(sParam->sParticles.fTolerance))))
 		{
