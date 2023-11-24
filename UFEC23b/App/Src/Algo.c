@@ -1665,11 +1665,7 @@ if(print_debug_setup){
 		return 1 ;
 	}
 
-<<<<<<< Updated upstream
-	if((stove->sParticles->fparticles > (particles_target + particles_tolerance) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
-=======
-	if((stove->sParticles->fparticles > ((particles_target) + (particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
->>>>>>> Stashed changes
+	if(stove->sParticles->fparticles > (particles_target + particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
 			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= - deltaT_target) && !(stove->bDoorOpen)	){
 
 		// take action if the 30 seconds have passed
