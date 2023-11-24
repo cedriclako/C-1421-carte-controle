@@ -1598,9 +1598,9 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 	controller_output = RANGE((0.5), k * controller_target / controller_error, (0.95));
 
 if(print_debug_setup){
-	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);
-  printf("\n\r smoke delta t target : %i \n\r",deltaT_target);
-  printf("\n\r particles limit : %i \n\r",controller_target+20);
+	printf("\n\r proportional smoke controller output : %.2f \n\r",controller_output);
+  printf("\n\r smoke delta t target : %.2f \n\r",deltaT_target);
+  printf("\n\r particles limit : %.2f \n\r",controller_target+20);
   printf("\n\r particles deviation limit : %i \n\r",dev_maxDiff);
 
 
@@ -1665,7 +1665,7 @@ if(print_debug_setup){
 		return 1 ;
 	}
 
-	if(stove->sParticles->fparticles > (particles_target + particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
+	if((stove->sParticles->fparticles > (particles_target + particles_tolerance) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
 			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= - deltaT_target) && !(stove->bDoorOpen)	){
 
 		// take action if the 30 seconds have passed
