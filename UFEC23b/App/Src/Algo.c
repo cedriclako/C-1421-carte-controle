@@ -818,7 +818,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
-	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time)))  )
+	if( ((stove->bDoorOpen) ||u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time)))  )
 	{
 		printDebugStr("there was a major correction wait until next loop", print_debug_setup);
 		return;
@@ -992,7 +992,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// EXIT CONDITIONS
 
-	if((stove->fBaffleTemp < 550 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
+	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
 			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
 	{
 		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
@@ -1005,7 +1005,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
-	if( (u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))))
+	if( stove->bDoorOpen ||(u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))))
 	{
 		printDebugStr("wait until next loop", print_debug_setup);
 		return;
@@ -1665,7 +1665,11 @@ if(print_debug_setup){
 		return 1 ;
 	}
 
+<<<<<<< Updated upstream
 	if((stove->sParticles->fparticles > (particles_target + particles_tolerance) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
+=======
+	if((stove->sParticles->fparticles > ((particles_target) + (particles_tolerance)) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
+>>>>>>> Stashed changes
 			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= - deltaT_target) && !(stove->bDoorOpen)	){
 
 		// take action if the 30 seconds have passed
