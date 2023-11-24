@@ -1591,6 +1591,7 @@ if(print_debug_setup){
 	printf("\n\r proportional smoke controller output : %f \n\r",controller_output);
   printf("\n\r smoke delta t target : %i \n\r",deltaT_target);
   printf("\n\r particles limit : %i \n\r",controller_target+20);
+  printf("\n\r particles deviation limit : %i \n\r",dev_maxDiff);
 
 
 
@@ -1750,7 +1751,6 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
    *
    * will set aperture positions and speeds according to defined algo
    *
-   *
    * */
 
   //const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams();
@@ -1765,13 +1765,13 @@ static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_de
       printDebugStr(" decrementing ", print_debug_setup);
 
       stove->sPrimary.u8apertureCmdSteps  = RANGE(sParam->sPrimary.i32Min,
-      stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
+          stove->sPrimary.u8apertureCmdSteps + change_var,sParam->sPrimary.i32Max);
 
       if(stove->sPrimary.u8apertureCmdSteps  <= sParam->sPrimary.i32Min)
       {
 
       stove->sSecondary.u8apertureCmdSteps  = RANGE(sParam->sSecondary.i32Min -5,
-      stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
+          stove->sSecondary.u8apertureCmdSteps + change_var,sParam->sSecondary.i32Max);
       }
     }
 
