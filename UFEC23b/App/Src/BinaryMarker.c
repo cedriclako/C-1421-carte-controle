@@ -16,9 +16,9 @@ const BM_Marker BM_g_sMarker __attribute__((__section__(".BinaryMarker")))  =
     .u16FirmwareID = FWV_FIRMWAREID,
     .u8Versions = FWV_VERSION,
     #ifdef DEBUG
-    .u8IsDebug = 'D',
+    .u8CompilationMode = 'D',
     #else
-    .u8IsDebug = 'R',
+    .u8CompilationMode = 'R',
     #endif
     .u8GitIsDirty = GITCOMMIT_ISDIRTY,
     .u8GitCommitID = GITCOMMIT_COMMITID,

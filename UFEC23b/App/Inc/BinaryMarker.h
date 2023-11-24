@@ -16,7 +16,7 @@ typedef struct
   uint8_t u8Magics[16];
   uint16_t u16FirmwareID;
   uint8_t u8Versions[3];
-  uint8_t u8IsDebug;
+  uint8_t u8CompilationMode;
   uint8_t u8GitIsDirty;
   uint8_t u8GitCommitID[96];
   uint8_t u8GitBranch[96];

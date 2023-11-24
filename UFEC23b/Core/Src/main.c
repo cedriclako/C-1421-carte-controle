@@ -290,7 +290,7 @@ static void MX_IWDG_Init(void)
   /* USER CODE END IWDG_Init 0 */
 
   /* USER CODE BEGIN IWDG_Init 1 */
-  #if WHITEBOX_WATCHDOG_ISDEACTIVATED == 0
+  #if WHITEBOX_DISABLE_WATCHDOG == 0
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
   hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
@@ -300,6 +300,8 @@ static void MX_IWDG_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN IWDG_Init 2 */
+  #else
+  #warning WATCHDOG IS DEACTIVATED!
   #endif
   /* USER CODE END IWDG_Init 2 */
 

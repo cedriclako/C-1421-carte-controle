@@ -245,7 +245,7 @@ void Algo_Init(void const * argument)
     #endif
 		Algo_task(&UFEC23, osKernelSysTick());
 		osDelay(1);
-		#if WHITEBOX_WATCHDOG_ISDEACTIVATED == 0
+		#if WHITEBOX_DISABLE_WATCHDOG == 0
 		HAL_IWDG_Refresh(&hiwdg);
 		#endif
 		Fan_Process(&UFEC23);
