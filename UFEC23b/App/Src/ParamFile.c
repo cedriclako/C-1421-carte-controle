@@ -189,7 +189,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_SPS_SLOW, 				 &m_sSpeedParams.fSlow, 	  								150, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_SPS_NORMAL, 			 &m_sSpeedParams.fNormal, 	  								100, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_SPS_FAST, 				 &m_sSpeedParams.fFast, 	  								60, 		0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_SPS_VFAST, 				 &m_sSpeedParams.fVeryFast, 	  							15, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_SPS_VFAST, 				 &m_sSpeedParams.fVeryFast, 	  							20, 		0, 		20000, ""),
 
 	PFL_INIT_SINT32_VOLATILE(PFD_RMT_TSTAT, 	 &m_sRemoteParams.bThermostat, 	  						0, 		0, 		1, ""),
 	PFL_INIT_SINT32_VOLATILE(PFD_RMT_BOOST, 	 &m_sRemoteParams.bBoostReq, 	  						0, 		0, 		1, ""),
