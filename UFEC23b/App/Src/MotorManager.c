@@ -64,6 +64,7 @@ void Motor_task(void const * argument)
 
 			};
 
+	bool motors_speed_per_sec_elaped = true;
 	bool AllInPlace = true;
 	uint8_t u8cmd_buf[6] = {0x00};
 	uint32_t u32CurrentTime_ms = 0;
@@ -76,6 +77,7 @@ void Motor_task(void const * argument)
 	  {
 		  xMessageBufferReceive(MotorControlsHandle, u8cmd_buf, 6, 5);
 
+		  // checks if message buffer receives homing request
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
 			  if(u8cmd_buf[2*i] == MOTOR_HOME_CMD)
@@ -88,13 +90,14 @@ void Motor_task(void const * argument)
 			  {
 
 			  motor[i].u8SetPoint = RANGE(motor[i].u8MinValue, u8cmd_buf[2*i], motor[i].u8MaxValue);
-			  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1])/10;
+			  motor[i].fSecPerStep = (float) (u8cmd_buf[2*i + 1]);
 			  }
 
 		  }
 
 	  }
 
+	  // if no homing request received, and motor position is > than min even if limit switch is active (i.e. bad position --> recover)
 
 	  for(uint8_t i = 0;i < NumberOfMotors;i++)
 	  {
@@ -113,7 +116,26 @@ void Motor_task(void const * argument)
 	  if(StepperAtSetpoint(&motor[PrimaryStepper]) && StepperAtSetpoint(&motor[GrillStepper])
 			  && StepperAtSetpoint(&motor[SecondaryStepper]))
 	  {
-		  if(!AllInPlace)
+
+      for(uint8_t i = 0;i < NumberOfMotors;i++)
+      {motors_speed_per_sec_elaped = false;
+
+        if((u32CurrentTime_ms - motor[i].u32LastMove_ms )< motor[i].fSecPerStep*1000)
+
+        {
+          break;
+        }
+        else if(i==NumberOfMotors-1)
+        {
+          motors_speed_per_sec_elaped = true;
+        }
+      }
+
+
+      // this sends the motors ready for req flag,
+      //we need to wait until all motors are in place and the elapsed time has passed to send it
+
+		  if(!AllInPlace && motors_speed_per_sec_elaped)
 		  {
 			  AllInPlace = true;
 			  xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
@@ -122,6 +144,7 @@ void Motor_task(void const * argument)
 	  }else
 	  {
 		  AllInPlace = false;
+
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
 		  {
 			  if(!StepperAtSetpoint(&motor[i]) && ((u32CurrentTime_ms - motor[i].u32LastMove_ms) > STEP_PERIOD))
@@ -143,9 +166,16 @@ void Motor_task(void const * argument)
 					  StepperRecoverPosition(&motor[i]);
 				  }
 				  // this is where we're using motor speed adjustments
-				  else if((u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000)
+				  else{
+			      xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
+			      osDelay(1);
+
+
+
+				    if((u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000)
 				  {
 					  StepperAdjustPosition(&motor[i]);
+				  }
 				  }
 			  }
 		  }

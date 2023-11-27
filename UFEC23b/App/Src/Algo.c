@@ -269,7 +269,7 @@ static void Algo_task(Mobj *stove, uint32_t u32CurrentTime_ms)
 	const PF_RemoteParams_t* RmtParams = PB_GetRemoteParams();
 	bool min_time_in_state_met = 0;
 
-	Algo_update_steppers_inPlace_flag(); // Check if motor task is moving or in place
+	Algo_update_steppers_inPlace_flag();
 
 	// update tstat_status with or operator with either remote param or GPIO signal
 	tstat_status = RmtParams->bThermostat || stove->bThermostatOn;
@@ -818,7 +818,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
-	if( ((stove->bDoorOpen) ||u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time)))  )
+	if( ((stove->bDoorOpen) ||(u32MajorCorrectionTime_ms != 0 && (u32CurrentTime_ms - u32MajorCorrectionTime_ms < SECONDS(cycle_time))) ) )
 	{
 		printDebugStr("there was a major correction wait until next loop", print_debug_setup);
 		return;
@@ -1524,10 +1524,10 @@ void Algo_fill_state_functions(void)
 
 static void Algo_update_steppers_inPlace_flag(void)
 {
-	if(!motors_ready_for_req)
-	{
+	//if(!motors_ready_for_req)
+	//{
 		xQueueReceive(MotorInPlaceHandle,&motors_ready_for_req,5);
-	}
+	//}
 }
 
 static bool Algo_adjust_steppers_position(Mobj *stove)
@@ -1535,11 +1535,17 @@ static bool Algo_adjust_steppers_position(Mobj *stove)
 	uint8_t cmd[NUMBER_OF_STEPPER_CMDS] =
 	{
 		stove->sPrimary.u8apertureCmdSteps,
-		(uint8_t)(stove->sPrimary.fSecPerStep*10),
+		//(uint8_t)(stove->sPrimary.fSecPerStep*10),
+    (stove->sPrimary.fSecPerStep),
+
 		stove->sGrill.u8apertureCmdSteps,
-		(uint8_t)(stove->sGrill.fSecPerStep*10),
+		//(uint8_t)(stove->sGrill.fSecPerStep*10),
+    (stove->sGrill.fSecPerStep),
+
 		stove->sSecondary.u8apertureCmdSteps,
-		(uint8_t)(stove->sSecondary.fSecPerStep*10)
+		//(uint8_t)(stove->sSecondary.fSecPerStep*10)
+    (stove->sSecondary.fSecPerStep)
+
 
 	};
 
@@ -1599,7 +1605,7 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 
 if(print_debug_setup){
 	printf("\n\r proportional smoke controller output : %.2f \n\r",controller_output);
-  printf("\n\r smoke delta t target : %.2f \n\r",deltaT_target);
+  printf("\n\r smoke delta t target : %i \n\r",deltaT_target);
   printf("\n\r particles limit : %.2f \n\r",controller_target+20);
   printf("\n\r particles deviation limit : %i \n\r",dev_maxDiff);
 
@@ -1634,19 +1640,19 @@ if(print_debug_setup){
 				stove->sGrill.u8apertureCmdSteps = g_min;
 				stove->sPrimary.u8apertureCmdSteps = 76;
 			}
-			else if(stove->sGrill.u8apertureCmdSteps == g_min && stove->sPrimary.u8apertureCmdSteps > p_min && !early_states)
+			else if(stove->sGrill.u8apertureCmdSteps == g_min && stove->sPrimary.u8apertureCmdSteps > p_min+3 && !early_states)
 			{
 				stove->sGrill.u8apertureCmdSteps = g_min;
-				stove->sPrimary.u8apertureCmdSteps  = RANGE(p_min,stove->sPrimary.u8apertureCmdSteps * controller_output ,p_max); // 20-10 MC, Changed, validate effect
+				stove->sPrimary.u8apertureCmdSteps  = RANGE(p_min+3,stove->sPrimary.u8apertureCmdSteps * controller_output ,p_max); // 20-10 MC, Changed, validate effect
 			}
 
-			/*else {
+			else {
 
 				stove->sGrill.u8apertureCmdSteps = g_min;
-				stove->sPrimary.u8apertureCmdSteps  = p_min+5;
+				stove->sPrimary.u8apertureCmdSteps  = p_min+3;
 				stove->sSecondary.u8apertureCmdSteps -=2;
 
-			}*/
+			}
 
 			stove->sPrimary.fSecPerStep = 0;
 			stove->sGrill.fSecPerStep = 0;
@@ -1665,6 +1671,8 @@ if(print_debug_setup){
 		return 1 ;
 	}
 
+	//TODO : add time criteria after door was open for cold smoke to be valid
+
 	if((stove->sParticles->fparticles > (particles_target + particles_tolerance) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
 			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= - deltaT_target) && !(stove->bDoorOpen)	){
 
@@ -1674,10 +1682,17 @@ if(print_debug_setup){
 			printDebugStr("\n\nSMOKE COLD", print_debug_setup);
 
 
-      if(stove->sPrimary.u8apertureCmdSteps < 20)
+      if(stove->sSecondary.u8apertureCmdSteps < 90)
       {
-        stove->sPrimary.u8apertureCmdSteps = 20;
-        printDebugStr("smoke && primary < 20 : set grill to 20", print_debug_setup);
+        stove->sSecondary.u8apertureCmdSteps = 90;
+        printDebugStr("smoke && secondary < 90 : set secondary to 90", print_debug_setup);
+      }
+
+
+      else if(stove->sPrimary.u8apertureCmdSteps < 10)
+      {
+        stove->sPrimary.u8apertureCmdSteps = 10;
+        printDebugStr("smoke && primary < 10 : set grill to 10", print_debug_setup);
       }
 
       else if(stove->sGrill.u8apertureCmdSteps < 20)
