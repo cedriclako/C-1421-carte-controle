@@ -90,7 +90,7 @@ void Motor_task(void const * argument)
 			  {
 
 			  motor[i].u8SetPoint = RANGE(motor[i].u8MinValue, u8cmd_buf[2*i], motor[i].u8MaxValue);
-			  motor[i].fSecPerStep = ((float) (u8cmd_buf[2*i + 1]))/10;
+			  motor[i].fSecPerStep = ((float) (u8cmd_buf[2*i + 1]));
 			  }
 
 		  }
