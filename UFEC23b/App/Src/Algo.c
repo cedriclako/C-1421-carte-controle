@@ -846,7 +846,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(smoke_detected){return;}
 
 
-	// if temperature is under 620 (630-10)
+	// if temperature is under 590 (600-10)
 	if(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - P2F(sParam->sTemperature.fTolerance)))
 	{
 
@@ -999,20 +999,15 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-
-
 	// EXIT CONDITIONS
-
-	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30))) /*|| // partie suivante ajoutée par charles, valider pertinence
-			(stove->fBaffleTemp < (P2F(sParam->sTemperature.fTarget) - 2 * P2F(sParam->sTemperature.fAbsMaxDiff))*/ && !smoke_detected)
+	if((stove->fBaffleTemp < 500 && ( state_entry_delays_skip || (u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)))
+	    && !smoke_detected)
 	{
 		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
 		bStateExitConditionMet = true;
 		printDebugStr("exit to coal high", print_debug_setup);
 		return;
 	}
-
-
 
 	// WAITING FOR NEXT LOOP
 	// TODO : mettre les bonnes variables
@@ -1022,7 +1017,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		return;
 	}
 
-	// SMOKE MANAGEMENT CALL
+	// SMOKE MANAGEMENT CALL -----------------
 
 	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 			P2F(sParam->sParticles.fTarget),P2F(sParam->sParticles.fTolerance),
@@ -1705,10 +1700,9 @@ if(print_debug_setup){
         printDebugStr("smoke && secondary < 90 : set secondary to 90", print_debug_setup);
       }
 
-
-      else if(stove->sPrimary.u8apertureCmdSteps < 10)
+      else if(stove->sPrimary.u8apertureCmdSteps < 15)
       {
-        stove->sPrimary.u8apertureCmdSteps = 10;
+        stove->sPrimary.u8apertureCmdSteps = 15;
         printDebugStr("smoke && primary < 10 : set grill to 10", print_debug_setup);
       }
 
@@ -1724,6 +1718,10 @@ if(print_debug_setup){
       }
 
       stove->sGrill.fSecPerStep = 0; // force aperture
+      stove->sPrimary.fSecPerStep = 0;
+      stove->sSecondary.fSecPerStep = 0;
+
+
       bStepperAdjustmentNeeded = true;
       u32MajorCorrectionTime_ms = u32CurrentTime_ms;
 		}
@@ -1757,11 +1755,11 @@ if(print_debug_setup){
       }
       break;
     }
-    else
-    {
-      printDebugStr("no cold smoke detected in array history", print_debug_setup);
+    //else
+    //{
+      // printDebugStr("no cold smoke detected in array history", print_debug_setup);
       // here we leave it the same because we didn't actually open the grill to reduce the smoke, we just slowed down the combustion
-    }
+    //}
   }
 
   // else : the last smoke event was not cold smoke or we are out of bounds. Leaving aperture as is.
