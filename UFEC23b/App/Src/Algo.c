@@ -149,8 +149,14 @@ static void Algo_update_steppers_inPlace_flag(void);
 static void Algo_stoveInit(Mobj *stove);
 static bool comb_aperture_slow_adjust(Mobj* stove, int change_var, int w_part_dev_change_speed, int w_part_change_speed, int no_part_change_speed , bool add_condition1, bool add_condition2);
 
+bool get_motors_ready_status(){
+  return motors_ready_for_req;
+}
+
+
+
 static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff,
-		float particles_target,float particles_tolerance, int deltaT_target,
+		float particles_target,float particles_tolerance, int deltaT_target_pos, int deltaT_target_neg,
 		int g_min, int g_max, int p_min, int p_max, bool early_states);
 
 static void printDebugStr(char str[], _Bool debugisOn) {
@@ -578,7 +584,7 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(stove->fBaffleTemp > 220){
 	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, 50,
 			P2F(0),P2F(50),
-			P2F1DEC(60) + P2F1DEC(60),
+			P2F1DEC(60) + P2F1DEC(60), P2F(-1),
 			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max , 1);
 
 
@@ -709,7 +715,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 		    P2F(sParam->sParticles.fTarget),P2F(sParam->sParticles.fTolerance),
-				P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance) + P2F(hot_reload_smoke_temp_correction),
+				P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance) + P2F(hot_reload_smoke_temp_correction),P2F(-1),
 				sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max , 0);
 
 
@@ -834,7 +840,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 	    P2F(sParam->sParticles.fTarget),P2F(sParam->sParticles.fTolerance),
-			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
+			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),P2F(-1),
 			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
@@ -845,7 +851,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	{
 
     if(print_debug_setup){
-      printf("\n comb low, TBaffle is under %f",
+      printf("\n comb low, TBaffle is under %.2f",
           P2F(sParam->sTemperature.fTarget) -  P2F(sParam->sTemperature.fTolerance));
     }
 
@@ -878,7 +884,7 @@ static void Algo_combLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 		// moving slowly
 		// cas Comb_Low_eta 10 C: (-5 < delta T baffle < -1 )
-		else if(stove->fBaffleDeltaT < (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fTolerance)))
+		else if(stove->fBaffleDeltaT > (P2F1DEC(sParam->sTempSlope.fTarget) - P2F1DEC(sParam->sTempSlope.fTolerance)))
 		{
 
 			printDebugStr("cas Comb_Low_eta 10 C: (-5 < delta T baffle < -1 && TBaffle under 620 ", print_debug_setup);
@@ -1020,7 +1026,7 @@ static void Algo_combHigh_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 			P2F(sParam->sParticles.fTarget),P2F(sParam->sParticles.fTolerance),
-			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
+			P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),P2F(-1),
 			sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
 
 	if(smoke_detected){return;}
@@ -1594,7 +1600,7 @@ const char* ALGO_GetStateString(State state)
 
 
 static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_maxDiff, float particles_target,float particles_tolerance,
-		  int deltaT_target , int g_min, int g_max, int p_min, int p_max, bool early_states)
+		  int deltaT_target_pos ,int deltaT_target_neg, int g_min, int g_max, int p_min, int p_max, bool early_states)
 {
 
 
@@ -1615,7 +1621,8 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 
 if(print_debug_setup){
 	printf("\n\r proportional smoke controller output : %.2f \n\r",controller_output);
-  printf("\n\r smoke delta t target : %i \n\r",deltaT_target);
+  printf("\n\r smoke positive delta t target : %i \n\r",deltaT_target_pos);
+  printf("\n\r smoke negative delta t target : %i \n\r",deltaT_target_neg);
   printf("\n\r particles limit : %.2f \n\r",controller_target+20);
   printf("\n\r particles deviation limit : %i \n\r",dev_maxDiff);
 
@@ -1625,7 +1632,7 @@ if(print_debug_setup){
 }
 
 // delta T > 0 pour comb
-	if((stove->sParticles->fparticles > (particles_target + particles_tolerance)) &&	(stove->fBaffleDeltaT > deltaT_target) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
+	if((stove->sParticles->fparticles > (particles_target + particles_tolerance)) &&	(stove->fBaffleDeltaT > deltaT_target_pos) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
 	{
 
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
@@ -1684,7 +1691,7 @@ if(print_debug_setup){
 	//TODO : add time criteria after door was open for cold smoke to be valid
 
 	if((stove->sParticles->fparticles > (particles_target + particles_tolerance) // (P2F1DEC(sParam->sParticles.fTarget) + P2F1DEC(sParam->sParticles.fTolerance))
-			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= - deltaT_target) && !(stove->bDoorOpen)	){
+			|| (stove->sParticles->u16stDev > dev_maxDiff))&& (stove->fBaffleDeltaT <= deltaT_target_neg) && !(stove->bDoorOpen)	){
 
 		// take action if the 30 seconds have passed
 		if(delay_period_passed)

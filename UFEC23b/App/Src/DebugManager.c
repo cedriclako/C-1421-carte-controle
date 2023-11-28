@@ -124,9 +124,21 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 
 
+
+    if(get_motors_ready_status())
+    {
+      printf("\n\r motors_ready_for_req : ON ");
+    }
+    else
+    {
+      printf("\n\r motors_ready_for_req : OFF ");
+    }
+
+
+
 		if(stove->bSafetyOn == true)
 		{
-			printf("bSafety: On ");
+			printf("\n\rbSafety: On ");
 		}
 		else
 		{
