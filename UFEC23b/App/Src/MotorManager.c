@@ -138,8 +138,8 @@ void Motor_task(void const * argument)
 		  if(!AllInPlace && motors_speed_per_sec_elaped)
 		  {
 			  AllInPlace = true;
-			  xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 		  }
+      xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 		  osDelay(1);
 	  }else
 	  {
@@ -172,7 +172,7 @@ void Motor_task(void const * argument)
 
 
 
-				    if((u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000)
+				    if(/*(u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000*/ 1)
 				  {
 					  StepperAdjustPosition(&motor[i]);
 				  }

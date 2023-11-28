@@ -85,7 +85,7 @@ static const PFL_SParameterItem m_sParameterItems[] =
 	PFL_INIT_SINT32(PFD_CBL_T_TOL, 				 &m_sCombLowParams.sTemperature.fTolerance, 	  			10, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_T_ABS, 				 &m_sCombLowParams.sTemperature.fAbsMaxDiff, 			40, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_TS_TARGET, 			 &m_sCombLowParams.sTempSlope.fTarget, 		  			0, 			0, 		20000, ""),
-	PFL_INIT_SINT32(PFD_CBL_TS_TOL, 			 &m_sCombLowParams.sTempSlope.fTolerance, 				10, 		0, 		20000, ""),
+	PFL_INIT_SINT32(PFD_CBL_TS_TOL, 			 &m_sCombLowParams.sTempSlope.fTolerance, 				50, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_TS_ABS, 			 &m_sCombLowParams.sTempSlope.fAbsMaxDiff, 				50, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_P_TARGET, 			 &m_sCombLowParams.sParticles.fTarget, 					0, 		0, 		20000, ""),
 	PFL_INIT_SINT32(PFD_CBL_P_TOL, 				 &m_sCombLowParams.sParticles.fTolerance, 				50, 		0, 		20000, ""),
