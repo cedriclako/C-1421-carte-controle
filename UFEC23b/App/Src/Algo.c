@@ -635,6 +635,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	const PF_TriseParam_t *sParam = PB_GetTRiseParams(); // va chercher les paramètres de l'état
 	const PF_StepperStepsPerSec_t *sSpeedParams =  PB_SpeedParams(); // aller chercher les paramètres de vitesse de stepper selon l'état
 	static int smoke_detected = 0;
+	int hot_reload_smoke_temp_correction = 0;
 
 	int cycle_time = 30; // cycle time (sec) that is specific to this state
 
@@ -645,6 +646,8 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	//};
 
 	//Algo_smoke_action(stove, u32CurrentTime_ms, sSmoke);
+
+	hot_reload_smoke_temp_correction = hot_reload ? -3 : 0;
 
 	if(((u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms > SECONDS(cycle_time))||state_entry_delays_skip)&& tRiseEntry)
 	{
@@ -706,7 +709,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 		smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms,cycle_time, sParam->sPartStdev.fTolerance,
 		    P2F(sParam->sParticles.fTarget),P2F(sParam->sParticles.fTolerance),
-				P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance),
+				P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance) + P2F(hot_reload_smoke_temp_correction),
 				sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max , 0);
 
 
