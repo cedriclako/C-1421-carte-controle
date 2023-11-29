@@ -1,13 +1,10 @@
 #include "frame_livedata.h"
 #include <WiFi.h>
 #include "esp_log.h"
+#include "espnowcomm.h"
 
 #define POS_LX (15)
 #define POS_RX (540 - 15)
-
-extern ESPNOWDEBUG_SMsg dataDebug;
-extern ESPNOWRMT_SMsg espNowDataSent;
-
 
 void key_livedata_exit_cb(epdgui_args_vector_t &args) {
     EPDGUI_PopFrame(true);
@@ -182,6 +179,7 @@ int Frame_LiveData::run() {
     Frame_Base::run();
     
     if ((millis() - _time_update_esp_now) > (1000U)) {
+        espNowDataSent.tStatRmt = GetThermostatValue();
         espNowDataSent.blowerSpeedRmt = GetBlowerSpeed();
         espNowDataSent.distribSpeedRmt = GetDistributionSpeed();
         espNowDataSent.boostStatRmt = GetBoostStat();
