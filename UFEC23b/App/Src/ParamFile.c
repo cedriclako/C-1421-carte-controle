@@ -253,13 +253,14 @@ void PARAMFILE_SetParamValueByKey(int32_t newValue, const char* szName)
 
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
-	const uint8_t* pStartAddr = FMAP_GetMemoryAddr(FMAP_EPARTITION_Parameters);
+  #ifdef DEBUG
+  const uint8_t* pStartAddr = FMAP_GetMemoryAddr(FMAP_EPARTITION_Parameters);
+  #endif
 
 	uint32_t u32RelativeAddr = 0;
 	for(uint32_t i = 0; i < PARAMFILE_GetParamEntryCount(); i++)
 	{
 		const PFL_SParameterItem* pItem = PARAMFILE_GetParamEntryByIndex(i);
-		const bool bIsVolatile = (pItem->eOpt & PFL_EOPT_IsVolatile) == PFL_EOPT_IsVolatile;
 
 		if (pItem->eType == PFL_TYPE_Int32)
 		{
@@ -268,6 +269,7 @@ static void LoadAllCallback(const PFL_SHandle* psHandle)
 			*ps32RAMValue = pItem->uType.sInt32.s32Default;
 
       #ifdef DEBUG
+	    const bool bIsVolatile = (pItem->eOpt & PFL_EOPT_IsVolatile) == PFL_EOPT_IsVolatile;
       // If it's allowed to be reloaded from flash, attempt to replace the default value with the good one.
       if (!bIsVolatile)
       {

@@ -55,6 +55,9 @@
                     :disabled="idSaveWiFiSettings_IsDisabled"
                     @click="idBtSaveWiFiSettings_Click()">Save</button>
             </div>
+            <div class="container">    
+                * Reboot is necessary to ensure the Wi-Fi station configuration are applied.
+            </div>
         </div>
         <!-- OTA -->
         <div id="idTabOTA" class="tabcontent">
@@ -96,7 +99,7 @@
         <!-- System informations -->
         <div id="idTabSystemInfo" class="tabcontent">
             <div class="container">   
-                <h1>Server (Stove) information</h1><br>
+                <h1>Client (ESP32/Bridge) informations</h1><br>
             </div>
             <div class="container">   
                 <table class="table1">
@@ -116,7 +119,7 @@
                 </table>
             </div>
             <div class="container">   
-                <h1>Client (Bridge) informations</h1><br>
+                <h1>Server (STM32/Stove) information</h1>
             </div>
             <div class="container">   
                 <table class="table1">

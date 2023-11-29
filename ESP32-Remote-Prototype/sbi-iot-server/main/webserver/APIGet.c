@@ -123,7 +123,7 @@ static char* GetSysInfo()
  
     cJSON* pEntries = cJSON_AddArrayToObject(pRoot, "infos");
 
-    esp_chip_info_t sChipInfo;
+    esp_chip_info_t sChipInfo = {0};
     esp_chip_info(&sChipInfo);
 
     // Chip
@@ -197,7 +197,7 @@ static char* GetSysInfo()
     // WiFi-station (IP address)
     cJSON* pEntryJSON9 = cJSON_CreateObject();
     cJSON_AddItemToObject(pEntryJSON9, "name", cJSON_CreateString("WiFi (STA)"));
-    esp_netif_ip_info_t wifiIpSta;
+    esp_netif_ip_info_t wifiIpSta = {0};
     MAIN_GetWiFiSTAIP(&wifiIpSta);
     sprintf(buff, IPSTR, IP2STR(&wifiIpSta.ip));
     cJSON_AddItemToObject(pEntryJSON9, "value", cJSON_CreateString(buff));
@@ -219,7 +219,7 @@ static char* GetSysInfo()
     // WiFi-Soft AP (IP address)
     cJSON* pEntryJSON10 = cJSON_CreateObject();
     cJSON_AddItemToObject(pEntryJSON10, "name", cJSON_CreateString("WiFi (Soft-AP)"));
-    esp_netif_ip_info_t wifiIpSoftAP;
+    esp_netif_ip_info_t wifiIpSoftAP = {0};
     MAIN_GetWiFiSoftAPIP(&wifiIpSoftAP);
     sprintf(buff, IPSTR, IP2STR(&wifiIpSoftAP.ip));
     cJSON_AddItemToObject(pEntryJSON10, "value", cJSON_CreateString(buff));
@@ -248,7 +248,7 @@ static char* GetLiveData()
     cJSON_AddItemToObject(pWireless, "rx", cJSON_CreateNumber(sESPNowInfo.u32RX));
     cJSON_AddItemToObject(pWireless, "tx", cJSON_CreateNumber(sESPNowInfo.u32TX)); 
 
-    wifi_second_chan_t secondChan;
+    wifi_second_chan_t secondChan = {0};
     uint8_t u8Primary;
     esp_wifi_get_channel(&u8Primary,  &secondChan);
     cJSON_AddItemToObject(pWireless, "channel", cJSON_CreateNumber(u8Primary)); 
