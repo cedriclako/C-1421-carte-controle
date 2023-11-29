@@ -1199,6 +1199,13 @@ static void Algo_coalLow_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 	if(smoke_detected){return;}
 */
 
+  smoke_detected = Algo_smoke_action(stove, u32CurrentTime_ms, cycle_time, sParam->sPartStdev.fTolerance,
+      P2F(sParam->sParticles.fTarget),P2F(sParam->sParticles.fTolerance),
+      P2F1DEC(sParam->sTempSlope.fTarget) + P2F1DEC(sParam->sTempSlope.fTolerance) - P2F(4),P2F(-1),
+      sParam->sGrill.i32Min, sParam->sGrill.i32Max, sParam->sPrimary.i32Min, sParam->sPrimary.i32Max,0);
+
+  if(smoke_detected){return;}
+
 
 	if((stove->fBaffleTemp < P2F( sParam->sTemperature.fTarget)) && stove->sGrill.u8apertureCmdSteps != /*sParam->sGrill.i32Min*/ 24)
 	{
