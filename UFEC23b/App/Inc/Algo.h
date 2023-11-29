@@ -55,7 +55,7 @@ typedef struct {
 
 	uint8_t u8apertureCmdSteps;
 	uint8_t u8aperturePosSteps;
-	float fSecPerStep;
+	uint8_t fSecPerStep;
 
 } AirInput;
 
@@ -128,4 +128,5 @@ extern void Algo_Init(void const * argument);
 const Mobj* ALGO_GetObjData();
 State ALGO_GetCurrentState();
 const char* ALGO_GetStateString(State state);
+extern bool get_motors_ready_status();
 #endif /* INC_ALGO_H_ */

@@ -124,13 +124,25 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 
 
 
+
+    if(get_motors_ready_status())
+    {
+      printf("\n\r motors_ready_for_req : ON ");
+    }
+    else
+    {
+      printf("\n\r motors_ready_for_req : OFF ");
+    }
+
+
+
 		if(stove->bSafetyOn == true)
 		{
-			printf("bSafetyOn ");
+			printf("\n\rbSafety: On ");
 		}
 		else
 		{
-			printf("bSafetyOff ");
+			printf("\n\rbSafety: Off ");
 		}
 
 		if(stove->bInterlockOn)
@@ -154,9 +166,9 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 			printf("\n\rfan 1 speed is : %i",Fan_GetSpeed(FAN_DISTRIB));
 			printf("\n\rfan 2 speed is : %i",Fan_GetSpeed(FAN_BLOWER));
 
-			printf("\n\rGrille_sec_per_steps:%i ", (int)(stove->sGrill.fSecPerStep));
-			printf("\n\rPrim_sec_per_steps:%i ", (int)(stove->sPrimary.fSecPerStep));
-			printf("\n\rSec_sec_per_steps:%i ", (int)(stove->sSecondary.fSecPerStep));
+			printf("\n\rGrille_sec_per_steps:%i ", (stove->sGrill.fSecPerStep));
+			printf("\n\rPrim_sec_per_steps:%i ", (stove->sPrimary.fSecPerStep));
+			printf("\n\rSec_sec_per_steps:%i \n\r", (stove->sSecondary.fSecPerStep));
 
 
 		if(stove->bstateJustChanged)

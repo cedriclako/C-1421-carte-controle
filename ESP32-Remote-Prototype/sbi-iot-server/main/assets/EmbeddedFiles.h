@@ -40,7 +40,7 @@ typedef enum
   EF_EFILE_JS_MNT_APP_JS = 7,                                   /*!< @brief file: js/mnt-app.js, size: 7482 */
   EF_EFILE_JS_MNT_OTA_JS = 8,                                   /*!< @brief file: js/mnt-ota.js, size: 2158 */
   EF_EFILE_JS_USER_APP_JS = 9,                                  /*!< @brief file: js/user-app.js, size: 8898 */
-  EF_EFILE_JS_VUE_MIN_JS = 10,                                  /*!< @brief file: js/vue.min.js, size: 107165 */
+  EF_EFILE_JS_VUE_MIN_JS = 10,                                  /*!< @brief file: js/vue.min.js, size: 107155 */
   EF_EFILE_FAVICON_ICO = 11,                                    /*!< @brief file: favicon.ico, size: 1673 */
   EF_EFILE_IMG_LOGO_SBI_350X256_PNG = 12,                       /*!< @brief file: img/logo-sbi-350x256.png, size: 14236 */
   EF_EFILE_FONT_ROBOTO_BOLD_TTF = 13,                           /*!< @brief file: font/Roboto-Bold.ttf, size: 167336 */
