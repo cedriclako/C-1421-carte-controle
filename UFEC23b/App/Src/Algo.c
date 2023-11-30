@@ -722,7 +722,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		if(smoke_detected){return;}
 	//}
 
-	if(motors_ready_for_req)
+	if(motors_ready_for_req && (stove->fBaffleDeltaT > P2F(5)) || stove->fBaffleTemp > 425)
 	{
 		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 		{
