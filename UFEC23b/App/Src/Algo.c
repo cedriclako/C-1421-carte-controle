@@ -722,7 +722,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		if(smoke_detected){return;}
 	//}
 
-	if(motors_ready_for_req && (stove->fBaffleDeltaT > P2F(5)) || stove->fBaffleTemp > 425)
+	if(motors_ready_for_req && (stove->fBaffleDeltaT > P2F(5) || stove->fBaffleTemp > 425))
 	{
 		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 		{
@@ -1612,6 +1612,8 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 	int i = 0;
   bool delay_period_passed = (u32CurrentTime_ms - u32MajorCorrectionTime_ms) > SECONDS(cycle_time);
 
+  bool part_var_outofbounds=0;
+  bool part_val_outofbounds=0;
 	float controller_target = particles_target + particles_tolerance- 20 ;
 	float controller_error = stove->sParticles->fparticles - controller_target;
 	float controller_output;
@@ -1626,14 +1628,16 @@ if(print_debug_setup){
   printf("\n\r smoke negative delta t target : %i \n\r",deltaT_target_neg);
   printf("\n\r particles limit : %.2f \n\r",controller_target+20);
   printf("\n\r particles deviation limit : %i \n\r",dev_tolerance);
-
-
-
-
 }
 
+part_var_outofbounds = stove->sParticles->u16stDev > dev_tolerance;
+part_val_outofbounds = stove->sParticles->fparticles > (particles_target + particles_tolerance);
+
+// if the change comes from part_var, do only small changes
+controller_output = part_val_outofbounds ? controller_output : 0.95 ;
+
 // delta T > 0 pour comb
-	if((stove->sParticles->fparticles > (particles_target + particles_tolerance)|| (stove->sParticles->u16stDev > dev_tolerance)) &&	(stove->fBaffleDeltaT > deltaT_target_pos) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
+	if((part_val_outofbounds || (part_var_outofbounds)) &&	(stove->fBaffleDeltaT > deltaT_target_pos) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
 	{
 
 		printDebugStr("SMOKE ACTION\n\n", print_debug_setup);
