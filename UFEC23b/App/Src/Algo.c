@@ -680,7 +680,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 	/*ajouté || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) pour nous permettre de sortir plus vite vers coal */
 
-	if(((stove->fBaffleTemp < 500 || (stove->fBaffleTemp < 575 && stove->fBaffleDeltaT < -2) ) &&
+	if((stove->fBaffleTemp < 500   &&
 			(u32CurrentTime_ms - stove->u32TimeOfStateEntry_ms) > MINUTES(30)) && !smoke_detected)
 	{
 		nextState = tstat_status ? COAL_HIGH : COAL_LOW;
@@ -722,7 +722,7 @@ static void Algo_tempRise_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 		if(smoke_detected){return;}
 	//}
 
-	if(motors_ready_for_req && (stove->fBaffleDeltaT > P2F(5) || stove->fBaffleTemp > 425))
+	if(motors_ready_for_req && (stove->fBaffleDeltaT > P2F(1) || stove->fBaffleTemp > 425))
 	{
 		if(stove->sGrill.u8apertureCmdSteps > sParam->sGrill.i32Min)
 		{
@@ -1617,10 +1617,10 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_t
 	float controller_target = particles_target + particles_tolerance- 20 ;
 	float controller_error = stove->sParticles->fparticles - controller_target;
 	float controller_output;
-	float k = 1.2;
+	float k = 1.1;
 
 	controller_error = controller_error==0 ? 1 : controller_error ;
-	controller_output = RANGE((0.5), k * controller_target / controller_error, (0.95));
+	controller_output = RANGE((0.4), k * controller_target / controller_error, (0.95));
 
 if(print_debug_setup){
 	printf("\n\r proportional smoke controller output : %.2f \n\r",controller_output);
@@ -1634,7 +1634,7 @@ part_var_outofbounds = stove->sParticles->u16stDev > dev_tolerance;
 part_val_outofbounds = stove->sParticles->fparticles > (particles_target + particles_tolerance);
 
 // if the change comes from part_var, do only small changes
-controller_output = part_val_outofbounds ? controller_output : 0.95 ;
+controller_output = part_val_outofbounds ? controller_output : 0.85 ;
 
 // delta T > 0 pour comb
 	if((part_val_outofbounds || (part_var_outofbounds)) &&	(stove->fBaffleDeltaT > deltaT_target_pos) /*||stove->fChamberTemp>1100 || stove->fBaffleTemp>620)*/ )
@@ -1695,14 +1695,14 @@ controller_output = part_val_outofbounds ? controller_output : 0.95 ;
 
 	//TODO : add time criteria after door was open for cold smoke to be valid
 
-	if((stove->sParticles->fparticles > (particles_target + particles_tolerance)
-			|| (stove->sParticles->u16stDev > dev_tolerance))&& (stove->fBaffleDeltaT <= deltaT_target_neg) && !(stove->bDoorOpen)	){
+	if((part_val_outofbounds || part_var_outofbounds) && (stove->fBaffleDeltaT <= deltaT_target_neg) && !(stove->bDoorOpen)	){
 
 		// take action if the 30 seconds have passed
 		if(delay_period_passed)
 		{
 			printDebugStr("\n\nSMOKE COLD", print_debug_setup);
 
+			if(part_val_outofbounds){
 
       if(stove->sSecondary.u8apertureCmdSteps < 90)
       {
@@ -1710,7 +1710,7 @@ controller_output = part_val_outofbounds ? controller_output : 0.95 ;
         printDebugStr("smoke && secondary < 90 : set secondary to 90", print_debug_setup);
       }
 
-      else if(stove->sPrimary.u8apertureCmdSteps < 15)
+      else if(stove->sPrimary.u8apertureCmdSteps < 15 )
       {
         stove->sPrimary.u8apertureCmdSteps = 15;
         printDebugStr("smoke && primary < 10 : set grill to 10", print_debug_setup);
@@ -1726,6 +1726,25 @@ controller_output = part_val_outofbounds ? controller_output : 0.95 ;
         stove->sGrill.u8apertureCmdSteps  = RANGE(g_min, stove->sGrill.u8apertureCmdSteps *2,g_max);
         printDebugStr("smoke && grille >= 30 : set grill *=2 ", print_debug_setup);
       }
+			}
+
+
+			if (!part_val_outofbounds && part_var_outofbounds){
+
+	      if(stove->sSecondary.u8apertureCmdSteps + 2 <= 90)
+	      {
+	        stove->sSecondary.u8apertureCmdSteps += 2 ;
+	        printDebugStr("smoke VAR only && secondary < 90 : set secondary to 90", print_debug_setup);
+	      }
+
+	      else if(stove->sPrimary.u8apertureCmdSteps +2 <= 40 )
+	      {
+	        stove->sPrimary.u8apertureCmdSteps += 2 ;
+	        printDebugStr("smoke VAR only && primary < 15 : set primary to 15", print_debug_setup);
+	      }
+			}
+
+
 
       stove->sGrill.fSecPerStep = 0; // force aperture
       stove->sPrimary.fSecPerStep = 0;
