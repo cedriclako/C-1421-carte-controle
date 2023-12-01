@@ -70,6 +70,10 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 
 void sendDataToEspNow(ESPNOWRMT_SMsg data);
 
+extern ESPNOWDEBUG_SMsg espNowDataRcv;
+extern ESPNOWRMT_SMsg espNowDataSent;
+extern ESPNOWDEBUG_SMsg dataDebug;
+
 #ifdef __cplusplus
 }
 #endif
