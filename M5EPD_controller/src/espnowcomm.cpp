@@ -67,6 +67,9 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   log_d("Last Packet Recv from: %s", macStr);
   
   memcpy(&espNowDataRcv, data, sizeof(espNowDataRcv));
+  for (size_t i = 0; i < strlen(espNowDataRcv.macAddr); ++i) {
+    espNowDataRcv.macAddr[i] = tolower(espNowDataRcv.macAddr[i]);
+  }
   log_d("espNowDataRcv.macAddr: %s",espNowDataRcv.macAddr);
   log_d("macAddrRmt: %s",macAddrRmt);
   

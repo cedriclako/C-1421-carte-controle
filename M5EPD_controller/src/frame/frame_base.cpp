@@ -3,6 +3,10 @@
 #include "../epdgui/epdgui.h"
 #include <WiFi.h>
 
+char buf_roomtemp[6];
+char buf_setpoint[6];
+float tmp_room;
+
 Frame_Base::Frame_Base(bool _has_title) {
     
     M5.EPD.Clear();

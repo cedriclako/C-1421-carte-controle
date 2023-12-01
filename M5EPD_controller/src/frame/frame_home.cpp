@@ -1,6 +1,7 @@
 #include "frame_home.h"
 #include <WiFi.h>
 #include "esp_log.h"
+#include "espnowcomm.h"
 
 enum
 {
@@ -11,9 +12,6 @@ enum
     KKeyBoost,
     KKeyNone
 };
-
-extern ESPNOWDEBUG_SMsg dataDebug;
-extern ESPNOWRMT_SMsg espNowDataSent;
 
 String blower_str = "off";
 uint8_t idx_blower = 0;
