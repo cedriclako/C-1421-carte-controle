@@ -66,9 +66,6 @@ static void RecvC2SChangeSettingSPHandler(SBI_iot_Cmd* pInCmd, SBI_iot_C2SChange
 // ESP-NOW
 // static xQueueHandle s_example_espnow_queue;
 static SHandle m_sHandle;
-#if SBI_CL
-extern NVSJSON_SHandle g_sSettingHandle;
-#endif
 
 void ESPNOWPROCESS_Init()
 {
