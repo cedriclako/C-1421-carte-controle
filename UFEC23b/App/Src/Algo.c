@@ -583,7 +583,7 @@ static void Algo_reload_action(Mobj* stove, uint32_t u32CurrentTime_ms)
 
 
 
-	if(stove->fBaffleTemp > 310){
+	if(stove->fBaffleTemp > 310||(stove->fBaffleTemp > 250 && stove->fBaffleDeltaT > 16 )){
 
 	  /*
 	   * static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int cycle_time, int dev_tolerance,
