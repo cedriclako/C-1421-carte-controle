@@ -19,10 +19,19 @@
 #include "espnowprocess.h"
 #include "hardwaregpio.h"
 #include "uartbridge/uartbridge.h"
+#include "iot/IoTBridge.h"
 #include "fwconfig.h"
 #include "event.h"
 #include "log.h"
 #include "esp_ota_ops.h"
+#include <sys/param.h>
+#include "esp_tls.h"
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+#include "esp_crt_bundle.h"
+#endif
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_http_client.h"
 
 #define TAG "main"
 
@@ -159,6 +168,11 @@ static void mdns_sn_init()
     netbiosns_set_name(FWCONFIG_MDNS_HOSTNAME);
 }
 
+bool MAIN_GetIsWiFiConnected()
+{
+    return m_bIsConnectedWiFi;
+}
+
 void MAIN_GetWiFiSTAIP(esp_netif_ip_info_t* ip)
 {
     esp_netif_get_ip_info(m_pWifiSTA, ip);
@@ -204,6 +218,17 @@ static void CheckForOTAUpdate()
     }
 }
 
+void removeChar(char *str, char c) {
+    int i, j;
+    int len = strlen(str);
+    for (i = j = 0; i < len; i++) {
+        if (str[i] != c) {
+            str[j++] = str[i];
+        }
+    }
+    str[j] = '\0';
+}
+
 void app_main(void)
 {
     // Set new priority for main task
@@ -237,6 +262,7 @@ void app_main(void)
     WIFI_Init();
     ESPNOWPROCESS_Init();
     WEBSERVER_Init();
+    IOTBRIDGE_Init();
 
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
@@ -245,12 +271,6 @@ void app_main(void)
     sntp_init();
     mdns_sn_init();
     
-    // Just print task list
-    char* szAllTask = (char*)malloc(4096);
-    vTaskList(szAllTask);
-    ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
-    free(szAllTask);
-
     ESP_LOGI(TAG, "Starting ...");
 
     static bool isActive = false;
@@ -262,6 +282,13 @@ void app_main(void)
 
     LOG_Init();
     UARTBRIDGE_Start();
+    IOTBRIDGE_Start();
+
+    // Just print the task list, for debug purposes
+    char* szAllTask = (char*)malloc(4096);
+    vTaskList(szAllTask);
+    ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
+    free(szAllTask);
 
     while (true)
     {
