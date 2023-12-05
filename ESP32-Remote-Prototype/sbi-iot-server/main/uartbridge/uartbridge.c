@@ -244,7 +244,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
                 break;
             }            
             pMemBlock->ttDebugJSONLastTicks = xTaskGetTickCount();
-            ESP_LOGI(TAG, "Received S2CSendDebugDataResp, json: '%s'", pMemBlock->szDebugJSONString);
+            // ESP_LOGI(TAG, "Received S2CSendDebugDataResp, json: '%s'", pMemBlock->szDebugJSONString);
             break;
         }
         case UFEC23PROTOCOL_FRAMEID_S2CEvent:

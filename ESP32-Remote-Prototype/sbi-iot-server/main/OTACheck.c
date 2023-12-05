@@ -1,4 +1,5 @@
 #include "OTACheck.h"
+#include "fwconfig.h"
 #include "esp_log.h"
 #include "esp_tls.h"
 #include "esp_http_client.h"
@@ -11,12 +12,6 @@
 #include "cJSON.h"
 
 #define TAG "OTACheck"
-
-#define OTACHECK_TASK_PRIORITY FWCONFIG_OTACHECKTASK_PRIORITY
-#define OTACHECK_TASK_NAME "OTA-Update"
-#define OTACHECK_TASK_STACKSIZE (8000)
-
-#define OTACHECK_HTTP_GET_TIMEOUT (15000)
 
 #define UPDATE_PROGRESS(_ofOne, _eResult) \
     do { \
@@ -98,7 +93,7 @@ bool OTACHECK_InstallOTA(uint32_t u32Id, uint32_t u32TimeoutMS)
         goto ERROR;
     }
 
-    if (pdTRUE != xTaskCreate(OTAUpdateTask, OTACHECK_TASK_NAME, OTACHECK_TASK_STACKSIZE, psSelectedOTAItem, OTACHECK_TASK_PRIORITY, &m_hTaskHandle))
+    if (pdTRUE != xTaskCreate(OTAUpdateTask, FWCONFIG_OTACHECK_TASK_NAME, FWCONFIG_OTACHECK_TASK_STACKSIZE, psSelectedOTAItem, FWCONFIG_IOTTASK_PRIORITY, &m_hTaskHandle))
     {
         ESP_LOGE(TAG, "Unable to create the OTA upgrade task");
         goto ERROR;
@@ -434,7 +429,7 @@ static esp_http_client_config_t GetClientConfig(const char* url)
         .url = url,
         .auth_type = HTTP_AUTH_TYPE_NONE,
         .method = HTTP_METHOD_GET,
-        .timeout_ms = OTACHECK_HTTP_GET_TIMEOUT,
+        .timeout_ms = FWCONFIG_OTACHECK_HTTP_GET_TIMEOUT,
 
         .transport_type = HTTP_TRANSPORT_OVER_SSL,
         // CRT bundle.
