@@ -33,15 +33,28 @@
 #include "esp_system.h"
 #include "esp_http_client.h"
 
+#include <sys/param.h>
+#include "esp_tls.h"
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+#include "esp_crt_bundle.h"
+#endif
+
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_http_client.h"
+
 #define TAG "main"
 
 ESP_EVENT_DEFINE_BASE(MAINAPP_EVENT);
 
 static esp_netif_t* m_pWifiSoftAP = NULL;
 static esp_netif_t* m_pWifiSTA = NULL;
+static TimerHandle_t m_xTimerReconnectWiFiSTA;
 
 static volatile bool m_bIsConnectedWiFi = false;
 static volatile int32_t m_s32ConnectWiFiCount = 0;
+
+static void vWifiSTAReconnect( TimerHandle_t xTimer );
 
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -51,6 +64,25 @@ static void CheckForOTAUpdate();
 
 static void WIFI_Init()
 {
+    m_xTimerReconnectWiFiSTA = xTimerCreate
+    ( /* Just a text name, not used by the RTOS
+        kernel. */
+        "ReconnectWiFiSTATimer",
+        /* The timer period in ticks, must be
+        greater than 0. */
+        pdMS_TO_TICKS(10*1000),
+        /* The timers will auto-reload themselves
+        when they expire. */
+        pdFALSE,
+        /* The ID is used to store a count of the
+        number of times the timer has expired, which
+        is initialised to 0. */
+        ( void * ) 0,
+        /* Each timer calls the same callback when
+        it expires. */
+        vWifiSTAReconnect
+    );
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -328,7 +360,7 @@ static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();    
+        esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
         m_bIsConnectedWiFi = true;
         wifi_second_chan_t secondChan;
@@ -338,9 +370,9 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
         esp_netif_create_ip6_linklocal(m_pWifiSTA);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGI(TAG, "Wifi STA is disconnected, will retry in 10s");
         m_bIsConnectedWiFi = false;
-        esp_wifi_connect();
-        ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%"PRId32, (int32_t)++m_s32ConnectWiFiCount);
+        xTimerStart(m_xTimerReconnectWiFiSTA, 10);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
@@ -348,6 +380,12 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
         ip_event_got_ip6_t *event = (ip_event_got_ip6_t *)event_data;
         ESP_LOGI(TAG, "Got IPv6 address " IPV6STR, IPV62STR(event->ip6_info.ip));
     }
+}
+
+static void vWifiSTAReconnect( TimerHandle_t xTimer )
+{
+    esp_wifi_connect();
+    ESP_LOGI(TAG, "Retrying to connect to the AP, attempt: #%"PRId32, (int32_t)++m_s32ConnectWiFiCount);
 }
 
 static void time_sync_notification_cb(struct timeval* tv)
