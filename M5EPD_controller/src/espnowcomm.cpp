@@ -37,7 +37,7 @@ void configDeviceAP(String macAddrAP) {
   String subMacAddrAP = macAddrAP;
   subMacAddrAP.replace(":", "");
   String SSID = "SbiRmt" + subMacAddrAP;
-  bool result = WiFi.softAP(SSID.c_str(), NULL, CHANNEL, 0);
+  bool result = WiFi.softAP(SSID.c_str(), NULL, channel, 0);
   if (!result) {
     log_d("AP Config failed.");
   } else {
@@ -212,36 +212,54 @@ void printMAC(const uint8_t * mac_addr){
 
 
 PairingStatus autoPairing(){
-
+String apMacAddr;
   switch(pairingStatus) {
+
     case PAIR_REQUEST:
-    log_d("Pairing request on channel %d",  channel);
 
-    if (esp_now_init() != ESP_OK) {
-      log_d("Error initializing ESP-NOW");
-    }
+      WiFi.mode(WIFI_AP);
 
-    // set callback routines
-    esp_now_register_send_cb(OnDataSent);
-    esp_now_register_recv_cb(OnDataRecv);
+      apMacAddr = WiFi.softAPmacAddress();
+      apMacAddr.toLowerCase();
 
-    /* Set primary master key. */
-    esp_now_set_pmk((uint8_t *)ESPNOW_PMK);
-    ConfigBrodcastESPNow();
-  
-    // set pairing data to send to the server
-    pairingData.msgType = PAIRING;
-    pairingData.id = BOARD_ID;     
-    pairingData.channel = channel;
+       //configure device AP mode
+      configDeviceAP(apMacAddr);
 
-    // add peer and send request
-    addPeer(m_u8BroadcastAddr, channel);
-    esp_now_send(m_u8BroadcastAddr, (uint8_t *) &pairingData, sizeof(pairingData));
-    previousMillis = millis();
+      // This is the mac address of the Slave in AP Mode
+      log_d("AP MAC: %s", apMacAddr.c_str());
 
+      if ( 6 == sscanf(apMacAddr.c_str(), "%x:%x:%x:%x:%x:%x",  &espNowDataSent.macAddr[0], &espNowDataSent.macAddr[1], &espNowDataSent.macAddr[2], &espNowDataSent.macAddr[3], &espNowDataSent.macAddr[4], &espNowDataSent.macAddr[5] ) )
+      {
+
+      }
+
+      log_d("Pairing request on channel %d",  channel);
+
+      if (esp_now_init() != ESP_OK) {
+        log_d("Error initializing ESP-NOW");
+      }
+
+      // set callback routines
+      esp_now_register_send_cb(OnDataSent);
+      esp_now_register_recv_cb(OnDataRecv);
+
+      /* Set primary master key. */
+      esp_now_set_pmk((uint8_t *)ESPNOW_PMK);
+      ConfigBrodcastESPNow();
     
+      // set pairing data to send to the server
+      pairingData.msgType = PAIRING;
+      pairingData.id = BOARD_ID;     
+      pairingData.channel = channel;
 
-    pairingStatus = PAIR_REQUESTED;
+      // add peer and send request
+      addPeer(m_u8BroadcastAddr, channel);
+      esp_now_send(m_u8BroadcastAddr, (uint8_t *) &pairingData, sizeof(pairingData));
+      previousMillis = millis();
+
+      
+
+      pairingStatus = PAIR_REQUESTED;
     break;
 
     case PAIR_REQUESTED:
