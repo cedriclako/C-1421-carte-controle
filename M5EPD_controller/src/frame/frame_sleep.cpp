@@ -199,6 +199,12 @@ int Frame_Sleep::init(epdgui_args_vector_t &args) {
 
     EPDGUI_AddObject(_key_outside);
 
+/*
+    ScanForSlave();
+    if (SlaveCnt > 0) { 
+        manageSlave();
+    } 
+*/
     return 3;
 }
 
@@ -270,7 +276,10 @@ int Frame_Sleep::run() {
         log_d("sleep.distribSpeedRmt: %d",espNowDataSent.distribSpeedRmt);
         log_d("sleep.boostStatRmt: %d",espNowDataSent.boostStatRmt);
 
-        sendDataToEspNow(espNowDataSent);
+        if (autoPairing() == PAIR_PAIRED) {
+            sendDataToEspNow(espNowDataSent);
+        }
+        
 
         _time_update_room = millis();
         

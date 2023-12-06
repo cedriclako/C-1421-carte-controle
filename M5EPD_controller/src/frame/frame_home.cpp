@@ -609,7 +609,12 @@ int Frame_Home::init(epdgui_args_vector_t &args) {
     }
     
     StatusBar(UPDATE_MODE_NONE, GetVoltageBattery());
-
+/*
+    ScanForSlave();
+    if (SlaveCnt > 0) { 
+        manageSlave();
+    } 
+*/
     log_d("Init Frame_Home");
     return 3;
 }
@@ -785,7 +790,8 @@ int Frame_Home::run() {
     
 
 #if 1 
-    if ((millis() - _time_update_esp_now) > (100U)) {
+    
+    if ((millis() - _time_update_esp_now) > (200U)) {
         espNowDataSent.tStatRmt = GetThermostatValue();
         espNowDataSent.blowerSpeedRmt = GetBlowerSpeed();
         espNowDataSent.distribSpeedRmt = GetDistributionSpeed();
@@ -795,7 +801,11 @@ int Frame_Home::run() {
         log_d("home.blowerSpeedRmt: %d",espNowDataSent.blowerSpeedRmt);
         log_d("home.distribSpeedRmt: %d",espNowDataSent.distribSpeedRmt);
         log_d("home.boostStatRmt: %d",espNowDataSent.boostStatRmt);
-        sendDataToEspNow(espNowDataSent);
+        
+        if (autoPairing() == PAIR_PAIRED) {
+            sendDataToEspNow(espNowDataSent);
+        }
+
         _time_update_esp_now = millis();
     }
 #endif
