@@ -263,8 +263,8 @@ void ESPNOWPROCESS_Handler()
         }
         else if(type == PAIRING)
         {
-            //esp_err_t result = esp_now_send(m_u8BroadcastAddr, (const uint8_t *) &pairingData, sizeof(pairingData));
-            //ESP_LOGI(TAG, "send response: %s", (result == ESP_OK)? "OK" : "FAIL");
+            esp_err_t result = esp_now_send(m_u8BroadcastAddr, (const uint8_t *) &pairingData, sizeof(pairingData));
+            ESP_LOGI(TAG, "send response: %s", (result == ESP_OK)? "OK" : "FAIL");
         }
         
     }
@@ -556,16 +556,13 @@ static void example_espnow_recv_cb(const uint8_t * mac_addr, const uint8_t *data
             if (pairingData.id > 0) {     // do not replay to server itself
                 if (pairingData.msgType == PAIRING) { 
                     pairingData.id = 0;       // 0 is server
-                    
+
                     esp_read_mac(pairingData.macAddr, ESP_MAC_WIFI_SOFTAP);
 
                     wifi_second_chan_t secondChan;
                     
                     esp_wifi_get_channel(&pairingData.channel,  &secondChan);
                     
-                    esp_err_t result = esp_now_send(m_u8BroadcastAddr, (const uint8_t *) &pairingData, sizeof(pairingData));
-                    ESP_LOGI(TAG, "send response: %s", (result == ESP_OK)? "OK" : "FAIL");
-
                      // Put into receive queue
             ESPNOWPROCESS_SMsg msg;
             msg.u8BufferCount = 1;
