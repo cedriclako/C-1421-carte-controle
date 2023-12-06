@@ -58,7 +58,7 @@ static void http_blobput_task(void *pvParameters)
         strcat(arrUrl, "_");
         strcat(arrUrl, arrYearMonthDay);
         strcat(arrUrl, ".txt?sp=racwdli&st=2023-11-30T20:55:42Z&se=2025-12-01T04:55:42Z&spr=https&sv=2022-11-02&sr=c&sig=W60mLCkClwkRYR7LLZOPEk8JUpshSWJqLLx%2Bog9J0a8%3D");
-        if((MAIN_GetIsWiFiConnected()) && ((atoi(arrMin) % 10) == 9)/*&& (strcmp(arrHourMin, "2359"))*/)
+        if((MAIN_GetIsWiFiConnected()) && ((atoi(arrMin) % 25) == 9)/*&& (strcmp(arrHourMin, "2359"))*/)
         {
             char *post_data = NULL;
             FILE* recordFileRead = NULL;
