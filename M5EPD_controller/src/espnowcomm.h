@@ -16,9 +16,8 @@ extern "C" {
 #define ESPNOWCOMM_GETSTATUS_RETRY_MS (100)
 
 #define ESPNOW_PMK "pmk1234567890123"
-#define CHANNEL 6
 
-#define MAX_CHANNEL 11  // for North America // 13 in Europe
+#define MAX_CHANNEL 12  // for North America // 13 in Europe
 #define BOARD_ID 1
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};

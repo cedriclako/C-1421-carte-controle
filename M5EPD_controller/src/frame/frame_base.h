@@ -48,7 +48,7 @@ class Frame_Base {
     uint32_t _frame_id;
     bool _shutdown_prompt_is_shown = false;
     
-    bool bEspNowInit            = true;
+    bool bEspNowInit = true;
     uint32_t _time_update_battery;
     
     
