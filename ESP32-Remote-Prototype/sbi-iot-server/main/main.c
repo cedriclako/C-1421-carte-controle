@@ -19,10 +19,19 @@
 #include "espnowprocess.h"
 #include "hardwaregpio.h"
 #include "uartbridge/uartbridge.h"
+#include "iot/IoTBridge.h"
 #include "fwconfig.h"
 #include "event.h"
 #include "log.h"
 #include "esp_ota_ops.h"
+#include <sys/param.h>
+#include "esp_tls.h"
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+#include "esp_crt_bundle.h"
+#endif
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_http_client.h"
 
 #include <sys/param.h>
 #include "esp_tls.h"
@@ -40,9 +49,12 @@ ESP_EVENT_DEFINE_BASE(MAINAPP_EVENT);
 
 static esp_netif_t* m_pWifiSoftAP = NULL;
 static esp_netif_t* m_pWifiSTA = NULL;
+static TimerHandle_t m_xTimerReconnectWiFiSTA;
 
 static volatile bool m_bIsConnectedWiFi = false;
 static volatile int32_t m_s32ConnectWiFiCount = 0;
+
+static void vWifiSTAReconnect( TimerHandle_t xTimer );
 
 static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -52,6 +64,25 @@ static void CheckForOTAUpdate();
 
 static void WIFI_Init()
 {
+    m_xTimerReconnectWiFiSTA = xTimerCreate
+    ( /* Just a text name, not used by the RTOS
+        kernel. */
+        "ReconnectWiFiSTATimer",
+        /* The timer period in ticks, must be
+        greater than 0. */
+        pdMS_TO_TICKS(10*1000),
+        /* The timers will auto-reload themselves
+        when they expire. */
+        pdFALSE,
+        /* The ID is used to store a count of the
+        number of times the timer has expired, which
+        is initialised to 0. */
+        ( void * ) 0,
+        /* Each timer calls the same callback when
+        it expires. */
+        vWifiSTAReconnect
+    );
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -169,6 +200,11 @@ static void mdns_sn_init()
     netbiosns_set_name(FWCONFIG_MDNS_HOSTNAME);
 }
 
+bool MAIN_GetIsWiFiConnected()
+{
+    return m_bIsConnectedWiFi;
+}
+
 void MAIN_GetWiFiSTAIP(esp_netif_ip_info_t* ip)
 {
     esp_netif_get_ip_info(m_pWifiSTA, ip);
@@ -225,138 +261,6 @@ void removeChar(char *str, char c) {
     str[j] = '\0';
 }
 
-static void http_blobput_task(void *pvParameters)
-{
-    struct tm timeinfo;
-    time_t now;
-    char arrMin[3];
-    char arrHourMin[5];
-    char arrYearMonthDay[9];
-    char arrUrl[1024];
-
-    size_t n = SETTINGS_ESPNOWREMOTEMAC_LEN;
-    char szMacAddr[SETTINGS_ESPNOWREMOTEMAC_LEN];
-
-    memset(szMacAddr, '\0', sizeof(szMacAddr));
-    
-    NVSJSON_GetValueString(&g_sSettingHandle, SETTINGS_EENTRY_ESPNowRemoteMac, (char*)szMacAddr, &n);
-
-    removeChar(szMacAddr, ':');
-
-    vTaskDelay((15000) / portTICK_PERIOD_MS);
-
-   for(;;) 
-   {
-        time(&now);
-        localtime_r(&now, &timeinfo);
-        memset(arrMin, '\0', sizeof(arrMin));
-        memset(arrHourMin, '\0', sizeof(arrHourMin));
-        memset(arrYearMonthDay, '\0', sizeof(arrYearMonthDay));
-        memset(arrUrl, '\0', sizeof(arrUrl));
-
-        strftime(arrMin, sizeof(arrMin), "%M", &timeinfo);
-        strftime(arrHourMin, sizeof(arrHourMin), "%H%M", &timeinfo);
-        strftime(arrYearMonthDay, sizeof(arrYearMonthDay), "%Y%m%d", &timeinfo);
-       
-        strcat(arrUrl, "https://sbistoragecount.blob.core.windows.net/self-regulated-stove/debug_");
-        strcat(arrUrl, szMacAddr);
-        strcat(arrUrl, "_");
-        strcat(arrUrl, arrYearMonthDay);
-        strcat(arrUrl, ".txt?sp=racwdli&st=2023-11-30T20:55:42Z&se=2025-12-01T04:55:42Z&spr=https&sv=2022-11-02&sr=c&sig=W60mLCkClwkRYR7LLZOPEk8JUpshSWJqLLx%2Bog9J0a8%3D");
-
-        if((m_bIsConnectedWiFi) && ((atoi(arrMin) % 10) == 9)/*&& (strcmp(arrHourMin, "2359"))*/)
-        {
-            char *post_data = NULL;
-
-            FILE* recordFileRead = NULL;
-            char szFilename[96+1];
-            char debugStringRead[640];
-            char contentDispositionHeader[96];
-
-            memset(contentDispositionHeader, '\0', sizeof(contentDispositionHeader));
-            snprintf(contentDispositionHeader, sizeof(contentDispositionHeader), "attachment; filename=\"debug_%s_%s.txt\"", szMacAddr, arrYearMonthDay);
-
-            memset(szFilename, '\0', sizeof(szFilename));
-            snprintf(szFilename, sizeof(szFilename), FWCONFIG_SDCARD_ROOTPATH"/debug_%s.txt", arrYearMonthDay);
-
-            ESP_LOGI(TAG, "szFilename: %s", szFilename);
-
-            recordFileRead = fopen(szFilename, "r");
-            if (recordFileRead == NULL)
-            {
-                ESP_LOGE(TAG, "Failed to open file for reading");
-                fclose(recordFileRead);
-                
-            }
-            else
-            {
-                ESP_LOGI(TAG, "read file on SDCard, filename: '%s'", szFilename);
-                post_data = (char*) malloc( 650 * 6 * sizeof(char));
-                memset(post_data, '\0', sizeof(*post_data));
-
-                // Get file size
-                fseek(recordFileRead, 0, SEEK_END);
-                uint64_t recordFileSize = ftell(recordFileRead);
-                fseek(recordFileRead, 0, SEEK_SET);
-                ESP_LOGI(TAG, "File size: %lld bytes", recordFileSize);
-                char recordHeaderSize[16];
-                itoa(recordFileSize,recordHeaderSize,10);
-
-                esp_http_client_config_t config = {
-                    .url = arrUrl,
-                    .method = HTTP_METHOD_PUT,
-                };
-                esp_http_client_handle_t client = esp_http_client_init(&config);
-                
-                // PUT
-                esp_http_client_set_header(client, "Content-Type", "text/plain; charset=UTF-8");
-                esp_http_client_set_header(client, "x-ms-blob-type", "BlockBlob");
-                esp_http_client_set_header(client, "Content-Disposition", contentDispositionHeader);
-                esp_http_client_set_header(client, "Content-Length", recordHeaderSize);
-         
-                esp_err_t err = esp_http_client_open(client, recordFileSize);
-                if (err != ESP_OK) {
-                    ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
-                    esp_http_client_cleanup(client);
-                    return;
-                } 
-
-                int countPostData = 0;
-                while(fgets(debugStringRead, sizeof(debugStringRead), recordFileRead) != NULL)
-                { 
-                    strcat(post_data, debugStringRead);
-                    countPostData++;
-                    if(countPostData % 6 == 0)
-                    {
-                        esp_http_client_write(client, &post_data[0], strlen(post_data));
-                        countPostData = 0;
-                        memset(post_data, '\0', sizeof(*post_data));
-                    }
-                    
-                    memset(debugStringRead, '\0', sizeof(debugStringRead));
-                    vTaskDelay((10) / portTICK_PERIOD_MS);
-                    
-                }  
-                esp_http_client_write(client, &post_data[0], strlen(post_data));
-                countPostData = 0;
-                memset(post_data, '\0', sizeof(*post_data));
-
-                esp_http_client_close(client);
-                esp_http_client_cleanup(client);
-            }
-            
-            if (recordFileRead != NULL) {
-                fclose(recordFileRead);
-            }
-
-            free(post_data);
-        }
-        vTaskDelay((30000) / portTICK_PERIOD_MS); // 30 secondes
-    }
-    vTaskDelete(NULL);
-}
-    
-
 void app_main(void)
 {
     // Set new priority for main task
@@ -390,6 +294,7 @@ void app_main(void)
     WIFI_Init();
     ESPNOWPROCESS_Init();
     WEBSERVER_Init();
+    IOTBRIDGE_Init();
 
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
@@ -398,12 +303,6 @@ void app_main(void)
     sntp_init();
     mdns_sn_init();
     
-    // Just print task list
-    char* szAllTask = (char*)malloc(4096);
-    vTaskList(szAllTask);
-    ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
-    free(szAllTask);
-
     ESP_LOGI(TAG, "Starting ...");
 
     static bool isActive = false;
@@ -415,8 +314,13 @@ void app_main(void)
 
     LOG_Init();
     UARTBRIDGE_Start();
+    IOTBRIDGE_Start();
 
-    xTaskCreate(&http_blobput_task, "http_blobput_task", 1024 * 8, NULL, 1, NULL);
+    // Just print the task list, for debug purposes
+    char* szAllTask = (char*)malloc(4096);
+    vTaskList(szAllTask);
+    ESP_LOGI(TAG, "vTaskList: \r\n\r\n%s", szAllTask);
+    free(szAllTask);
 
     while (true)
     {
@@ -456,7 +360,7 @@ static void wifisoftap_event_handler(void* arg, esp_event_base_t event_base, int
 static void wifistation_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();    
+        esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
         m_bIsConnectedWiFi = true;
         wifi_second_chan_t secondChan;
@@ -466,9 +370,9 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
         esp_netif_create_ip6_linklocal(m_pWifiSTA);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGI(TAG, "Wifi STA is disconnected, will retry in 10s");
         m_bIsConnectedWiFi = false;
-        esp_wifi_connect();
-        ESP_LOGI(TAG, "connect to the AP fail, retry to connect to the AP, attempt: #%"PRId32, (int32_t)++m_s32ConnectWiFiCount);
+        //xTimerStart(m_xTimerReconnectWiFiSTA, 10);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
@@ -476,6 +380,12 @@ static void wifistation_event_handler(void* arg, esp_event_base_t event_base, in
         ip_event_got_ip6_t *event = (ip_event_got_ip6_t *)event_data;
         ESP_LOGI(TAG, "Got IPv6 address " IPV6STR, IPV62STR(event->ip6_info.ip));
     }
+}
+
+static void vWifiSTAReconnect( TimerHandle_t xTimer )
+{
+    esp_wifi_connect();
+    ESP_LOGI(TAG, "Retrying to connect to the AP, attempt: #%"PRId32, (int32_t)++m_s32ConnectWiFiCount);
 }
 
 static void time_sync_notification_cb(struct timeval* tv)

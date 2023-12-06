@@ -10,9 +10,12 @@
         "uartbridge.h": "c",
         "otauploadstm32.h": "c",
         "settings.h": "c",
-        "stovemb.h": "c"
+        "stovemb.h": "c",
+        "iotbridge.h": "c",
+        "event.h": "c",
+        "otacheck.h": "c"
     },
     "idf.adapterTargetName": "esp32",
     "idf.flashType": "UART",
-    "idf.portWin": "COM21"
+    "idf.portWin": "COM4"
 }

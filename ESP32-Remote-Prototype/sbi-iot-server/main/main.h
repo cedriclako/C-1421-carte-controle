@@ -5,6 +5,7 @@
 #include "esp_system.h"
 #include "esp_wifi.h"
 
+bool MAIN_GetIsWiFiConnected();
 
 void MAIN_GetWiFiSTAIP(esp_netif_ip_info_t* ip);
 
