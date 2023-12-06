@@ -171,19 +171,27 @@ int Frame_LiveData::init(epdgui_args_vector_t &args) {
     _time_update_esp_now = 0;
 
     log_d("Init Frame_LiveData");
-    
+/*
+    ScanForSlave();
+    if (SlaveCnt > 0) { 
+        manageSlave();
+    } 
+    */
     return 3;
 }
 
 int Frame_LiveData::run() {
     Frame_Base::run();
+
     
     if ((millis() - _time_update_esp_now) > (1000U)) {
         espNowDataSent.tStatRmt = GetThermostatValue();
         espNowDataSent.blowerSpeedRmt = GetBlowerSpeed();
         espNowDataSent.distribSpeedRmt = GetDistributionSpeed();
         espNowDataSent.boostStatRmt = GetBoostStat();
-        sendDataToEspNow(espNowDataSent);
+        if (autoPairing() == PAIR_PAIRED) {
+            sendDataToEspNow(espNowDataSent);
+        }
         _time_update_esp_now = millis();
         drawItem(UPDATE_MODE_DU4);
     }

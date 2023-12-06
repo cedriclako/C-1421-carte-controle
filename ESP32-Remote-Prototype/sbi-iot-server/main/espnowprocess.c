@@ -20,6 +20,10 @@
 #include "cJSON.h"
 #include "settings.h"
 #include "nvsjson.h"
+#include "esp_log.h"
+#include "esp_mac.h"
+#include "esp_wifi.h"
+#define CHANNEL_ESPNOW  0
 #endif
 
 #define TAG "espnowprocess"
@@ -44,7 +48,7 @@ typedef struct
 
 
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
-static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len);
+static void example_espnow_recv_cb(const uint8_t * mac_addr, const uint8_t *data, int data_len);
 
 uint8_t m_u8BroadcastAddr[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
@@ -53,8 +57,19 @@ static void SendESPNow(pb_size_t which_payload, uint32_t transaction_id, void* p
 
 #if SBI_CL
 static void sendDataToRemote(ESPNOWDEBUG_SMsg data);
+static void printMAC(const uint8_t * mac_addr);
+static bool addPeer(const uint8_t *peer_addr);
 ESPNOWRMT_SMsg espNowDataRcv;
 ESPNOWDEBUG_SMsg dataDebug;
+
+esp_now_peer_info_t slave;
+int chan; 
+
+enum MessageType {PAIRING, DATA,};
+
+struct_pairing pairingData;
+ 
+uint8_t type = 0;
 #endif
 // static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo);
 
@@ -78,6 +93,7 @@ void ESPNOWPROCESS_Init()
     NVSJSON_GetValueString(&g_sSettingHandle, SETTINGS_EENTRY_ESPNowRemoteMac, (char*)szMacAddr, &n);
 
     //strcpy(szMacAddr, "d4:d4:da:5c:80:bd"); //quick test
+    printf("EspNow-szMacAddr: %s \n\r", szMacAddr);
 
     memset(dataDebug.macAddr, '\0', sizeof(dataDebug.macAddr));
     memcpy(dataDebug.macAddr,szMacAddr, sizeof(dataDebug.macAddr));
@@ -103,15 +119,13 @@ void ESPNOWPROCESS_Init()
     /* Add broadcast peer information to peer list. */
     esp_now_peer_info_t sPeer;
     memset(&sPeer, 0, sizeof(esp_now_peer_info_t));
-    sPeer.channel = 0;
+    sPeer.channel = CHANNEL_ESPNOW;
     sPeer.ifidx = WIFI_IF_AP;
     sPeer.encrypt = false;
     memcpy(sPeer.peer_addr, m_u8BroadcastAddr, ESP_NOW_ETH_ALEN);
     ESP_ERROR_CHECK( esp_now_add_peer(&sPeer) );
 
     // Add encrypted clients
-
-    
 }
 
 void ESPNOWPROCESS_Handler()
@@ -121,128 +135,138 @@ void ESPNOWPROCESS_Handler()
     ESPNOWPROCESS_SMsg msg;
     if (xQueueReceive(m_sHandle.sQueueRXHandle, &msg, 0) == pdTRUE)
     {
-        STOVEMB_Take(portMAX_DELAY);
-    
-        STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
-
-        cJSON *espnowdebug_json = cJSON_Parse(pMB->szDebugJSONString);
-        printf("espnowdebug_json: %s\n\r", pMB->szDebugJSONString);
-        if (espnowdebug_json == NULL)
+        if(type == DATA)
         {
-            ESP_LOGI(TAG, "this file is not a json ...");
+            STOVEMB_Take(portMAX_DELAY);
+        
+            STOVEMB_SMemBlock* pMB = STOVEMB_GetMemBlock();
+
+            cJSON *espnowdebug_json = cJSON_Parse(pMB->szDebugJSONString);
+            printf("espnowdebug_json: %s\n\r", pMB->szDebugJSONString);
+            if (espnowdebug_json == NULL)
+            {
+                ESP_LOGI(TAG, "this file is not a json ...");
+            }
+            else
+            {
+                if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "#")))
+                {
+                    memset(dataDebug.time, '\0', sizeof(dataDebug.time)); 
+                    strcpy(dataDebug.time, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "#")->valuestring);
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tbaffle")))
+                {
+                    dataDebug.Tbaffle = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tbaffle")->valuedouble;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tavant")))
+                {
+                    dataDebug.Tavant = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tavant")->valuedouble;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Plenum")))
+                {
+                    dataDebug.Plenum = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Plenum")->valuedouble;
+                }
+                if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "State")))
+                {
+                    memset(dataDebug.State, '\0', sizeof(dataDebug.State)); 
+                    strcpy(dataDebug.State, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "State")->valuestring);
+                }
+                if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "tStat")))
+                {
+                    memset(dataDebug.tStat, '\0', sizeof(dataDebug.tStat)); 
+                    strcpy(dataDebug.tStat, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "tStat")->valuestring);
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTbaffle")))
+                {
+                    dataDebug.dTbaffle = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTbaffle")->valuedouble;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "FanSpeed")))
+                {
+                    dataDebug.FanSpeed = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "FanSpeed")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Grille")))
+                {
+                    dataDebug.Grille = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Grille")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Prim")))
+                {
+                    dataDebug.Prim = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Prim")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Sec")))
+                {
+                    dataDebug.Sec = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Sec")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tboard")))
+                {
+                    dataDebug.Tboard = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tboard")->valuedouble;
+                }
+                if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Door")))
+                {
+                    memset(dataDebug.Door, '\0', sizeof(dataDebug.Door)); 
+                    strcpy(dataDebug.Door, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Door")->valuestring);
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0ON")))
+                {
+                    dataDebug.PartCH0ON = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0ON")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1ON")))
+                {
+                    dataDebug.PartCH1ON = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1ON")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0OFF")))
+                {
+                    dataDebug.PartCH0OFF = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0OFF")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1OFF")))
+                {
+                    dataDebug.PartCH1OFF = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1OFF")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartVar")))
+                {
+                    dataDebug.PartVar = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartVar")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartSlope")))
+                {
+                    dataDebug.PartSlope = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartSlope")->valuedouble;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "TPart")))
+                {
+                    dataDebug.TPart = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "TPart")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCurr")))
+                {
+                    dataDebug.PartCurr = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCurr")->valuedouble;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxON")))
+                {
+                    dataDebug.PartLuxON = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxON")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxOFF")))
+                {
+                    dataDebug.PartLuxOFF = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxOFF")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartTime")))
+                {
+                    dataDebug.PartTime = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartTime")->valueint;
+                }
+                if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTavant")))
+                {
+                    dataDebug.dTavant = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTavant")->valuedouble;
+                }
+            }
+            cJSON_Delete(espnowdebug_json);
+
+            sendDataToRemote(dataDebug);
+
+            STOVEMB_Give();
+
         }
-        else
+        else if(type == PAIRING)
         {
-            if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "#")))
-            {
-                memset(dataDebug.time, '\0', sizeof(dataDebug.time)); 
-                strcpy(dataDebug.time, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "#")->valuestring);
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tbaffle")))
-            {
-                dataDebug.Tbaffle = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tbaffle")->valuedouble;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tavant")))
-            {
-                dataDebug.Tavant = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tavant")->valuedouble;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Plenum")))
-            {
-                dataDebug.Plenum = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Plenum")->valuedouble;
-            }
-            if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "State")))
-            {
-                memset(dataDebug.State, '\0', sizeof(dataDebug.State)); 
-                strcpy(dataDebug.State, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "State")->valuestring);
-            }
-            if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "tStat")))
-            {
-                memset(dataDebug.tStat, '\0', sizeof(dataDebug.tStat)); 
-                strcpy(dataDebug.tStat, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "tStat")->valuestring);
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTbaffle")))
-            {
-                dataDebug.dTbaffle = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTbaffle")->valuedouble;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "FanSpeed")))
-            {
-                dataDebug.FanSpeed = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "FanSpeed")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Grille")))
-            {
-                dataDebug.Grille = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Grille")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Prim")))
-            {
-                dataDebug.Prim = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Prim")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Sec")))
-            {
-                dataDebug.Sec = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Sec")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tboard")))
-            {
-                dataDebug.Tboard = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Tboard")->valuedouble;
-            }
-            if(cJSON_IsString(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Door")))
-            {
-                memset(dataDebug.Door, '\0', sizeof(dataDebug.Door)); 
-                strcpy(dataDebug.Door, cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "Door")->valuestring);
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0ON")))
-            {
-                dataDebug.PartCH0ON = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0ON")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1ON")))
-            {
-                dataDebug.PartCH1ON = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1ON")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0OFF")))
-            {
-                dataDebug.PartCH0OFF = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH0OFF")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1OFF")))
-            {
-                dataDebug.PartCH1OFF = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCH1OFF")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartVar")))
-            {
-                dataDebug.PartVar = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartVar")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartSlope")))
-            {
-                dataDebug.PartSlope = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartSlope")->valuedouble;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "TPart")))
-            {
-                dataDebug.TPart = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "TPart")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCurr")))
-            {
-                dataDebug.PartCurr = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartCurr")->valuedouble;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxON")))
-            {
-                dataDebug.PartLuxON = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxON")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxOFF")))
-            {
-                dataDebug.PartLuxOFF = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartLuxOFF")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartTime")))
-            {
-                dataDebug.PartTime = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "PartTime")->valueint;
-            }
-            if(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTavant")))
-            {
-                dataDebug.dTavant = cJSON_GetObjectItemCaseSensitive(espnowdebug_json, "dTavant")->valuedouble;
-            }
+            esp_err_t result = esp_now_send(m_u8BroadcastAddr, (const uint8_t *) &pairingData, sizeof(pairingData));
+            ESP_LOGI(TAG, "send response: %s", (result == ESP_OK)? "OK" : "FAIL");
         }
-        cJSON_Delete(espnowdebug_json);
-
-        sendDataToRemote(dataDebug);
-
-        STOVEMB_Give();
+        
     }
 #else
     ESPNOWPROCESS_SMsg msg;
@@ -434,7 +458,7 @@ static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_
 #endif
 }
 
-static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len)
+static void example_espnow_recv_cb(const uint8_t * mac_addr, const uint8_t *data, int data_len)
 {
 #if SBI_CL
     char macStr[18];
@@ -442,7 +466,8 @@ static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, cons
     ESPNOWRMT_SMsg dataRcvRmt;
 
     ESP_LOGI(TAG, "Length Packet Recv is: %d", data_len);
-    
+ #if 0
+
     memcpy(&dataRcvRmt, data, sizeof(dataRcvRmt));
 
     memset(macStr, '\0', sizeof(macStr));
@@ -470,11 +495,90 @@ static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, cons
 
         // Put into receive queue
         ESPNOWPROCESS_SMsg msg;
+        msg.u8BufferCount = 1;
+#if 0
         msg.u8BufferCount = data_len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
         memcpy(msg.u8SrcMACs, esp_now_info->src_addr, ESP_NOW_ETH_ALEN);
         memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
+#endif
         xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
     }
+
+#endif
+    type = data[0];
+    printf("type data: %d\n\r", type);
+    switch (type) {
+        case DATA :                           // the message is data type
+            memcpy(&dataRcvRmt, data, sizeof(dataRcvRmt));
+
+            memset(macStr, '\0', sizeof(macStr));
+            snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x", dataRcvRmt.macAddr[0], dataRcvRmt.macAddr[1], dataRcvRmt.macAddr[2], dataRcvRmt.macAddr[3], dataRcvRmt.macAddr[4], dataRcvRmt.macAddr[5]);
+            ESP_LOGI(TAG, "dataRcvRmt.macAddr: %s", macStr);
+            
+            memset(m_arrBroadcastAddr, '\0', sizeof(m_arrBroadcastAddr));
+            snprintf(m_arrBroadcastAddr, sizeof(m_arrBroadcastAddr), "%02x:%02x:%02x:%02x:%02x:%02x", m_u8BroadcastAddr[0], m_u8BroadcastAddr[1], m_u8BroadcastAddr[2], m_u8BroadcastAddr[3], m_u8BroadcastAddr[4], m_u8BroadcastAddr[5]);
+            ESP_LOGI(TAG, "m_arrBroadcastAddr: %s", m_arrBroadcastAddr);
+            
+            
+            if(strcmp(m_arrBroadcastAddr, macStr) == 0)
+            {
+                espNowDataRcv = dataRcvRmt;
+                ESP_LOGI(TAG, "espNowDataRcv.macAddr: %s", macStr);
+                ESP_LOGI(TAG, "espNowDataRcv.tStatRmt: %d", espNowDataRcv.tStatRmt);
+                ESP_LOGI(TAG, "espNowDataRcv.blowerSpeedRmt: %d", espNowDataRcv.blowerSpeedRmt);
+                ESP_LOGI(TAG, "espNowDataRcv.distribSpeedRmt: %d", espNowDataRcv.distribSpeedRmt);
+                ESP_LOGI(TAG, "espNowDataRcv.boostStatRmt: %d", espNowDataRcv.boostStatRmt);
+
+                UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_StatRmt, (int32_t) espNowDataRcv.tStatRmt);
+                UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_LowerSpeedRmt, (int32_t) espNowDataRcv.blowerSpeedRmt);
+                UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_DistribSpeedRmt, (int32_t) espNowDataRcv.distribSpeedRmt);
+                UARTBRIDGE_SendFrameInt32Value(UFEC23PROTOCOL_FRAMEID_BoostStatRmt, (int32_t) espNowDataRcv.boostStatRmt);
+
+                // Put into receive queue
+                ESPNOWPROCESS_SMsg msg;
+                msg.u8BufferCount = 1;
+        #if 0
+                msg.u8BufferCount = data_len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
+                memcpy(msg.u8SrcMACs, esp_now_info->src_addr, ESP_NOW_ETH_ALEN);
+                memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
+        #endif
+                xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
+            }
+            break;
+        
+        case PAIRING:                            // the message is a pairing request 
+            memcpy(&pairingData, data, sizeof(pairingData));
+            ESP_LOGI(TAG, "pairingData.msgType: %d", pairingData.msgType);
+            ESP_LOGI(TAG, "pairingData.id: %d", pairingData.id);
+            ESP_LOGI(TAG, "Pairing request from: ");
+            printMAC(mac_addr);
+            ESP_LOGI(TAG, "pairingData.channel: %d", pairingData.channel);
+            if (pairingData.id > 0) {     // do not replay to server itself
+                if (pairingData.msgType == PAIRING) { 
+                    pairingData.id = 0;       // 0 is server
+
+                    esp_read_mac(pairingData.macAddr, ESP_MAC_WIFI_SOFTAP);
+
+                    wifi_second_chan_t secondChan;
+                    
+                    esp_wifi_get_channel(&pairingData.channel,  &secondChan);
+                    
+                     // Put into receive queue
+            ESPNOWPROCESS_SMsg msg;
+            msg.u8BufferCount = 1;
+    #if 0
+            msg.u8BufferCount = data_len - SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN;
+            memcpy(msg.u8SrcMACs, esp_now_info->src_addr, ESP_NOW_ETH_ALEN);
+            memcpy(msg.u8Buffers, data + SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN, msg.u8BufferCount);
+    #endif
+            xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
+
+                    
+                    //addPeer(mac_addr);
+                }  
+            }  
+            break; 
+  }
 
 #else
     if (esp_now_info == NULL || data == NULL || data_len <= 0) {
@@ -516,6 +620,7 @@ static void example_espnow_recv_cb(const esp_now_recv_info_t *esp_now_info, cons
 
 static void sendDataToRemote(ESPNOWDEBUG_SMsg data) {
 
+    data.msgType = DATA;
     esp_err_t result = esp_now_send(m_u8BroadcastAddr, (const uint8_t *) &data, sizeof(data));
    
     if (result == ESP_OK) {
@@ -535,4 +640,41 @@ static void sendDataToRemote(ESPNOWDEBUG_SMsg data) {
         ESP_LOGI(TAG, "Not sure what happened");
     }
 }
+
+static void printMAC(const uint8_t * mac_addr){
+  char macStr[18];
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  ESP_LOGI(TAG, "macStr: %s", macStr);
+}
+
+static bool addPeer(const uint8_t *peer_addr) {      // add pairing
+  memset(&slave, 0, sizeof(slave));
+  const esp_now_peer_info_t *peer = &slave;
+  memcpy(slave.peer_addr, peer_addr, 6);
+  
+  slave.channel = chan; // pick a channel
+  slave.encrypt = 0; // no encryption
+  // check if the peer exists
+  bool exists = esp_now_is_peer_exist(slave.peer_addr);
+  if (exists) {
+    // Slave already paired.
+    ESP_LOGI(TAG, "Already Paired");
+    return true;
+  }
+  else {
+    esp_err_t addStatus = esp_now_add_peer(peer);
+    if (addStatus == ESP_OK) {
+      // Pair success
+      ESP_LOGI(TAG, "Pair success");
+      return true;
+    }
+    else 
+    {
+      ESP_LOGI(TAG, "Pair failed");
+      return false;
+    }
+  }
+} 
+
 #endif

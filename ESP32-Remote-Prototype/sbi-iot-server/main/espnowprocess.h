@@ -15,6 +15,13 @@
 
 #define ESPNOWPROCESS_QUEUERX (5)
 
+typedef struct struct_pairing {       // new structure for pairing
+    uint8_t msgType;
+    uint8_t id;
+    uint8_t macAddr[6];
+    uint8_t channel;
+} struct_pairing;
+
 typedef struct
 {
     volatile uint32_t u32RX;
@@ -31,6 +38,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t msgType;
     uint8_t macAddr[ESP_NOW_ETH_ALEN];
     bool tStatRmt; // off, on
     uint8_t blowerSpeedRmt; // off, min, max, auto
@@ -41,6 +49,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t msgType;
     char time[10]; 
     float Tbaffle;
     float Tavant;

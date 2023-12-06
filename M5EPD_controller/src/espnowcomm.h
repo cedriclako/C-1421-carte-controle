@@ -16,10 +16,25 @@ extern "C" {
 #define ESPNOWCOMM_GETSTATUS_RETRY_MS (100)
 
 #define ESPNOW_PMK "pmk1234567890123"
-#define CHANNEL 1
+
+#define MAX_CHANNEL 12  // for North America // 13 in Europe
+#define BOARD_ID 1
+
+enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
+
+typedef struct struct_pairing {       // new structure for pairing
+    uint8_t msgType;
+    uint8_t id;
+    uint8_t macAddr[6];
+    uint8_t channel;
+} struct_pairing;
+
+
+
 
 typedef struct
 {
+    uint8_t msgType;
     uint8_t macAddr[6];
     bool tStatRmt; // off, on
     uint8_t blowerSpeedRmt; // 0, 1, 2
@@ -30,6 +45,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t msgType;
     char time[10]; 
     float Tbaffle;
     float Tavant;
@@ -70,9 +86,16 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 
 void sendDataToEspNow(ESPNOWRMT_SMsg data);
 
+void addPeer(const uint8_t * mac_addr, uint8_t chan);
+
+void printMAC(const uint8_t * mac_addr);
+
+PairingStatus autoPairing();
+
 extern ESPNOWDEBUG_SMsg espNowDataRcv;
 extern ESPNOWRMT_SMsg espNowDataSent;
 extern ESPNOWDEBUG_SMsg dataDebug;
+extern int SlaveCnt;
 
 #ifdef __cplusplus
 }
