@@ -23,7 +23,6 @@
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_wifi.h"
-#define CHANNEL_ESPNOW  0
 #endif
 
 #define TAG "espnowprocess"
@@ -45,30 +44,21 @@ typedef struct
     // QueueHandle_t sQueueTXHandle;
 } SHandle;
 
-
-
 static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 static void example_espnow_recv_cb(const uint8_t * mac_addr, const uint8_t *data, int data_len);
 
 uint8_t m_u8BroadcastAddr[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static const uint8_t m_u8Magics[SBIIOTBASEPROTOCOL_MAGIC_CMD_LEN] = SBIIOTBASEPROTOCOL_MAGIC_CMD;
-
 static void SendESPNow(pb_size_t which_payload, uint32_t transaction_id, void* pPayloadData, uint32_t u32PayloadDataLen);
 
 #if SBI_CL
 static void sendDataToRemote(ESPNOWDEBUG_SMsg data);
-static void printMAC(const uint8_t * mac_addr);
-static bool addPeer(const uint8_t *peer_addr);
 ESPNOWRMT_SMsg espNowDataRcv;
 ESPNOWDEBUG_SMsg dataDebug;
-
 esp_now_peer_info_t slave;
 int chan; 
-
 enum MessageType {PAIRING, DATA,};
-
 struct_pairing pairingData;
- 
 uint8_t type = 0;
 #endif
 // static bool FillBridgeInfo(SBI_iot_DeviceInfo* pDeviceInfo);
@@ -119,7 +109,7 @@ void ESPNOWPROCESS_Init()
     /* Add broadcast peer information to peer list. */
     esp_now_peer_info_t sPeer;
     memset(&sPeer, 0, sizeof(esp_now_peer_info_t));
-    sPeer.channel = CHANNEL_ESPNOW;
+    sPeer.channel = 0;
     sPeer.ifidx = WIFI_IF_AP;
     sPeer.encrypt = false;
     memcpy(sPeer.peer_addr, m_u8BroadcastAddr, ESP_NOW_ETH_ALEN);
@@ -551,7 +541,6 @@ static void example_espnow_recv_cb(const uint8_t * mac_addr, const uint8_t *data
             ESP_LOGI(TAG, "pairingData.msgType: %d", pairingData.msgType);
             ESP_LOGI(TAG, "pairingData.id: %d", pairingData.id);
             ESP_LOGI(TAG, "Pairing request from: ");
-            printMAC(mac_addr);
             ESP_LOGI(TAG, "pairingData.channel: %d", pairingData.channel);
             if (pairingData.id > 0) {     // do not replay to server itself
                 if (pairingData.msgType == PAIRING) { 
@@ -573,8 +562,6 @@ static void example_espnow_recv_cb(const uint8_t * mac_addr, const uint8_t *data
     #endif
             xQueueSend(m_sHandle.sQueueRXHandle, &msg, 0);
 
-                    
-                    //addPeer(mac_addr);
                 }  
             }  
             break; 
@@ -640,41 +627,5 @@ static void sendDataToRemote(ESPNOWDEBUG_SMsg data) {
         ESP_LOGI(TAG, "Not sure what happened");
     }
 }
-
-static void printMAC(const uint8_t * mac_addr){
-  char macStr[18];
-  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  ESP_LOGI(TAG, "macStr: %s", macStr);
-}
-
-static bool addPeer(const uint8_t *peer_addr) {      // add pairing
-  memset(&slave, 0, sizeof(slave));
-  const esp_now_peer_info_t *peer = &slave;
-  memcpy(slave.peer_addr, peer_addr, 6);
-  
-  slave.channel = chan; // pick a channel
-  slave.encrypt = 0; // no encryption
-  // check if the peer exists
-  bool exists = esp_now_is_peer_exist(slave.peer_addr);
-  if (exists) {
-    // Slave already paired.
-    ESP_LOGI(TAG, "Already Paired");
-    return true;
-  }
-  else {
-    esp_err_t addStatus = esp_now_add_peer(peer);
-    if (addStatus == ESP_OK) {
-      // Pair success
-      ESP_LOGI(TAG, "Pair success");
-      return true;
-    }
-    else 
-    {
-      ESP_LOGI(TAG, "Pair failed");
-      return false;
-    }
-  }
-} 
 
 #endif
