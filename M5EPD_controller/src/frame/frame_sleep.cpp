@@ -199,19 +199,13 @@ int Frame_Sleep::init(epdgui_args_vector_t &args) {
 
     EPDGUI_AddObject(_key_outside);
 
-/*
-    ScanForSlave();
-    if (SlaveCnt > 0) { 
-        manageSlave();
-    } 
-*/
     return 3;
 }
 
 int Frame_Sleep::run() {
     Frame_Base::run();
 
-    if ((millis() - _time_update_room) > (TIME_UPDATE_ROOM_MS/12)) {
+    if ((millis() - _time_update_room) > (TIME_UPDATE_ROOM_MS/20)) {
         
         M5.SHT30.UpdateData();
         tmp_room = M5.SHT30.GetTemperature();

@@ -609,12 +609,7 @@ int Frame_Home::init(epdgui_args_vector_t &args) {
     }
     
     StatusBar(UPDATE_MODE_NONE, GetVoltageBattery());
-/*
-    ScanForSlave();
-    if (SlaveCnt > 0) { 
-        manageSlave();
-    } 
-*/
+
     log_d("Init Frame_Home");
     return 3;
 }
