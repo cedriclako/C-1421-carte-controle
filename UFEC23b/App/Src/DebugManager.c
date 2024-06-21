@@ -109,7 +109,7 @@ void PrintOutput(Mobj * stove, State currentState , State lastState , State next
 	printf("PartLuxON:%u ", stove->sParticles->u16Lux_ON);
 	printf("PartLuxOFF:%u ", stove->sParticles->u16Lux_OFF);
 	printf("PartTime:%lu ", stove->sParticles->u16TimeSinceInit);
-	printf("dTavant: %.1f", stove->fChamberDeltaT);
+	printf("dTavant: %.1f ", stove->fChamberDeltaT);
 
 
 

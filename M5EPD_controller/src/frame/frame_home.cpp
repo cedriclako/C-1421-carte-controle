@@ -698,22 +698,39 @@ int Frame_Home::run() {
 
     if(dataDebug.PartCurr)
     {
-        if(((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) < 100)
+        if(((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) < 150)
+        {
+            curStatSmoke = 0;
+            log_d("PartCH0ON : %d partcrr : %f result : %f curStatSmoke : %i",dataDebug.PartCH0ON, dataDebug.PartCurr, ((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr), curStatSmoke);
+        }
+        else if((((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) >= 150)  && (((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) < 250))
         {
             curStatSmoke = 1;
+            log_d("PartCH0ON : %d partcrr : %f result : %f curStatSmoke : %i",dataDebug.PartCH0ON, dataDebug.PartCurr, ((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr), curStatSmoke);
         }
-        else if((((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) >= 100)  && (((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) < 250))
+        else if((((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) >= 250) && (((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) < 350 )) 
         {
             curStatSmoke = 2;
+            log_d("PartCH0ON : %d partcrr : %f result : %f curStatSmoke : %i",dataDebug.PartCH0ON, dataDebug.PartCurr, ((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr), curStatSmoke);
         }
-        else if(((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) >= 250)
+        else if(((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr) >= 350)
         {
             curStatSmoke = 3;
+            log_d("PartCH0ON : %d partcrr : %f result : %f curStatSmoke : %i",dataDebug.PartCH0ON, dataDebug.PartCurr, ((float)(dataDebug.PartCH0ON * 1.0) / dataDebug.PartCurr), curStatSmoke);
         }
+
+
 
         if(lastStatSmoke != curStatSmoke)
         {
-            if(curStatSmoke == 1)
+            if(curStatSmoke == 0)
+            {
+                _smoke_img->fillCanvas(0);
+                _smoke_img->pushImage(0, 0, 64, 64, ImageResource_home_icon_signal_lll_64x64);
+                _smoke_img->pushCanvas(230, 338, UPDATE_MODE_GL16);
+            }
+
+           else if(curStatSmoke == 1)
             {
                 _smoke_img->fillCanvas(0);
                 _smoke_img->pushImage(0, 0, 64, 64, ImageResource_home_icon_signal_hll_64x64);

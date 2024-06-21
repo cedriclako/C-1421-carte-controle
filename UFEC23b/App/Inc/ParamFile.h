@@ -368,8 +368,8 @@ const PF_OverHeat_Thresholds_t* PB_GetOverheatParams(void);
 const PF_WaitingParam_t *PB_GetWaitingParams(void);
 const PF_ReloadParam_t *PB_GetReloadParams(void);
 const PF_TriseParam_t *PB_GetTRiseParams(void);
-const PF_CombustionParam_t *PB_GetCombLowParams(void);
-const PF_CombustionParam_t *PB_GetCombHighParams(void);
+PF_CombustionParam_t *PB_GetCombLowParams(void);
+PF_CombustionParam_t *PB_GetCombHighParams(void);
 const PF_CoalParam_t *PB_GetCoalLowParams(void);
 const PF_CoalParam_t *PB_GetCoalHighParams(void);
 

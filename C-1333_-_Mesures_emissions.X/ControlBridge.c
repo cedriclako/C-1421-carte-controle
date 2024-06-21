@@ -101,7 +101,7 @@ void sendData(uint8_t packet_size, uint8_t command);
 void sendConfig(const gs_Parameters* Param);
 uint8_t fillDataBuffer(const gs_MemoryParams* Param);
 uint8_t fillEEBuffer(const gs_MemoryParams* Param);
-
+bool bTrigerZero;
 
 void ControlBridgeInitialize(void)
 {
@@ -120,9 +120,10 @@ void ControlBridgeInitialize(void)
     
     bOBJ.Lux_ON = 0;
     bOBJ.Lux_OFF = 0;
+    
+    bTrigerZero = false;
 }
 
-    
 void ControlBridgeProcess(void)
 {
     const gs_Parameters* CB_Param = PF_getCBParamAddr(); // Fetch settings in flash 
@@ -246,18 +247,22 @@ void ControlBridgeProcess(void)
                                 BridgeState = eBridge_TRANSMIT_DATA; //BridgeState = eBridge_IDLE;
                                 break;
                             case SETZERO_CMD:
-                                PF_requestReconfigure();
-                                                                
-                                if(measureParticlesReadyForConfig())
-                                {
-                                    measureParticlesSetZero();
-                                    PF_ReConfigureDone();//PF_ToggleAcqEnable();
+
+                                if( !bTrigerZero ) {
+                                    PF_requestReconfigure();        // stop acquisitions
+                                    measureParticlesSetZero();      // request the zero
+                                    bTrigerZero = true;             // only once
                                 }
                                 
-                                if(set_zero_complete)
+                                if(measureParticlesReadyForConfig()){ // zero recognized and parts are ready for new acquisition 
+                                    PF_ReConfigureDone();       //PF_ToggleAcqEnable();
+                                }
+                                
+                                if(set_zero_complete)                // new datat is available for the bridge
                                 {
                                     BridgeState = eBridge_TRANSMIT_DATA;
                                     set_zero_complete = false;
+                                    bTrigerZero = false;
                                 }
                                 
                                 break;

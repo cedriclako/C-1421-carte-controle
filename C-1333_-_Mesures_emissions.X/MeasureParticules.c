@@ -46,6 +46,7 @@ CR    | 2022/10/14 | 0.1     | Functional prototype (incorporates many changes)
 #define LED_OFF 0
 
 static SMeasureParticlesObject gs_sMeasPartObject;
+bool bZeroTriggered;
 
 void measureParticlesSenseCompleteCallback(void);
 void measureParticlesPrintData(void);
@@ -72,6 +73,9 @@ void measureParticlesInitialize(void)
     gs_sMeasPartObject.m_uLastRead = 0;    
 
     gs_sMeasPartObject.adcValue = 0;
+    
+    gs_sMeasPartObject.bSetZeroRequested = false;
+    bZeroTriggered = false;
     
     TMR0_SetInterruptHandler(MeasureTimerInterrupt); //millisecond counter
     TMR0_StartTimer();
@@ -125,6 +129,14 @@ void measureParticlesProcess(void)
                         gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_SENT;
                     }
                 }
+            }
+            if(gs_sMeasPartObject.bSetZeroRequested && !bZeroTriggered) {
+                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_SET_ZERO;
+                bZeroTriggered = true;                                          // triggers on the first time through REQUEST_NOT_SENT
+            }
+            else if(gs_sMeasPartObject.bSetZeroRequested && bZeroTriggered) {
+                bZeroTriggered = false;                                         // will not retrigger
+                gs_sMeasPartObject.bSetZeroRequested = false;
             }
             break;
         }
@@ -189,7 +201,7 @@ void measureParticlesProcess(void)
 
                 // Change state and sub state
                 gs_sMeasPartObject.m_eSubState = eSUB_STATE_DARK;
-                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
+                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_UPDATE_BRIDGE;  
             }
             break;
         }
@@ -216,6 +228,8 @@ void measureParticlesProcess(void)
                 controlBridge_update(&gs_sMeasPartObject);
                 gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             }
+            if(gs_sMeasPartObject.bSetZeroRequested)        // set zero was requested, do not send data right away
+                gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_REQUEST_NOT_SENT;
             break;
         case eMEASURE_PARTICLES_RECONFIGURE: 
             if(tsl2591IsReadyForRequest())
@@ -251,10 +265,7 @@ void measureReset(void)
 
 void measureParticlesSetZero(void)
 {
-    if(gs_sMeasPartObject.m_eState != eMEASURE_PARTICLES_NOT_STARTED)
-    {
-        gs_sMeasPartObject.m_eState = eMEASURE_PARTICLES_SET_ZERO;  
-    }  
+    gs_sMeasPartObject.bSetZeroRequested = true;
 }
 
 void measureParticlesPrintData(void)

@@ -31,7 +31,7 @@
 
 /***** Variables ******/
 
-extern _Bool tstat_status;
+extern bool tstat_status;
 
 
 typedef enum {
@@ -71,6 +71,45 @@ typedef enum
 	NUMBER_OF_STEPPER_CMDS
 }eMotor_commands;
 
+// Smoke Struck for Smoke Manager
+typedef struct
+{
+  // tolerance of particles standard deviation
+  uint8_t part_dev_tol;
+
+  // limit of permitted normalized particles
+  uint8_t particles_target;
+  uint8_t particles_tolerance;
+
+  // lower and upper limit of delta T for baffle
+  float deltaT_target_pos;
+  float deltaT_target_neg;
+
+  // minimum baffle temperature at which we are permitted to declare smoke events
+  int Tbaffle_target_min;
+
+  // Maximum baffle temperature at which we are permitted to declare smoke events based on delta T, over that temperature,
+  // all smoke should be considered "HOT Smoke", which means that there is smoke because the fire is out of control and that we should slow it down.
+  int T_chamber_target_max;
+
+  // minimum baffle temperature at which we are permitted to declare smoke events based on delta T, under that temperature,
+  // all smoke should be considered "COLD Smoke", which means that there is smoke because the fire is dying and that we should inject air.
+  int T_chamber_target_min;
+
+  // Limits of grill, primary and secondary apertures for smoke manager. Normally, pass the parameters from the states.
+  uint8_t g_min;
+  uint8_t g_max;
+  uint8_t p_min;
+  uint8_t p_max;
+  uint8_t s_min;
+  uint8_t s_max;
+
+  // Early states flag, limits smoke manager ability if we're in temp rise
+  bool early_states;
+
+}SmokeStruct;
+
+
 typedef struct
 {
 	///////////////STRUCTURES/////////////////////////
@@ -109,6 +148,8 @@ typedef struct
 
 	uint32_t u32TimeOfAdjustment_ms;
 	uint32_t u32TimeOfComputation_ms;
+	uint32_t u32MajorCorrectionTime_ms;
+
 
 	bool bReloadRequested;
 	bool bButtonBlinkRequired;
@@ -117,7 +158,7 @@ typedef struct
 
 } Mobj; // Main application object
 
-/***** Fonctions ******/
+/***** Functions ******/
 #define MOTOR_HOME_CMD 0xEE
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
@@ -129,4 +170,5 @@ const Mobj* ALGO_GetObjData();
 State ALGO_GetCurrentState();
 const char* ALGO_GetStateString(State state);
 extern bool get_motors_ready_status();
+
 #endif /* INC_ALGO_H_ */

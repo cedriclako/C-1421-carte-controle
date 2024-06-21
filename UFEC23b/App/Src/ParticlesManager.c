@@ -26,15 +26,51 @@ By    |   Date     | Version | Description
 ------+------------+---------+---------------------------------------------
 CR    | 2022/10/12 | -       | Creation
 ===========================================================================
+
+
+
+USE :
+
+(Marco Caron)
+
+The sensor works by blasting an led light in the flue pipe perpendicular to its position and measuring the backscattered reflection.
+The higher the reflection, the higher the amount of particles/smoke measured. It is required that the flue has a thin layer of soot or other impurity
+on it so that most of the reflection is provided by the smoke and not just a really shiny flue.
+
+
+Normally we use the u16ch0ON or PartCH0ON value and divide it by the current to obtain a normalized value.
+When the stove is cold we can do a zero of that value because, while the slope is relatively similar on different samples,
+the zero reference changes significantly between models.
+
+We also have the partDev that measures std deviation of the measurement which serves as a predictor that we will soon have particles over the threshold.
+We can act when the parDev criteria is over its tolerance with smaller moves.
+
+
+KNOWN ISSUES :
+
+Communication seems to be unable to restart if it has been lost.
+What works is to reboot the board with NVIC_SystemReset(), in the current version of the code,
+that has been removed because we thought the issues had been resolved.
+
+Follow up:
+
+(Michel Bissonnette)
+The receiver buffer was not properly cleared so partial reception caused the buffer to be deemed good
+The uartErrorCount was not reset after the board reset which caused the state machine to not resend the read command
+cleaned up the reset with a simple osdelay (this was also wrong)
+removed unused reset count, it was useless.
+
 */
 
 #include "main.h"
+#include <string.h>
 #include "ParamFile.h"
 #include "algo.h"
 #include "stm32f1xx_hal.h"
 #include "EspBridge.h"
 #include "DebugManager.h"
 #include "ParticlesManager.h"
+#include "cmsis_os.h"
 
 typedef enum
 {
@@ -61,6 +97,10 @@ typedef enum
 #define TIME_TO_WAIT_IF_ERR 30
 
 extern UART_HandleTypeDef huart3;
+uint8_t u8RxIndex;
+uint8_t u8RxChar;
+bool bRxDone;
+uint32_t u32RxStart;
 
 static Part_States currentState;
 static Part_States nextState;
@@ -92,9 +132,8 @@ void Particle_Init(void)
 	ParticleDevice.u16Lux_OFF = 0;
 	ParticleDevice.u16TimeSinceInit = 0;
 	ParticleDevice.u16Last_particle_time = 0;
-
-	// Était initialement à 80, on a changé à 50 parce que plus representatif
-	ParticleDevice.fnormalized_zero = 120.0;
+	ParticleDevice.fnormalized_zero = 58.0;
+  HAL_UART_Receive_IT(&huart3, &u8RxChar, 1);
 
 	currentState = Idle;
 	nextState = Idle;
@@ -109,8 +148,8 @@ void ParticlesManager(uint32_t u32Time_ms)
 	static uint32_t response_delay = 800;
 	static uint8_t request_interval = TIME_TO_WAIT_IF_OK;
 	static uint32_t u32LastReqTime = 0;
-	static uint32_t u32Reset_Time_ms = 0;
 	int slp_sign = 1;
+	HAL_StatusTypeDef Status;
 
 	if(uParam->s32ParticleReset == 1)
 	{
@@ -156,23 +195,13 @@ void ParticlesManager(uint32_t u32Time_ms)
 				//Test unitaire - SETZERO CMD
 				tx_checksum = Particle_Send_CMD(SETZERO_CMD);
 				tx_size = 5;
-				response_delay = 1000;
+				response_delay = 5000;
 
 			}else{
-
 				//Test unitaire - READ_CMD
 				tx_checksum = Particle_Send_CMD(READ_CMD);
 				tx_size = 5;
-				response_delay = 800;
-
-				//TX_BUFFER[0] = START_BYTE;
-				//TX_BUFFER[1] = READ_CMD;
-				//tx_checksum = READ_CMD;
-				//TX_BUFFER[2] = (uint8_t)(tx_checksum >> 8);
-				//TX_BUFFER[3] = (uint8_t)(tx_checksum & 0x00FF);
-				//TX_BUFFER[4] = STOP_BYTE;
-				//tx_size = 5;
-				//response_delay = 800;
+				response_delay = 1500;
 			}
 			nextState = Send_request;
 		}
@@ -180,20 +209,27 @@ void ParticlesManager(uint32_t u32Time_ms)
 	case Send_request:
 		if(uartErrorCount > COMM_ERR_LIMIT && request_interval !=TIME_TO_WAIT_IF_ERR)
 		{
-			request_interval = TIME_TO_WAIT_IF_ERR;
+
+      if(print_debug_setup){
+        printf("\n\r\n\n\nParticle board error: Uart error count too high --> RESET !!\n\r\n\n\n");
+
+      }
+      request_interval = TIME_TO_WAIT_IF_ERR;
 			nextState = Reset_device;
 			break;
 		}
 
+    memset(RX_BUFFER,0,sizeof(RX_BUFFER));              // rx buffer is properly flushed
+    u8RxIndex = 0;
 
-		HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
-		RX_BUFFER[0] = 0;
+    HAL_UART_Transmit_IT(&huart3, TX_BUFFER, tx_size);
 		u32LastReqTime = u32Time_ms;
 		nextState = Request_sent;
+
 		break;
 	case Request_sent:
-		HAL_UARTEx_ReceiveToIdle_IT(&huart3, RX_BUFFER,RX_BUFFER_LENGTH);
-		if(RX_BUFFER[0] == START_BYTE)
+
+	  if(RX_BUFFER[0] == START_BYTE)
 		{
 			rx_payload_size = RX_BUFFER[1] & 0x3F;
 
@@ -213,6 +249,7 @@ void ParticlesManager(uint32_t u32Time_ms)
 			}else
 			{
 				nextState = Idle;
+				request_interval = TIME_TO_WAIT_IF_OK;
 			}
 			uartErrorCount++;
 
@@ -232,8 +269,15 @@ void ParticlesManager(uint32_t u32Time_ms)
 			request_interval = TIME_TO_WAIT_IF_OK;
 			uartErrorCount = 0;
 			nextState = Data_ready;
+			printf("\r\nPackage RX OK\r\n");
 		}else
 		{
+      printf("\r\nPackage RX ERROR\r\n");
+      printf("Receiver buffer Dump:\r\n");
+      for(uint8_t x=0; x<RX_BUFFER_LENGTH; x++) {
+        printf("0x%02X ", RX_BUFFER[x]);
+        if((x+1)%8 == 0) printf("\r\n");
+      }
 			if(uartErrorCount <= COMM_ERR_LIMIT)
 			{
 				nextState = Send_request;
@@ -267,12 +311,13 @@ void ParticlesManager(uint32_t u32Time_ms)
 			ParticleDevice.u16Lux_OFF = (uint16_t)(RX_BUFFER[20] << 8) + (uint16_t)RX_BUFFER[21];
 			ParticleDevice.u16TimeSinceInit = (uint32_t)(RX_BUFFER[22] << 24) + (uint32_t)(RX_BUFFER[23] << 16) + (uint32_t)(RX_BUFFER[24] << 8) + (uint32_t)(RX_BUFFER[25]);
 
-			ParticleDevice.fparticles = (float)ParticleDevice.u16ch0_ON/ParticleDevice.fLED_current_meas - ParticleDevice.fnormalized_zero;//TODO:comment
+			// Calcul du normalized particles : (part ch0 / courant) - le zéro
+			ParticleDevice.fparticles = (float)ParticleDevice.u16ch0_ON/ParticleDevice.fLED_current_meas - ParticleDevice.fnormalized_zero;
 
 			config_mode = false; //GC 2023-07-19 Debug comm
 		}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 		{
-			//TODO: Implement config
+			//TODO: Implement config (Guillaume Caron)
 			//if(RX_BUFFER[2] == pParam->s32TLSGAIN && RX_BUFFER[3] == pParam->s32TSLINT
 			//		&& RX_BUFFER[4] == pParam->s32DACCMD && RX_BUFFER[5] == pParam->s32TIMEINTERVAL)
 			//{
@@ -299,21 +344,12 @@ void ParticlesManager(uint32_t u32Time_ms)
 		}
 		break;
 	case Reset_device:
-	  if(HAL_GPIO_ReadPin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin) == GPIO_PIN_SET)
-	  {
 	    HAL_GPIO_WritePin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin,GPIO_PIN_RESET);
-	    HAL_UART_MspDeInit(&huart3);
-	    u32Reset_Time_ms = u32Time_ms;
-	  }
-	  else
-	  {
-	    if(u32Time_ms - u32Reset_Time_ms > 2000)
-	    {
-	      HAL_GPIO_WritePin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin,GPIO_PIN_SET);
-	      HAL_UART_MspInit(&huart3);
-	      nextState = Idle;
-	    }
-	  }
+      osDelay(500);
+      HAL_GPIO_WritePin(Reset_Particles_Sensor_GPIO_Port,Reset_Particles_Sensor_Pin,GPIO_PIN_SET);
+      osDelay(500);
+      uartErrorCount = 0;
+      nextState = Idle;
 	  break;
 	}
 	if(nextState != currentState)
@@ -323,6 +359,22 @@ void ParticlesManager(uint32_t u32Time_ms)
 
 }
 
+/**
+  * @brief  Rx Transfer completed callbacks.
+  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval None
+  */
+__weak void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if( huart == &huart3) {
+    RX_BUFFER[u8RxIndex] = u8RxChar;
+    u8RxIndex ++;
+    if(u8RxIndex > RX_BUFFER_LENGTH)
+      u8RxIndex = 0;
+    HAL_UART_Receive_IT(&huart3, &u8RxChar, 1);
+  }
+}
 
 static bool validateRxChecksum(uint8_t buffer_index)
 {

@@ -242,7 +242,7 @@ void ParticlesManager(void const * argument) {
 					update_part_variables();
 				}else if((RX_BUFFER[1] & 0xC0) == WRITE_CMD)
 				{
-					//TODO: Implement config
+					//TODO: Implement config (Guillaume Caron)
 					if(RX_BUFFER[2] == pParam->s32TLSGAIN && RX_BUFFER[3] == pParam->s32TSLINT
 							&& RX_BUFFER[4] == pParam->s32DACCMD && RX_BUFFER[5] == pParam->s32TIMEINTERVAL)
 					{

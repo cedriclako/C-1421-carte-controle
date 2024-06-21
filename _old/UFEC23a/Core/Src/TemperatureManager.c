@@ -82,7 +82,7 @@ void TemperatureManager(void const * argument)
 
     bool DataReady;
 
-	temp1 = 0.800;		///TODO: fetch this value from external ADC (I2C)
+	temp1 = 0.800;
 	tColdJunction = (temp1-0.500)/.010;
 
     /* Infinite loop */

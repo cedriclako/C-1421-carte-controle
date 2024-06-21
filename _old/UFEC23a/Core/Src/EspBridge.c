@@ -173,7 +173,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			UFEC23ENDEC_A2AReqPingAlive reqPing;
 			if (!UFEC23ENDEC_A2AReqPingAliveDecode(&reqPing, u8Payloads, u32PayloadLen))
 			{
-				// TODO: Throw something into logging UART?
+				// TODO: Throw something into logging UART? (Maxime Carrier)
 				break;
 			}
 
@@ -194,7 +194,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			UFEC23ENDEC_C2SGetParameter param;
 			if(!UFEC23ENDEC_C2SGetParameterDecode(&param, u8Payloads,(uint32_t) u32PayloadLen))
 			{
-				// TODO: Throw something into logging UART?
+				// TODO: Throw something into logging UART? (Maxime Carrier)
 				break;
 			}
 
@@ -243,7 +243,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 			UFEC23PROTOCOL_C2SSetParameter param;
 			if(!UFEC23ENDEC_C2SSetParameterDecode(&param, u8Payloads,(uint32_t) u32PayloadLen))
 			{
-				// TODO: Throw something into logging UART?
+				// TODO: Throw something into logging UART? (Maxime Carrier)
 				break;
 			}
 
@@ -260,7 +260,7 @@ static void DecAcceptFrame(const UARTPROTOCOLDEC_SHandle* psHandle, uint8_t u8ID
 		//case UFEC23PROTOCOL_FRAMEID_C2SCommitParameter:
 		//	break;
 		default:
-			// TODO: Not a valid protocol ID... Do something? Throw into UART log?
+			// TODO: Not a valid protocol ID... Do something? Throw into UART log? (Maxime Carrier)
 			break;
 	}
 

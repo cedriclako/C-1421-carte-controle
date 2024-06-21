@@ -256,7 +256,7 @@ void vStepperPositioning(int RequestedPosition, int *CurrentPosition, motor_t Mo
 		//Calculate or new position
 	}
 	//vStepperMaxTorque(MotorId,false);
-    //vStepperMaxTorque(MotorId,true); TODO : re-enable max torque
+    //vStepperMaxTorque(MotorId,true); TODO : re-enable max torque (Charles Richard) Semble fonctionner tel quel, MC
     //osDelay(100);
 	//vDisableStepper(MotorId);
 

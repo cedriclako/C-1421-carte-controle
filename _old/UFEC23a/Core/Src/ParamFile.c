@@ -256,12 +256,12 @@ const PFL_SParameterItem* PARAMFILE_GetParamEntryByIndex(uint32_t u32Index)
 
 static void LoadAllCallback(const PFL_SHandle* psHandle)
 {
-	// TODO: Flash reading is not yet implemented
+	// TODO: Flash reading is not yet implemented (Maxime Carrier)
 }
 
 static void CommitAllCallback(const PFL_SHandle* psHandle)
 {
-	// TODO: Flash writing is not yet implemented
+	// TODO: Flash writing is not yet implemented (Maxime Carrier)
 }
 
 

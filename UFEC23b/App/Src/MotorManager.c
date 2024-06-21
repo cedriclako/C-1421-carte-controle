@@ -118,13 +118,14 @@ void Motor_task(void const * argument)
 	  {
 
       for(uint8_t i = 0;i < NumberOfMotors;i++)
-      {motors_speed_per_sec_elaped = false;
+      {
+        motors_speed_per_sec_elaped = false;
 
         if((u32CurrentTime_ms - motor[i].u32LastMove_ms )< motor[i].fSecPerStep*1000)
-
         {
           break;
         }
+
         else if(i==NumberOfMotors-1)
         {
           motors_speed_per_sec_elaped = true;
@@ -132,17 +133,22 @@ void Motor_task(void const * argument)
       }
 
 
-      // this sends the motors ready for req flag,
-      //we need to wait until all motors are in place and the elapsed time has passed to send it
+      // this sends the motors_ready_for_req flag,
+      // we need to wait until all motors are in place and the elapsed time has passed to send it
 
 		  if(!AllInPlace && motors_speed_per_sec_elaped)
 		  {
 			  AllInPlace = true;
 		  }
+
       xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 		  osDelay(1);
-	  }else
+	  }
+
+
+	  else
 	  {
+
 		  AllInPlace = false;
 
 		  for(uint8_t i = 0;i < NumberOfMotors;i++)
@@ -152,8 +158,8 @@ void Motor_task(void const * argument)
 				  if(motor[i].bInMiddleOfStep)
 				  {
 					  StepperToggleOneStep(&motor[i]);
-
 				  }
+
 				  else if(motor[i].bHomingRequest)
 				  {
 					  if(StepperHome(&motor[i]))
@@ -161,25 +167,21 @@ void Motor_task(void const * argument)
 						  motor[i].bHomingRequest = false;
 					  }
 				  }
+
 				  else if(motor[i].bRecovering)
 				  {
 					  StepperRecoverPosition(&motor[i]);
 				  }
+
 				  // this is where we're using motor speed adjustments
-				  else{
+				  else
+				  {
 			      xQueueSend(MotorInPlaceHandle,&AllInPlace,0);
 			      osDelay(1);
-
-
-
-				    if(/*(u32CurrentTime_ms - motor[i].u32LastMove_ms )> motor[i].fSecPerStep*1000*/ 1)
-				  {
 					  StepperAdjustPosition(&motor[i]);
-				  }
 				  }
 			  }
 		  }
-
 	  }
 
 	  //osDelay(1);
@@ -214,7 +216,7 @@ bool StepperHome(StepObj *motor)
 	    return false;
 
 	}
-	StepperDisable(motor);
+	//StepperDisable(motor);
 	motor->u8Position = motor->u8HomePosition;
 	return true;
 }
@@ -285,7 +287,8 @@ void StepperAdjustPosition(StepObj *motor)
     if(StepperLimitSwitchActive(motor) && (motor->sDirection == motor->sHomingDirection))
 	{
 		motor->u8Position = motor->u8HomePosition; // On a atteint le minimum, on peut désactiver le moteur
-		StepperDisable(motor);
+		//StepperDisable(motor);
+
 	}
     else if(motor->u8Position == motor->u8HomePosition) // On pense qu'on est au minimum, mais on est perdu
     {

@@ -70,13 +70,14 @@ void Fan_Process(Mobj *stove)
 
 		if((sFans[i].eSpeed == FSPEED_AUTO))
 		{
-			if(stove->fBaffleTemp >= P2F(uParam->s32FAN_HI_KIP))
+			if(stove->fChamberTemp >= P2F(uParam->s32FAN_HI_KIP))
 			{
 				sFans[i].eSpeed = FSPEED_HIGH;
-				bHiTriggered = true;
-				bLoTriggered = true;
+				// 2024-04-12 MC : enlevé l'overlap du fan high lorsqu'on a passé en dessous de KIP de fan high. Lorsqu'on est en dessous de fan hi kip, on retourne en low
+				//bHiTriggered = true;
+				//bLoTriggered = true;
 			}
-			else if(stove->fBaffleTemp <= P2F(uParam->s32FAN_LO_KOP))
+			else if(stove->fChamberTemp <= P2F(uParam->s32FAN_LO_KOP))
 			{
 				sFans[i].eSpeed = FSPEED_OFF;
 				bLoTriggered = false;
@@ -84,7 +85,7 @@ void Fan_Process(Mobj *stove)
 			}
 
 
-			else if(stove->fBaffleTemp > P2F(uParam->s32FAN_LO_KIP))
+			else if(stove->fChamberTemp > P2F(uParam->s32FAN_LO_KIP))
 			{
 				if(bHiTriggered)
 				{

@@ -8,7 +8,7 @@ static bool bButtonPressed = false;
 static uint32_t u32PressStartTime_ms = 0;
 static bool bSafetyActive = false;
 static uint32_t u32SafetyStartTime_ms = 0;
-
+bool bLastButtonPressed = false;
 
 void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 {
@@ -34,16 +34,21 @@ void GPIOManager(Mobj *stove, uint32_t u32CurrentTime_ms)
 	bButtonPressed = (HAL_GPIO_ReadPin(Button_Input_GPIO_Port,Button_Input_Pin) == GPIO_PIN_RESET);
 	//bButtonPressed = (HAL_GPIO_ReadPin(Interlock_Input_GPIO_Port,Interlock_Input_Pin) == GPIO_PIN_RESET);
 
-	if(bButtonPressed && (u32PressStartTime_ms == 0))
+	if(bButtonPressed && !bLastButtonPressed)
 	{
-		u32PressStartTime_ms = u32CurrentTime_ms;//Initialize timer
+	  if(u32PressStartTime_ms == 0) {
+	    u32PressStartTime_ms = u32CurrentTime_ms;
+	  }
+	  else if( u32CurrentTime_ms - u32PressStartTime_ms > 200) {
+//	    printf("\r\nButton pressed\r\n");
+	    stove->bReloadRequested = true;
+	    bLastButtonPressed = true;
+	  }
 	}
-	else if(bButtonPressed && (u32CurrentTime_ms - u32PressStartTime_ms < 100)) // Software debounce
+	else if(!bButtonPressed && bLastButtonPressed)
 	{
-		stove->bReloadRequested = true; // Button is pressed, Update Reload Requested boolean
-	}
-	else if(!bButtonPressed && (u32PressStartTime_ms != 0)) // Not pressed? Reset timer
-	{
+//    printf("\r\nButton released\r\n");
+    bLastButtonPressed = false;
 		u32PressStartTime_ms = 0;
 		stove->bReloadRequested = false;
 	}

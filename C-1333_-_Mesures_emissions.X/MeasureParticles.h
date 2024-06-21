@@ -56,12 +56,13 @@ typedef enum
     eMEASURE_PARTICLES_NB_STATES,
 }EMeasureParticlesStates;
 
-
 typedef struct
 {
     EMeasureParticlesStates m_eState;
     EMeasureParticlesSubState m_eSubState;
     
+    bool bSetZeroRequested;
+ 
     float m_fTemperatureCelcius;
     float m_fInitial_temperature;
     
