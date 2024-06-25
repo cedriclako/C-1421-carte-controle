@@ -1904,6 +1904,7 @@ static int Algo_smoke_action(Mobj* stove, uint32_t u32CurrentTime_ms,int wait_cy
 
       //}
       /*
+       * TODO : Remettre cette section en fonction
       // Case where we have smoke "part var" aka smoke prediction : same as before but do smaller moves
 
       else if (!part_val_outofbounds && part_var_outofbounds){
@@ -2028,26 +2029,38 @@ static void comb_temperature_control(Mobj* stove, PF_CombustionParam_t* sParam, 
  * Main algo for getting to temperature setpoints set in paramfile. Currently we have 2 setpoints (High and Low),
  * but we could use this to reach any number of set points
  *
+ *
+ * Depending where we are in terms of temperature and delta T for baffle, we do different moves.
+ *
+ * Possibilities are
+ *
+ * Very under Range ( 2 * absmaxdiff under target)
+ * Under Range
+ * In Range
+ * Over Range
+ * Very Over Range ( 3 * absmaxdiff over target)
+ *
+ * The range normally should be :
+ *
+ * lower limit : baffle temp target - tolerance
+ * higher limit : baffle temp target + abs max diff + tolerance
+ *
+ *
+ * For most cases where there is aperture adjust at a desired speed and not instantaneous, we use aperture_adjust().
+ * Otherwise, (usually for cases where there is a fast and important change needed) we set aperture with for example stove->sGrill.u8apertureCmdSteps = value
+ *
+ *
+ *
  * using :
  *
  * sParam (temperature and slope targets from paramfile.c relative to states where function is called )
- * */
-
-
-/*
  *
- * Comb low 2 :
  *
- * à ajouter ici, enregistrer le temps d'entrée en comb, et si ça fait un certain moment,
- * là où on commencerait à ouvrir parce qu'on est en perte de temperature, à la place on ferme.
- *
- * Valider avec les plages de temperature de t avant ou t baffle avec guillaume.
- *
- * normalement ça devrait pas baisser la temperature de faire ça.
- *
- * si on ouvre la grille on devrait avoir un petit boost, si c'est le cas, on peut retourner en combustion normale.
  *
  * */
+
+ // TODO : For cleanup purposes, move comb low 2 here
+
 
 
 
